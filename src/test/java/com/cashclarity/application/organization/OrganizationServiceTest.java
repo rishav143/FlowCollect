@@ -11,7 +11,9 @@ import com.cashclarity.exception.InvalidCurrencyException;
 import com.cashclarity.exception.InvalidOrganizationFieldException;
 import com.cashclarity.exception.InvalidOrganizationIdException;
 import com.cashclarity.exception.InvalidTimezoneException;
+import com.cashclarity.exception.OrganizationAlreadyActiveException;
 import com.cashclarity.exception.OrganizationAlreadyArchivedException;
+import com.cashclarity.exception.OrganizationAlreadySuspendedException;
 import com.cashclarity.exception.OrganizationAlreadyExistsException;
 import com.cashclarity.exception.OrganizationNotFoundException;
 import com.cashclarity.infrastructure.persistence.organization.OrganizationJpaRepository;
@@ -23,12 +25,19 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.ZoneId;
+import java.time.LocalDate;
 import java.util.Currency;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("Organization Service Tests")
@@ -406,6 +415,112 @@ class OrganizationServiceTest {
     }
 
     @Test
+    @DisplayName("list - Should return page when filters are valid")
+    void list_WithValidFilters_ShouldReturnPage() {
+        // Arrange
+        Organization org1 = OrganizationTestData.valid();
+        OrganizationTestUtils.setId(org1, 1L);
+        PageRequest pageable = PageRequest.of(0, 10, Sort.by("name").ascending());
+        Page<Organization> page = new PageImpl<>(List.of(org1), pageable, 1);
+
+        when(organizationRepository.findAll(
+                org.mockito.ArgumentMatchers.<org.springframework.data.jpa.domain.Specification<Organization>>any(),
+                eq(pageable)
+        ))
+                .thenReturn(page);
+
+        // Act
+        Page<Organization> result = organizationService.list(
+                "ACTIVE",
+                "contact",
+                "Acme",
+                LocalDate.parse("2024-01-01"),
+                LocalDate.parse("2024-12-31"),
+                pageable
+        );
+
+        // Assert
+        assertThat(result.getTotalElements()).isEqualTo(1);
+        assertThat(result.getContent().get(0).getId()).isEqualTo(1L);
+        verify(organizationRepository).findAll(
+                org.mockito.ArgumentMatchers.<org.springframework.data.jpa.domain.Specification<Organization>>any(),
+                eq(pageable)
+        );
+    }
+
+    @Test
+    @DisplayName("list - Should throw when status is invalid")
+    void list_WithInvalidStatus_ShouldThrowInvalidOrganizationFieldException() {
+        // Arrange
+        PageRequest pageable = PageRequest.of(0, 10);
+
+        // Act & Assert
+        assertThatThrownBy(() -> organizationService.list("INVALID", null, null, null, null, pageable))
+                .isInstanceOf(InvalidOrganizationFieldException.class)
+                .hasMessageContaining("status");
+
+        verify(organizationRepository, never()).findAll(
+                org.mockito.ArgumentMatchers.<org.springframework.data.jpa.domain.Specification<Organization>>any(),
+                eq(pageable)
+        );
+    }
+
+    @Test
+    @DisplayName("list - Should throw when date range is invalid")
+    void list_WithInvalidDateRange_ShouldThrowInvalidOrganizationFieldException() {
+        // Arrange
+        PageRequest pageable = PageRequest.of(0, 10);
+        LocalDate createdFrom = LocalDate.parse("2024-12-31");
+        LocalDate createdTo = LocalDate.parse("2024-01-01");
+
+        // Act & Assert
+        assertThatThrownBy(() -> organizationService.list(null, null, null, createdFrom, createdTo, pageable))
+                .isInstanceOf(InvalidOrganizationFieldException.class)
+                .hasMessageContaining("createdFrom");
+
+        verify(organizationRepository, never()).findAll(
+                org.mockito.ArgumentMatchers.<org.springframework.data.jpa.domain.Specification<Organization>>any(),
+                eq(pageable)
+        );
+    }
+
+    @Test
+    @DisplayName("list - Should throw when pageable is null")
+    void list_WithNullPageable_ShouldThrowInvalidOrganizationFieldException() {
+        // Arrange
+        PageRequest pageable = null;
+
+        // Act & Assert
+        assertThatThrownBy(() -> organizationService.list(null, null, null, null, null, pageable))
+                .isInstanceOf(InvalidOrganizationFieldException.class)
+                .hasMessageContaining("page");
+    }
+
+    @Test
+    @DisplayName("list - Should throw when page size is out of range")
+    void list_WithInvalidPageSize_ShouldThrowInvalidOrganizationFieldException() {
+        // Arrange
+        PageRequest pageable = PageRequest.of(0, 101);
+
+        // Act & Assert
+        assertThatThrownBy(() -> organizationService.list(null, null, null, null, null, pageable))
+                .isInstanceOf(InvalidOrganizationFieldException.class)
+                .hasMessageContaining("size");
+    }
+
+    @Test
+    @DisplayName("list - Should throw when sort property is unsupported")
+    void list_WithInvalidSortProperty_ShouldThrowInvalidOrganizationFieldException() {
+        // Arrange
+        PageRequest pageable = PageRequest.of(0, 10, Sort.by("unknownField").ascending());
+
+        // Act & Assert
+        assertThatThrownBy(() -> organizationService.list(null, null, null, null, null, pageable))
+                .isInstanceOf(InvalidOrganizationFieldException.class)
+                .hasMessageContaining("sort");
+    }
+
+    @Test
     @DisplayName("delete - Should archive organization when id exists")
     void delete_WithExistingId_ShouldArchiveOrganization() {
         // Arrange
@@ -481,6 +596,172 @@ class OrganizationServiceTest {
         assertThatThrownBy(() -> organizationService.delete(2L))
                 .isInstanceOf(OrganizationAlreadyArchivedException.class)
                 .hasMessageContaining("already archived");
+
+        verify(organizationRepository).findById(2L);
+        verify(organizationRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("activate - Should activate organization when valid")
+    void activate_WithExistingId_ShouldActivate() {
+        // Arrange
+        Organization organization = OrganizationTestData.valid();
+        organization.setStatus(com.cashclarity.domain.organization.OrganizationStatus.SUSPENDED);
+        OrganizationTestUtils.setId(organization, 2L);
+        when(organizationRepository.findById(2L)).thenReturn(java.util.Optional.of(organization));
+        when(organizationRepository.save(any(Organization.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // Act
+        Organization result = organizationService.activate(2L);
+
+        // Assert
+        assertThat(result.getStatus()).isEqualTo(com.cashclarity.domain.organization.OrganizationStatus.ACTIVE);
+        verify(organizationRepository).findById(2L);
+        verify(organizationRepository).save(organization);
+    }
+
+    @Test
+    @DisplayName("activate - Should throw when id is null")
+    void activate_WithNullId_ShouldThrowInvalidOrganizationIdException() {
+        // Arrange
+        Long id = null;
+
+        // Act & Assert
+        assertThatThrownBy(() -> organizationService.activate(id))
+                .isInstanceOf(InvalidOrganizationIdException.class)
+                .hasMessageContaining("Invalid organizationId");
+
+        verify(organizationRepository, never()).findById(any());
+        verify(organizationRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("activate - Should throw when organization not found")
+    void activate_WithMissingId_ShouldThrowOrganizationNotFoundException() {
+        // Arrange
+        when(organizationRepository.findById(999L)).thenReturn(java.util.Optional.empty());
+
+        // Act & Assert
+        assertThatThrownBy(() -> organizationService.activate(999L))
+                .isInstanceOf(OrganizationNotFoundException.class)
+                .hasMessageContaining("Organization not found");
+
+        verify(organizationRepository).findById(999L);
+        verify(organizationRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("activate - Should throw when organization is archived")
+    void activate_WithArchivedOrganization_ShouldThrowOrganizationAlreadyArchivedException() {
+        // Arrange
+        Organization organization = OrganizationTestData.archived();
+        OrganizationTestUtils.setId(organization, 2L);
+        when(organizationRepository.findById(2L)).thenReturn(java.util.Optional.of(organization));
+
+        // Act & Assert
+        assertThatThrownBy(() -> organizationService.activate(2L))
+                .isInstanceOf(OrganizationAlreadyArchivedException.class)
+                .hasMessageContaining("already archived");
+
+        verify(organizationRepository).findById(2L);
+        verify(organizationRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("activate - Should throw when organization already active")
+    void activate_WithActiveOrganization_ShouldThrowOrganizationAlreadyActiveException() {
+        // Arrange
+        Organization organization = OrganizationTestData.valid();
+        OrganizationTestUtils.setId(organization, 2L);
+        when(organizationRepository.findById(2L)).thenReturn(java.util.Optional.of(organization));
+
+        // Act & Assert
+        assertThatThrownBy(() -> organizationService.activate(2L))
+                .isInstanceOf(OrganizationAlreadyActiveException.class)
+                .hasMessageContaining("already active");
+
+        verify(organizationRepository).findById(2L);
+        verify(organizationRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("suspend - Should suspend organization when valid")
+    void suspend_WithExistingId_ShouldSuspend() {
+        // Arrange
+        Organization organization = OrganizationTestData.valid();
+        OrganizationTestUtils.setId(organization, 2L);
+        when(organizationRepository.findById(2L)).thenReturn(java.util.Optional.of(organization));
+        when(organizationRepository.save(any(Organization.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // Act
+        Organization result = organizationService.suspend(2L);
+
+        // Assert
+        assertThat(result.getStatus()).isEqualTo(com.cashclarity.domain.organization.OrganizationStatus.SUSPENDED);
+        verify(organizationRepository).findById(2L);
+        verify(organizationRepository).save(organization);
+    }
+
+    @Test
+    @DisplayName("suspend - Should throw when id is null")
+    void suspend_WithNullId_ShouldThrowInvalidOrganizationIdException() {
+        // Arrange
+        Long id = null;
+
+        // Act & Assert
+        assertThatThrownBy(() -> organizationService.suspend(id))
+                .isInstanceOf(InvalidOrganizationIdException.class)
+                .hasMessageContaining("Invalid organizationId");
+
+        verify(organizationRepository, never()).findById(any());
+        verify(organizationRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("suspend - Should throw when organization not found")
+    void suspend_WithMissingId_ShouldThrowOrganizationNotFoundException() {
+        // Arrange
+        when(organizationRepository.findById(999L)).thenReturn(java.util.Optional.empty());
+
+        // Act & Assert
+        assertThatThrownBy(() -> organizationService.suspend(999L))
+                .isInstanceOf(OrganizationNotFoundException.class)
+                .hasMessageContaining("Organization not found");
+
+        verify(organizationRepository).findById(999L);
+        verify(organizationRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("suspend - Should throw when organization is archived")
+    void suspend_WithArchivedOrganization_ShouldThrowOrganizationAlreadyArchivedException() {
+        // Arrange
+        Organization organization = OrganizationTestData.archived();
+        OrganizationTestUtils.setId(organization, 2L);
+        when(organizationRepository.findById(2L)).thenReturn(java.util.Optional.of(organization));
+
+        // Act & Assert
+        assertThatThrownBy(() -> organizationService.suspend(2L))
+                .isInstanceOf(OrganizationAlreadyArchivedException.class)
+                .hasMessageContaining("already archived");
+
+        verify(organizationRepository).findById(2L);
+        verify(organizationRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("suspend - Should throw when organization already suspended")
+    void suspend_WithSuspendedOrganization_ShouldThrowOrganizationAlreadySuspendedException() {
+        // Arrange
+        Organization organization = OrganizationTestData.valid();
+        organization.setStatus(com.cashclarity.domain.organization.OrganizationStatus.SUSPENDED);
+        OrganizationTestUtils.setId(organization, 2L);
+        when(organizationRepository.findById(2L)).thenReturn(java.util.Optional.of(organization));
+
+        // Act & Assert
+        assertThatThrownBy(() -> organizationService.suspend(2L))
+                .isInstanceOf(OrganizationAlreadySuspendedException.class)
+                .hasMessageContaining("already suspended");
 
         verify(organizationRepository).findById(2L);
         verify(organizationRepository, never()).save(any());

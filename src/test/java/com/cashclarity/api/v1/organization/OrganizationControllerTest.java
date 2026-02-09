@@ -12,7 +12,9 @@ import com.cashclarity.exception.InvalidCurrencyException;
 import com.cashclarity.exception.InvalidOrganizationFieldException;
 import com.cashclarity.exception.InvalidOrganizationIdException;
 import com.cashclarity.exception.InvalidTimezoneException;
+import com.cashclarity.exception.OrganizationAlreadyActiveException;
 import com.cashclarity.exception.OrganizationAlreadyArchivedException;
+import com.cashclarity.exception.OrganizationAlreadySuspendedException;
 import com.cashclarity.exception.OrganizationAlreadyExistsException;
 import com.cashclarity.exception.OrganizationNotFoundException;
 import org.junit.jupiter.api.DisplayName;
@@ -20,11 +22,21 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.LocalDate;
+import java.util.List;
+
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
@@ -123,6 +135,147 @@ class OrganizationControllerTest {
     }
 
     @Test
+    @DisplayName("GET /api/v1/organizations - Should return paged organizations")
+    void list_WithPagination_ShouldReturn200() throws Exception {
+        // Arrange
+        Organization org1 = OrganizationTestData.valid();
+        OrganizationTestUtils.setId(org1, 1L);
+        Organization org2 = OrganizationTestData.valid();
+        OrganizationTestUtils.setId(org2, 2L);
+        org2.setEmail("billing@acme.com");
+
+        Page<Organization> page = new PageImpl<>(
+                List.of(org1, org2),
+                PageRequest.of(0, 2, Sort.by("name").ascending()),
+                2
+        );
+
+        when(organizationService.list(
+                isNull(),
+                isNull(),
+                isNull(),
+                isNull(),
+                isNull(),
+                any(Pageable.class)
+        )).thenReturn(page);
+
+        // Act & Assert
+        mockMvc.perform(get("/api/v1/organizations")
+                        .param("page", "0")
+                        .param("size", "2")
+                        .param("sort", "name,asc"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(2))
+                .andExpect(jsonPath("$.content[0].id").value(1))
+                .andExpect(jsonPath("$.content[1].email").value("billing@acme.com"))
+                .andExpect(jsonPath("$.size").value(2))
+                .andExpect(jsonPath("$.number").value(0));
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/organizations - Should return filtered results")
+    void list_WithFilters_ShouldReturn200() throws Exception {
+        // Arrange
+        Organization org = OrganizationTestData.valid();
+        OrganizationTestUtils.setId(org, 3L);
+        Page<Organization> page = new PageImpl<>(List.of(org), PageRequest.of(0, 1), 1);
+
+        LocalDate createdFrom = LocalDate.parse("2024-01-01");
+        LocalDate createdTo = LocalDate.parse("2024-12-31");
+
+        when(organizationService.list(
+                eq("ACTIVE"),
+                eq("contact"),
+                eq("Acme"),
+                eq(createdFrom),
+                eq(createdTo),
+                any(Pageable.class)
+        )).thenReturn(page);
+
+        // Act & Assert
+        mockMvc.perform(get("/api/v1/organizations")
+                        .param("status", "ACTIVE")
+                        .param("email", "contact")
+                        .param("name", "Acme")
+                .param("createdFrom", "2024-01-01")
+                .param("createdTo", "2024-12-31")
+                        .param("page", "0")
+                        .param("size", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.content[0].id").value(3));
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/organizations - Should return 400 for invalid status")
+    void list_WithInvalidStatus_ShouldReturn400() throws Exception {
+        // Arrange
+        when(organizationService.list(
+                eq("INVALID"),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(Pageable.class)
+        )).thenThrow(new InvalidOrganizationFieldException("status", "unsupported value 'INVALID'"));
+
+        // Act & Assert
+        mockMvc.perform(get("/api/v1/organizations")
+                        .param("status", "INVALID")
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("status")));
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/organizations - Should return 400 for invalid date range")
+    void list_WithInvalidDateRange_ShouldReturn400() throws Exception {
+        // Arrange
+        LocalDate createdFrom = LocalDate.parse("2024-12-31");
+        LocalDate createdTo = LocalDate.parse("2024-01-01");
+
+        when(organizationService.list(
+                any(),
+                any(),
+                any(),
+                eq(createdFrom),
+                eq(createdTo),
+                any(Pageable.class)
+        )).thenThrow(new InvalidOrganizationFieldException("createdFrom", "must be before or equal to createdTo"));
+
+        // Act & Assert
+        mockMvc.perform(get("/api/v1/organizations")
+                .param("createdFrom", "2024-12-31")
+                .param("createdTo", "2024-01-01")
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("createdFrom")));
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/organizations - Should return 400 for invalid page size")
+    void list_WithInvalidPageSize_ShouldReturn400() throws Exception {
+        // Arrange
+        when(organizationService.list(
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(Pageable.class)
+        )).thenThrow(new InvalidOrganizationFieldException("size", "must be between 1 and 100"));
+
+        // Act & Assert
+        mockMvc.perform(get("/api/v1/organizations")
+                        .param("page", "0")
+                        .param("size", "200"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("size")));
+    }
+
+    @Test
     @DisplayName("DELETE /api/v1/organizations/{id} - Should return 204 when delete succeeds")
     void delete_WithExistingId_ShouldReturn204() throws Exception {
         // Arrange
@@ -173,6 +326,143 @@ class OrganizationControllerTest {
     }
 
     @Test
+    @DisplayName("POST /api/v1/organizations/{id}/activate - Should return 200 when activation succeeds")
+    void activate_WithExistingId_ShouldReturn200() throws Exception {
+        // Arrange
+        Organization activated = OrganizationTestData.valid();
+        OrganizationTestUtils.setId(activated, 2L);
+
+        when(organizationService.activate(2L)).thenReturn(activated);
+
+        // Act & Assert
+        mockMvc.perform(post("/api/v1/organizations/{id}/activate", 2L))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(2))
+                .andExpect(jsonPath("$.status").value("ACTIVE"));
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/organizations/{id}/activate - Should return 400 when id is invalid")
+    void activate_WithInvalidId_ShouldReturn400() throws Exception {
+        // Arrange
+        when(organizationService.activate(-1L))
+                .thenThrow(new InvalidOrganizationIdException(-1L));
+
+        // Act & Assert
+        mockMvc.perform(post("/api/v1/organizations/{id}/activate", -1L))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("Invalid organizationId")));
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/organizations/{id}/activate - Should return 404 when organization not found")
+    void activate_WithMissingId_ShouldReturn404() throws Exception {
+        // Arrange
+        when(organizationService.activate(999L))
+                .thenThrow(new OrganizationNotFoundException(999L));
+
+        // Act & Assert
+        mockMvc.perform(post("/api/v1/organizations/{id}/activate", 999L))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("Organization not found")));
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/organizations/{id}/activate - Should return 409 when already archived")
+    void activate_WithArchivedOrganization_ShouldReturn409() throws Exception {
+        // Arrange
+        when(organizationService.activate(2L))
+                .thenThrow(new OrganizationAlreadyArchivedException(2L));
+
+        // Act & Assert
+        mockMvc.perform(post("/api/v1/organizations/{id}/activate", 2L))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("already archived")));
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/organizations/{id}/activate - Should return 409 when already active")
+    void activate_WithActiveOrganization_ShouldReturn409() throws Exception {
+        // Arrange
+        when(organizationService.activate(2L))
+                .thenThrow(new OrganizationAlreadyActiveException(2L));
+
+        // Act & Assert
+        mockMvc.perform(post("/api/v1/organizations/{id}/activate", 2L))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("already active")));
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/organizations/{id}/suspend - Should return 200 when suspension succeeds")
+    void suspend_WithExistingId_ShouldReturn200() throws Exception {
+        // Arrange
+        Organization suspended = OrganizationTestData.valid();
+        OrganizationTestUtils.setId(suspended, 2L);
+        suspended.setStatus(com.cashclarity.domain.organization.OrganizationStatus.SUSPENDED);
+
+        when(organizationService.suspend(2L)).thenReturn(suspended);
+
+        // Act & Assert
+        mockMvc.perform(post("/api/v1/organizations/{id}/suspend", 2L))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(2))
+                .andExpect(jsonPath("$.status").value("SUSPENDED"));
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/organizations/{id}/suspend - Should return 400 when id is invalid")
+    void suspend_WithInvalidId_ShouldReturn400() throws Exception {
+        // Arrange
+        when(organizationService.suspend(-1L))
+                .thenThrow(new InvalidOrganizationIdException(-1L));
+
+        // Act & Assert
+        mockMvc.perform(post("/api/v1/organizations/{id}/suspend", -1L))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("Invalid organizationId")));
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/organizations/{id}/suspend - Should return 404 when organization not found")
+    void suspend_WithMissingId_ShouldReturn404() throws Exception {
+        // Arrange
+        when(organizationService.suspend(999L))
+                .thenThrow(new OrganizationNotFoundException(999L));
+
+        // Act & Assert
+        mockMvc.perform(post("/api/v1/organizations/{id}/suspend", 999L))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("Organization not found")));
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/organizations/{id}/suspend - Should return 409 when already archived")
+    void suspend_WithArchivedOrganization_ShouldReturn409() throws Exception {
+        // Arrange
+        when(organizationService.suspend(2L))
+                .thenThrow(new OrganizationAlreadyArchivedException(2L));
+
+        // Act & Assert
+        mockMvc.perform(post("/api/v1/organizations/{id}/suspend", 2L))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("already archived")));
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/organizations/{id}/suspend - Should return 409 when already suspended")
+    void suspend_WithSuspendedOrganization_ShouldReturn409() throws Exception {
+        // Arrange
+        when(organizationService.suspend(2L))
+                .thenThrow(new OrganizationAlreadySuspendedException(2L));
+
+        // Act & Assert
+        mockMvc.perform(post("/api/v1/organizations/{id}/suspend", 2L))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("already suspended")));
+    }
+
+    @Test
     @DisplayName("PATCH /api/v1/organizations/{id} - Should update organization successfully")
     void update_WithValidRequest_ShouldReturn200() throws Exception {
         // Arrange
@@ -187,7 +477,7 @@ class OrganizationControllerTest {
         updated.setTimezone(java.time.ZoneId.of("Europe/London"));
         updated.setCurrency(java.util.Currency.getInstance("GBP"));
 
-        when(organizationService.update(org.mockito.ArgumentMatchers.eq(2L), any(OrganizationUpdateRequest.class)))
+        when(organizationService.update(eq(2L), any(OrganizationUpdateRequest.class)))
                 .thenReturn(updated);
 
         // Act & Assert
@@ -209,7 +499,7 @@ class OrganizationControllerTest {
     void update_WithMissingId_ShouldReturn404() throws Exception {
         // Arrange
         OrganizationUpdateRequest request = OrganizationUpdateRequestTestData.valid();
-        when(organizationService.update(org.mockito.ArgumentMatchers.eq(999L), any(OrganizationUpdateRequest.class)))
+        when(organizationService.update(eq(999L), any(OrganizationUpdateRequest.class)))
                 .thenThrow(new OrganizationNotFoundException(999L));
 
         // Act & Assert
@@ -225,7 +515,7 @@ class OrganizationControllerTest {
     void update_WithInvalidId_ShouldReturn400() throws Exception {
         // Arrange
         OrganizationUpdateRequest request = OrganizationUpdateRequestTestData.valid();
-        when(organizationService.update(org.mockito.ArgumentMatchers.eq(-1L), any(OrganizationUpdateRequest.class)))
+        when(organizationService.update(eq(-1L), any(OrganizationUpdateRequest.class)))
                 .thenThrow(new InvalidOrganizationIdException(-1L));
 
         // Act & Assert
@@ -269,7 +559,7 @@ class OrganizationControllerTest {
     void update_WithBlankName_ShouldReturn400BadRequest() throws Exception {
         // Arrange
         OrganizationUpdateRequest request = OrganizationUpdateRequestTestData.nameBlank();
-        when(organizationService.update(org.mockito.ArgumentMatchers.eq(2L), any(OrganizationUpdateRequest.class)))
+        when(organizationService.update(eq(2L), any(OrganizationUpdateRequest.class)))
                 .thenThrow(new InvalidOrganizationFieldException("name", "must not be blank"));
 
         // Act & Assert
@@ -285,7 +575,7 @@ class OrganizationControllerTest {
     void update_WithInvalidTimezone_ShouldReturn400() throws Exception {
         // Arrange
         OrganizationUpdateRequest request = OrganizationUpdateRequestTestData.timezoneInvalid();
-        when(organizationService.update(org.mockito.ArgumentMatchers.eq(2L), any(OrganizationUpdateRequest.class)))
+        when(organizationService.update(eq(2L), any(OrganizationUpdateRequest.class)))
                 .thenThrow(new InvalidTimezoneException("Invalid/Timezone"));
 
         // Act & Assert
@@ -301,7 +591,7 @@ class OrganizationControllerTest {
     void update_WithInvalidCurrency_ShouldReturn400() throws Exception {
         // Arrange
         OrganizationUpdateRequest request = OrganizationUpdateRequestTestData.currencyInvalid();
-        when(organizationService.update(org.mockito.ArgumentMatchers.eq(2L), any(OrganizationUpdateRequest.class)))
+        when(organizationService.update(eq(2L), any(OrganizationUpdateRequest.class)))
                 .thenThrow(new InvalidCurrencyException("ZZZ"));
 
         // Act & Assert
@@ -317,7 +607,7 @@ class OrganizationControllerTest {
     void update_WithDuplicateEmail_ShouldReturn409() throws Exception {
         // Arrange
         OrganizationUpdateRequest request = OrganizationUpdateRequestTestData.valid();
-        when(organizationService.update(org.mockito.ArgumentMatchers.eq(2L), any(OrganizationUpdateRequest.class)))
+        when(organizationService.update(eq(2L), any(OrganizationUpdateRequest.class)))
                 .thenThrow(new OrganizationAlreadyExistsException("updated@acme.com"));
 
         // Act & Assert

@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
-import java.time.Instant;
+import java.time.LocalDate;
 
 @RestController
 @RequestMapping("/api/v1/organizations")
@@ -53,8 +53,8 @@ public class OrganizationController {
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String email,
             @RequestParam(required = false) String name,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant createdFrom,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant createdTo,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate createdFrom,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate createdTo,
             Pageable pageable
     ) {
         Page<Organization> organizations = organizationService.list(
@@ -102,6 +102,28 @@ public class OrganizationController {
     public ResponseEntity<Void> delete(@PathVariable Long organizationId) {
         organizationService.delete(organizationId);
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Activates an organization by id.
+     * Service layer validates the id and throws custom exceptions that are handled by
+     * {@link com.cashclarity.exception.GlobalExceptionHandler}.
+     */
+    @PostMapping("/{organizationId}/activate")
+    public ResponseEntity<OrganizationResponse> activate(@PathVariable Long organizationId) {
+        Organization activated = organizationService.activate(organizationId);
+        return ResponseEntity.ok(OrganizationMapper.toResponse(activated));
+    }
+
+    /**
+     * Suspends an organization by id.
+     * Service layer validates the id and throws custom exceptions that are handled by
+     * {@link com.cashclarity.exception.GlobalExceptionHandler}.
+     */
+    @PostMapping("/{organizationId}/suspend")
+    public ResponseEntity<OrganizationResponse> suspend(@PathVariable Long organizationId) {
+        Organization suspended = organizationService.suspend(organizationId);
+        return ResponseEntity.ok(OrganizationMapper.toResponse(suspended));
     }
 }
 

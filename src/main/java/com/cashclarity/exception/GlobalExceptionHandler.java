@@ -58,6 +58,26 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handles organization already active (409 Conflict).
+     */
+    @ExceptionHandler(OrganizationAlreadyActiveException.class)
+    public ResponseEntity<Map<String, String>> handleOrganizationAlreadyActive(OrganizationAlreadyActiveException ex) {
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(Map.of("message", ex.getMessage()));
+    }
+
+    /**
+     * Handles organization already suspended (409 Conflict).
+     */
+    @ExceptionHandler(OrganizationAlreadySuspendedException.class)
+    public ResponseEntity<Map<String, String>> handleOrganizationAlreadySuspended(OrganizationAlreadySuspendedException ex) {
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(Map.of("message", ex.getMessage()));
+    }
+
+    /**
      * Handles invalid input (400 Bad Request).
      */
     @ExceptionHandler({

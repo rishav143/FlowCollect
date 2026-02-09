@@ -1,15 +1,21 @@
 package com.cashclarity.infrastructure.persistence.organization;
 
 import com.cashclarity.domain.organization.Organization;
+import com.cashclarity.domain.organization.OrganizationStatus;
 import com.cashclarity.domain.organization.OrganizationTestData;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.Currency;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -62,6 +68,142 @@ class OrganizationJpaRepositoryTest {
         assertThat(found.isDeleted()).isTrue();
         assertThat(found.getDeletedAt()).isNotNull();
         assertThat(found.getStatus().name()).isEqualTo("ARCHIVED");
+    }
+
+    @Test
+    @DisplayName("save - Should persist active status after activation")
+    void save_WithActivatedOrganization_ShouldPersistActiveStatus() {
+        // Arrange
+        Organization organization = OrganizationTestData.valid();
+        organization.setStatus(OrganizationStatus.SUSPENDED);
+        organizationRepository.saveAndFlush(organization);
+
+        // Act
+        organization.activate();
+        Organization saved = organizationRepository.saveAndFlush(organization);
+
+        // Assert
+        Organization found = organizationRepository.findById(saved.getId()).orElseThrow();
+        assertThat(found.getStatus()).isEqualTo(OrganizationStatus.ACTIVE);
+    }
+
+    @Test
+    @DisplayName("save - Should persist suspended status")
+    void save_WithSuspendedOrganization_ShouldPersistSuspendedStatus() {
+        // Arrange
+        Organization organization = OrganizationTestData.valid();
+        organization.suspend();
+        organizationRepository.saveAndFlush(organization);
+
+        // Act
+        Organization found = organizationRepository.findById(organization.getId()).orElseThrow();
+
+        // Assert
+        assertThat(found.getStatus()).isEqualTo(OrganizationStatus.SUSPENDED);
+    }
+
+    @Test
+    @DisplayName("findAll - Should filter by status")
+    void findAll_WithStatusFilter_ShouldReturnMatching() {
+        // Arrange
+        Organization active = OrganizationTestData.valid();
+        Organization suspended = OrganizationTestData.valid();
+        suspended.setEmail("suspended@acme.com");
+        suspended.setStatus(OrganizationStatus.SUSPENDED);
+        organizationRepository.saveAll(List.of(active, suspended));
+        organizationRepository.flush();
+
+        Specification<Organization> spec = (root, query, cb) ->
+                cb.equal(root.get("status"), OrganizationStatus.SUSPENDED);
+
+        // Act
+        Page<Organization> result = organizationRepository.findAll(spec, PageRequest.of(0, 10));
+
+        // Assert
+        assertThat(result.getTotalElements()).isEqualTo(1);
+        assertThat(result.getContent().get(0).getEmail()).isEqualTo("suspended@acme.com");
+    }
+
+    @Test
+    @DisplayName("findAll - Should filter by email and name using like")
+    void findAll_WithEmailAndNameFilter_ShouldReturnMatching() {
+        // Arrange
+        Organization org1 = OrganizationTestData.valid();
+        Organization org2 = OrganizationTestData.valid();
+        org2.setEmail("info@beta.com");
+        org2.setName("Beta Corp");
+        organizationRepository.saveAll(List.of(org1, org2));
+        organizationRepository.flush();
+
+        String emailLike = "%contact%";
+        String nameLike = "%acme%";
+        Specification<Organization> spec = (root, query, cb) -> cb.and(
+                cb.like(cb.lower(root.get("email")), emailLike),
+                cb.like(cb.lower(root.get("name")), nameLike)
+        );
+
+        // Act
+        Page<Organization> result = organizationRepository.findAll(spec, PageRequest.of(0, 10));
+
+        // Assert
+        assertThat(result.getTotalElements()).isEqualTo(1);
+        assertThat(result.getContent().get(0).getEmail()).isEqualTo("contact@acme.com");
+    }
+
+    @Test
+    @DisplayName("findAll - Should filter by createdAt range")
+    void findAll_WithCreatedAtRange_ShouldReturnMatching() {
+        // Arrange
+        Organization org1 = OrganizationTestData.valid();
+        organizationRepository.saveAndFlush(org1);
+        Instant org1CreatedAt = org1.getCreatedAt();
+
+        try {
+            Thread.sleep(50);
+        } catch (InterruptedException ignored) {
+        }
+
+        Organization org2 = OrganizationTestData.valid();
+        org2.setEmail("later@acme.com");
+        organizationRepository.saveAndFlush(org2);
+
+        Instant from = org1CreatedAt.minusSeconds(1);
+        Instant to = org1CreatedAt.plusMillis(1);
+        Specification<Organization> spec = (root, query, cb) -> cb.and(
+                cb.greaterThanOrEqualTo(root.get("createdAt"), from),
+                cb.lessThanOrEqualTo(root.get("createdAt"), to)
+        );
+
+        // Act
+        Page<Organization> result = organizationRepository.findAll(spec, PageRequest.of(0, 10));
+
+        // Assert
+        assertThat(result.getTotalElements()).isEqualTo(1);
+        assertThat(result.getContent().get(0).getEmail()).isEqualTo("contact@acme.com");
+    }
+
+    @Test
+    @DisplayName("findAll - Should apply pagination and sorting")
+    void findAll_WithPaginationAndSorting_ShouldReturnOrderedPage() {
+        // Arrange
+        Organization orgA = OrganizationTestData.valid();
+        orgA.setName("Alpha");
+        Organization orgB = OrganizationTestData.valid();
+        orgB.setName("Beta");
+        orgB.setEmail("beta@acme.com");
+        organizationRepository.saveAll(List.of(orgA, orgB));
+        organizationRepository.flush();
+
+        Specification<Organization> spec = (root, query, cb) -> cb.conjunction();
+        PageRequest pageable = PageRequest.of(0, 1, Sort.by("name").descending());
+
+        // Act
+        Page<Organization> result = organizationRepository.findAll(spec, pageable);
+
+        // Assert
+        assertThat(result.getContent().size()).isEqualTo(1);
+        assertThat(result.getContent().get(0).getName()).isEqualTo("Beta");
+        assertThat(result.getTotalElements()).isGreaterThanOrEqualTo(2);
     }
 
     @Test

@@ -8,7 +8,9 @@ import com.cashclarity.exception.InvalidCurrencyException;
 import com.cashclarity.exception.InvalidOrganizationFieldException;
 import com.cashclarity.exception.InvalidOrganizationIdException;
 import com.cashclarity.exception.InvalidTimezoneException;
+import com.cashclarity.exception.OrganizationAlreadyActiveException;
 import com.cashclarity.exception.OrganizationAlreadyArchivedException;
+import com.cashclarity.exception.OrganizationAlreadySuspendedException;
 import com.cashclarity.exception.OrganizationAlreadyExistsException;
 import com.cashclarity.exception.OrganizationNotFoundException;
 import com.cashclarity.infrastructure.persistence.organization.OrganizationJpaRepository;
@@ -20,6 +22,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.time.ZoneId;
 import java.util.Currency;
 import java.util.Set;
@@ -105,14 +109,17 @@ public class OrganizationService {
             String status,
             String email,
             String name,
-            Instant createdFrom,
-            Instant createdTo,
+            LocalDate createdFrom,
+            LocalDate createdTo,
             Pageable pageable
     ) {
         validatePageable(pageable);
         validateDateRange(createdFrom, createdTo);
 
         OrganizationStatus parsedStatus = parseStatus(status);
+
+        Instant createdFromInstant = createdFrom != null ? createdFrom.atStartOfDay(ZoneOffset.UTC).toInstant() : null;
+        Instant createdToInstant = createdTo != null ? createdTo.plusDays(1).atStartOfDay(ZoneOffset.UTC).minusNanos(1).toInstant() : null;
 
         Specification<Organization> spec = (root, query, cb) -> cb.conjunction();
         if (parsedStatus != null) {
@@ -126,11 +133,11 @@ public class OrganizationService {
             String nameLike = "%" + name.trim().toLowerCase() + "%";
             spec = spec.and((root, query, cb) -> cb.like(cb.lower(root.get("name")), nameLike));
         }
-        if (createdFrom != null) {
-            spec = spec.and((root, query, cb) -> cb.greaterThanOrEqualTo(root.get("createdAt"), createdFrom));
+        if (createdFromInstant != null) {
+            spec = spec.and((root, query, cb) -> cb.greaterThanOrEqualTo(root.get("createdAt"), createdFromInstant));
         }
-        if (createdTo != null) {
-            spec = spec.and((root, query, cb) -> cb.lessThanOrEqualTo(root.get("createdAt"), createdTo));
+        if (createdToInstant != null) {
+            spec = spec.and((root, query, cb) -> cb.lessThanOrEqualTo(root.get("createdAt"), createdToInstant));
         }
 
         return organizationRepository.findAll(spec, pageable);
@@ -156,6 +163,62 @@ public class OrganizationService {
 
         organization.archive();
         organizationRepository.save(organization);
+    }
+
+    /**
+     * Activates an organization by id.
+     *
+     * @param organizationId organization identifier
+     * @return the updated organization
+     * @throws InvalidOrganizationIdException if id is null or non-positive
+     * @throws OrganizationNotFoundException if no organization exists for the given id
+     * @throws OrganizationAlreadyArchivedException if the organization is archived
+     * @throws OrganizationAlreadyActiveException if the organization is already active
+     */
+    @Transactional
+    public Organization activate(Long organizationId) {
+        validateOrganizationId(organizationId);
+        Organization organization = organizationRepository.findById(organizationId)
+                .orElseThrow(() -> new OrganizationNotFoundException(organizationId));
+
+        if (organization.isDeleted()) {
+            throw new OrganizationAlreadyArchivedException(organizationId);
+        }
+
+        if (organization.getStatus() == OrganizationStatus.ACTIVE) {
+            throw new OrganizationAlreadyActiveException(organizationId);
+        }
+
+        organization.activate();
+        return organizationRepository.save(organization);
+    }
+
+    /**
+     * Suspends an organization by id.
+     *
+     * @param organizationId organization identifier
+     * @return the updated organization
+     * @throws InvalidOrganizationIdException if id is null or non-positive
+     * @throws OrganizationNotFoundException if no organization exists for the given id
+     * @throws OrganizationAlreadyArchivedException if the organization is archived
+     * @throws OrganizationAlreadySuspendedException if the organization is already suspended
+     */
+    @Transactional
+    public Organization suspend(Long organizationId) {
+        validateOrganizationId(organizationId);
+        Organization organization = organizationRepository.findById(organizationId)
+                .orElseThrow(() -> new OrganizationNotFoundException(organizationId));
+
+        if (organization.isDeleted()) {
+            throw new OrganizationAlreadyArchivedException(organizationId);
+        }
+
+        if (organization.getStatus() == OrganizationStatus.SUSPENDED) {
+            throw new OrganizationAlreadySuspendedException(organizationId);
+        }
+
+        organization.suspend();
+        return organizationRepository.save(organization);
     }
 
     /**
@@ -288,7 +351,7 @@ public class OrganizationService {
         }
     }
 
-    private void validateDateRange(Instant createdFrom, Instant createdTo) {
+    private void validateDateRange(LocalDate createdFrom, LocalDate createdTo) {
         if (createdFrom != null && createdTo != null && createdFrom.isAfter(createdTo)) {
             throw new InvalidOrganizationFieldException("createdFrom", "must be before or equal to createdTo");
         }
