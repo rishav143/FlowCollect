@@ -14,6 +14,8 @@ import com.cashclarity.exception.InvalidOrganizationIdException;
 import com.cashclarity.exception.InvalidTimezoneException;
 import com.cashclarity.exception.OrganizationAlreadyActiveException;
 import com.cashclarity.exception.OrganizationAlreadyArchivedException;
+import com.cashclarity.exception.OrganizationAlreadyExpiredException;
+import com.cashclarity.exception.OrganizationAlreadyInTrialException;
 import com.cashclarity.exception.OrganizationAlreadySuspendedException;
 import com.cashclarity.exception.OrganizationAlreadyExistsException;
 import com.cashclarity.exception.OrganizationNotFoundException;
@@ -312,18 +314,6 @@ class OrganizationControllerTest {
                 .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("Invalid organizationId")));
     }
 
-    @Test
-    @DisplayName("DELETE /api/v1/organizations/{id} - Should return 409 when already archived")
-    void delete_WithArchivedOrganization_ShouldReturn409() throws Exception {
-        // Arrange
-        doThrow(new OrganizationAlreadyArchivedException(2L))
-                .when(organizationService).delete(2L);
-
-        // Act & Assert
-        mockMvc.perform(delete("/api/v1/organizations/{id}", 2L))
-                .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("already archived")));
-    }
 
     @Test
     @DisplayName("POST /api/v1/organizations/{id}/activate - Should return 200 when activation succeeds")
@@ -460,6 +450,199 @@ class OrganizationControllerTest {
         mockMvc.perform(post("/api/v1/organizations/{id}/suspend", 2L))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("already suspended")));
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/organizations/{id}/archive - Should return 200 when archive succeeds")
+    void archive_WithExistingId_ShouldReturn200() throws Exception {
+        // Arrange
+        Organization archived = OrganizationTestData.archived();
+        OrganizationTestUtils.setId(archived, 2L);
+
+        when(organizationService.archive(2L)).thenReturn(archived);
+
+        // Act & Assert
+        mockMvc.perform(post("/api/v1/organizations/{id}/archive", 2L))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(2))
+                .andExpect(jsonPath("$.status").value("ARCHIVED"));
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/organizations/{id}/archive - Should return 400 when id is invalid")
+    void archive_WithInvalidId_ShouldReturn400() throws Exception {
+        // Arrange
+        when(organizationService.archive(-1L))
+                .thenThrow(new InvalidOrganizationIdException(-1L));
+
+        // Act & Assert
+        mockMvc.perform(post("/api/v1/organizations/{id}/archive", -1L))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("Invalid organizationId")));
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/organizations/{id}/archive - Should return 404 when organization not found")
+    void archive_WithMissingId_ShouldReturn404() throws Exception {
+        // Arrange
+        when(organizationService.archive(999L))
+                .thenThrow(new OrganizationNotFoundException(999L));
+
+        // Act & Assert
+        mockMvc.perform(post("/api/v1/organizations/{id}/archive", 999L))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("Organization not found")));
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/organizations/{id}/archive - Should return 409 when already archived")
+    void archive_WithArchivedOrganization_ShouldReturn409() throws Exception {
+        // Arrange
+        when(organizationService.archive(2L))
+                .thenThrow(new OrganizationAlreadyArchivedException(2L));
+
+        // Act & Assert
+        mockMvc.perform(post("/api/v1/organizations/{id}/archive", 2L))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("already archived")));
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/organizations/{id}/trial - Should return 200 when trial succeeds")
+    void trial_WithExistingId_ShouldReturn200() throws Exception {
+        // Arrange
+        Organization trial = OrganizationTestData.valid();
+        OrganizationTestUtils.setId(trial, 2L);
+        trial.setStatus(com.cashclarity.domain.organization.OrganizationStatus.TRIAL);
+
+        when(organizationService.trial(2L)).thenReturn(trial);
+
+        // Act & Assert
+        mockMvc.perform(post("/api/v1/organizations/{id}/trial", 2L))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(2))
+                .andExpect(jsonPath("$.status").value("TRIAL"));
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/organizations/{id}/trial - Should return 400 when id is invalid")
+    void trial_WithInvalidId_ShouldReturn400() throws Exception {
+        // Arrange
+        when(organizationService.trial(-1L))
+                .thenThrow(new InvalidOrganizationIdException(-1L));
+
+        // Act & Assert
+        mockMvc.perform(post("/api/v1/organizations/{id}/trial", -1L))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("Invalid organizationId")));
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/organizations/{id}/trial - Should return 404 when organization not found")
+    void trial_WithMissingId_ShouldReturn404() throws Exception {
+        // Arrange
+        when(organizationService.trial(999L))
+                .thenThrow(new OrganizationNotFoundException(999L));
+
+        // Act & Assert
+        mockMvc.perform(post("/api/v1/organizations/{id}/trial", 999L))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("Organization not found")));
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/organizations/{id}/trial - Should return 409 when already archived")
+    void trial_WithArchivedOrganization_ShouldReturn409() throws Exception {
+        // Arrange
+        when(organizationService.trial(2L))
+                .thenThrow(new OrganizationAlreadyArchivedException(2L));
+
+        // Act & Assert
+        mockMvc.perform(post("/api/v1/organizations/{id}/trial", 2L))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("already archived")));
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/organizations/{id}/trial - Should return 409 when already in trial")
+    void trial_WithAlreadyInTrial_ShouldReturn409() throws Exception {
+        // Arrange
+        when(organizationService.trial(2L))
+                .thenThrow(new OrganizationAlreadyInTrialException(2L));
+
+        // Act & Assert
+        mockMvc.perform(post("/api/v1/organizations/{id}/trial", 2L))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("already in trial")));
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/organizations/{id}/expired - Should return 200 when expired succeeds")
+    void expired_WithExistingId_ShouldReturn200() throws Exception {
+        // Arrange
+        Organization expired = OrganizationTestData.valid();
+        OrganizationTestUtils.setId(expired, 3L);
+        expired.setStatus(com.cashclarity.domain.organization.OrganizationStatus.EXPIRED);
+
+        when(organizationService.expired(3L)).thenReturn(expired);
+
+        // Act & Assert
+        mockMvc.perform(post("/api/v1/organizations/{id}/expired", 3L))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(3))
+                .andExpect(jsonPath("$.status").value("EXPIRED"));
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/organizations/{id}/expired - Should return 400 when id is invalid")
+    void expired_WithInvalidId_ShouldReturn400() throws Exception {
+        // Arrange
+        when(organizationService.expired(-1L))
+                .thenThrow(new InvalidOrganizationIdException(-1L));
+
+        // Act & Assert
+        mockMvc.perform(post("/api/v1/organizations/{id}/expired", -1L))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("Invalid organizationId")));
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/organizations/{id}/expired - Should return 404 when organization not found")
+    void expired_WithMissingId_ShouldReturn404() throws Exception {
+        // Arrange
+        when(organizationService.expired(999L))
+                .thenThrow(new OrganizationNotFoundException(999L));
+
+        // Act & Assert
+        mockMvc.perform(post("/api/v1/organizations/{id}/expired", 999L))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("Organization not found")));
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/organizations/{id}/expired - Should return 409 when already archived")
+    void expired_WithArchivedOrganization_ShouldReturn409() throws Exception {
+        // Arrange
+        when(organizationService.expired(3L))
+                .thenThrow(new OrganizationAlreadyArchivedException(3L));
+
+        // Act & Assert
+        mockMvc.perform(post("/api/v1/organizations/{id}/expired", 3L))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("already archived")));
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/organizations/{id}/expired - Should return 409 when already expired")
+    void expired_WithAlreadyExpired_ShouldReturn409() throws Exception {
+        // Arrange
+        when(organizationService.expired(3L))
+                .thenThrow(new OrganizationAlreadyExpiredException(3L));
+
+        // Act & Assert
+        mockMvc.perform(post("/api/v1/organizations/{id}/expired", 3L))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("already expired")));
     }
 
     @Test

@@ -13,6 +13,8 @@ import com.cashclarity.exception.InvalidOrganizationIdException;
 import com.cashclarity.exception.InvalidTimezoneException;
 import com.cashclarity.exception.OrganizationAlreadyActiveException;
 import com.cashclarity.exception.OrganizationAlreadyArchivedException;
+import com.cashclarity.exception.OrganizationAlreadyExpiredException;
+import com.cashclarity.exception.OrganizationAlreadyInTrialException;
 import com.cashclarity.exception.OrganizationAlreadySuspendedException;
 import com.cashclarity.exception.OrganizationAlreadyExistsException;
 import com.cashclarity.exception.OrganizationNotFoundException;
@@ -521,22 +523,19 @@ class OrganizationServiceTest {
     }
 
     @Test
-    @DisplayName("delete - Should archive organization when id exists")
-    void delete_WithExistingId_ShouldArchiveOrganization() {
+    @DisplayName("delete - Should hard delete organization when id exists")
+    void delete_WithExistingId_ShouldDeleteOrganization() {
         // Arrange
         Organization organization = OrganizationTestData.valid();
         OrganizationTestUtils.setId(organization, 2L);
         when(organizationRepository.findById(2L)).thenReturn(java.util.Optional.of(organization));
-        when(organizationRepository.save(any(Organization.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // Act
         organizationService.delete(2L);
 
         // Assert
-        assertThat(organization.isDeleted()).isTrue();
-        assertThat(organization.getStatus()).isNotNull();
         verify(organizationRepository).findById(2L);
-        verify(organizationRepository).save(organization);
+        verify(organizationRepository).delete(organization);
     }
 
     @Test
@@ -566,7 +565,7 @@ class OrganizationServiceTest {
                 .hasMessageContaining("Invalid organizationId");
 
         verify(organizationRepository, never()).findById(any());
-        verify(organizationRepository, never()).save(any());
+        verify(organizationRepository, never()).delete(any(Organization.class));
     }
 
     @Test
@@ -581,23 +580,6 @@ class OrganizationServiceTest {
                 .hasMessageContaining("Organization not found");
 
         verify(organizationRepository).findById(999L);
-        verify(organizationRepository, never()).save(any());
-    }
-
-    @Test
-    @DisplayName("delete - Should throw when organization already archived")
-    void delete_WithArchivedOrganization_ShouldThrowOrganizationAlreadyArchivedException() {
-        // Arrange
-        Organization organization = OrganizationTestData.archived();
-        OrganizationTestUtils.setId(organization, 2L);
-        when(organizationRepository.findById(2L)).thenReturn(java.util.Optional.of(organization));
-
-        // Act & Assert
-        assertThatThrownBy(() -> organizationService.delete(2L))
-                .isInstanceOf(OrganizationAlreadyArchivedException.class)
-                .hasMessageContaining("already archived");
-
-        verify(organizationRepository).findById(2L);
         verify(organizationRepository, never()).save(any());
     }
 
@@ -632,7 +614,7 @@ class OrganizationServiceTest {
                 .hasMessageContaining("Invalid organizationId");
 
         verify(organizationRepository, never()).findById(any());
-        verify(organizationRepository, never()).save(any());
+        verify(organizationRepository, never()).delete(any(Organization.class));
     }
 
     @Test
@@ -647,7 +629,7 @@ class OrganizationServiceTest {
                 .hasMessageContaining("Organization not found");
 
         verify(organizationRepository).findById(999L);
-        verify(organizationRepository, never()).save(any());
+        verify(organizationRepository, never()).delete(any(Organization.class));
     }
 
     @Test
@@ -681,7 +663,7 @@ class OrganizationServiceTest {
                 .hasMessageContaining("already active");
 
         verify(organizationRepository).findById(2L);
-        verify(organizationRepository, never()).save(any());
+        verify(organizationRepository, never()).delete(any(Organization.class));
     }
 
     @Test
@@ -714,7 +696,7 @@ class OrganizationServiceTest {
                 .hasMessageContaining("Invalid organizationId");
 
         verify(organizationRepository, never()).findById(any());
-        verify(organizationRepository, never()).save(any());
+        verify(organizationRepository, never()).delete(any(Organization.class));
     }
 
     @Test
@@ -764,6 +746,238 @@ class OrganizationServiceTest {
                 .hasMessageContaining("already suspended");
 
         verify(organizationRepository).findById(2L);
+        verify(organizationRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("archive - Should archive organization when valid")
+    void archive_WithExistingId_ShouldArchive() {
+        // Arrange
+        Organization organization = OrganizationTestData.valid();
+        OrganizationTestUtils.setId(organization, 2L);
+        when(organizationRepository.findById(2L)).thenReturn(java.util.Optional.of(organization));
+        when(organizationRepository.save(any(Organization.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // Act
+        Organization result = organizationService.archive(2L);
+
+        // Assert
+        assertThat(result.getStatus()).isEqualTo(com.cashclarity.domain.organization.OrganizationStatus.ARCHIVED);
+        assertThat(result.isDeleted()).isTrue();
+        verify(organizationRepository).findById(2L);
+        verify(organizationRepository).save(organization);
+    }
+
+    @Test
+    @DisplayName("archive - Should throw when id is null")
+    void archive_WithNullId_ShouldThrowInvalidOrganizationIdException() {
+        // Arrange
+        Long id = null;
+
+        // Act & Assert
+        assertThatThrownBy(() -> organizationService.archive(id))
+                .isInstanceOf(InvalidOrganizationIdException.class)
+                .hasMessageContaining("Invalid organizationId");
+
+        verify(organizationRepository, never()).findById(any());
+        verify(organizationRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("archive - Should throw when organization not found")
+    void archive_WithMissingId_ShouldThrowOrganizationNotFoundException() {
+        // Arrange
+        when(organizationRepository.findById(999L)).thenReturn(java.util.Optional.empty());
+
+        // Act & Assert
+        assertThatThrownBy(() -> organizationService.archive(999L))
+                .isInstanceOf(OrganizationNotFoundException.class)
+                .hasMessageContaining("Organization not found");
+
+        verify(organizationRepository).findById(999L);
+        verify(organizationRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("archive - Should throw when organization already archived")
+    void archive_WithArchivedOrganization_ShouldThrowOrganizationAlreadyArchivedException() {
+        // Arrange
+        Organization organization = OrganizationTestData.archived();
+        OrganizationTestUtils.setId(organization, 2L);
+        when(organizationRepository.findById(2L)).thenReturn(java.util.Optional.of(organization));
+
+        // Act & Assert
+        assertThatThrownBy(() -> organizationService.archive(2L))
+                .isInstanceOf(OrganizationAlreadyArchivedException.class)
+                .hasMessageContaining("already archived");
+
+        verify(organizationRepository).findById(2L);
+        verify(organizationRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("trial - Should set status to TRIAL when valid")
+    void trial_WithExistingId_ShouldSetTrial() {
+        // Arrange
+        Organization organization = OrganizationTestData.valid();
+        OrganizationTestUtils.setId(organization, 2L);
+        when(organizationRepository.findById(2L)).thenReturn(java.util.Optional.of(organization));
+        when(organizationRepository.save(any(Organization.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // Act
+        Organization result = organizationService.trial(2L);
+
+        // Assert
+        assertThat(result.getStatus()).isEqualTo(com.cashclarity.domain.organization.OrganizationStatus.TRIAL);
+        verify(organizationRepository).findById(2L);
+        verify(organizationRepository).save(organization);
+    }
+
+    @Test
+    @DisplayName("trial - Should throw when id is null")
+    void trial_WithNullId_ShouldThrowInvalidOrganizationIdException() {
+        // Arrange
+        Long id = null;
+
+        // Act & Assert
+        assertThatThrownBy(() -> organizationService.trial(id))
+                .isInstanceOf(InvalidOrganizationIdException.class)
+                .hasMessageContaining("Invalid organizationId");
+
+        verify(organizationRepository, never()).findById(any());
+        verify(organizationRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("trial - Should throw when organization not found")
+    void trial_WithMissingId_ShouldThrowOrganizationNotFoundException() {
+        // Arrange
+        when(organizationRepository.findById(999L)).thenReturn(java.util.Optional.empty());
+
+        // Act & Assert
+        assertThatThrownBy(() -> organizationService.trial(999L))
+                .isInstanceOf(OrganizationNotFoundException.class)
+                .hasMessageContaining("Organization not found");
+
+        verify(organizationRepository).findById(999L);
+        verify(organizationRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("trial - Should throw when organization already archived")
+    void trial_WithArchivedOrganization_ShouldThrowOrganizationAlreadyArchivedException() {
+        // Arrange
+        Organization organization = OrganizationTestData.archived();
+        OrganizationTestUtils.setId(organization, 2L);
+        when(organizationRepository.findById(2L)).thenReturn(java.util.Optional.of(organization));
+
+        // Act & Assert
+        assertThatThrownBy(() -> organizationService.trial(2L))
+                .isInstanceOf(OrganizationAlreadyArchivedException.class)
+                .hasMessageContaining("already archived");
+
+        verify(organizationRepository).findById(2L);
+        verify(organizationRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("trial - Should throw when organization already in trial")
+    void trial_WithAlreadyInTrial_ShouldThrowOrganizationAlreadyInTrialException() {
+        // Arrange
+        Organization organization = OrganizationTestData.valid();
+        organization.setStatus(com.cashclarity.domain.organization.OrganizationStatus.TRIAL);
+        OrganizationTestUtils.setId(organization, 2L);
+        when(organizationRepository.findById(2L)).thenReturn(java.util.Optional.of(organization));
+
+        // Act & Assert
+        assertThatThrownBy(() -> organizationService.trial(2L))
+                .isInstanceOf(OrganizationAlreadyInTrialException.class)
+                .hasMessageContaining("already in trial");
+
+        verify(organizationRepository).findById(2L);
+        verify(organizationRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("expired - Should set status to EXPIRED when valid")
+    void expired_WithExistingId_ShouldSetExpired() {
+        // Arrange
+        Organization organization = OrganizationTestData.valid();
+        OrganizationTestUtils.setId(organization, 3L);
+        when(organizationRepository.findById(3L)).thenReturn(java.util.Optional.of(organization));
+        when(organizationRepository.save(any(Organization.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // Act
+        Organization result = organizationService.expired(3L);
+
+        // Assert
+        assertThat(result.getStatus()).isEqualTo(com.cashclarity.domain.organization.OrganizationStatus.EXPIRED);
+        verify(organizationRepository).findById(3L);
+        verify(organizationRepository).save(organization);
+    }
+
+    @Test
+    @DisplayName("expired - Should throw when id is null")
+    void expired_WithNullId_ShouldThrowInvalidOrganizationIdException() {
+        // Arrange
+        Long id = null;
+
+        // Act & Assert
+        assertThatThrownBy(() -> organizationService.expired(id))
+                .isInstanceOf(InvalidOrganizationIdException.class)
+                .hasMessageContaining("Invalid organizationId");
+
+        verify(organizationRepository, never()).findById(any());
+        verify(organizationRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("expired - Should throw when organization not found")
+    void expired_WithMissingId_ShouldThrowOrganizationNotFoundException() {
+        // Arrange
+        when(organizationRepository.findById(999L)).thenReturn(java.util.Optional.empty());
+
+        // Act & Assert
+        assertThatThrownBy(() -> organizationService.expired(999L))
+                .isInstanceOf(OrganizationNotFoundException.class)
+                .hasMessageContaining("Organization not found");
+
+        verify(organizationRepository).findById(999L);
+        verify(organizationRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("expired - Should throw when organization already archived")
+    void expired_WithArchivedOrganization_ShouldThrowOrganizationAlreadyArchivedException() {
+        // Arrange
+        Organization organization = OrganizationTestData.archived();
+        OrganizationTestUtils.setId(organization, 3L);
+        when(organizationRepository.findById(3L)).thenReturn(java.util.Optional.of(organization));
+
+        // Act & Assert
+        assertThatThrownBy(() -> organizationService.expired(3L))
+                .isInstanceOf(OrganizationAlreadyArchivedException.class)
+                .hasMessageContaining("already archived");
+
+        verify(organizationRepository).findById(3L);
+        verify(organizationRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("expired - Should throw when organization already expired")
+    void expired_WithAlreadyExpired_ShouldThrowOrganizationAlreadyExpiredException() {
+        // Arrange
+        Organization organization = OrganizationTestData.valid();
+        organization.setStatus(com.cashclarity.domain.organization.OrganizationStatus.EXPIRED);
+        OrganizationTestUtils.setId(organization, 3L);
+        when(organizationRepository.findById(3L)).thenReturn(java.util.Optional.of(organization));
+
+        // Act & Assert
+        assertThatThrownBy(() -> organizationService.expired(3L))
+                .isInstanceOf(OrganizationAlreadyExpiredException.class)
+                .hasMessageContaining("already expired");
+
+        verify(organizationRepository).findById(3L);
         verify(organizationRepository, never()).save(any());
     }
 

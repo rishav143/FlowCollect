@@ -10,6 +10,8 @@ import com.cashclarity.exception.InvalidOrganizationIdException;
 import com.cashclarity.exception.InvalidTimezoneException;
 import com.cashclarity.exception.OrganizationAlreadyActiveException;
 import com.cashclarity.exception.OrganizationAlreadyArchivedException;
+import com.cashclarity.exception.OrganizationAlreadyExpiredException;
+import com.cashclarity.exception.OrganizationAlreadyInTrialException;
 import com.cashclarity.exception.OrganizationAlreadySuspendedException;
 import com.cashclarity.exception.OrganizationAlreadyExistsException;
 import com.cashclarity.exception.OrganizationNotFoundException;
@@ -93,6 +95,22 @@ public class OrganizationService {
     }
 
     /**
+     * Fetches an organization's status by id.
+     *
+     * @param organizationId organization identifier
+     * @return current organization status
+     * @throws InvalidOrganizationIdException if id is null or non-positive
+     * @throws OrganizationNotFoundException if no organization exists for the given id
+     */
+    @Transactional(readOnly = true)
+    public OrganizationStatus getStatus(Long organizationId) {
+        validateOrganizationId(organizationId);
+        Organization organization = organizationRepository.findById(organizationId)
+                .orElseThrow(() -> new OrganizationNotFoundException(organizationId));
+        return organization.getStatus();
+    }
+
+    /**
      * Lists organizations using filters and pagination.
      *
      * @param status status filter (optional)
@@ -144,25 +162,18 @@ public class OrganizationService {
     }
 
     /**
-     * Archives (soft-deletes) an organization by id.
+     * Hard-deletes an organization by id.
      *
      * @param organizationId organization identifier
      * @throws InvalidOrganizationIdException if id is null or non-positive
      * @throws OrganizationNotFoundException if no organization exists for the given id
-     * @throws OrganizationAlreadyArchivedException if the organization is already archived
      */
     @Transactional
     public void delete(Long organizationId) {
         validateOrganizationId(organizationId);
         Organization organization = organizationRepository.findById(organizationId)
                 .orElseThrow(() -> new OrganizationNotFoundException(organizationId));
-
-        if (organization.isDeleted()) {
-            throw new OrganizationAlreadyArchivedException(organizationId);
-        }
-
-        organization.archive();
-        organizationRepository.save(organization);
+        organizationRepository.delete(organization);
     }
 
     /**
@@ -218,6 +229,85 @@ public class OrganizationService {
         }
 
         organization.suspend();
+        return organizationRepository.save(organization);
+    }
+
+    /**
+     * Archives (soft-deletes) an organization by id.
+     *
+     * @param organizationId organization identifier
+     * @return the updated organization
+     * @throws InvalidOrganizationIdException if id is null or non-positive
+     * @throws OrganizationNotFoundException if no organization exists for the given id
+     * @throws OrganizationAlreadyArchivedException if the organization is already archived
+     */
+    @Transactional
+    public Organization archive(Long organizationId) {
+        validateOrganizationId(organizationId);
+        Organization organization = organizationRepository.findById(organizationId)
+                .orElseThrow(() -> new OrganizationNotFoundException(organizationId));
+
+        if (organization.isDeleted()) {
+            throw new OrganizationAlreadyArchivedException(organizationId);
+        }
+
+        organization.archive();
+        return organizationRepository.save(organization);
+    }
+
+    /**
+     * Puts an organization into trial status by id.
+     *
+     * @param organizationId organization identifier
+     * @return the updated organization
+     * @throws InvalidOrganizationIdException if id is null or non-positive
+     * @throws OrganizationNotFoundException if no organization exists for the given id
+     * @throws OrganizationAlreadyArchivedException if the organization is archived
+     * @throws OrganizationAlreadyInTrialException if the organization is already in trial
+     */
+    @Transactional
+    public Organization trial(Long organizationId) {
+        validateOrganizationId(organizationId);
+        Organization organization = organizationRepository.findById(organizationId)
+                .orElseThrow(() -> new OrganizationNotFoundException(organizationId));
+
+        if (organization.isDeleted()) {
+            throw new OrganizationAlreadyArchivedException(organizationId);
+        }
+
+        if (organization.getStatus() == OrganizationStatus.TRIAL) {
+            throw new OrganizationAlreadyInTrialException(organizationId);
+        }
+
+        organization.setStatus(OrganizationStatus.TRIAL);
+        return organizationRepository.save(organization);
+    }
+
+    /**
+     * Marks an organization as expired by id.
+     *
+     * @param organizationId organization identifier
+     * @return the updated organization
+     * @throws InvalidOrganizationIdException if id is null or non-positive
+     * @throws OrganizationNotFoundException if no organization exists for the given id
+     * @throws OrganizationAlreadyArchivedException if the organization is archived
+     * @throws OrganizationAlreadyExpiredException if the organization is already expired
+     */
+    @Transactional
+    public Organization expired(Long organizationId) {
+        validateOrganizationId(organizationId);
+        Organization organization = organizationRepository.findById(organizationId)
+                .orElseThrow(() -> new OrganizationNotFoundException(organizationId));
+
+        if (organization.isDeleted()) {
+            throw new OrganizationAlreadyArchivedException(organizationId);
+        }
+
+        if (organization.getStatus() == OrganizationStatus.EXPIRED) {
+            throw new OrganizationAlreadyExpiredException(organizationId);
+        }
+
+        organization.setStatus(OrganizationStatus.EXPIRED);
         return organizationRepository.save(organization);
     }
 

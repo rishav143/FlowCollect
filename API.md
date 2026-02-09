@@ -176,17 +176,16 @@ curl -i -u admin:admin123 \
 
 ---
 
-## Delete (Archive) Organization
+## Delete Organization (Hard Delete)
 `DELETE /api/v1/organizations/{organizationId}`
 
 ### Behavior
-Soft delete: sets status to `ARCHIVED` and `deletedAt`.
+Permanently removes the organization from the database.
 
 ### Responses
 - `204 No Content`
 - `400` invalid id
 - `404` not found
-- `409` already archived
 
 ### cURL
 ```bash

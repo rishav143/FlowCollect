@@ -3,8 +3,10 @@ package com.cashclarity.api.v1.organization;
 import com.cashclarity.api.v1.organization.dto.OrganizationCreateRequest;
 import com.cashclarity.api.v1.organization.dto.OrganizationUpdateRequest;
 import com.cashclarity.api.v1.organization.dto.OrganizationResponse;
+import com.cashclarity.api.v1.organization.dto.OrganizationStatusResponse;
 import com.cashclarity.application.organization.OrganizationService;
 import com.cashclarity.domain.organization.Organization;
+import com.cashclarity.domain.organization.OrganizationStatus;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -80,6 +82,17 @@ public class OrganizationController {
     }
 
     /**
+     * Fetches the current status of an organization by id.
+     * Service layer validates the id and throws custom exceptions that are handled by
+     * {@link com.cashclarity.exception.GlobalExceptionHandler}.
+     */
+    @GetMapping("/{organizationId}/status")
+    public ResponseEntity<OrganizationStatusResponse> getStatus(@PathVariable Long organizationId) {
+        OrganizationStatus status = organizationService.getStatus(organizationId);
+        return ResponseEntity.ok(new OrganizationStatusResponse(organizationId, status));
+    }
+
+    /**
      * Updates mutable organization fields (name, email, timezone, currency, contact info, logo).
      * Request body is validated by Bean Validation; service layer validates business rules and
      * throws custom exceptions handled by {@link com.cashclarity.exception.GlobalExceptionHandler}.
@@ -94,7 +107,7 @@ public class OrganizationController {
     }
 
     /**
-     * Archives (soft-deletes) an organization by id.
+     * Hard-deletes an organization by id.
      * Service layer validates the id and throws custom exceptions that are handled by
      * {@link com.cashclarity.exception.GlobalExceptionHandler}.
      */
@@ -124,6 +137,39 @@ public class OrganizationController {
     public ResponseEntity<OrganizationResponse> suspend(@PathVariable Long organizationId) {
         Organization suspended = organizationService.suspend(organizationId);
         return ResponseEntity.ok(OrganizationMapper.toResponse(suspended));
+    }
+
+    /**
+     * Archives an organization by id.
+     * Service layer validates the id and throws custom exceptions that are handled by
+     * {@link com.cashclarity.exception.GlobalExceptionHandler}.
+     */
+    @PostMapping("/{organizationId}/archive")
+    public ResponseEntity<OrganizationResponse> archive(@PathVariable Long organizationId) {
+        Organization archived = organizationService.archive(organizationId);
+        return ResponseEntity.ok(OrganizationMapper.toResponse(archived));
+    }
+
+    /**
+     * Moves an organization to trial status by id.
+     * Service layer validates the id and throws custom exceptions that are handled by
+     * {@link com.cashclarity.exception.GlobalExceptionHandler}.
+     */
+    @PostMapping("/{organizationId}/trial")
+    public ResponseEntity<OrganizationResponse> trial(@PathVariable Long organizationId) {
+        Organization trial = organizationService.trial(organizationId);
+        return ResponseEntity.ok(OrganizationMapper.toResponse(trial));
+    }
+
+    /**
+     * Marks an organization as expired by id.
+     * Service layer validates the id and throws custom exceptions that are handled by
+     * {@link com.cashclarity.exception.GlobalExceptionHandler}.
+     */
+    @PostMapping("/{organizationId}/expired")
+    public ResponseEntity<OrganizationResponse> expired(@PathVariable Long organizationId) {
+        Organization expired = organizationService.expired(organizationId);
+        return ResponseEntity.ok(OrganizationMapper.toResponse(expired));
     }
 }
 

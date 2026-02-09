@@ -78,6 +78,26 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handles organization already in trial (409 Conflict).
+     */
+    @ExceptionHandler(OrganizationAlreadyInTrialException.class)
+    public ResponseEntity<Map<String, String>> handleOrganizationAlreadyInTrial(OrganizationAlreadyInTrialException ex) {
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(Map.of("message", ex.getMessage()));
+    }
+
+    /**
+     * Handles organization already expired (409 Conflict).
+     */
+    @ExceptionHandler(OrganizationAlreadyExpiredException.class)
+    public ResponseEntity<Map<String, String>> handleOrganizationAlreadyExpired(OrganizationAlreadyExpiredException ex) {
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(Map.of("message", ex.getMessage()));
+    }
+
+    /**
      * Handles invalid input (400 Bad Request).
      */
     @ExceptionHandler({

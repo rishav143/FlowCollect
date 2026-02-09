@@ -103,6 +103,52 @@ class OrganizationJpaRepositoryTest {
     }
 
     @Test
+    @DisplayName("save - Should persist archived status and deletedAt")
+    void save_WithArchivedOrganization_ShouldPersistArchiveState() {
+        // Arrange
+        Organization organization = OrganizationTestData.valid();
+        organization.archive();
+        organizationRepository.saveAndFlush(organization);
+
+        // Act
+        Organization found = organizationRepository.findById(organization.getId()).orElseThrow();
+
+        // Assert
+        assertThat(found.getStatus()).isEqualTo(OrganizationStatus.ARCHIVED);
+        assertThat(found.getDeletedAt()).isNotNull();
+    }
+
+    @Test
+    @DisplayName("save - Should persist trial status")
+    void save_WithTrialOrganization_ShouldPersistTrialStatus() {
+        // Arrange
+        Organization organization = OrganizationTestData.valid();
+        organization.setStatus(OrganizationStatus.TRIAL);
+        organizationRepository.saveAndFlush(organization);
+
+        // Act
+        Organization found = organizationRepository.findById(organization.getId()).orElseThrow();
+
+        // Assert
+        assertThat(found.getStatus()).isEqualTo(OrganizationStatus.TRIAL);
+    }
+
+    @Test
+    @DisplayName("save - Should persist expired status")
+    void save_WithExpiredOrganization_ShouldPersistExpiredStatus() {
+        // Arrange
+        Organization organization = OrganizationTestData.valid();
+        organization.setStatus(OrganizationStatus.EXPIRED);
+        organizationRepository.saveAndFlush(organization);
+
+        // Act
+        Organization found = organizationRepository.findById(organization.getId()).orElseThrow();
+
+        // Assert
+        assertThat(found.getStatus()).isEqualTo(OrganizationStatus.EXPIRED);
+    }
+
+    @Test
     @DisplayName("findAll - Should filter by status")
     void findAll_WithStatusFilter_ShouldReturnMatching() {
         // Arrange
