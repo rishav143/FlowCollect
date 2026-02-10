@@ -199,3 +199,232 @@ curl -i -u admin:admin123 \
 - All timestamps are ISO-8601 UTC.
 - `currency` expects ISO-4217 code (e.g., `USD`, `EUR`).
 - `timezone` expects IANA Zone ID (e.g., `America/New_York`).
+
+---
+
+# Invoice API Modeling Structure
+
+This section proposes a production-ready REST modeling structure for invoice management.
+
+## Invoice Resource Shape
+
+```json
+{
+  "id": 12045,
+  "organizationId": 1,
+  "invoiceNumber": "INV-2026-000345",
+  "status": "SENT",
+  "issueDate": "2026-02-01",
+  "dueDate": "2026-02-15",
+  "currency": "USD",
+  "paymentTermsDays": 14,
+  "customer": {
+    "id": 230,
+    "name": "Acme Corporation",
+    "email": "ap@acme.com",
+    "billingAddress": "123 Main Street, NY"
+  },
+  "lineItems": [
+    {
+      "id": 1,
+      "description": "Website maintenance",
+      "quantity": 10,
+      "unitPrice": 150.0,
+      "taxRate": 0.1,
+      "discountRate": 0.0,
+      "lineSubtotal": 1500.0,
+      "lineTaxAmount": 150.0,
+      "lineTotal": 1650.0
+    }
+  ],
+  "summary": {
+    "subtotal": 1500.0,
+    "taxAmount": 150.0,
+    "discountAmount": 0.0,
+    "totalAmount": 1650.0,
+    "amountPaid": 500.0,
+    "amountDue": 1150.0
+  },
+  "notes": "Net 14 payment terms",
+  "metadata": {
+    "purchaseOrderNumber": "PO-9852",
+    "externalReference": "ERP-22291"
+  },
+  "sentAt": "2026-02-01T10:30:00Z",
+  "lastReminderAt": "2026-02-10T08:00:00Z",
+  "createdAt": "2026-02-01T09:15:00Z",
+  "updatedAt": "2026-02-10T08:00:00Z"
+}
+```
+
+## Invoice Lifecycle States
+
+- `DRAFT`: created but not shared with customer.
+- `SENT`: issued to customer; awaiting payment.
+- `PARTIALLY_PAID`: one or more payments received.
+- `PAID`: fully settled.
+- `OVERDUE`: due date passed and still unpaid.
+- `VOID`: canceled invoice, no longer payable.
+
+> Recommended rule: status is system-driven for `OVERDUE`, `PARTIALLY_PAID`, and `PAID` based on due date and payment ledger.
+
+## Endpoints
+
+### Create Invoice
+`POST /api/v1/invoices`
+
+Request body (minimal):
+```json
+{
+  "organizationId": 1,
+  "customerId": 230,
+  "issueDate": "2026-02-01",
+  "dueDate": "2026-02-15",
+  "currency": "USD",
+  "lineItems": [
+    {
+      "description": "Website maintenance",
+      "quantity": 10,
+      "unitPrice": 150.0,
+      "taxRate": 0.1
+    }
+  ],
+  "notes": "Net 14 payment terms"
+}
+```
+
+Response:
+- `201 Created` with invoice payload.
+
+### List Invoices
+`GET /api/v1/invoices`
+
+Query params:
+- `organizationId` (required for tenant isolation)
+- `customerId`
+- `status`
+- `invoiceNumber`
+- `issueDateFrom`, `issueDateTo`
+- `dueDateFrom`, `dueDateTo`
+- `minAmount`, `maxAmount`
+- `page`, `size`, `sort`
+
+### Get Invoice by ID
+`GET /api/v1/invoices/{invoiceId}`
+
+### Update Invoice
+`PATCH /api/v1/invoices/{invoiceId}`
+
+Allowed while in `DRAFT` (recommended constraint):
+- `dueDate`, `notes`, `lineItems`, `metadata`, `customerId`
+
+### Delete Invoice
+`DELETE /api/v1/invoices/{invoiceId}`
+
+Recommended behavior:
+- Hard delete only in `DRAFT`.
+- Otherwise return `409 Conflict` and suggest `VOID` action.
+
+### Send Invoice
+`POST /api/v1/invoices/{invoiceId}/send`
+
+Transitions:
+- `DRAFT -> SENT`
+
+### Void Invoice
+`POST /api/v1/invoices/{invoiceId}/void`
+
+Transitions:
+- `DRAFT|SENT|OVERDUE -> VOID`
+- reject if payments exist (`409 Conflict`) unless refund workflow is completed.
+
+### Record Payment
+`POST /api/v1/invoices/{invoiceId}/payments`
+
+Request body:
+```json
+{
+  "amount": 500.0,
+  "paymentDate": "2026-02-05",
+  "paymentMethod": "BANK_TRANSFER",
+  "reference": "TRX-66372",
+  "notes": "Partial payment"
+}
+```
+
+Status updates:
+- if `amountPaid == totalAmount` => `PAID`
+- if `0 < amountPaid < totalAmount` => `PARTIALLY_PAID`
+
+### List Payments for Invoice
+`GET /api/v1/invoices/{invoiceId}/payments`
+
+### Send Payment Reminder
+`POST /api/v1/invoices/{invoiceId}/reminders`
+
+Suggested body:
+```json
+{
+  "channel": "EMAIL",
+  "template": "OVERDUE_REMINDER_1"
+}
+```
+
+## Supporting Resources
+
+- `GET /api/v1/invoices/{invoiceId}/pdf` (download/render PDF)
+- `GET /api/v1/invoices/{invoiceId}/events` (audit timeline)
+- `POST /api/v1/invoices/{invoiceId}/attachments`
+
+## Validation Rules
+
+- `organizationId`, `customerId`, `issueDate`, `dueDate`, `currency`, and at least one `lineItem` are required.
+- `dueDate >= issueDate`.
+- `lineItems[].quantity > 0`.
+- `lineItems[].unitPrice >= 0`.
+- `0 <= taxRate <= 1` and `0 <= discountRate <= 1`.
+- `currency` must match organization currency policy (single-currency or multi-currency).
+- Cannot edit financial fields when invoice status is `PAID` or `VOID`.
+
+## Error Model (Suggested)
+
+```json
+{
+  "message": "Validation failed.",
+  "code": "VALIDATION_ERROR",
+  "errors": {
+    "dueDate": "dueDate must be greater than or equal to issueDate"
+  },
+  "traceId": "e36d3fd1124e"
+}
+```
+
+## Example cURL Sequence
+
+Create invoice:
+```bash
+curl -i -u admin:admin123 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "organizationId":1,
+    "customerId":230,
+    "issueDate":"2026-02-01",
+    "dueDate":"2026-02-15",
+    "currency":"USD",
+    "lineItems":[{"description":"Website maintenance","quantity":10,"unitPrice":150.0,"taxRate":0.1}]
+  }' \
+  "http://localhost:8080/api/v1/invoices"
+```
+
+Record payment:
+```bash
+curl -i -u admin:admin123 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "amount":500.0,
+    "paymentDate":"2026-02-05",
+    "paymentMethod":"BANK_TRANSFER",
+    "reference":"TRX-66372"
+  }' \
+  "http://localhost:8080/api/v1/invoices/12045/payments"
+```
