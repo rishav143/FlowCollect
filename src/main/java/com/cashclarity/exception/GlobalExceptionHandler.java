@@ -60,6 +60,26 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handles user already active (409 Conflict).
+     */
+    @ExceptionHandler(UserAlreadyActiveException.class)
+    public ResponseEntity<Map<String, String>> handleUserAlreadyActive(UserAlreadyActiveException ex) {
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(Map.of("message", ex.getMessage()));
+    }
+
+    /**
+     * Handles user already inactive (409 Conflict).
+     */
+    @ExceptionHandler(UserAlreadyInactiveException.class)
+    public ResponseEntity<Map<String, String>> handleUserAlreadyInactive(UserAlreadyInactiveException ex) {
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(Map.of("message", ex.getMessage()));
+    }
+
+    /**
      * Handles organization already archived (409 Conflict).
      */
     @ExceptionHandler(OrganizationAlreadyArchivedException.class)

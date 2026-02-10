@@ -1,6 +1,7 @@
 package com.cashclarity.application.user;
 
 import com.cashclarity.api.v1.user.dto.UserCreateRequest;
+import com.cashclarity.api.v1.user.dto.UserUpdateRequest;
 import com.cashclarity.domain.organization.Organization;
 import com.cashclarity.domain.user.User;
 import com.cashclarity.domain.user.UserRole;
@@ -10,7 +11,9 @@ import com.cashclarity.exception.user.InvalidUserFieldException;
 import com.cashclarity.exception.user.InvalidUserIdException;
 import com.cashclarity.exception.organization.OrganizationAlreadyArchivedException;
 import com.cashclarity.exception.organization.OrganizationNotFoundException;
+import com.cashclarity.exception.user.UserAlreadyActiveException;
 import com.cashclarity.exception.user.UserAlreadyExistsException;
+import com.cashclarity.exception.user.UserAlreadyInactiveException;
 import com.cashclarity.exception.user.UserNotFoundException;
 import com.cashclarity.infrastructure.persistence.organization.OrganizationJpaRepository;
 import com.cashclarity.infrastructure.persistence.user.UserJpaRepository;
@@ -105,6 +108,93 @@ public class UserService {
         getOrganizationOrThrow(organizationId);
         return userRepository.findByIdAndOrganizationId(userId, organizationId)
                 .orElseThrow(() -> new UserNotFoundException(userId, organizationId));
+    }
+
+    @Transactional
+    public User update(Long organizationId, Long userId, UserUpdateRequest request) {
+        validateOrganizationId(organizationId);
+        validateUserId(userId);
+        getOrganizationOrThrow(organizationId);
+        User user = userRepository.findByIdAndOrganizationId(userId, organizationId)
+                .orElseThrow(() -> new UserNotFoundException(userId, organizationId));
+
+        if (request == null) {
+            throw new InvalidUserFieldException("request", "must not be null");
+        }
+
+        boolean changed = false;
+
+        if (request.getName() != null) {
+            String name = request.getName().trim();
+            if (name.isBlank()) {
+                throw new InvalidUserFieldException("name", "must not be blank");
+            }
+            if (!name.equals(user.getName())) {
+                user.setName(name);
+                changed = true;
+            }
+        }
+
+        if (request.getEmail() != null) {
+            String email = request.getEmail().trim().toLowerCase();
+            if (email.isBlank()) {
+                throw new InvalidUserFieldException("email", "must not be blank");
+            }
+            if (!email.equals(user.getEmail())
+                    && userRepository.existsByEmailAndOrganizationIdAndIdNot(email, organizationId, userId)) {
+                throw new UserAlreadyExistsException(email, organizationId);
+            }
+            if (!email.equals(user.getEmail())) {
+                user.setEmail(email);
+                changed = true;
+            }
+        }
+
+        if (request.getRole() != null) {
+            UserRole role = parseRole(request.getRole());
+            if (role != user.getRole()) {
+                user.setRole(role);
+                changed = true;
+            }
+        }
+
+        if (!changed) {
+            return user;
+        }
+
+        return userRepository.save(user);
+    }
+
+    @Transactional
+    public User activate(Long organizationId, Long userId) {
+        validateOrganizationId(organizationId);
+        validateUserId(userId);
+        getOrganizationOrThrow(organizationId);
+        User user = userRepository.findByIdAndOrganizationId(userId, organizationId)
+                .orElseThrow(() -> new UserNotFoundException(userId, organizationId));
+
+        if (user.getStatus() == UserStatus.ACTIVE) {
+            throw new UserAlreadyActiveException(userId, organizationId);
+        }
+
+        user.activate();
+        return userRepository.save(user);
+    }
+
+    @Transactional
+    public User deactivate(Long organizationId, Long userId) {
+        validateOrganizationId(organizationId);
+        validateUserId(userId);
+        getOrganizationOrThrow(organizationId);
+        User user = userRepository.findByIdAndOrganizationId(userId, organizationId)
+                .orElseThrow(() -> new UserNotFoundException(userId, organizationId));
+
+        if (user.getStatus() == UserStatus.INACTIVE) {
+            throw new UserAlreadyInactiveException(userId, organizationId);
+        }
+
+        user.deactivate();
+        return userRepository.save(user);
     }
 
     private Organization getOrganizationOrThrow(Long organizationId) {

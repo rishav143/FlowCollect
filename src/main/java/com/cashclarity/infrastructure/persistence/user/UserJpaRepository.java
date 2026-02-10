@@ -15,4 +15,6 @@ public interface UserJpaRepository extends JpaRepository<User, Long>, JpaSpecifi
     Optional<User> findByEmailAndOrganizationId(String email, Long organizationId);
 
     boolean existsByEmailAndOrganizationId(String email, Long organizationId);
+
+    boolean existsByEmailAndOrganizationIdAndIdNot(String email, Long organizationId, Long id);
 }

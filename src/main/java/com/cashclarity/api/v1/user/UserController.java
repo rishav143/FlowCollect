@@ -2,6 +2,7 @@ package com.cashclarity.api.v1.user;
 
 import com.cashclarity.api.v1.user.dto.UserCreateRequest;
 import com.cashclarity.api.v1.user.dto.UserResponse;
+import com.cashclarity.api.v1.user.dto.UserUpdateRequest;
 import com.cashclarity.application.user.UserService;
 import com.cashclarity.domain.user.User;
 import jakarta.validation.Valid;
@@ -9,6 +10,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -63,5 +65,33 @@ public class UserController {
     ) {
         User user = userService.getById(organizationId, userId);
         return ResponseEntity.ok(UserMapper.toResponse(user));
+    }
+
+    @PatchMapping("/{userId}")
+    public ResponseEntity<UserResponse> update(
+            @PathVariable Long organizationId,
+            @PathVariable Long userId,
+            @Valid @RequestBody UserUpdateRequest request
+    ) {
+        User updated = userService.update(organizationId, userId, request);
+        return ResponseEntity.ok(UserMapper.toResponse(updated));
+    }
+
+    @PostMapping("/{userId}/activate")
+    public ResponseEntity<UserResponse> activate(
+            @PathVariable Long organizationId,
+            @PathVariable Long userId
+    ) {
+        User activated = userService.activate(organizationId, userId);
+        return ResponseEntity.ok(UserMapper.toResponse(activated));
+    }
+
+    @PostMapping("/{userId}/deactivate")
+    public ResponseEntity<UserResponse> deactivate(
+            @PathVariable Long organizationId,
+            @PathVariable Long userId
+    ) {
+        User deactivated = userService.deactivate(organizationId, userId);
+        return ResponseEntity.ok(UserMapper.toResponse(deactivated));
     }
 }
