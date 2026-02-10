@@ -1,6 +1,7 @@
 package com.cashclarity.api.v1.user;
 
 import com.cashclarity.api.v1.user.dto.UserCreateRequest;
+import com.cashclarity.api.v1.user.dto.UserPasswordChangeRequest;
 import com.cashclarity.api.v1.user.dto.UserResponse;
 import com.cashclarity.api.v1.user.dto.UserUpdateRequest;
 import com.cashclarity.application.user.UserService;
@@ -9,6 +10,7 @@ import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -93,5 +95,24 @@ public class UserController {
     ) {
         User deactivated = userService.deactivate(organizationId, userId);
         return ResponseEntity.ok(UserMapper.toResponse(deactivated));
+    }
+
+    @PostMapping("/{userId}/password")
+    public ResponseEntity<Void> changePassword(
+            @PathVariable Long organizationId,
+            @PathVariable Long userId,
+            @Valid @RequestBody UserPasswordChangeRequest request
+    ) {
+        userService.changePassword(organizationId, userId, request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/{userId}")
+    public ResponseEntity<Void> delete(
+            @PathVariable Long organizationId,
+            @PathVariable Long userId
+    ) {
+        userService.delete(organizationId, userId);
+        return ResponseEntity.noContent().build();
     }
 }

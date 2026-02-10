@@ -1,6 +1,7 @@
 package com.cashclarity.application.user;
 
 import com.cashclarity.api.v1.user.dto.UserCreateRequest;
+import com.cashclarity.api.v1.user.dto.UserPasswordChangeRequest;
 import com.cashclarity.api.v1.user.dto.UserUpdateRequest;
 import com.cashclarity.domain.organization.Organization;
 import com.cashclarity.domain.user.User;
@@ -197,6 +198,55 @@ public class UserService {
         return userRepository.save(user);
     }
 
+    @Transactional
+    public void changePassword(Long organizationId, Long userId, UserPasswordChangeRequest request) {
+        validateOrganizationId(organizationId);
+        validateUserId(userId);
+        getOrganizationOrThrow(organizationId);
+        User user = userRepository.findByIdAndOrganizationId(userId, organizationId)
+                .orElseThrow(() -> new UserNotFoundException(userId, organizationId));
+
+        if (request == null) {
+            throw new InvalidUserFieldException("request", "must not be null");
+        }
+
+        String newPassword = request.getNewPassword();
+        if (newPassword == null || newPassword.isBlank()) {
+            throw new InvalidUserFieldException("newPassword", "must not be blank");
+        }
+        if (newPassword.length() < 8 || newPassword.length() > 100) {
+            throw new InvalidUserFieldException("newPassword", "must be between 8 and 100 characters");
+        }
+
+        String oldPassword = request.getOldPassword();
+        if (oldPassword != null) {
+            if (oldPassword.isBlank()) {
+                throw new InvalidUserFieldException("oldPassword", "must not be blank when provided");
+            }
+            if (!verifyPassword(oldPassword, user.getPasswordHash())) {
+                throw new InvalidUserFieldException("oldPassword", "does not match current password");
+            }
+        }
+
+        String newPasswordHash = hashPassword(newPassword);
+        if (newPasswordHash.equals(user.getPasswordHash())) {
+            throw new InvalidUserFieldException("newPassword", "must be different from current password");
+        }
+
+        user.setPasswordHash(newPasswordHash);
+        userRepository.save(user);
+    }
+
+    @Transactional
+    public void delete(Long organizationId, Long userId) {
+        validateOrganizationId(organizationId);
+        validateUserId(userId);
+        getOrganizationOrThrow(organizationId);
+        User user = userRepository.findByIdAndOrganizationId(userId, organizationId)
+                .orElseThrow(() -> new UserNotFoundException(userId, organizationId));
+        userRepository.delete(user);
+    }
+
     private Organization getOrganizationOrThrow(Long organizationId) {
         Organization organization = organizationRepository.findById(organizationId)
                 .orElseThrow(() -> new OrganizationNotFoundException(organizationId));
@@ -279,5 +329,9 @@ public class UserService {
         } catch (Exception ex) {
             throw new InvalidUserFieldException("password", "unable to hash password");
         }
+    }
+
+    private boolean verifyPassword(String rawPassword, String expectedHash) {
+        return hashPassword(rawPassword).equals(expectedHash);
     }
 }
