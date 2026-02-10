@@ -1,6 +1,7 @@
 package com.cashclarity.application.organization;
 
 import com.cashclarity.api.v1.organization.dto.OrganizationCreateRequest;
+import com.cashclarity.api.v1.organization.dto.OrganizationSettingsRequest;
 import com.cashclarity.api.v1.organization.dto.OrganizationUpdateRequest;
 import com.cashclarity.domain.organization.Organization;
 import com.cashclarity.domain.organization.OrganizationStatus;
@@ -14,6 +15,7 @@ import com.cashclarity.exception.OrganizationAlreadyExpiredException;
 import com.cashclarity.exception.OrganizationAlreadyInTrialException;
 import com.cashclarity.exception.OrganizationAlreadySuspendedException;
 import com.cashclarity.exception.OrganizationAlreadyExistsException;
+import com.cashclarity.exception.OrganizationLogoNotFoundException;
 import com.cashclarity.exception.OrganizationNotFoundException;
 import com.cashclarity.infrastructure.persistence.organization.OrganizationJpaRepository;
 import org.springframework.data.domain.Page;
@@ -22,13 +24,20 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.ZoneId;
 import java.util.Currency;
+import java.util.Locale;
 import java.util.Set;
+import java.util.UUID;
 
 /**
  * Application service for organization use cases.
@@ -40,6 +49,7 @@ import java.util.Set;
 public class OrganizationService {
 
     private final OrganizationJpaRepository organizationRepository;
+    private static final String LOGO_UPLOAD_DIR = "uploads/organizations";
 
     public OrganizationService(OrganizationJpaRepository organizationRepository) {
         this.organizationRepository = organizationRepository;
@@ -108,6 +118,174 @@ public class OrganizationService {
         Organization organization = organizationRepository.findById(organizationId)
                 .orElseThrow(() -> new OrganizationNotFoundException(organizationId));
         return organization.getStatus();
+    }
+
+    /**
+     * Fetches organization settings (timezone, currency) by id.
+     *
+     * @param organizationId organization identifier
+     * @return organization with current settings
+     * @throws InvalidOrganizationIdException if id is null or non-positive
+     * @throws OrganizationNotFoundException if no organization exists for the given id
+     */
+    @Transactional(readOnly = true)
+    public Organization getSettings(Long organizationId) {
+        validateOrganizationId(organizationId);
+        return organizationRepository.findById(organizationId)
+                .orElseThrow(() -> new OrganizationNotFoundException(organizationId));
+    }
+
+    /**
+     * Updates organization settings (timezone, currency).
+     *
+     * @param organizationId organization identifier
+     * @param request settings payload
+     * @return updated organization
+     * @throws InvalidOrganizationIdException if id is null or non-positive
+     * @throws OrganizationNotFoundException if no organization exists for the given id
+     * @throws OrganizationAlreadyArchivedException if the organization is archived
+     * @throws InvalidOrganizationFieldException if no settings are provided
+     * @throws InvalidTimezoneException if timezone is invalid
+     * @throws InvalidCurrencyException if currency is invalid
+     */
+    @Transactional
+    public Organization updateSettings(Long organizationId, OrganizationSettingsRequest request) {
+        validateOrganizationId(organizationId);
+        Organization organization = organizationRepository.findById(organizationId)
+                .orElseThrow(() -> new OrganizationNotFoundException(organizationId));
+
+        if (organization.isDeleted()) {
+            throw new OrganizationAlreadyArchivedException(organizationId);
+        }
+
+        if (request == null) {
+            throw new InvalidOrganizationFieldException("settings", "timezone or currency must be provided");
+        }
+
+        boolean hasTimezone = request.getTimezone() != null;
+        boolean hasCurrency = request.getCurrency() != null;
+        if (!hasTimezone && !hasCurrency) {
+            throw new InvalidOrganizationFieldException("settings", "timezone or currency must be provided");
+        }
+
+        boolean changed = false;
+        if (hasTimezone) {
+            ZoneId timezone = parseTimezone(request.getTimezone());
+            if (!timezone.equals(organization.getTimezone())) {
+                organization.setTimezone(timezone);
+                changed = true;
+            }
+        }
+
+        if (hasCurrency) {
+            Currency currency = parseCurrency(request.getCurrency());
+            if (!currency.equals(organization.getCurrency())) {
+                organization.setCurrency(currency);
+                changed = true;
+            }
+        }
+
+        if (!changed) {
+            return organization;
+        }
+
+        return organizationRepository.save(organization);
+    }
+
+    /**
+     * Uploads a logo file and updates the organization's logoUrl.
+     *
+     * @param organizationId organization identifier
+     * @param file logo file (multipart)
+     * @return updated organization
+     * @throws InvalidOrganizationIdException if id is null or non-positive
+     * @throws OrganizationNotFoundException if no organization exists for the given id
+     * @throws OrganizationAlreadyArchivedException if the organization is archived
+     * @throws InvalidOrganizationFieldException if the logo file is invalid
+     */
+    @Transactional
+    public Organization uploadLogo(Long organizationId, MultipartFile file) {
+        validateOrganizationId(organizationId);
+        Organization organization = organizationRepository.findById(organizationId)
+                .orElseThrow(() -> new OrganizationNotFoundException(organizationId));
+
+        if (organization.isDeleted()) {
+            throw new OrganizationAlreadyArchivedException(organizationId);
+        }
+
+        if (file == null || file.isEmpty()) {
+            throw new InvalidOrganizationFieldException("logo", "file must not be empty");
+        }
+
+        String contentType = file.getContentType();
+        if (contentType == null || !contentType.toLowerCase(Locale.ROOT).startsWith("image/")) {
+            throw new InvalidOrganizationFieldException("logo", "unsupported file type");
+        }
+
+        String filename = buildLogoFilename(file.getOriginalFilename());
+        Path directory = Paths.get(LOGO_UPLOAD_DIR, String.valueOf(organizationId));
+        Path target = directory.resolve(filename);
+        try {
+            Files.createDirectories(directory);
+            file.transferTo(target);
+        } catch (IOException ex) {
+            throw new InvalidOrganizationFieldException("logo", "failed to store file");
+        }
+
+        String logoUrl = "/" + directory.resolve(filename).toString().replace("\\", "/");
+        organization.setLogoUrl(logoUrl);
+        return organizationRepository.save(organization);
+    }
+
+    /**
+     * Removes an organization's logo.
+     *
+     * @param organizationId organization identifier
+     * @throws InvalidOrganizationIdException if id is null or non-positive
+     * @throws OrganizationNotFoundException if no organization exists for the given id
+     * @throws OrganizationAlreadyArchivedException if the organization is archived
+     * @throws OrganizationLogoNotFoundException if no logo is set
+     */
+    @Transactional
+    public void removeLogo(Long organizationId) {
+        validateOrganizationId(organizationId);
+        Organization organization = organizationRepository.findById(organizationId)
+                .orElseThrow(() -> new OrganizationNotFoundException(organizationId));
+
+        if (organization.isDeleted()) {
+            throw new OrganizationAlreadyArchivedException(organizationId);
+        }
+
+        String logoUrl = organization.getLogoUrl();
+        if (logoUrl == null || logoUrl.isBlank()) {
+            throw new OrganizationLogoNotFoundException(organizationId);
+        }
+
+        deleteLogoFileIfPresent(logoUrl);
+        organization.setLogoUrl(null);
+        organizationRepository.save(organization);
+    }
+
+    /**
+     * Retrieves the stored logo URL.
+     *
+     * @param organizationId organization identifier
+     * @return logo URL
+     * @throws InvalidOrganizationIdException if id is null or non-positive
+     * @throws OrganizationNotFoundException if no organization exists for the given id
+     * @throws OrganizationLogoNotFoundException if no logo is set
+     */
+    @Transactional(readOnly = true)
+    public String getLogoUrl(Long organizationId) {
+        validateOrganizationId(organizationId);
+        Organization organization = organizationRepository.findById(organizationId)
+                .orElseThrow(() -> new OrganizationNotFoundException(organizationId));
+
+        String logoUrl = organization.getLogoUrl();
+        if (logoUrl == null || logoUrl.isBlank()) {
+            throw new OrganizationLogoNotFoundException(organizationId);
+        }
+        return logoUrl;
     }
 
     /**
@@ -471,6 +649,31 @@ public class OrganizationService {
             if (!allowedSort.contains(order.getProperty())) {
                 throw new InvalidOrganizationFieldException("sort", "unsupported property '" + order.getProperty() + "'");
             }
+        }
+    }
+
+    private String buildLogoFilename(String originalName) {
+        String extension = "";
+        if (originalName != null) {
+            int dotIndex = originalName.lastIndexOf('.');
+            if (dotIndex >= 0 && dotIndex < originalName.length() - 1) {
+                extension = originalName.substring(dotIndex).toLowerCase(Locale.ROOT);
+            }
+        }
+        String base = "logo-" + UUID.randomUUID();
+        return extension.isBlank() ? base : base + extension;
+    }
+
+    private void deleteLogoFileIfPresent(String logoUrl) {
+        String normalized = logoUrl.startsWith("/") ? logoUrl.substring(1) : logoUrl;
+        if (!normalized.startsWith(LOGO_UPLOAD_DIR)) {
+            return;
+        }
+        Path path = Paths.get(normalized);
+        try {
+            Files.deleteIfExists(path);
+        } catch (IOException ignored) {
+            // Best-effort cleanup; persistence is handled by clearing logoUrl.
         }
     }
 }

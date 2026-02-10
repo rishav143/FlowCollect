@@ -10,12 +10,20 @@ import jakarta.validation.constraints.Size;
 import java.time.Instant;
 
 @Entity
-@Table(name = "users")
+@Table(
+        name = "users",
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uk_users_org_email", columnNames = {"organization_id", "email"})
+        }
+)
 public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Version
+    private Long version;
 
     /* ======================
        Tenant Ownership
@@ -31,13 +39,13 @@ public class User {
        ====================== */
 
     @NotBlank
-    @Size(max = 20)
+    @Size(max = 100)
     private String name;
 
     @NotBlank
     @Email
     @Size(max = 100)
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
     private String email;
 
     /* ======================
@@ -76,6 +84,15 @@ public class User {
         // JPA only
     }
 
+    public User(Organization organization, String name, String email, String passwordHash, UserRole role) {
+        this.organization = organization;
+        this.name = name;
+        this.email = email;
+        this.passwordHash = passwordHash;
+        this.role = role;
+        this.status = UserStatus.ACTIVE;
+    }
+
     /* ======================
        Callbacks
        ====================== */
@@ -83,7 +100,7 @@ public class User {
     @PrePersist
     protected void onCreate() {
         this.createdAt = Instant.now();
-        this.updatedAt = Instant.now();
+        this.updatedAt = this.createdAt;
     }
 
     @PreUpdate
@@ -97,6 +114,10 @@ public class User {
 
     public Long getId() {
         return id;
+    }
+
+    public Long getVersion() {
+        return version;
     }
 
     public Organization getOrganization() {
@@ -161,5 +182,9 @@ public class User {
 
     public void activate() {
         this.status = UserStatus.ACTIVE;
+    }
+
+    public boolean isActive() {
+        return this.status == UserStatus.ACTIVE;
     }
 }

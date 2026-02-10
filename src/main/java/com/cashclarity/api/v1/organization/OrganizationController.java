@@ -1,6 +1,9 @@
 package com.cashclarity.api.v1.organization;
 
 import com.cashclarity.api.v1.organization.dto.OrganizationCreateRequest;
+import com.cashclarity.api.v1.organization.dto.OrganizationLogoResponse;
+import com.cashclarity.api.v1.organization.dto.OrganizationSettingsRequest;
+import com.cashclarity.api.v1.organization.dto.OrganizationSettingsResponse;
 import com.cashclarity.api.v1.organization.dto.OrganizationUpdateRequest;
 import com.cashclarity.api.v1.organization.dto.OrganizationResponse;
 import com.cashclarity.api.v1.organization.dto.OrganizationStatusResponse;
@@ -14,6 +17,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.net.URI;
 import java.time.LocalDate;
@@ -90,6 +94,75 @@ public class OrganizationController {
     public ResponseEntity<OrganizationStatusResponse> getStatus(@PathVariable Long organizationId) {
         OrganizationStatus status = organizationService.getStatus(organizationId);
         return ResponseEntity.ok(new OrganizationStatusResponse(organizationId, status));
+    }
+
+    /**
+     * Uploads a logo for an organization.
+     * Service layer validates the id and throws custom exceptions that are handled by
+     * {@link com.cashclarity.exception.GlobalExceptionHandler}.
+     */
+    @PostMapping("/{organizationId}/logo")
+    public ResponseEntity<OrganizationLogoResponse> uploadLogo(
+            @PathVariable Long organizationId,
+            @RequestParam("file") MultipartFile file
+    ) {
+        Organization updated = organizationService.uploadLogo(organizationId, file);
+        return ResponseEntity.ok(new OrganizationLogoResponse(updated.getId(), updated.getLogoUrl()));
+    }
+
+    /**
+     * Removes an organization's logo.
+     * Service layer validates the id and throws custom exceptions that are handled by
+     * {@link com.cashclarity.exception.GlobalExceptionHandler}.
+     */
+    @DeleteMapping("/{organizationId}/logo")
+    public ResponseEntity<Void> removeLogo(@PathVariable Long organizationId) {
+        organizationService.removeLogo(organizationId);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Fetches the logo URL for an organization.
+     * Service layer validates the id and throws custom exceptions that are handled by
+     * {@link com.cashclarity.exception.GlobalExceptionHandler}.
+     */
+    @GetMapping("/{organizationId}/logo")
+    public ResponseEntity<OrganizationLogoResponse> getLogo(@PathVariable Long organizationId) {
+        String logoUrl = organizationService.getLogoUrl(organizationId);
+        return ResponseEntity.ok(new OrganizationLogoResponse(organizationId, logoUrl));
+    }
+
+    /**
+     * Fetches organization settings (timezone, currency).
+     * Service layer validates the id and throws custom exceptions that are handled by
+     * {@link com.cashclarity.exception.GlobalExceptionHandler}.
+     */
+    @GetMapping("/{organizationId}/settings")
+    public ResponseEntity<OrganizationSettingsResponse> getSettings(@PathVariable Long organizationId) {
+        Organization organization = organizationService.getSettings(organizationId);
+        return ResponseEntity.ok(new OrganizationSettingsResponse(
+                organization.getId(),
+                organization.getTimezone() != null ? organization.getTimezone().getId() : null,
+                organization.getCurrency() != null ? organization.getCurrency().getCurrencyCode() : null
+        ));
+    }
+
+    /**
+     * Updates organization settings (timezone, currency).
+     * Service layer validates the id and throws custom exceptions that are handled by
+     * {@link com.cashclarity.exception.GlobalExceptionHandler}.
+     */
+    @PatchMapping("/{organizationId}/settings")
+    public ResponseEntity<OrganizationSettingsResponse> updateSettings(
+            @PathVariable Long organizationId,
+            @RequestBody OrganizationSettingsRequest request
+    ) {
+        Organization updated = organizationService.updateSettings(organizationId, request);
+        return ResponseEntity.ok(new OrganizationSettingsResponse(
+                updated.getId(),
+                updated.getTimezone() != null ? updated.getTimezone().getId() : null,
+                updated.getCurrency() != null ? updated.getCurrency().getCurrencyCode() : null
+        ));
     }
 
     /**

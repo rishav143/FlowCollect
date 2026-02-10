@@ -17,6 +17,7 @@ import com.cashclarity.exception.OrganizationAlreadyExpiredException;
 import com.cashclarity.exception.OrganizationAlreadyInTrialException;
 import com.cashclarity.exception.OrganizationAlreadySuspendedException;
 import com.cashclarity.exception.OrganizationAlreadyExistsException;
+import com.cashclarity.exception.OrganizationLogoNotFoundException;
 import com.cashclarity.exception.OrganizationNotFoundException;
 import com.cashclarity.infrastructure.persistence.organization.OrganizationJpaRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -25,6 +26,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.mock.web.MockMultipartFile;
 
 import java.time.ZoneId;
 import java.time.LocalDate;
@@ -978,6 +980,247 @@ class OrganizationServiceTest {
                 .hasMessageContaining("already expired");
 
         verify(organizationRepository).findById(3L);
+        verify(organizationRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("uploadLogo - Should store logo and update logoUrl")
+    void uploadLogo_WithValidImage_ShouldUpdateLogoUrl() {
+        // Arrange
+        Organization organization = OrganizationTestData.valid();
+        OrganizationTestUtils.setId(organization, 4L);
+        when(organizationRepository.findById(4L)).thenReturn(java.util.Optional.of(organization));
+        when(organizationRepository.save(any(Organization.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "logo.png",
+                "image/png",
+                "fake-image".getBytes()
+        );
+
+        // Act
+        Organization result = organizationService.uploadLogo(4L, file);
+
+        // Assert
+        assertThat(result.getLogoUrl()).isNotBlank();
+        assertThat(result.getLogoUrl()).contains("/uploads/organizations/4/");
+        verify(organizationRepository).findById(4L);
+        verify(organizationRepository).save(organization);
+    }
+
+    @Test
+    @DisplayName("uploadLogo - Should throw when id is invalid")
+    void uploadLogo_WithInvalidId_ShouldThrowInvalidOrganizationIdException() {
+        // Arrange
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "logo.png",
+                "image/png",
+                "fake-image".getBytes()
+        );
+
+        // Act & Assert
+        assertThatThrownBy(() -> organizationService.uploadLogo(-1L, file))
+                .isInstanceOf(InvalidOrganizationIdException.class)
+                .hasMessageContaining("Invalid organizationId");
+
+        verify(organizationRepository, never()).findById(any());
+        verify(organizationRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("uploadLogo - Should throw when organization not found")
+    void uploadLogo_WithMissingId_ShouldThrowOrganizationNotFoundException() {
+        // Arrange
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "logo.png",
+                "image/png",
+                "fake-image".getBytes()
+        );
+        when(organizationRepository.findById(999L)).thenReturn(java.util.Optional.empty());
+
+        // Act & Assert
+        assertThatThrownBy(() -> organizationService.uploadLogo(999L, file))
+                .isInstanceOf(OrganizationNotFoundException.class)
+                .hasMessageContaining("Organization not found");
+
+        verify(organizationRepository).findById(999L);
+        verify(organizationRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("uploadLogo - Should throw when organization archived")
+    void uploadLogo_WithArchivedOrganization_ShouldThrowOrganizationAlreadyArchivedException() {
+        // Arrange
+        Organization organization = OrganizationTestData.archived();
+        OrganizationTestUtils.setId(organization, 4L);
+        when(organizationRepository.findById(4L)).thenReturn(java.util.Optional.of(organization));
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "logo.png",
+                "image/png",
+                "fake-image".getBytes()
+        );
+
+        // Act & Assert
+        assertThatThrownBy(() -> organizationService.uploadLogo(4L, file))
+                .isInstanceOf(OrganizationAlreadyArchivedException.class)
+                .hasMessageContaining("already archived");
+
+        verify(organizationRepository).findById(4L);
+        verify(organizationRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("uploadLogo - Should throw when file is empty")
+    void uploadLogo_WithEmptyFile_ShouldThrowInvalidOrganizationFieldException() {
+        // Arrange
+        Organization organization = OrganizationTestData.valid();
+        OrganizationTestUtils.setId(organization, 4L);
+        when(organizationRepository.findById(4L)).thenReturn(java.util.Optional.of(organization));
+
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "logo.png",
+                "image/png",
+                new byte[0]
+        );
+
+        // Act & Assert
+        assertThatThrownBy(() -> organizationService.uploadLogo(4L, file))
+                .isInstanceOf(InvalidOrganizationFieldException.class)
+                .hasMessageContaining("logo");
+
+        verify(organizationRepository).findById(4L);
+        verify(organizationRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("uploadLogo - Should throw when file type unsupported")
+    void uploadLogo_WithUnsupportedType_ShouldThrowInvalidOrganizationFieldException() {
+        // Arrange
+        Organization organization = OrganizationTestData.valid();
+        OrganizationTestUtils.setId(organization, 4L);
+        when(organizationRepository.findById(4L)).thenReturn(java.util.Optional.of(organization));
+
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "logo.txt",
+                "text/plain",
+                "fake".getBytes()
+        );
+
+        // Act & Assert
+        assertThatThrownBy(() -> organizationService.uploadLogo(4L, file))
+                .isInstanceOf(InvalidOrganizationFieldException.class)
+                .hasMessageContaining("logo");
+
+        verify(organizationRepository).findById(4L);
+        verify(organizationRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("getLogoUrl - Should return logo when present")
+    void getLogoUrl_WithLogo_ShouldReturnUrl() {
+        // Arrange
+        Organization organization = OrganizationTestData.valid();
+        OrganizationTestUtils.setId(organization, 4L);
+        organization.setLogoUrl("/uploads/organizations/4/logo.png");
+        when(organizationRepository.findById(4L)).thenReturn(java.util.Optional.of(organization));
+
+        // Act
+        String result = organizationService.getLogoUrl(4L);
+
+        // Assert
+        assertThat(result).isEqualTo("/uploads/organizations/4/logo.png");
+        verify(organizationRepository).findById(4L);
+    }
+
+    @Test
+    @DisplayName("getLogoUrl - Should throw when logo missing")
+    void getLogoUrl_WithMissingLogo_ShouldThrowOrganizationLogoNotFoundException() {
+        // Arrange
+        Organization organization = OrganizationTestData.valid();
+        OrganizationTestUtils.setId(organization, 4L);
+        organization.setLogoUrl(null);
+        when(organizationRepository.findById(4L)).thenReturn(java.util.Optional.of(organization));
+
+        // Act & Assert
+        assertThatThrownBy(() -> organizationService.getLogoUrl(4L))
+                .isInstanceOf(OrganizationLogoNotFoundException.class)
+                .hasMessageContaining("Logo not found");
+
+        verify(organizationRepository).findById(4L);
+    }
+
+    @Test
+    @DisplayName("removeLogo - Should clear logo when present")
+    void removeLogo_WithExistingLogo_ShouldClearLogo() {
+        // Arrange
+        Organization organization = OrganizationTestData.valid();
+        OrganizationTestUtils.setId(organization, 4L);
+        organization.setLogoUrl("/uploads/organizations/4/logo.png");
+        when(organizationRepository.findById(4L)).thenReturn(java.util.Optional.of(organization));
+
+        // Act
+        organizationService.removeLogo(4L);
+
+        // Assert
+        assertThat(organization.getLogoUrl()).isNull();
+        verify(organizationRepository).findById(4L);
+        verify(organizationRepository).save(organization);
+    }
+
+    @Test
+    @DisplayName("removeLogo - Should throw when logo missing")
+    void removeLogo_WithMissingLogo_ShouldThrowOrganizationLogoNotFoundException() {
+        // Arrange
+        Organization organization = OrganizationTestData.valid();
+        OrganizationTestUtils.setId(organization, 4L);
+        organization.setLogoUrl(null);
+        when(organizationRepository.findById(4L)).thenReturn(java.util.Optional.of(organization));
+
+        // Act & Assert
+        assertThatThrownBy(() -> organizationService.removeLogo(4L))
+                .isInstanceOf(OrganizationLogoNotFoundException.class)
+                .hasMessageContaining("Logo not found");
+
+        verify(organizationRepository).findById(4L);
+        verify(organizationRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("removeLogo - Should throw when organization not found")
+    void removeLogo_WithMissingId_ShouldThrowOrganizationNotFoundException() {
+        // Arrange
+        when(organizationRepository.findById(999L)).thenReturn(java.util.Optional.empty());
+
+        // Act & Assert
+        assertThatThrownBy(() -> organizationService.removeLogo(999L))
+                .isInstanceOf(OrganizationNotFoundException.class)
+                .hasMessageContaining("Organization not found");
+
+        verify(organizationRepository).findById(999L);
+        verify(organizationRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("removeLogo - Should throw when organization archived")
+    void removeLogo_WithArchivedOrganization_ShouldThrowOrganizationAlreadyArchivedException() {
+        // Arrange
+        Organization organization = OrganizationTestData.archived();
+        OrganizationTestUtils.setId(organization, 4L);
+        organization.setLogoUrl("/uploads/organizations/4/logo.png");
+        when(organizationRepository.findById(4L)).thenReturn(java.util.Optional.of(organization));
+
+        // Act & Assert
+        assertThatThrownBy(() -> organizationService.removeLogo(4L))
+                .isInstanceOf(OrganizationAlreadyArchivedException.class)
+                .hasMessageContaining("already archived");
+
+        verify(organizationRepository).findById(4L);
         verify(organizationRepository, never()).save(any());
     }
 

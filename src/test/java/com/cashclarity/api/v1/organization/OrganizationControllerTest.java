@@ -18,6 +18,7 @@ import com.cashclarity.exception.OrganizationAlreadyExpiredException;
 import com.cashclarity.exception.OrganizationAlreadyInTrialException;
 import com.cashclarity.exception.OrganizationAlreadySuspendedException;
 import com.cashclarity.exception.OrganizationAlreadyExistsException;
+import com.cashclarity.exception.OrganizationLogoNotFoundException;
 import com.cashclarity.exception.OrganizationNotFoundException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -31,6 +32,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDate;
@@ -46,6 +48,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(OrganizationController.class)
@@ -643,6 +646,185 @@ class OrganizationControllerTest {
         mockMvc.perform(post("/api/v1/organizations/{id}/expired", 3L))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("already expired")));
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/organizations/{id}/logo - Should return 200 when upload succeeds")
+    void uploadLogo_WithValidFile_ShouldReturn200() throws Exception {
+        // Arrange
+        Organization organization = OrganizationTestData.valid();
+        OrganizationTestUtils.setId(organization, 4L);
+        organization.setLogoUrl("/uploads/organizations/4/logo.png");
+
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "logo.png",
+                "image/png",
+                "fake-image".getBytes()
+        );
+
+        when(organizationService.uploadLogo(eq(4L), any(org.springframework.web.multipart.MultipartFile.class)))
+                .thenReturn(organization);
+
+        // Act & Assert
+        mockMvc.perform(multipart("/api/v1/organizations/{id}/logo", 4L)
+                        .file(file))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(4))
+                .andExpect(jsonPath("$.logoUrl").value("/uploads/organizations/4/logo.png"));
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/organizations/{id}/logo - Should return 400 when id is invalid")
+    void uploadLogo_WithInvalidId_ShouldReturn400() throws Exception {
+        // Arrange
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "logo.png",
+                "image/png",
+                "fake-image".getBytes()
+        );
+
+        when(organizationService.uploadLogo(eq(-1L), any(org.springframework.web.multipart.MultipartFile.class)))
+                .thenThrow(new InvalidOrganizationIdException(-1L));
+
+        // Act & Assert
+        mockMvc.perform(multipart("/api/v1/organizations/{id}/logo", -1L)
+                        .file(file))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("Invalid organizationId")));
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/organizations/{id}/logo - Should return 404 when organization not found")
+    void uploadLogo_WithMissingId_ShouldReturn404() throws Exception {
+        // Arrange
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "logo.png",
+                "image/png",
+                "fake-image".getBytes()
+        );
+
+        when(organizationService.uploadLogo(eq(999L), any(org.springframework.web.multipart.MultipartFile.class)))
+                .thenThrow(new OrganizationNotFoundException(999L));
+
+        // Act & Assert
+        mockMvc.perform(multipart("/api/v1/organizations/{id}/logo", 999L)
+                        .file(file))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("Organization not found")));
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/organizations/{id}/logo - Should return 409 when archived")
+    void uploadLogo_WithArchivedOrganization_ShouldReturn409() throws Exception {
+        // Arrange
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "logo.png",
+                "image/png",
+                "fake-image".getBytes()
+        );
+
+        when(organizationService.uploadLogo(eq(4L), any(org.springframework.web.multipart.MultipartFile.class)))
+                .thenThrow(new OrganizationAlreadyArchivedException(4L));
+
+        // Act & Assert
+        mockMvc.perform(multipart("/api/v1/organizations/{id}/logo", 4L)
+                        .file(file))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("already archived")));
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/organizations/{id}/logo - Should return logoUrl when present")
+    void getLogo_WithExistingLogo_ShouldReturn200() throws Exception {
+        // Arrange
+        when(organizationService.getLogoUrl(4L))
+                .thenReturn("/uploads/organizations/4/logo.png");
+
+        // Act & Assert
+        mockMvc.perform(get("/api/v1/organizations/{id}/logo", 4L))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(4))
+                .andExpect(jsonPath("$.logoUrl").value("/uploads/organizations/4/logo.png"));
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/organizations/{id}/logo - Should return 404 when logo missing")
+    void getLogo_WithMissingLogo_ShouldReturn404() throws Exception {
+        // Arrange
+        when(organizationService.getLogoUrl(4L))
+                .thenThrow(new OrganizationLogoNotFoundException(4L));
+
+        // Act & Assert
+        mockMvc.perform(get("/api/v1/organizations/{id}/logo", 4L))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("Logo not found")));
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/organizations/{id}/logo - Should return 400 when id is invalid")
+    void getLogo_WithInvalidId_ShouldReturn400() throws Exception {
+        // Arrange
+        when(organizationService.getLogoUrl(-1L))
+                .thenThrow(new InvalidOrganizationIdException(-1L));
+
+        // Act & Assert
+        mockMvc.perform(get("/api/v1/organizations/{id}/logo", -1L))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("Invalid organizationId")));
+    }
+
+    @Test
+    @DisplayName("DELETE /api/v1/organizations/{id}/logo - Should return 204 when removed")
+    void removeLogo_WithExistingLogo_ShouldReturn204() throws Exception {
+        // Arrange
+        doNothing().when(organizationService).removeLogo(4L);
+
+        // Act & Assert
+        mockMvc.perform(delete("/api/v1/organizations/{id}/logo", 4L))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    @DisplayName("DELETE /api/v1/organizations/{id}/logo - Should return 404 when logo missing")
+    void removeLogo_WithMissingLogo_ShouldReturn404() throws Exception {
+        // Arrange
+        doThrow(new OrganizationLogoNotFoundException(4L))
+                .when(organizationService).removeLogo(4L);
+
+        // Act & Assert
+        mockMvc.perform(delete("/api/v1/organizations/{id}/logo", 4L))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("Logo not found")));
+    }
+
+    @Test
+    @DisplayName("DELETE /api/v1/organizations/{id}/logo - Should return 400 when id is invalid")
+    void removeLogo_WithInvalidId_ShouldReturn400() throws Exception {
+        // Arrange
+        doThrow(new InvalidOrganizationIdException(-1L))
+                .when(organizationService).removeLogo(-1L);
+
+        // Act & Assert
+        mockMvc.perform(delete("/api/v1/organizations/{id}/logo", -1L))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("Invalid organizationId")));
+    }
+
+    @Test
+    @DisplayName("DELETE /api/v1/organizations/{id}/logo - Should return 404 when organization not found")
+    void removeLogo_WithMissingId_ShouldReturn404() throws Exception {
+        // Arrange
+        doThrow(new OrganizationNotFoundException(999L))
+                .when(organizationService).removeLogo(999L);
+
+        // Act & Assert
+        mockMvc.perform(delete("/api/v1/organizations/{id}/logo", 999L))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("Organization not found")));
     }
 
     @Test

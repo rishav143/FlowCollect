@@ -98,6 +98,16 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handles organization logo not found (404 Not Found).
+     */
+    @ExceptionHandler(OrganizationLogoNotFoundException.class)
+    public ResponseEntity<Map<String, String>> handleOrganizationLogoNotFound(OrganizationLogoNotFoundException ex) {
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(Map.of("message", ex.getMessage()));
+    }
+
+    /**
      * Handles invalid input (400 Bad Request).
      */
     @ExceptionHandler({
