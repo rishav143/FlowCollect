@@ -1,5 +1,7 @@
 package com.cashclarity.exception;
 
+import com.cashclarity.exception.organization.*;
+import com.cashclarity.exception.user.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -42,6 +44,16 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(OrganizationAlreadyExistsException.class)
     public ResponseEntity<Map<String, String>> handleOrganizationAlreadyExists(OrganizationAlreadyExistsException ex) {
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(Map.of("message", ex.getMessage()));
+    }
+
+    /**
+     * Handles duplicate user email in an organization (409 Conflict).
+     */
+    @ExceptionHandler(UserAlreadyExistsException.class)
+    public ResponseEntity<Map<String, String>> handleUserAlreadyExists(UserAlreadyExistsException ex) {
         return ResponseEntity
                 .status(HttpStatus.CONFLICT)
                 .body(Map.of("message", ex.getMessage()));
@@ -114,7 +126,9 @@ public class GlobalExceptionHandler {
             InvalidTimezoneException.class,
             InvalidCurrencyException.class,
             InvalidOrganizationIdException.class,
-            InvalidOrganizationFieldException.class
+            InvalidOrganizationFieldException.class,
+            InvalidUserFieldException.class,
+            InvalidUserIdException.class
     })
     public ResponseEntity<Map<String, String>> handleInvalidInput(CashClarityException ex) {
         return ResponseEntity
@@ -127,6 +141,16 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(OrganizationNotFoundException.class)
     public ResponseEntity<Map<String, String>> handleOrganizationNotFound(OrganizationNotFoundException ex) {
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(Map.of("message", ex.getMessage()));
+    }
+
+    /**
+     * Handles user not found (404 Not Found).
+     */
+    @ExceptionHandler(UserNotFoundException.class)
+    public ResponseEntity<Map<String, String>> handleUserNotFound(UserNotFoundException ex) {
         return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
                 .body(Map.of("message", ex.getMessage()));

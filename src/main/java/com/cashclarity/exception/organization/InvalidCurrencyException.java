@@ -1,4 +1,6 @@
-package com.cashclarity.exception;
+package com.cashclarity.exception.organization;
+
+import com.cashclarity.exception.CashClarityException;
 
 /**
  * Thrown when the provided currency code is not valid (e.g. not a valid ISO 4217 code).

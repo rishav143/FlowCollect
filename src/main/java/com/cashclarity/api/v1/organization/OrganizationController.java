@@ -52,7 +52,7 @@ public class OrganizationController {
     /**
      * Lists organizations with filters and pagination.
      * Service layer validates filters and pagination; exceptions are handled by
-     * {@link com.cashclarity.exception.GlobalExceptionHandler}.
+ * {@link com.cashclarity.exception.GlobalExceptionHandler}.
      */
     @GetMapping
     public ResponseEntity<Page<OrganizationResponse>> list(

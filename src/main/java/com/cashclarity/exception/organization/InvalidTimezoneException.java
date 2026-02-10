@@ -1,4 +1,6 @@
-package com.cashclarity.exception;
+package com.cashclarity.exception.organization;
+
+import com.cashclarity.exception.CashClarityException;
 
 /**
  * Thrown when the provided timezone identifier is not valid (e.g. not a valid ZoneId).

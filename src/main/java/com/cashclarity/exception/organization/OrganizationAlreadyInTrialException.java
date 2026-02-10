@@ -1,4 +1,6 @@
-package com.cashclarity.exception;
+package com.cashclarity.exception.organization;
+
+import com.cashclarity.exception.CashClarityException;
 
 /**
  * Thrown when an organization is already in TRIAL status.
