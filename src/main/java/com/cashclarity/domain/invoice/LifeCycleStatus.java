@@ -1,4 +1,7 @@
 package com.cashclarity.domain.invoice;
 
-public class LifeCycleStatus {
+public enum LifeCycleStatus {
+    DRAFT,
+    ISSUED,
+    CANCELLED
 }

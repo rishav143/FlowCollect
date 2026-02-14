@@ -1,11 +1,8 @@
 package com.cashclarity.api.v1.invoice.dto;
 
-import com.cashclarity.domain.customer.Customer;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
@@ -14,22 +11,20 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
-public class InvoiceRequest {
+/**
+ * DTO for patching mutable fields of a draft invoice.
+ * All fields are optional; only non-null fields will be applied.
+ */
+public class InvoiceUpdateRequest {
 
-    @NotNull(message = "organizationId is required")
-    @Positive(message = "organizationId must be a positive number")
-    private Long organizationId;
-
+    @Positive(message = "createdByUserId must be a positive number")
     private Long createdByUserId;
 
     @Positive(message = "customerId must be a positive number")
     private Long customerId;
 
-    @NotBlank(message = "invoiceNumber must not be blank")
     @Size(max = 100, message = "invoiceNumber must not exceed 100 characters")
     private String invoiceNumber;
-
-    private LocalDate issueDate;
 
     private LocalDate dueDate;
 
@@ -40,14 +35,6 @@ public class InvoiceRequest {
     @Valid
     private List<InvoiceItemRequest> items = new ArrayList<>();
 
-    public Long getOrganizationId() {
-        return organizationId;
-    }
-
-    public void setOrganizationId(Long organizationId) {
-        this.organizationId = organizationId;
-    }
-
     public Long getCreatedByUserId() {
         return createdByUserId;
     }
@@ -56,9 +43,13 @@ public class InvoiceRequest {
         this.createdByUserId = createdByUserId;
     }
 
-    public Long getCustomerId() { return customerId; }
+    public Long getCustomerId() {
+        return customerId;
+    }
 
-    public void setCustomerId(Long customerId) { this.customerId = customerId; }
+    public void setCustomerId(Long customerId) {
+        this.customerId = customerId;
+    }
 
     public String getInvoiceNumber() {
         return invoiceNumber;
@@ -66,14 +57,6 @@ public class InvoiceRequest {
 
     public void setInvoiceNumber(String invoiceNumber) {
         this.invoiceNumber = invoiceNumber;
-    }
-
-    public LocalDate getIssueDate() {
-        return issueDate;
-    }
-
-    public void setIssueDate(LocalDate issueDate) {
-        this.issueDate = issueDate;
     }
 
     public LocalDate getDueDate() {
@@ -100,3 +83,4 @@ public class InvoiceRequest {
         this.items = items;
     }
 }
+

@@ -1,9 +1,7 @@
 package com.cashclarity.domain.invoice;
 
-public enum InvoiceStatus {
-    DRAFT,
-    UNPAID,
-    PARTIALLY_PAID,
-    PAID,
+public enum TimeStatus {
+    NOT_DUE,
+    DUE_TODAY,
     OVERDUE
 }

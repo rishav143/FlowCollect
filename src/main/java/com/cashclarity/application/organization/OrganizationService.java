@@ -3,6 +3,7 @@ package com.cashclarity.application.organization;
 import com.cashclarity.api.v1.organization.dto.OrganizationCreateRequest;
 import com.cashclarity.api.v1.organization.dto.OrganizationSettingsRequest;
 import com.cashclarity.api.v1.organization.dto.OrganizationUpdateRequest;
+import com.cashclarity.application.util;
 import com.cashclarity.domain.organization.Organization;
 import com.cashclarity.domain.organization.OrganizationStatus;
 import com.cashclarity.exception.organization.InvalidCurrencyException;
@@ -20,7 +21,6 @@ import com.cashclarity.exception.organization.OrganizationNotFoundException;
 import com.cashclarity.infrastructure.persistence.organization.OrganizationJpaRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,8 +36,6 @@ import java.time.ZoneOffset;
 import java.time.ZoneId;
 import java.util.Currency;
 import java.util.Locale;
-import java.util.Set;
-import java.util.UUID;
 
 /**
  * Application service for organization use cases.
@@ -66,8 +64,8 @@ public class OrganizationService {
      */
     @Transactional
     public Organization create(OrganizationCreateRequest request) {
-        ZoneId timezone = parseTimezone(request.getTimezone());
-        Currency currency = parseCurrency(request.getCurrency());
+        ZoneId timezone = util.parseTimezone(request.getTimezone());
+        Currency currency = util.parseCurrency(request.getCurrency());
 
         if (organizationRepository.existsByEmail(request.getEmail().trim())) {
             throw new OrganizationAlreadyExistsException(request.getEmail());
@@ -99,7 +97,7 @@ public class OrganizationService {
      */
     @Transactional(readOnly = true)
     public Organization getById(Long organizationId) {
-        validateOrganizationId(organizationId);
+        util.validateOrganizationId(organizationId);
         return organizationRepository.findById(organizationId)
                 .orElseThrow(() -> new OrganizationNotFoundException(organizationId));
     }
@@ -114,7 +112,7 @@ public class OrganizationService {
      */
     @Transactional(readOnly = true)
     public OrganizationStatus getStatus(Long organizationId) {
-        validateOrganizationId(organizationId);
+        util.validateOrganizationId(organizationId);
         Organization organization = organizationRepository.findById(organizationId)
                 .orElseThrow(() -> new OrganizationNotFoundException(organizationId));
         return organization.getStatus();
@@ -130,7 +128,7 @@ public class OrganizationService {
      */
     @Transactional(readOnly = true)
     public Organization getSettings(Long organizationId) {
-        validateOrganizationId(organizationId);
+        util.validateOrganizationId(organizationId);
         return organizationRepository.findById(organizationId)
                 .orElseThrow(() -> new OrganizationNotFoundException(organizationId));
     }
@@ -150,7 +148,7 @@ public class OrganizationService {
      */
     @Transactional
     public Organization updateSettings(Long organizationId, OrganizationSettingsRequest request) {
-        validateOrganizationId(organizationId);
+        util.validateOrganizationId(organizationId);
         Organization organization = organizationRepository.findById(organizationId)
                 .orElseThrow(() -> new OrganizationNotFoundException(organizationId));
 
@@ -170,7 +168,7 @@ public class OrganizationService {
 
         boolean changed = false;
         if (hasTimezone) {
-            ZoneId timezone = parseTimezone(request.getTimezone());
+            ZoneId timezone = util.parseTimezone(request.getTimezone());
             if (!timezone.equals(organization.getTimezone())) {
                 organization.setTimezone(timezone);
                 changed = true;
@@ -178,7 +176,7 @@ public class OrganizationService {
         }
 
         if (hasCurrency) {
-            Currency currency = parseCurrency(request.getCurrency());
+            Currency currency = util.parseCurrency(request.getCurrency());
             if (!currency.equals(organization.getCurrency())) {
                 organization.setCurrency(currency);
                 changed = true;
@@ -205,7 +203,7 @@ public class OrganizationService {
      */
     @Transactional
     public Organization uploadLogo(Long organizationId, MultipartFile file) {
-        validateOrganizationId(organizationId);
+        util.validateOrganizationId(organizationId);
         Organization organization = organizationRepository.findById(organizationId)
                 .orElseThrow(() -> new OrganizationNotFoundException(organizationId));
 
@@ -222,7 +220,7 @@ public class OrganizationService {
             throw new InvalidOrganizationFieldException("logo", "unsupported file type");
         }
 
-        String filename = buildLogoFilename(file.getOriginalFilename());
+        String filename = util.buildLogoFilename(file.getOriginalFilename());
         Path directory = Paths.get(LOGO_UPLOAD_DIR, String.valueOf(organizationId));
         Path target = directory.resolve(filename);
         try {
@@ -248,7 +246,7 @@ public class OrganizationService {
      */
     @Transactional
     public void removeLogo(Long organizationId) {
-        validateOrganizationId(organizationId);
+        util.validateOrganizationId(organizationId);
         Organization organization = organizationRepository.findById(organizationId)
                 .orElseThrow(() -> new OrganizationNotFoundException(organizationId));
 
@@ -261,7 +259,7 @@ public class OrganizationService {
             throw new OrganizationLogoNotFoundException(organizationId);
         }
 
-        deleteLogoFileIfPresent(logoUrl);
+        util.deleteLogoFileIfPresent(logoUrl);
         organization.setLogoUrl(null);
         organizationRepository.save(organization);
     }
@@ -277,7 +275,7 @@ public class OrganizationService {
      */
     @Transactional(readOnly = true)
     public String getLogoUrl(Long organizationId) {
-        validateOrganizationId(organizationId);
+        util.validateOrganizationId(organizationId);
         Organization organization = organizationRepository.findById(organizationId)
                 .orElseThrow(() -> new OrganizationNotFoundException(organizationId));
 
@@ -309,10 +307,10 @@ public class OrganizationService {
             LocalDate createdTo,
             Pageable pageable
     ) {
-        validatePageable(pageable);
-        validateDateRange(createdFrom, createdTo);
+        util.validatePageable(pageable);
+        util.validateDateRange(createdFrom, createdTo);
 
-        OrganizationStatus parsedStatus = parseStatus(status);
+        OrganizationStatus parsedStatus = util.parseOrganizationStatus(status);
 
         Instant createdFromInstant = createdFrom != null ? createdFrom.atStartOfDay(ZoneOffset.UTC).toInstant() : null;
         Instant createdToInstant = createdTo != null ? createdTo.plusDays(1).atStartOfDay(ZoneOffset.UTC).minusNanos(1).toInstant() : null;
@@ -348,7 +346,7 @@ public class OrganizationService {
      */
     @Transactional
     public void delete(Long organizationId) {
-        validateOrganizationId(organizationId);
+        util.validateOrganizationId(organizationId);
         Organization organization = organizationRepository.findById(organizationId)
                 .orElseThrow(() -> new OrganizationNotFoundException(organizationId));
         organizationRepository.delete(organization);
@@ -366,7 +364,7 @@ public class OrganizationService {
      */
     @Transactional
     public Organization activate(Long organizationId) {
-        validateOrganizationId(organizationId);
+        util.validateOrganizationId(organizationId);
         Organization organization = organizationRepository.findById(organizationId)
                 .orElseThrow(() -> new OrganizationNotFoundException(organizationId));
 
@@ -394,7 +392,7 @@ public class OrganizationService {
      */
     @Transactional
     public Organization suspend(Long organizationId) {
-        validateOrganizationId(organizationId);
+        util.validateOrganizationId(organizationId);
         Organization organization = organizationRepository.findById(organizationId)
                 .orElseThrow(() -> new OrganizationNotFoundException(organizationId));
 
@@ -421,7 +419,7 @@ public class OrganizationService {
      */
     @Transactional
     public Organization archive(Long organizationId) {
-        validateOrganizationId(organizationId);
+        util.validateOrganizationId(organizationId);
         Organization organization = organizationRepository.findById(organizationId)
                 .orElseThrow(() -> new OrganizationNotFoundException(organizationId));
 
@@ -445,7 +443,7 @@ public class OrganizationService {
      */
     @Transactional
     public Organization trial(Long organizationId) {
-        validateOrganizationId(organizationId);
+        util.validateOrganizationId(organizationId);
         Organization organization = organizationRepository.findById(organizationId)
                 .orElseThrow(() -> new OrganizationNotFoundException(organizationId));
 
@@ -473,7 +471,7 @@ public class OrganizationService {
      */
     @Transactional
     public Organization expired(Long organizationId) {
-        validateOrganizationId(organizationId);
+        util.validateOrganizationId(organizationId);
         Organization organization = organizationRepository.findById(organizationId)
                 .orElseThrow(() -> new OrganizationNotFoundException(organizationId));
 
@@ -498,7 +496,7 @@ public class OrganizationService {
      */
     @Transactional
     public Organization update(Long organizationId, OrganizationUpdateRequest request) {
-        validateOrganizationId(organizationId);
+        util.validateOrganizationId(organizationId);
         Organization organization = organizationRepository.findById(organizationId)
                 .orElseThrow(() -> new OrganizationNotFoundException(organizationId));
 
@@ -531,7 +529,7 @@ public class OrganizationService {
         }
 
         if (request.getTimezone() != null) {
-            ZoneId timezone = parseTimezone(request.getTimezone());
+            ZoneId timezone = util.parseTimezone(request.getTimezone());
             if (!timezone.equals(organization.getTimezone())) {
                 organization.setTimezone(timezone);
                 changed = true;
@@ -539,7 +537,7 @@ public class OrganizationService {
         }
 
         if (request.getCurrency() != null) {
-            Currency currency = parseCurrency(request.getCurrency());
+            Currency currency = util.parseCurrency(request.getCurrency());
             if (!currency.equals(organization.getCurrency())) {
                 organization.setCurrency(currency);
                 changed = true;
@@ -578,102 +576,5 @@ public class OrganizationService {
         }
 
         return organizationRepository.save(organization);
-    }
-
-    private ZoneId parseTimezone(String timezone) {
-        if (timezone == null || timezone.isBlank()) {
-            throw new InvalidTimezoneException(timezone);
-        }
-        try {
-            return ZoneId.of(timezone.trim());
-        } catch (Exception e) {
-            throw new InvalidTimezoneException(timezone, e);
-        }
-    }
-
-    private Currency parseCurrency(String currencyCode) {
-        if (currencyCode == null || currencyCode.isBlank()) {
-            throw new InvalidCurrencyException(currencyCode);
-        }
-        try {
-            return Currency.getInstance(currencyCode.trim().toUpperCase());
-        } catch (IllegalArgumentException e) {
-            throw new InvalidCurrencyException(currencyCode, e);
-        }
-    }
-
-    private void validateOrganizationId(Long organizationId) {
-        if (organizationId == null || organizationId <= 0) {
-            throw new InvalidOrganizationIdException(organizationId);
-        }
-    }
-
-    private OrganizationStatus parseStatus(String status) {
-        if (status == null || status.isBlank()) {
-            return null;
-        }
-        try {
-            return OrganizationStatus.valueOf(status.trim().toUpperCase());
-        } catch (IllegalArgumentException ex) {
-            throw new InvalidOrganizationFieldException("status", "unsupported value '" + status + "'");
-        }
-    }
-
-    private void validateDateRange(LocalDate createdFrom, LocalDate createdTo) {
-        if (createdFrom != null && createdTo != null && createdFrom.isAfter(createdTo)) {
-            throw new InvalidOrganizationFieldException("createdFrom", "must be before or equal to createdTo");
-        }
-    }
-
-    private void validatePageable(Pageable pageable) {
-        if (pageable == null) {
-            throw new InvalidOrganizationFieldException("page", "pageable is required");
-        }
-        if (pageable.getPageNumber() < 0) {
-            throw new InvalidOrganizationFieldException("page", "must be greater than or equal to 0");
-        }
-        int size = pageable.getPageSize();
-        if (size <= 0 || size > 100) {
-            throw new InvalidOrganizationFieldException("size", "must be between 1 and 100");
-        }
-
-        Set<String> allowedSort = Set.of(
-                "id",
-                "name",
-                "email",
-                "status",
-                "createdAt",
-                "updatedAt"
-        );
-        for (Sort.Order order : pageable.getSort()) {
-            if (!allowedSort.contains(order.getProperty())) {
-                throw new InvalidOrganizationFieldException("sort", "unsupported property '" + order.getProperty() + "'");
-            }
-        }
-    }
-
-    private String buildLogoFilename(String originalName) {
-        String extension = "";
-        if (originalName != null) {
-            int dotIndex = originalName.lastIndexOf('.');
-            if (dotIndex >= 0 && dotIndex < originalName.length() - 1) {
-                extension = originalName.substring(dotIndex).toLowerCase(Locale.ROOT);
-            }
-        }
-        String base = "logo-" + UUID.randomUUID();
-        return extension.isBlank() ? base : base + extension;
-    }
-
-    private void deleteLogoFileIfPresent(String logoUrl) {
-        String normalized = logoUrl.startsWith("/") ? logoUrl.substring(1) : logoUrl;
-        if (!normalized.startsWith(LOGO_UPLOAD_DIR)) {
-            return;
-        }
-        Path path = Paths.get(normalized);
-        try {
-            Files.deleteIfExists(path);
-        } catch (IOException ignored) {
-            // Best-effort cleanup; persistence is handled by clearing logoUrl.
-        }
     }
 }

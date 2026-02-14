@@ -10,4 +10,8 @@ public class InvalidOrganizationIdException extends CashClarityException {
     public InvalidOrganizationIdException(Long organizationId) {
         super("Invalid organizationId: '" + organizationId + "'. The id must be a positive number.");
     }
+
+    public InvalidOrganizationIdException(Long organizationId, Long expectedOrganizationId) {
+        super("Invalid organizationId: '" + organizationId + "'. The id must be '" + expectedOrganizationId + "'.");
+    }
 }

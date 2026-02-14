@@ -11,7 +11,6 @@ import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 @Entity
@@ -58,12 +57,15 @@ public class Invoice {
     @NotNull
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private InvoiceStatus status;
+    private TimeStatus timeStatus = TimeStatus.NOT_DUE;
+
+    @NotNull
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private LifeCycleStatus lifeCycleStatus =  LifeCycleStatus.DRAFT;
 
     private LocalDate issueDate;
 
-    @NotNull
-    @Column(nullable = false)
     private LocalDate dueDate;
 
     /* ======================
@@ -113,43 +115,18 @@ public class Invoice {
        ====================== */
 
     /**
-     * Creates a new draft invoice. Issue date defaults to today.
-     */
-    public static Invoice create(Organization organization, String invoiceNumber, LocalDate dueDate, User createdBy) {
-        return create(organization, invoiceNumber, LocalDate.now(), dueDate, createdBy, null);
-    }
-
-    /**
      * Creates a new draft invoice with optional customer.
      */
-    public static Invoice create(Organization organization, String invoiceNumber, LocalDate issueDate,
-                                LocalDate dueDate, User createdBy, Customer customer) {
+    public static Invoice create(Organization organization, String invoiceNumber) {
         if (organization == null) {
             throw new IllegalArgumentException("Organization cannot be null");
         }
         if (invoiceNumber == null || invoiceNumber.isBlank()) {
             throw new IllegalArgumentException("Invoice number cannot be null or blank");
         }
-        if (dueDate == null) {
-            throw new IllegalArgumentException("Due date cannot be null");
-        }
-        if (createdBy == null) {
-            throw new IllegalArgumentException("Created by user cannot be null");
-        }
-        if (issueDate != null && dueDate != null && dueDate.isBefore(issueDate)) {
-            throw new IllegalArgumentException("Due date cannot be before issue date");
-        }
         Invoice invoice = new Invoice();
         invoice.organization = organization;
         invoice.invoiceNumber = invoiceNumber.trim();
-        invoice.status = InvoiceStatus.DRAFT;
-        invoice.issueDate = issueDate != null ? issueDate : LocalDate.now();
-        invoice.dueDate = dueDate;
-        invoice.createdBy = createdBy;
-        invoice.customer = customer;
-        invoice.subtotal = BigDecimal.ZERO;
-        invoice.taxInPercentage = BigDecimal.ZERO;
-        invoice.totalAmount = BigDecimal.ZERO;
         invoice.items = new ArrayList<>();
         return invoice;
     }
@@ -162,12 +139,15 @@ public class Invoice {
      * Adds an item to this invoice and recalculates totals.
      */
     public void addItem(String description, int quantity, BigDecimal unitPrice) {
-        if (status != InvoiceStatus.DRAFT) {
-            throw new IllegalStateException("Cannot add items to invoice with status " + status);
+        if (lifeCycleStatus != LifeCycleStatus.DRAFT) {
+            throw new IllegalStateException("Cannot add items to invoice with status " + lifeCycleStatus);
         }
         InvoiceItem item = InvoiceItem.create(this, description, quantity, unitPrice);
         items.add(item);
-        recalculateTotals();
+        this.subtotal = this.subtotal
+                .add(item.getAmount())
+                .setScale(2, RoundingMode.HALF_UP);
+        calculateTotal();
     }
 
     /**
@@ -177,24 +157,16 @@ public class Invoice {
         if (item == null) {
             return;
         }
-        if (status != InvoiceStatus.DRAFT) {
-            throw new IllegalStateException("Cannot remove items from invoice with status " + status);
+        if (lifeCycleStatus != LifeCycleStatus.DRAFT) {
+            throw new IllegalStateException("Cannot remove items from invoice with status " + lifeCycleStatus);
         }
         if (items.remove(item)) {
-            recalculateTotals();
+            this.subtotal = this.subtotal
+                    .subtract(item.getAmount())
+                    .max(BigDecimal.ZERO)
+                    .setScale(2, RoundingMode.HALF_UP);
+            calculateTotal();
         }
-    }
-
-    /**
-     * Recalculates subtotal and total amount from items and tax percentage.
-     */
-    public void recalculateTotals() {
-        this.subtotal = items.stream()
-                .map(InvoiceItem::getAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add)
-                .setScale(2, RoundingMode.HALF_UP);
-        BigDecimal taxAmount = subtotal.multiply(taxInPercentage).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
-        this.totalAmount = subtotal.add(taxAmount).setScale(2, RoundingMode.HALF_UP);
     }
 
     /**
@@ -208,50 +180,16 @@ public class Invoice {
             throw new IllegalArgumentException("Tax percentage must be between 0 and 100");
         }
         this.taxInPercentage = taxInPercentage.setScale(2, RoundingMode.HALF_UP);
-        recalculateTotals();
+        calculateTotal();
     }
 
-    /**
-     * Sends the invoice (DRAFT → UNPAID). Only draft invoices can be sent.
-     */
-    public void send() {
-        if (status != InvoiceStatus.DRAFT) {
-            throw new IllegalStateException("Only draft invoices can be sent. Current status: " + status);
-        }
-        if (items.isEmpty()) {
-            throw new IllegalStateException("Cannot send invoice without items");
-        }
-        this.status = InvoiceStatus.UNPAID;
-    }
-
-    /**
-     * Marks the invoice as paid. Valid for UNPAID, PARTIALLY_PAID and OVERDUE.
-     */
-    public void markAsPaid() {
-        if (status != InvoiceStatus.UNPAID && status != InvoiceStatus.PARTIALLY_PAID && status != InvoiceStatus.OVERDUE) {
-            throw new IllegalStateException("Cannot mark as paid. Current status: " + status);
-        }
-        this.status = InvoiceStatus.PAID;
-    }
-
-    /**
-     * Marks the invoice as partially paid.
-     */
-    public void markAsPartiallyPaid() {
-        if (status != InvoiceStatus.UNPAID) {
-            throw new IllegalStateException("Only unpaid invoices can be marked partially paid. Current status: " + status);
-        }
-        this.status = InvoiceStatus.PARTIALLY_PAID;
-    }
-
-    /**
-     * Marks the invoice as overdue. Used by scheduler when due date has passed.
-     */
-    public void markAsOverdue() {
-        if (status != InvoiceStatus.UNPAID) {
-            throw new IllegalStateException("Only unpaid invoices can be marked overdue. Current status: " + status);
-        }
-        this.status = InvoiceStatus.OVERDUE;
+    public void calculateTotal() {
+        BigDecimal taxAmount = this.subtotal.multiply(this.taxInPercentage)
+                .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+        this.totalAmount = this.subtotal
+                .add(taxAmount)
+                .max(BigDecimal.ZERO)
+                .setScale(2, RoundingMode.HALF_UP);
     }
 
     /* ======================
@@ -293,8 +231,12 @@ public class Invoice {
         return invoiceNumber;
     }
 
-    public InvoiceStatus getStatus() {
-        return status;
+    public TimeStatus getTimeStatus() {
+        return timeStatus;
+    }
+
+    public LifeCycleStatus getLifeCycleStatus() {
+        return lifeCycleStatus;
     }
 
     public LocalDate getIssueDate() {
@@ -318,7 +260,7 @@ public class Invoice {
     }
 
     public List<InvoiceItem> getItems() {
-        return Collections.unmodifiableList(items);
+        return items;
     }
 
     public Instant getCreatedAt() {
@@ -327,6 +269,22 @@ public class Invoice {
 
     public Instant getUpdatedAt() {
         return updatedAt;
+    }
+
+    public boolean isDraft() {
+        return lifeCycleStatus == LifeCycleStatus.DRAFT;
+    }
+
+    public boolean isIssued() {
+        return lifeCycleStatus == LifeCycleStatus.ISSUED;
+    }
+
+    public boolean isCancelled() {
+        return lifeCycleStatus == LifeCycleStatus.CANCELLED;
+    }
+
+    public boolean isOverdue() {
+        return timeStatus == TimeStatus.OVERDUE;
     }
 
     /* ======================
@@ -349,45 +307,46 @@ public class Invoice {
         this.invoiceNumber = invoiceNumber;
     }
 
-    public void setStatus(InvoiceStatus status) {
-        this.status = status;
+    public void setIssueDate(LocalDate issueDate) {
+        if (issueDate == null) {
+            throw new IllegalArgumentException("Issue date cannot be null");
+        }
+        if (lifeCycleStatus != LifeCycleStatus.DRAFT) {
+            throw new IllegalStateException("Only draft invoices can be issued. Current status: " + lifeCycleStatus);
+        }
+        if(totalAmount.compareTo(BigDecimal.ZERO) <= 0){
+            throw new IllegalArgumentException("Total amount cannot be zero or negative");
+        }
+        this.issueDate = issueDate;
+        this.lifeCycleStatus = LifeCycleStatus.ISSUED;
     }
 
-    public void setIssueDate(LocalDate issueDate) {
-        this.issueDate = issueDate;
+    public void setIssuedNow() {
+        if (lifeCycleStatus != LifeCycleStatus.DRAFT) {
+            throw new IllegalStateException("Only draft invoices can be issued. Current status: " + lifeCycleStatus);
+        }
+        if(totalAmount.compareTo(BigDecimal.ZERO) <= 0){
+            throw new IllegalArgumentException("Total amount cannot be zero or negative");
+        }
+        this.issueDate = LocalDate.now();
+        this.lifeCycleStatus = LifeCycleStatus.ISSUED;
+    }
+
+    public void markAsCancelled() {
+        this.lifeCycleStatus = LifeCycleStatus.CANCELLED;
     }
 
     public void setDueDate(LocalDate dueDate) {
+        if (dueDate == null) {
+            throw new IllegalArgumentException("Due date cannot be null");
+        }
+        if(dueDate.isEqual(LocalDate.now())) {
+            this.timeStatus = TimeStatus.DUE_TODAY;
+        } else if(dueDate.isBefore(LocalDate.now())) {
+            this.timeStatus = TimeStatus.OVERDUE;
+        } else {
+            this.timeStatus = TimeStatus.NOT_DUE;
+        }
         this.dueDate = dueDate;
-    }
-
-    /**
-     * @deprecated Use {@link #setTaxPercentage(BigDecimal)} which recalculates totals.
-     */
-    @Deprecated
-    public void setTaxInPercentage(BigDecimal taxInPercentage) {
-        setTaxPercentage(taxInPercentage);
-    }
-
-    /**
-     * For JPA hydration only. Totals are derived via {@link #recalculateTotals()}.
-     */
-    public void setSubtotal(BigDecimal subtotal) {
-        this.subtotal = subtotal != null ? subtotal.setScale(2, RoundingMode.HALF_UP) : BigDecimal.ZERO;
-    }
-
-    /**
-     * For JPA hydration only. Totals are derived via {@link #recalculateTotals()}.
-     */
-    public void setTotalAmount(BigDecimal totalAmount) {
-        this.totalAmount = totalAmount != null ? totalAmount.setScale(2, RoundingMode.HALF_UP) : BigDecimal.ZERO;
-    }
-
-    /**
-     * For JPA / infrastructure only. Use {@link #addItem(String, int, BigDecimal)} and
-     * {@link #removeItem(InvoiceItem)} for domain-driven changes.
-     */
-    public void setItems(List<InvoiceItem> items) {
-        this.items = items != null ? new ArrayList<>(items) : new ArrayList<>();
     }
 }
