@@ -6,17 +6,18 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
+import java.util.UUID;
 
 @Repository
-public interface UserJpaRepository extends JpaRepository<User, Long>, JpaSpecificationExecutor<User> {
+public interface UserJpaRepository extends JpaRepository<User, UUID>, JpaSpecificationExecutor<User> {
 
-    Optional<User> findByIdAndOrganizationId(Long id, Long organizationId);
+    Optional<User> findByIdAndOrganizationId(UUID id, UUID organizationId);
 
-    Optional<User> findByOrganizationId(Long id);
+    Optional<User> findByOrganizationId(UUID id);
 
-    Optional<User> findByEmailAndOrganizationId(String email, Long organizationId);
+    Optional<User> findByEmailAndOrganizationId(String email, UUID organizationId);
 
-    boolean existsByEmailAndOrganizationId(String email, Long organizationId);
+    boolean existsByEmailAndOrganizationId(String email, UUID organizationId);
 
-    boolean existsByEmailAndOrganizationIdAndIdNot(String email, Long organizationId, Long id);
+    boolean existsByEmailAndOrganizationIdAndIdNot(String email, UUID organizationId, UUID id);
 }

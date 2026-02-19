@@ -1,14 +1,17 @@
 package com.cashclarity.exception.user;
 
-import com.cashclarity.exception.CashClarityException;
+import com.cashclarity.api.error.ErrorCode;
+import com.cashclarity.exception.base.NotFoundException;
+import java.util.UUID;
 
-public class UserNotFoundException extends CashClarityException {
+public class UserNotFoundException extends NotFoundException {
 
-    public UserNotFoundException(Long userId, Long organizationId) {
-        super("User not found for id '" + userId + "' in organization '" + organizationId + "'.");
+    public UserNotFoundException(String reason) {
+        super(ErrorCode.USER_NOT_FOUND, 
+            reason);
     }
-
-    public UserNotFoundException(Long userId) {
-        super("User not found for id '" + userId + "'.");
+    public UserNotFoundException(UUID userId) {
+        super(ErrorCode.USER_NOT_FOUND, 
+            "User not found for id '" + userId.toString() + "'.");
     }
 }

@@ -6,24 +6,22 @@ import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 public class InvoiceRequest {
 
     @NotNull(message = "organizationId is required")
-    @Positive(message = "organizationId must be a positive number")
-    private Long organizationId;
+    private UUID organizationId;
 
-    private Long createdByUserId;
+    private UUID createdByUserId;
 
-    @Positive(message = "customerId must be a positive number")
-    private Long customerId;
+    private UUID customerId;
 
     @NotBlank(message = "invoiceNumber must not be blank")
     @Size(max = 100, message = "invoiceNumber must not exceed 100 characters")
@@ -40,25 +38,25 @@ public class InvoiceRequest {
     @Valid
     private List<InvoiceItemRequest> items = new ArrayList<>();
 
-    public Long getOrganizationId() {
+    public UUID getOrganizationId() {
         return organizationId;
     }
 
-    public void setOrganizationId(Long organizationId) {
+    public void setOrganizationId(UUID organizationId) {
         this.organizationId = organizationId;
     }
 
-    public Long getCreatedByUserId() {
+    public UUID getCreatedByUserId() {
         return createdByUserId;
     }
 
-    public void setCreatedByUserId(Long createdByUserId) {
+    public void setCreatedByUserId(UUID createdByUserId) {
         this.createdByUserId = createdByUserId;
     }
 
-    public Long getCustomerId() { return customerId; }
+    public UUID getCustomerId() { return customerId; }
 
-    public void setCustomerId(Long customerId) { this.customerId = customerId; }
+    public void setCustomerId(UUID customerId) { this.customerId = customerId; }
 
     public String getInvoiceNumber() {
         return invoiceNumber;

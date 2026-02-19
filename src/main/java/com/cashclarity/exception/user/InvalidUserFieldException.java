@@ -1,10 +1,18 @@
 package com.cashclarity.exception.user;
 
-import com.cashclarity.exception.CashClarityException;
+import java.util.UUID;
 
-public class InvalidUserFieldException extends CashClarityException {
+import com.cashclarity.api.error.ErrorCode;
+import com.cashclarity.exception.base.ValidationException;
 
-    public InvalidUserFieldException(String field, String reason) {
-        super("Invalid user field '" + field + "': " + reason);
+public class InvalidUserFieldException extends ValidationException {
+
+    public InvalidUserFieldException(String reason) {
+        super(ErrorCode.INVALID_USER_FIELD, 
+            reason);
+    }
+    public InvalidUserFieldException(UUID userId) {
+        super(ErrorCode.INVALID_USER_FIELD, 
+            "Invalid user id '" + userId.toString() + "'.");
     }
 }

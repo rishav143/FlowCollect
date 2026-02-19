@@ -1,10 +1,22 @@
-package com.cashclarity.exception.Customer;
+package com.cashclarity.exception.customer;
 
-import com.cashclarity.exception.CashClarityException;
+import com.cashclarity.api.error.ErrorCode;
+import com.cashclarity.exception.base.NotFoundException;
+import java.util.UUID;
 
-public class CustomerNotFoundException extends CashClarityException {
-    public CustomerNotFoundException(Long customerId) {
-        super("Customer not found for id '" + customerId + "'.");
+/**
+ * Thrown when a customer does not exist.
+ */
+public class CustomerNotFoundException extends NotFoundException {
+
+    public CustomerNotFoundException(String message) {
+        super(ErrorCode.CUSTOMER_NOT_FOUND, message);
     }
 
+    public CustomerNotFoundException(UUID customerId) {
+        super(
+            ErrorCode.CUSTOMER_NOT_FOUND,
+            "Customer not found with id: " + customerId.toString()
+        );
+    }
 }

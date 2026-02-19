@@ -1,25 +1,27 @@
 package com.cashclarity.api.v1.organization.dto;
 
+import java.util.UUID;
+
 public class OrganizationSettingsResponse {
 
-    private Long id;
+    private UUID id;
     private String timezone;
     private String currency;
 
     public OrganizationSettingsResponse() {
     }
 
-    public OrganizationSettingsResponse(Long id, String timezone, String currency) {
+    public OrganizationSettingsResponse(UUID id, String timezone, String currency) {
         this.id = id;
         this.timezone = timezone;
         this.currency = currency;
     }
 
-    public Long getId() {
+    public UUID getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(UUID id) {
         this.id = id;
     }
 

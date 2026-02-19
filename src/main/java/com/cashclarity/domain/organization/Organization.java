@@ -9,14 +9,15 @@ import jakarta.validation.constraints.Size;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.Currency;
+import java.util.UUID;
 
 @Entity
 @Table(name = "organizations")
 public class Organization {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
 
     @Version
     private Long version;
@@ -153,7 +154,7 @@ public class Organization {
        Getters
        ====================== */
 
-    public Long getId() {
+    public UUID getId() {
         return id;
     }
 
@@ -247,10 +248,6 @@ public class Organization {
 
     public void setStatus(OrganizationStatus status) {
         this.status = status;
-    }
-
-    public void setCreatedBy(Long createdBy) {
-        this.createdBy = createdBy;
     }
 
     public void setUpdatedBy(Long updatedBy) {

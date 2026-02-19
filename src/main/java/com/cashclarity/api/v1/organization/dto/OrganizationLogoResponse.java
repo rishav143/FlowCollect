@@ -1,23 +1,25 @@
 package com.cashclarity.api.v1.organization.dto;
 
+import java.util.UUID;
+
 public class OrganizationLogoResponse {
 
-    private Long id;
+    private UUID id;
     private String logoUrl;
 
     public OrganizationLogoResponse() {
     }
 
-    public OrganizationLogoResponse(Long id, String logoUrl) {
+    public OrganizationLogoResponse(UUID id, String logoUrl) {
         this.id = id;
         this.logoUrl = logoUrl;
     }
 
-    public Long getId() {
+    public UUID getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(UUID id) {
         this.id = id;
     }
 

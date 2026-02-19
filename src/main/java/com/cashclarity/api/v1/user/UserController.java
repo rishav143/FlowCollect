@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/organizations/{organizationId}/users")
@@ -35,7 +36,7 @@ public class UserController {
 
     @PostMapping
     public ResponseEntity<UserResponse> create(
-            @PathVariable Long organizationId,
+            @PathVariable UUID organizationId,
             @Valid @RequestBody UserCreateRequest request
     ) {
         User created = userService.create(organizationId, request);
@@ -49,7 +50,7 @@ public class UserController {
 
     @GetMapping
     public ResponseEntity<Page<UserResponse>> list(
-            @PathVariable Long organizationId,
+            @PathVariable UUID organizationId,
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String email,
             @RequestParam(required = false) String name,
@@ -62,8 +63,8 @@ public class UserController {
 
     @GetMapping("/{userId}")
     public ResponseEntity<UserResponse> getById(
-            @PathVariable Long organizationId,
-            @PathVariable Long userId
+            @PathVariable UUID organizationId,
+            @PathVariable UUID userId
     ) {
         User user = userService.getById(organizationId, userId);
         return ResponseEntity.ok(UserMapper.toResponse(user));
@@ -71,8 +72,8 @@ public class UserController {
 
     @PatchMapping("/{userId}")
     public ResponseEntity<UserResponse> update(
-            @PathVariable Long organizationId,
-            @PathVariable Long userId,
+            @PathVariable UUID organizationId,
+            @PathVariable UUID userId,
             @Valid @RequestBody UserUpdateRequest request
     ) {
         User updated = userService.update(organizationId, userId, request);
@@ -81,8 +82,8 @@ public class UserController {
 
     @PostMapping("/{userId}/activate")
     public ResponseEntity<UserResponse> activate(
-            @PathVariable Long organizationId,
-            @PathVariable Long userId
+            @PathVariable UUID organizationId,
+            @PathVariable UUID userId
     ) {
         User activated = userService.activate(organizationId, userId);
         return ResponseEntity.ok(UserMapper.toResponse(activated));
@@ -90,8 +91,8 @@ public class UserController {
 
     @PostMapping("/{userId}/deactivate")
     public ResponseEntity<UserResponse> deactivate(
-            @PathVariable Long organizationId,
-            @PathVariable Long userId
+            @PathVariable UUID organizationId,
+            @PathVariable UUID userId
     ) {
         User deactivated = userService.deactivate(organizationId, userId);
         return ResponseEntity.ok(UserMapper.toResponse(deactivated));
@@ -99,8 +100,8 @@ public class UserController {
 
     @PostMapping("/{userId}/password")
     public ResponseEntity<Void> changePassword(
-            @PathVariable Long organizationId,
-            @PathVariable Long userId,
+            @PathVariable UUID organizationId,
+            @PathVariable UUID userId,
             @Valid @RequestBody UserPasswordChangeRequest request
     ) {
         userService.changePassword(organizationId, userId, request);
@@ -109,8 +110,8 @@ public class UserController {
 
     @DeleteMapping("/{userId}")
     public ResponseEntity<Void> delete(
-            @PathVariable Long organizationId,
-            @PathVariable Long userId
+            @PathVariable UUID organizationId,
+            @PathVariable UUID userId
     ) {
         userService.delete(organizationId, userId);
         return ResponseEntity.noContent().build();

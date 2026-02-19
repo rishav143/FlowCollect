@@ -1,13 +1,22 @@
 package com.cashclarity.exception.organization;
 
-import com.cashclarity.exception.CashClarityException;
+import java.util.UUID;
+
+import com.cashclarity.api.error.ErrorCode;
+import com.cashclarity.exception.base.NotFoundException;
 
 /**
  * Thrown when an organization cannot be found for the given id.
  */
-public class OrganizationNotFoundException extends CashClarityException {
+public class OrganizationNotFoundException extends NotFoundException {
 
-    public OrganizationNotFoundException(Long organizationId) {
-        super("Organization not found for id: '" + organizationId + "'.");
+    public OrganizationNotFoundException(String reason) {
+        super(ErrorCode.ORGANIZATION_NOT_FOUND, 
+            reason);
+    }
+
+    public OrganizationNotFoundException(UUID organizationId) {
+        super(ErrorCode.ORGANIZATION_NOT_FOUND, 
+            "Organization not found for id: '" + organizationId.toString() + "'.");
     }
 }

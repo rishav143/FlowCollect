@@ -1,25 +1,26 @@
 package com.cashclarity.api.v1.organization.dto;
 
 import com.cashclarity.domain.organization.OrganizationStatus;
+import java.util.UUID;
 
 public class OrganizationStatusResponse {
 
-    private Long id;
+    private UUID id;
     private OrganizationStatus status;
 
     public OrganizationStatusResponse() {
     }
 
-    public OrganizationStatusResponse(Long id, OrganizationStatus status) {
+    public OrganizationStatusResponse(UUID id, OrganizationStatus status) {
         this.id = id;
         this.status = status;
     }
 
-    public Long getId() {
+    public UUID getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(UUID id) {
         this.id = id;
     }
 

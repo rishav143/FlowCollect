@@ -1,10 +1,19 @@
 package com.cashclarity.exception.invoice;
 
-import com.cashclarity.exception.CashClarityException;
+import java.util.UUID;
 
-public class InvalidInvoiceFieldException extends CashClarityException {
+import com.cashclarity.api.error.ErrorCode;
+import com.cashclarity.exception.base.ValidationException;
 
-    public InvalidInvoiceFieldException(String field, String reason) {
-        super("Invalid invoice field '" + field + "': " + reason);
+public class InvalidInvoiceFieldException extends ValidationException {
+
+    public InvalidInvoiceFieldException(String reason) {
+        super(ErrorCode.INVALID_INVOICE_FIELD, 
+            reason);
+    }
+    
+    public InvalidInvoiceFieldException(UUID invoiceId) {
+        super(ErrorCode.INVALID_INVOICE_FIELD, 
+            "Invalid invoice id '" + invoiceId.toString() + "'.");
     }
 }

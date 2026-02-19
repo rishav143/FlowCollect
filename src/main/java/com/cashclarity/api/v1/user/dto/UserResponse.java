@@ -4,11 +4,12 @@ import com.cashclarity.domain.user.UserRole;
 import com.cashclarity.domain.user.UserStatus;
 
 import java.time.Instant;
+import java.util.UUID;
 
 public class UserResponse {
 
-    private Long id;
-    private Long organizationId;
+    private UUID id;
+    private UUID organizationId;
     private String name;
     private String email;
     private UserRole role;
@@ -16,19 +17,19 @@ public class UserResponse {
     private Instant createdAt;
     private Instant updatedAt;
 
-    public Long getId() {
+    public UUID getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(UUID id) {
         this.id = id;
     }
 
-    public Long getOrganizationId() {
+    public UUID getOrganizationId() {
         return organizationId;
     }
 
-    public void setOrganizationId(Long organizationId) {
+    public void setOrganizationId(UUID organizationId) {
         this.organizationId = organizationId;
     }
 

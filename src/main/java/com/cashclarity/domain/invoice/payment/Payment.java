@@ -6,15 +6,17 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
+import java.util.UUID;
 
 @Entity
 @Table(name = "payments")
 public class Payment {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
 
     /* ======================
        Relationships
@@ -29,12 +31,10 @@ public class Payment {
        Core Attributes
        ====================== */
 
-    @NotNull
     @Positive
     @Column(nullable = false, precision = 15, scale = 2)
     private BigDecimal amount;
 
-    @NotNull
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private PaymentMode mode;
@@ -59,7 +59,7 @@ public class Payment {
        JPA
        ====================== */
 
-    protected Payment() {
+    public Payment() {
         // JPA only
     }
 
@@ -77,7 +77,7 @@ public class Payment {
        Getters & Setters
        ====================== */
 
-    public Long getId() {
+    public UUID getId() {
         return id;
     }
 
@@ -94,7 +94,10 @@ public class Payment {
     }
 
     public void setAmount(BigDecimal amount) {
-        this.amount = amount;
+        if(amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Amount cannot be null or negative");
+        }
+        this.amount = amount.setScale(2, RoundingMode.HALF_UP);
     }
 
     public PaymentMode getMode() {

@@ -7,14 +7,15 @@ import jakarta.validation.constraints.Positive;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.UUID;
 
 @Entity
 @Table(name = "invoice_items")
 public class InvoiceItem {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
 
     /* ======================
        Relationships
@@ -94,7 +95,7 @@ public class InvoiceItem {
        Getters
        ====================== */
 
-    public Long getId() {
+    public UUID getId() {
         return id;
     }
 

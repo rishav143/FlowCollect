@@ -1,20 +1,21 @@
 package com.cashclarity.api.v1.invoice.dto;
 
 import java.math.BigDecimal;
+import java.util.UUID;
 
 public class InvoiceItemResponse {
 
-    private Long id;
+    private UUID id;
     private String description;
     private int quantity;
     private BigDecimal unitPrice;
     private BigDecimal amount;
 
-    public Long getId() {
+    public UUID getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(UUID id) {
         this.id = id;
     }
 

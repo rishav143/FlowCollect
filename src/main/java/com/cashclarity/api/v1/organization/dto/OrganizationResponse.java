@@ -3,10 +3,11 @@ package com.cashclarity.api.v1.organization.dto;
 import com.cashclarity.domain.organization.OrganizationStatus;
 
 import java.time.Instant;
+import java.util.UUID;
 
 public class OrganizationResponse {
 
-    private Long id;
+    private UUID id;
     private String name;
     private String email;
     private String phone;
@@ -22,11 +23,11 @@ public class OrganizationResponse {
        Getters & Setters
        ====================== */
 
-    public Long getId() {
+    public UUID getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(UUID id) {
         this.id = id;
     }
 

@@ -2,18 +2,21 @@ package com.cashclarity.domain.invoice.followup;
 
 import com.cashclarity.domain.invoice.Invoice;
 import com.cashclarity.domain.template.Template;
+import com.cashclarity.exception.followup.InvalidFollowUpFieldException;
+
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 
 import java.time.Instant;
+import java.util.UUID;
 
 @Entity
 @Table(name = "follow_ups")
 public class FollowUp {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
 
     /* ======================
        Relationships
@@ -60,7 +63,7 @@ public class FollowUp {
        JPA
        ====================== */
 
-    protected FollowUp() {
+    public FollowUp() {
         // JPA only
     }
 
@@ -77,7 +80,7 @@ public class FollowUp {
        Getters & Setters
        ====================== */
 
-    public Long getId() {
+    public UUID getId() {
         return id;
     }
 
@@ -127,5 +130,41 @@ public class FollowUp {
 
     public Instant getCreatedAt() {
         return createdAt;
+    }
+    /* ======================
+       Domain Behavior
+       ====================== */
+
+    public void send() {
+        this.status = FollowUpStatus.SENT;
+        this.sentAt = Instant.now();
+    }
+
+    public void fail() {
+        if (this.status == FollowUpStatus.SENT) {
+            throw new InvalidFollowUpFieldException("follow-up " + this.id + " cannot be failed because it has already been sent");
+        }
+        this.status = FollowUpStatus.FAILED;
+        this.sentAt = null;
+    }
+
+    public boolean isSent() {
+        return this.status == FollowUpStatus.SENT;
+    }
+
+    public boolean isFailed() {
+        return this.status == FollowUpStatus.FAILED;
+    }
+
+    public boolean isPending() {
+        return this.status == FollowUpStatus.PENDING;
+    }
+
+    public boolean isManual() {
+        return this.triggerType == FollowUpTriggerType.MANUAL;
+    }
+
+    public boolean isAutomated() {
+        return this.triggerType == FollowUpTriggerType.AUTOMATED;
     }
 }

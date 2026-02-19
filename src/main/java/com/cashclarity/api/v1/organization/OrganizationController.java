@@ -21,6 +21,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.net.URI;
 import java.time.LocalDate;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/organizations")
@@ -35,7 +36,7 @@ public class OrganizationController {
     /**
      * Creates a new organization.
      * Request body is validated by Bean Validation; service layer validates timezone,
-     * currency, and duplicate email, throwing exceptions that are handled by {@link com.cashclarity.exception.GlobalExceptionHandler}.
+     * currency, and duplicate email, throwing exceptions that are handled by {@link com.cashclarity.api.error.GlobalExceptionHandler}.
      */
     @PostMapping
     public ResponseEntity<OrganizationResponse> create(@Valid @RequestBody OrganizationCreateRequest request) {
@@ -52,7 +53,7 @@ public class OrganizationController {
     /**
      * Lists organizations with filters and pagination.
      * Service layer validates filters and pagination; exceptions are handled by
- * {@link com.cashclarity.exception.GlobalExceptionHandler}.
+ * {@link com.cashclarity.api.error.GlobalExceptionHandler}.
      */
     @GetMapping
     public ResponseEntity<Page<OrganizationResponse>> list(
@@ -77,10 +78,10 @@ public class OrganizationController {
     /**
      * Fetches a single organization by id.
      * Service layer validates the id and throws custom exceptions that are handled by
-     * {@link com.cashclarity.exception.GlobalExceptionHandler}.
+     * {@link com.cashclarity.api.error.GlobalExceptionHandler}.
      */
     @GetMapping("/{organizationId}")
-    public ResponseEntity<OrganizationResponse> getById(@PathVariable Long organizationId) {
+    public ResponseEntity<OrganizationResponse> getById(@PathVariable UUID organizationId) {
         Organization organization = organizationService.getById(organizationId);
         return ResponseEntity.ok(OrganizationMapper.toResponse(organization));
     }
@@ -88,10 +89,10 @@ public class OrganizationController {
     /**
      * Fetches the current status of an organization by id.
      * Service layer validates the id and throws custom exceptions that are handled by
-     * {@link com.cashclarity.exception.GlobalExceptionHandler}.
+     * {@link com.cashclarity.api.error.GlobalExceptionHandler}.
      */
     @GetMapping("/{organizationId}/status")
-    public ResponseEntity<OrganizationStatusResponse> getStatus(@PathVariable Long organizationId) {
+    public ResponseEntity<OrganizationStatusResponse> getStatus(@PathVariable UUID organizationId) {
         OrganizationStatus status = organizationService.getStatus(organizationId);
         return ResponseEntity.ok(new OrganizationStatusResponse(organizationId, status));
     }
@@ -99,11 +100,11 @@ public class OrganizationController {
     /**
      * Uploads a logo for an organization.
      * Service layer validates the id and throws custom exceptions that are handled by
-     * {@link com.cashclarity.exception.GlobalExceptionHandler}.
+     * {@link com.cashclarity.api.error.GlobalExceptionHandler}.
      */
     @PostMapping("/{organizationId}/logo")
     public ResponseEntity<OrganizationLogoResponse> uploadLogo(
-            @PathVariable Long organizationId,
+            @PathVariable UUID organizationId,
             @RequestParam("file") MultipartFile file
     ) {
         Organization updated = organizationService.uploadLogo(organizationId, file);
@@ -113,10 +114,10 @@ public class OrganizationController {
     /**
      * Removes an organization's logo.
      * Service layer validates the id and throws custom exceptions that are handled by
-     * {@link com.cashclarity.exception.GlobalExceptionHandler}.
+     * {@link com.cashclarity.api.error.GlobalExceptionHandler}.
      */
     @DeleteMapping("/{organizationId}/logo")
-    public ResponseEntity<Void> removeLogo(@PathVariable Long organizationId) {
+    public ResponseEntity<Void> removeLogo(@PathVariable UUID organizationId) {
         organizationService.removeLogo(organizationId);
         return ResponseEntity.noContent().build();
     }
@@ -124,10 +125,10 @@ public class OrganizationController {
     /**
      * Fetches the logo URL for an organization.
      * Service layer validates the id and throws custom exceptions that are handled by
-     * {@link com.cashclarity.exception.GlobalExceptionHandler}.
+     * {@link com.cashclarity.api.error.GlobalExceptionHandler}.
      */
     @GetMapping("/{organizationId}/logo")
-    public ResponseEntity<OrganizationLogoResponse> getLogo(@PathVariable Long organizationId) {
+    public ResponseEntity<OrganizationLogoResponse> getLogo(@PathVariable UUID organizationId) {
         String logoUrl = organizationService.getLogoUrl(organizationId);
         return ResponseEntity.ok(new OrganizationLogoResponse(organizationId, logoUrl));
     }
@@ -135,10 +136,10 @@ public class OrganizationController {
     /**
      * Fetches organization settings (timezone, currency).
      * Service layer validates the id and throws custom exceptions that are handled by
-     * {@link com.cashclarity.exception.GlobalExceptionHandler}.
+     * {@link com.cashclarity.api.error.GlobalExceptionHandler}.
      */
     @GetMapping("/{organizationId}/settings")
-    public ResponseEntity<OrganizationSettingsResponse> getSettings(@PathVariable Long organizationId) {
+    public ResponseEntity<OrganizationSettingsResponse> getSettings(@PathVariable UUID organizationId) {
         Organization organization = organizationService.getSettings(organizationId);
         return ResponseEntity.ok(new OrganizationSettingsResponse(
                 organization.getId(),
@@ -150,11 +151,11 @@ public class OrganizationController {
     /**
      * Updates organization settings (timezone, currency).
      * Service layer validates the id and throws custom exceptions that are handled by
-     * {@link com.cashclarity.exception.GlobalExceptionHandler}.
+     * {@link com.cashclarity.api.error.GlobalExceptionHandler}.
      */
     @PatchMapping("/{organizationId}/settings")
     public ResponseEntity<OrganizationSettingsResponse> updateSettings(
-            @PathVariable Long organizationId,
+            @PathVariable UUID organizationId,
             @RequestBody OrganizationSettingsRequest request
     ) {
         Organization updated = organizationService.updateSettings(organizationId, request);
@@ -168,11 +169,11 @@ public class OrganizationController {
     /**
      * Updates mutable organization fields (name, email, timezone, currency, contact info, logo).
      * Request body is validated by Bean Validation; service layer validates business rules and
-     * throws custom exceptions handled by {@link com.cashclarity.exception.GlobalExceptionHandler}.
+     * throws custom exceptions handled by {@link com.cashclarity.api.error.GlobalExceptionHandler}.
      */
     @PatchMapping("/{organizationId}")
     public ResponseEntity<OrganizationResponse> update(
-            @PathVariable Long organizationId,
+            @PathVariable UUID organizationId,
             @Valid @RequestBody OrganizationUpdateRequest request
     ) {
         Organization updated = organizationService.update(organizationId, request);
@@ -182,10 +183,10 @@ public class OrganizationController {
     /**
      * Hard-deletes an organization by id.
      * Service layer validates the id and throws custom exceptions that are handled by
-     * {@link com.cashclarity.exception.GlobalExceptionHandler}.
+     * {@link com.cashclarity.api.error.GlobalExceptionHandler}.
      */
     @DeleteMapping("/{organizationId}")
-    public ResponseEntity<Void> delete(@PathVariable Long organizationId) {
+    public ResponseEntity<Void> delete(@PathVariable UUID organizationId) {
         organizationService.delete(organizationId);
         return ResponseEntity.noContent().build();
     }
@@ -193,10 +194,10 @@ public class OrganizationController {
     /**
      * Activates an organization by id.
      * Service layer validates the id and throws custom exceptions that are handled by
-     * {@link com.cashclarity.exception.GlobalExceptionHandler}.
+     * {@link com.cashclarity.api.error.GlobalExceptionHandler}.
      */
     @PostMapping("/{organizationId}/activate")
-    public ResponseEntity<OrganizationResponse> activate(@PathVariable Long organizationId) {
+    public ResponseEntity<OrganizationResponse> activate(@PathVariable UUID organizationId) {
         Organization activated = organizationService.activate(organizationId);
         return ResponseEntity.ok(OrganizationMapper.toResponse(activated));
     }
@@ -204,10 +205,10 @@ public class OrganizationController {
     /**
      * Suspends an organization by id.
      * Service layer validates the id and throws custom exceptions that are handled by
-     * {@link com.cashclarity.exception.GlobalExceptionHandler}.
+     * {@link com.cashclarity.api.error.GlobalExceptionHandler}.
      */
     @PostMapping("/{organizationId}/suspend")
-    public ResponseEntity<OrganizationResponse> suspend(@PathVariable Long organizationId) {
+    public ResponseEntity<OrganizationResponse> suspend(@PathVariable UUID organizationId) {
         Organization suspended = organizationService.suspend(organizationId);
         return ResponseEntity.ok(OrganizationMapper.toResponse(suspended));
     }
@@ -215,10 +216,10 @@ public class OrganizationController {
     /**
      * Archives an organization by id.
      * Service layer validates the id and throws custom exceptions that are handled by
-     * {@link com.cashclarity.exception.GlobalExceptionHandler}.
+     * {@link com.cashclarity.api.error.GlobalExceptionHandler}.
      */
     @PostMapping("/{organizationId}/archive")
-    public ResponseEntity<OrganizationResponse> archive(@PathVariable Long organizationId) {
+    public ResponseEntity<OrganizationResponse> archive(@PathVariable UUID organizationId) {
         Organization archived = organizationService.archive(organizationId);
         return ResponseEntity.ok(OrganizationMapper.toResponse(archived));
     }
@@ -226,10 +227,10 @@ public class OrganizationController {
     /**
      * Moves an organization to trial status by id.
      * Service layer validates the id and throws custom exceptions that are handled by
-     * {@link com.cashclarity.exception.GlobalExceptionHandler}.
+     * {@link com.cashclarity.api.error.GlobalExceptionHandler}.
      */
     @PostMapping("/{organizationId}/trial")
-    public ResponseEntity<OrganizationResponse> trial(@PathVariable Long organizationId) {
+    public ResponseEntity<OrganizationResponse> trial(@PathVariable UUID organizationId) {
         Organization trial = organizationService.trial(organizationId);
         return ResponseEntity.ok(OrganizationMapper.toResponse(trial));
     }
@@ -237,10 +238,10 @@ public class OrganizationController {
     /**
      * Marks an organization as expired by id.
      * Service layer validates the id and throws custom exceptions that are handled by
-     * {@link com.cashclarity.exception.GlobalExceptionHandler}.
+     * {@link com.cashclarity.api.error.GlobalExceptionHandler}.
      */
     @PostMapping("/{organizationId}/expired")
-    public ResponseEntity<OrganizationResponse> expired(@PathVariable Long organizationId) {
+    public ResponseEntity<OrganizationResponse> expired(@PathVariable UUID organizationId) {
         Organization expired = organizationService.expired(organizationId);
         return ResponseEntity.ok(OrganizationMapper.toResponse(expired));
     }

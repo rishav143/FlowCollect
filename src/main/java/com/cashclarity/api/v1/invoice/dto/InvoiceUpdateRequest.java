@@ -3,13 +3,13 @@ package com.cashclarity.api.v1.invoice.dto;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
-import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * DTO for patching mutable fields of a draft invoice.
@@ -17,11 +17,9 @@ import java.util.List;
  */
 public class InvoiceUpdateRequest {
 
-    @Positive(message = "createdByUserId must be a positive number")
-    private Long createdByUserId;
+    private UUID createdByUserId;
 
-    @Positive(message = "customerId must be a positive number")
-    private Long customerId;
+    private UUID customerId;
 
     @Size(max = 100, message = "invoiceNumber must not exceed 100 characters")
     private String invoiceNumber;
@@ -35,19 +33,19 @@ public class InvoiceUpdateRequest {
     @Valid
     private List<InvoiceItemRequest> items = new ArrayList<>();
 
-    public Long getCreatedByUserId() {
+    public UUID getCreatedByUserId() {
         return createdByUserId;
     }
 
-    public void setCreatedByUserId(Long createdByUserId) {
+    public void setCreatedByUserId(UUID createdByUserId) {
         this.createdByUserId = createdByUserId;
     }
 
-    public Long getCustomerId() {
+    public UUID getCustomerId() {
         return customerId;
     }
 
-    public void setCustomerId(Long customerId) {
+    public void setCustomerId(UUID customerId) {
         this.customerId = customerId;
     }
 

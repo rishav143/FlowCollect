@@ -9,13 +9,14 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 public class InvoiceResponse {
 
-    private Long id;
-    private Long organizationId;
-    private Long customerId;
-    private Long createdByUserId;
+    private UUID id;
+    private UUID organizationId;
+    private UUID customerId;
+    private UUID createdByUserId;
     private String invoiceNumber;
     private TimeStatus timeStatus;
     private LifeCycleStatus lifeCycleStatus;
@@ -28,35 +29,35 @@ public class InvoiceResponse {
     private Instant createdAt;
     private Instant updatedAt;
 
-    public Long getId() {
+    public UUID getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(UUID id) {
         this.id = id;
     }
 
-    public Long getOrganizationId() {
+    public UUID getOrganizationId() {
         return organizationId;
     }
 
-    public void setOrganizationId(Long organizationId) {
+    public void setOrganizationId(UUID organizationId) {
         this.organizationId = organizationId;
     }
 
-    public Long getCustomerId() {
+    public UUID getCustomerId() {
         return customerId;
     }
 
-    public void setCustomerId(Long customerId) {
+    public void setCustomerId(UUID customerId) {
         this.customerId = customerId;
     }
 
-    public Long getCreatedByUserId() {
+    public UUID getCreatedByUserId() {
         return createdByUserId;
     }
 
-    public void setCreatedByUserId(Long createdByUserId) {
+    public void setCreatedByUserId(UUID createdByUserId) {
         this.createdByUserId = createdByUserId;
     }
 

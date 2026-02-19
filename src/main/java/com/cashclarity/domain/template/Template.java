@@ -7,6 +7,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 import java.time.Instant;
+import java.util.UUID;
 
 @Entity
 @Table(
@@ -21,8 +22,8 @@ import java.time.Instant;
 public class Template {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
 
     /* ======================
        Ownership
@@ -59,7 +60,6 @@ public class Template {
     private String subject; // email only
 
     @NotBlank
-    @Lob
     @Column(nullable = false)
     private String body;
 
@@ -89,7 +89,7 @@ public class Template {
        JPA
        ====================== */
 
-    protected Template() {
+    public Template() {
         // JPA only
     }
 
@@ -112,7 +112,7 @@ public class Template {
        Getters
        ====================== */
 
-    public Long getId() {
+    public UUID getId() {
         return id;
     }
 
