@@ -17,7 +17,6 @@ import com.paidpeace.domain.organization.Organization;
 import com.paidpeace.domain.user.User;
 import com.paidpeace.domain.user.UserRole;
 import com.paidpeace.domain.user.UserStatus;
-import com.paidpeace.exception.code.UserErrorCode;
 import com.paidpeace.exception.http.ConflictException;
 import com.paidpeace.exception.http.ValidationException;
 import com.paidpeace.infrastructure.persistence.user.UserJpaRepository;
@@ -44,7 +43,7 @@ public class UserService {
         UserCreateRequest request
     ) {
         if(request == null) {
-            throw new ValidationException(UserErrorCode.INVALID_USER_FIELD,
+            throw new ValidationException( 
                 "Request must not be null");
         }
         // validate and get organization from organization service
@@ -52,19 +51,19 @@ public class UserService {
 
         String email = request.getEmail().trim().toLowerCase();
         if (userRepository.existsByEmailAndOrganizationId(email, organizationId)) {
-            throw new ConflictException(UserErrorCode.USER_ALREADY_EXISTS,
+            throw new ConflictException( 
                 "Email " + email + " must be unique within organization with ID: " + organizationId);
         }
         if(request.getName() == null || request.getName().isBlank()) {
-            throw new ValidationException(UserErrorCode.INVALID_USER_FIELD,
+            throw new ValidationException( 
                 "Name must not be blank");
         }
         if(request.getPassword() == null || request.getPassword().isBlank()) {
-            throw new ValidationException(UserErrorCode.INVALID_USER_FIELD,
+            throw new ValidationException( 
                 "Password must not be blank");
         }
         if(request.getRole() == null || request.getRole().isBlank()) {
-            throw new ValidationException(UserErrorCode.INVALID_USER_FIELD,
+            throw new ValidationException( 
                 "Role must not be blank");
         }
 
@@ -131,7 +130,7 @@ public class UserService {
         UserUpdateRequest request
     ) {
         if (request == null) {
-            throw new ValidationException(UserErrorCode.INVALID_USER_FIELD,
+            throw new ValidationException( 
                 "Request must not be null");
         }
         User user = UserUtil.validateUserWithOrganization(userId, organizationId, userRepository);
@@ -141,7 +140,7 @@ public class UserService {
         if (request.getName() != null) {
             String name = request.getName().trim();
             if (name.isBlank()) {
-                throw new ValidationException(UserErrorCode.INVALID_USER_FIELD,
+                throw new ValidationException( 
                     "Name must not be blank");
             }
             if (!name.equals(user.getName())) {
@@ -153,12 +152,12 @@ public class UserService {
         if (request.getEmail() != null) {
             String email = request.getEmail().trim().toLowerCase();
             if (email.isBlank()) {
-                throw new ValidationException(UserErrorCode.INVALID_USER_FIELD,
+                throw new ValidationException( 
                     "Email must not be blank");
             }
             if (!email.equals(user.getEmail())
                     && userRepository.existsByEmailAndOrganizationIdAndIdNot(email, organizationId, userId)) {
-                throw new ConflictException(UserErrorCode.USER_ALREADY_EXISTS,
+                throw new ConflictException( 
                     "Email " + email + " must be unique within organization with ID: " + organizationId);
             }
             if (!email.equals(user.getEmail())) {
@@ -198,7 +197,7 @@ public class UserService {
         User user = UserUtil.validateUserWithOrganization(userId, organizationId, userRepository);
 
         if (user.getStatus() == UserStatus.INACTIVE) {
-            throw new ConflictException(UserErrorCode.USER_ALREADY_EXISTS,
+            throw new ConflictException( 
                 "User with ID: " + userId + " is already inactive");
         }
 
@@ -211,35 +210,35 @@ public class UserService {
         User user = UserUtil.validateUserWithOrganization(userId, organizationId, userRepository);
 
         if (request == null) {
-            throw new ValidationException(UserErrorCode.INVALID_USER_FIELD,
+            throw new ValidationException( 
                 "Request must not be null");
         }
 
         String newPassword = request.getNewPassword();
         if (newPassword == null || newPassword.isBlank()) {
-            throw new ValidationException(UserErrorCode.INVALID_USER_FIELD,
+            throw new ValidationException( 
                 "New password must not be blank");
         }
         if (newPassword.length() < 8 || newPassword.length() > 100) {
-            throw new ValidationException(UserErrorCode.INVALID_USER_FIELD,
+            throw new ValidationException( 
                 "New password must be between 8 and 100 characters");
         }
 
         String oldPassword = request.getOldPassword();
         if (oldPassword != null) {
             if (oldPassword.isBlank()) {
-                throw new ValidationException(UserErrorCode.INVALID_USER_FIELD,
+                throw new ValidationException( 
                     "Old password must not be blank when provided");
             }
             if (!UserUtil.verifyPassword(oldPassword, user.getPasswordHash())) {
-                throw new ValidationException(UserErrorCode.INVALID_USER_FIELD,
+                throw new ValidationException( 
                     "Old password does not match current password");
             }
         }
 
         String newPasswordHash = UserUtil.hashPassword(newPassword);
         if (newPasswordHash.equals(user.getPasswordHash())) {
-            throw new ValidationException(UserErrorCode.INVALID_USER_FIELD,
+            throw new ValidationException( 
                 "New password must be different from current password");
         }
 

@@ -13,7 +13,6 @@ import com.paidpeace.api.v1.organization.dto.OrganizationUpdateRequest;
 import com.paidpeace.common.PaginationUtils;
 import com.paidpeace.domain.organization.Organization;
 import com.paidpeace.domain.organization.OrganizationStatus;
-import com.paidpeace.exception.code.OrganizationErrorCode;
 import com.paidpeace.exception.http.ConflictException;
 import com.paidpeace.exception.http.NotFoundException;
 import com.paidpeace.exception.http.ServiceUnavailableException;
@@ -60,15 +59,32 @@ public class OrganizationService {
         OrganizationCreateRequest request
     ) {
         if (request == null) {
-            throw new ValidationException(OrganizationErrorCode.INVALID_ORGANIZATION_FIELD,
+            throw new ValidationException(
                 "Request must not be null");
         }
 
+
+        if(request.getTimezone() == null || request.getTimezone().isBlank()) {
+            throw new ValidationException(
+                "Timezone is required. Provide a valid timezone ID (e.g. America/New_York, Europe/London).");
+        }
+        if(request.getCurrency() == null || request.getCurrency().isBlank()) {
+            throw new ValidationException(
+                "Currency is required. Provide a valid ISO 4217 code (e.g. USD, EUR, INR).");
+        }
         ZoneId timezone = OrganizationUtil.parseTimezone(request.getTimezone());
         Currency currency = OrganizationUtil.parseCurrency(request.getCurrency());
 
+        if (request.getName().trim().isBlank()) {
+            throw new ValidationException(
+                "Name must not be blank");
+        }
+        if (request.getEmail().trim().isBlank()) {
+            throw new ValidationException(
+                "Email must not be blank");
+        }
         if (organizationRepository.existsByEmail(request.getEmail().trim())) {
-            throw new ValidationException(OrganizationErrorCode.ORGANIZATION_ALREADY_EXISTS,
+            throw new ValidationException(
                 "Organization with email: " + request.getEmail() + " already exists.");
         }
 
@@ -133,20 +149,19 @@ public class OrganizationService {
         Organization organization = OrganizationUtil.getOrganizationOrThrow(organizationId, organizationRepository);
 
         if (organization.isDeleted()) {
-            throw new ValidationException(OrganizationErrorCode.ORGANIZATION_ALREADY_EXISTS,
+            throw new ValidationException(
                 "Organization with ID: " + organizationId + " is already archived.");
         }
 
         if (request == null) {
-            throw new ValidationException(OrganizationErrorCode.INVALID_ORGANIZATION_FIELD,
+            throw new ValidationException(
                 "Settings must not be null");
         }
 
         boolean hasTimezone = request.getTimezone() != null;
         boolean hasCurrency = request.getCurrency() != null;
         if (!hasTimezone && !hasCurrency) {
-            throw new ValidationException(OrganizationErrorCode.INVALID_ORGANIZATION_FIELD,
-                "Settings must contain timezone and currency");
+            throw new ValidationException("Settings must contain timezone and currency");
         }
 
         boolean changed = false;
@@ -189,18 +204,18 @@ public class OrganizationService {
         Organization organization = OrganizationUtil.getOrganizationOrThrow(organizationId, organizationRepository);
 
         if (organization.isDeleted()) {
-            throw new ValidationException(OrganizationErrorCode.ORGANIZATION_ALREADY_EXISTS,
+            throw new ValidationException(
                 "Organization with ID: " + organizationId + " is already archived.");
         }
 
         if (file == null || file.isEmpty()) {
-            throw new ValidationException(OrganizationErrorCode.INVALID_ORGANIZATION_FIELD,
+            throw new ValidationException(
                 "Logo file must not be empty");
         }
 
         String contentType = file.getContentType();
         if (contentType == null || !contentType.toLowerCase(Locale.ROOT).startsWith("image/")) {
-            throw new ValidationException(OrganizationErrorCode.INVALID_ORGANIZATION_FIELD,
+            throw new ValidationException(
                 "Logo file must be an image");
         }
 
@@ -211,7 +226,7 @@ public class OrganizationService {
             Files.createDirectories(directory);
             file.transferTo(target);
         } catch (IOException ex) {
-            throw new ServiceUnavailableException(OrganizationErrorCode.INTERNAL_SERVER_ERROR,
+            throw new ServiceUnavailableException(
                 "Failed to store logo file for organization with ID: " + organizationId + " due to: " + ex.getMessage());
         }
 
@@ -230,13 +245,13 @@ public class OrganizationService {
         Organization organization = OrganizationUtil.getOrganizationOrThrow(organizationId, organizationRepository);
 
         if (organization.isDeleted()) {
-            throw new ValidationException(OrganizationErrorCode.ORGANIZATION_ALREADY_EXISTS,
+            throw new ValidationException(
                 "Organization with ID: " + organizationId + " is already archived.");
         }
 
         String logoUrl = organization.getLogoUrl();
         if (logoUrl == null || logoUrl.isBlank()) {
-            throw new NotFoundException(OrganizationErrorCode.ORGANIZATION_NOT_FOUND,
+            throw new NotFoundException(
                 "Organization with ID: " + organizationId + " has no logo.");
         }
 
@@ -257,7 +272,7 @@ public class OrganizationService {
 
         String logoUrl = organization.getLogoUrl();
         if (logoUrl == null || logoUrl.isBlank()) {
-            throw new NotFoundException(OrganizationErrorCode.ORGANIZATION_NOT_FOUND,
+            throw new NotFoundException(
                 "Organization with ID: " + organizationId + " has no logo.");
         }
         return logoUrl;
@@ -265,14 +280,6 @@ public class OrganizationService {
 
     /**
      * Lists organizations using filters and pagination.
-     *
-     * @param status status filter (optional)
-     * @param email email filter (optional, substring match)
-     * @param name name filter (optional, substring match)
-     * @param createdFrom createdAt lower bound (optional)
-     * @param createdTo createdAt upper bound (optional)
-     * @param pageable pagination and sorting
-     * @return page of organizations
      */
     @Transactional(readOnly = true)
     public Page<Organization> list(
@@ -304,7 +311,7 @@ public class OrganizationService {
                 // fallback to full message
                 reason = message;
             }
-            throw new ValidationException(OrganizationErrorCode.INVALID_ORGANIZATION_FIELD,
+            throw new ValidationException(
                 field + " " + reason + " for organization list");
         }
         OrganizationUtil.validateDateRange(createdFrom, createdTo);
@@ -360,12 +367,12 @@ public class OrganizationService {
         Organization organization = OrganizationUtil.getOrganizationOrThrow(organizationId, organizationRepository);
 
         if (organization.isDeleted()) {
-            throw new ConflictException(OrganizationErrorCode.ORGANIZATION_ALREADY_EXISTS,
+            throw new ConflictException(
                 "Organization with ID: " + organizationId + " is already archived.");
         }
 
         if (organization.getStatus() == OrganizationStatus.ACTIVE) {
-            throw new ConflictException(OrganizationErrorCode.ORGANIZATION_ALREADY_EXISTS,
+            throw new ConflictException(
                 "Organization with ID: " + organizationId + " is already active.");
         }
 
@@ -384,12 +391,12 @@ public class OrganizationService {
         Organization organization = OrganizationUtil.getOrganizationOrThrow(organizationId, organizationRepository);
 
         if (organization.isDeleted()) {
-            throw new ConflictException(OrganizationErrorCode.ORGANIZATION_ALREADY_EXISTS,
+            throw new ConflictException(
                 "Organization with ID: " + organizationId + " is already archived.");
         }
 
         if (organization.getStatus() == OrganizationStatus.SUSPENDED) {
-            throw new ConflictException(OrganizationErrorCode.ORGANIZATION_ALREADY_EXISTS,
+            throw new ConflictException(
                 "Organization with ID: " + organizationId + " is already suspended.");
         }
 
@@ -408,7 +415,7 @@ public class OrganizationService {
         Organization organization = OrganizationUtil.getOrganizationOrThrow(organizationId, organizationRepository);
 
         if (organization.isDeleted()) {
-            throw new ConflictException(OrganizationErrorCode.ORGANIZATION_ALREADY_EXISTS,
+            throw new ConflictException(
                 "Organization with ID: " + organizationId + " is already archived.");
         }
 
@@ -427,12 +434,12 @@ public class OrganizationService {
         Organization organization = OrganizationUtil.getOrganizationOrThrow(organizationId, organizationRepository);
 
         if (organization.isDeleted()) {
-            throw new ConflictException(OrganizationErrorCode.ORGANIZATION_ALREADY_EXISTS,
+            throw new ConflictException(
                 "Organization with ID: " + organizationId + " is already archived.");
         }
 
         if (organization.getStatus() == OrganizationStatus.TRIAL) {
-            throw new ConflictException(OrganizationErrorCode.ORGANIZATION_ALREADY_EXISTS,
+            throw new ConflictException(
                 "Organization with ID: " + organizationId + " is already in trial.");
         }
 
@@ -451,12 +458,12 @@ public class OrganizationService {
         Organization organization = OrganizationUtil.getOrganizationOrThrow(organizationId, organizationRepository);
 
         if (organization.isDeleted()) {
-            throw new ConflictException(OrganizationErrorCode.ORGANIZATION_ALREADY_EXISTS,
+            throw new ConflictException(
                 "Organization with ID: " + organizationId + " is already archived.");
         }
 
         if (organization.getStatus() == OrganizationStatus.EXPIRED) {
-            throw new ConflictException(OrganizationErrorCode.ORGANIZATION_ALREADY_EXISTS,
+            throw new ConflictException(
                 "Organization with ID: " + organizationId + " is already expired.");
         }
 
@@ -480,7 +487,7 @@ public class OrganizationService {
         if (request.getName() != null) {
             String name = request.getName().trim();
             if (name.isBlank()) {
-                throw new ValidationException(OrganizationErrorCode.INVALID_ORGANIZATION_FIELD,
+                throw new ValidationException(
                     "Name must not be blank");
             }
             if (!name.equals(organization.getName())) {
@@ -492,12 +499,12 @@ public class OrganizationService {
         if (request.getEmail() != null) {
             String email = request.getEmail().trim();
             if (email.isBlank()) {
-                throw new ValidationException(OrganizationErrorCode.INVALID_ORGANIZATION_FIELD,
+                throw new ValidationException(
                     "Email must not be blank");
             }
             if (!email.equalsIgnoreCase(organization.getEmail())
                     && organizationRepository.existsByEmailAndIdNot(email, organizationId)) {
-                throw new ConflictException(OrganizationErrorCode.ORGANIZATION_ALREADY_EXISTS,
+                throw new ConflictException(
                     "Organization with email: " + email + " already exists.");
             }
             if (!email.equals(organization.getEmail())) {

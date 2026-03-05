@@ -7,8 +7,6 @@ import com.paidpeace.api.v1.invoice.dto.InvoiceItemRequest;
 import com.paidpeace.domain.invoice.Invoice;
 import com.paidpeace.domain.invoice.followup.FollowUp;
 import com.paidpeace.domain.invoice.payment.Payment;
-import com.paidpeace.exception.code.InvoiceErrorCode;
-import com.paidpeace.exception.code.OrganizationErrorCode;
 import com.paidpeace.exception.http.NotFoundException;
 import com.paidpeace.exception.http.ValidationException;
 import com.paidpeace.infrastructure.persistence.invoice.FollowUpJpaRepository;
@@ -38,15 +36,12 @@ public class InvoiceUtil {
         InvoiceJpaRepository invoiceRepository
     ) {
         if (invoiceId == null) {
-            throw new ValidationException(InvoiceErrorCode.INVALID_INVOICE_FIELD,
-                "invoiceId must not be null");
+            throw new ValidationException("invoiceId must not be null");
         }
         Invoice invoice = invoiceRepository.findById(invoiceId)
-            .orElseThrow(() -> new NotFoundException(InvoiceErrorCode.INVOICE_NOT_FOUND,
-                "invoice not found with id " + invoiceId));
+            .orElseThrow(() -> new NotFoundException("invoice not found with id " + invoiceId));
         if (invoice.getOrganization().isDeleted()) {
-            throw new NotFoundException(OrganizationErrorCode.ORGANIZATION_NOT_FOUND,
-                "organization is archived with id " + invoice.getOrganization().getId());
+            throw new NotFoundException("organization is archived with id " + invoice.getOrganization().getId());
         }
         return invoice;
     }
@@ -58,17 +53,14 @@ public class InvoiceUtil {
         InvoiceJpaRepository invoiceRepository
     ) {
         if (invoiceId == null) {
-            throw new ValidationException(InvoiceErrorCode.INVALID_INVOICE_FIELD,
-                "invoiceId must not be null");
+            throw new ValidationException("invoiceId must not be null");
         }
         if (organizationId == null) {
-            throw new ValidationException(InvoiceErrorCode.INVALID_INVOICE_FIELD,
-                "organizationId must not be null");
+            throw new ValidationException("organizationId must not be null");
         }
         Invoice invoice = getInvoiceOrThrow(invoiceId, invoiceRepository);
         if (invoice.getOrganization().getId() != organizationId) {
-            throw new ValidationException(InvoiceErrorCode.INVALID_INVOICE_FIELD,
-                "invoice is not associated with organization with id " + organizationId);
+            throw new ValidationException("invoice is not associated with organization with id " + organizationId);
         }
         return invoice;
     }
@@ -81,24 +73,20 @@ public class InvoiceUtil {
         PaymentJpaRepository paymentRepository
     ) throws ValidationException, NotFoundException {
         if(paymentId == null) {
-            throw new ValidationException(InvoiceErrorCode.INVALID_PAYMENT_FIELD,
-                "Payment ID must not be null");
+            throw new ValidationException("paymentId must not be null");
         }
         if(invoiceId == null) {
-            throw new ValidationException(InvoiceErrorCode.INVALID_INVOICE_FIELD,
-                "Invoice ID must not be null");
+            throw new ValidationException("invoiceId must not be null");
         }
         Payment payment = paymentRepository.findById(paymentId)
-        .orElseThrow(() -> new NotFoundException(InvoiceErrorCode.PAYMENT_NOT_FOUND,
-            "Payment not found with ID: " + paymentId));
+        .orElseThrow(() -> new NotFoundException("payment not found with id " + paymentId));
         validatePayment(invoiceId, payment);
         return payment;
     }
 
     public static void validatePayment(UUID invoiceId, Payment payment) {
         if(payment.getInvoice().getId() != invoiceId) {
-            throw new ValidationException(InvoiceErrorCode.INVALID_PAYMENT_FIELD,
-                "Payment does not belong to invoice with ID: " + invoiceId);
+            throw new ValidationException("payment does not belong to invoice with id " + invoiceId);
         }
     }
 
@@ -110,8 +98,7 @@ public class InvoiceUtil {
         FollowUpJpaRepository followUpRepository
     ) {
         FollowUp followUp = followUpRepository.findById(followUpId)
-                .orElseThrow(() -> new NotFoundException(InvoiceErrorCode.FOLLOW_UP_NOT_FOUND,
-                    "Follow-up not found with ID: " + followUpId));
+                .orElseThrow(() -> new NotFoundException("follow-up not found with id " + followUpId));
         validateFollowUp(invoiceId, followUp);
         return followUp;
     }
@@ -122,8 +109,7 @@ public class InvoiceUtil {
         FollowUp followUp
     ) {
         if (followUp.getInvoice().getId() != invoiceId) {
-            throw new ValidationException(InvoiceErrorCode.INVALID_FOLLOW_UP_FIELD,
-                "Follow-up must belong to invoice with ID: " + invoiceId);
+            throw new ValidationException("follow-up must belong to invoice with id " + invoiceId);
         }
     }
 }

@@ -10,7 +10,7 @@ import com.paidpeace.exception.code.ErrorCode;
  */
 public class ServiceUnavailableException extends BusinessException {
 
-    public ServiceUnavailableException(ErrorCode code, String message) {
-        super(code, message, HttpStatus.SERVICE_UNAVAILABLE);
+    public ServiceUnavailableException(String message) {
+        super(ErrorCode.SERVICE_UNAVAILABLE, message, HttpStatus.SERVICE_UNAVAILABLE);
     }
 }

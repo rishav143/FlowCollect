@@ -10,7 +10,7 @@ import com.paidpeace.exception.code.ErrorCode;
  */
 public class UnauthorizedException extends BusinessException {
 
-    public UnauthorizedException(ErrorCode code, String message) {
-        super(code, message, HttpStatus.UNAUTHORIZED);
+    public UnauthorizedException(String message) {
+        super(ErrorCode.UNAUTHORIZED, message, HttpStatus.UNAUTHORIZED);
     }
 }

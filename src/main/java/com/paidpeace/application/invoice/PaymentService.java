@@ -13,7 +13,6 @@ import org.springframework.stereotype.Service;
 import com.paidpeace.api.v1.invoice.dto.PaymentRequest;
 import com.paidpeace.domain.invoice.payment.Payment;
 import com.paidpeace.domain.invoice.payment.PaymentMode;
-import com.paidpeace.exception.code.InvoiceErrorCode;
 import com.paidpeace.exception.http.ValidationException;
 import com.paidpeace.infrastructure.persistence.invoice.InvoiceJpaRepository;
 import com.paidpeace.infrastructure.persistence.invoice.PaymentJpaRepository;
@@ -42,8 +41,7 @@ public class PaymentService {
         PaymentRequest paymentRequest
     ) {
         if(paymentRequest == null) {
-            throw new ValidationException(InvoiceErrorCode.INVALID_PAYMENT_FIELD,
-                "Payment request cannot be null");
+            throw new ValidationException("Payment request cannot be null");
         }
         InvoiceUtil.getInvoiceOrThrow(invoiceId, invoiceRepository);
 
@@ -65,9 +63,6 @@ public class PaymentService {
 
     /**
      * Gets a payment by its ID.
-     * @param invoiceId The ID of the invoice to get a payment for.
-     * @param paymentId The ID of the payment to get.
-     * @return The payment.
      */
     public Payment getPayment(UUID invoiceId, UUID paymentId) {
         return InvoiceUtil.getPaymentOrThrow(invoiceId, paymentId, paymentRepository);
@@ -75,11 +70,6 @@ public class PaymentService {
 
     /**
      * Gets all payments for an invoice.
-     * @param invoiceId The ID of the invoice to get payments for.
-     * @param mode The mode of the payments to get.
-     * @param paidAt The paid at date of the payments to get.
-     * @param pageable The pageable object to get the payments.
-     * @return The payments.
      */
     public Page<Payment> getPayments(
         UUID invoiceId, 
@@ -106,10 +96,6 @@ public class PaymentService {
 
     /**
      * Updates a payment by its ID.
-     * @param invoiceId The ID of the invoice to update the payment for.
-     * @param paymentId The ID of the payment to change the fields of.
-     * @param paymentRequest The request body containing the payment update request.
-     * @return The payment with the updated fields.
      */
     @Transactional
     public Payment updatePayment
@@ -119,8 +105,7 @@ public class PaymentService {
         PaymentRequest paymentRequest
     ) {
         if(paymentRequest == null) {
-            throw new ValidationException(InvoiceErrorCode.INVALID_PAYMENT_FIELD,
-                "Payment request must not be null");
+            throw new ValidationException("Payment request must not be null");
         }
         InvoiceUtil.getInvoiceOrThrow(invoiceId, invoiceRepository);
 

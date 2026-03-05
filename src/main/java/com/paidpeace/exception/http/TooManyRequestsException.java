@@ -10,7 +10,7 @@ import com.paidpeace.exception.code.ErrorCode;
  */
 public class TooManyRequestsException extends BusinessException {
 
-    public TooManyRequestsException(ErrorCode code, String message) {
-        super(code, message, HttpStatus.TOO_MANY_REQUESTS);
+    public TooManyRequestsException(String message) {
+        super(ErrorCode.TOO_MANY_REQUESTS, message, HttpStatus.TOO_MANY_REQUESTS);
     }
 }

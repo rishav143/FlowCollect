@@ -10,7 +10,7 @@ import com.paidpeace.exception.code.ErrorCode;
  */
 public class InternalException extends BusinessException {
 
-    public InternalException(ErrorCode code, String message) {
-        super(code, message, HttpStatus.INTERNAL_SERVER_ERROR);
+    public InternalException(String message) {
+        super(ErrorCode.INTERNAL_SERVER_ERROR, message, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }

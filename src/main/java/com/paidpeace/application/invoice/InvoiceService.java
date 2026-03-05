@@ -9,9 +9,9 @@ import org.springframework.transaction.annotation.Transactional;
 import com.paidpeace.api.v1.invoice.dto.InvoiceRequest;
 import com.paidpeace.api.v1.invoice.dto.InvoiceUpdateRequest;
 import com.paidpeace.api.v1.invoice.dto.IssueInvoiceRequest;
-import com.paidpeace.application.customer.CustomerUtil;
-import com.paidpeace.application.organization.OrganizationUtil;
-import com.paidpeace.application.user.UserUtil;
+import com.paidpeace.application.customer.CustomerService;
+import com.paidpeace.application.organization.OrganizationService;
+import com.paidpeace.application.user.UserService;
 import com.paidpeace.domain.customer.Customer;
 import com.paidpeace.domain.invoice.Invoice;
 import com.paidpeace.domain.invoice.InvoiceItem;
@@ -19,19 +19,15 @@ import com.paidpeace.domain.invoice.LifeCycleStatus;
 import com.paidpeace.domain.invoice.TimeStatus;
 import com.paidpeace.domain.organization.Organization;
 import com.paidpeace.domain.user.User;
-import com.paidpeace.exception.code.CustomerErrorCode;
-import com.paidpeace.exception.code.InvoiceErrorCode;
 import com.paidpeace.exception.http.NotFoundException;
 import com.paidpeace.exception.http.ValidationException;
-import com.paidpeace.infrastructure.persistence.customer.CustomerJpaRepository;
 import com.paidpeace.infrastructure.persistence.invoice.InvoiceJpaRepository;
-import com.paidpeace.infrastructure.persistence.organization.OrganizationJpaRepository;
-import com.paidpeace.infrastructure.persistence.user.UserJpaRepository;
 
 import jakarta.persistence.criteria.Predicate;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -39,42 +35,39 @@ import java.util.UUID;
 public class InvoiceService {
 
     private final InvoiceJpaRepository invoiceRepository;
-    private final OrganizationJpaRepository organizationRepository;
-    private final UserJpaRepository userRepository;
-    private final CustomerJpaRepository customerRepository;
-
+    private final UserService userService;
+    private final CustomerService customerService;
+    private final OrganizationService organizationService;
+    
     public InvoiceService(
             InvoiceJpaRepository invoiceRepository,
-            OrganizationJpaRepository organizationRepository,
-            UserJpaRepository userRepository,
-            CustomerJpaRepository customerRepository
+            UserService userService,
+            CustomerService customerService,
+            OrganizationService organizationService
     ) {
         this.invoiceRepository = invoiceRepository;
-        this.organizationRepository = organizationRepository;
-        this.userRepository = userRepository;
-        this.customerRepository = customerRepository;
+        this.userService = userService;
+        this.organizationService = organizationService;
+        this.customerService = customerService;
     }
 
     /**
      * Creates a draft invoice.
-     * <p>
-     * Exceptions are intentionally propagated to the API layer so they can be
-     * centrally handled (and debugged) by GlobalExceptionHandler.
      */
     @Transactional
-    public Invoice createInvoice(java.util.UUID organizationId, InvoiceRequest request) {
-
+    public Invoice createInvoice
+    (
+        UUID organizationId,
+        InvoiceRequest request
+    ) {
         // Validate request otherwise throw exception
         if (request == null) {
-            throw new ValidationException(InvoiceErrorCode.INVALID_INVOICE_FIELD,
-                "Request must not be null");
+            throw new ValidationException("Request must not be null");
         }
-
-        Organization organization = OrganizationUtil.getOrganizationOrThrow(organizationId, organizationRepository);
-
+        Organization organization = organizationService.getById(organizationId);
         String normalizedInvoiceNumber = request.getInvoiceNumber().trim();
         if (invoiceRepository.existsByInvoiceNumberAndOrganizationId(normalizedInvoiceNumber, request.getOrganizationId())) {
-            throw new ValidationException(InvoiceErrorCode.INVALID_INVOICE_FIELD,
+            throw new ValidationException(
                 "Invoice number must be unique within organization. Invoice number: " + normalizedInvoiceNumber + " already exists.");
         }
 
@@ -83,58 +76,50 @@ public class InvoiceService {
                 organization,
                 normalizedInvoiceNumber
         );
-
         if (request.getTaxPercentage() != null) {
             invoice.setTaxPercentage(request.getTaxPercentage());
         }
-
         if(request.getCreatedByUserId() != null) {
-            User user = UserUtil.validateUserWithOrganization(request.getCreatedByUserId(), organizationId, userRepository);
+            User user = userService.getById(organizationId, request.getCreatedByUserId());
             invoice.setCreatedBy(user);
         }
-
         if(request.getCustomerId() != null) {
-            Customer customer = customerRepository.findById(request.getCustomerId())
-                .orElseThrow(() -> new NotFoundException(CustomerErrorCode.CUSTOMER_NOT_FOUND,
-                    "Customer not found with ID: " + request.getCustomerId()));
-
+            Customer customer = customerService.getCustomerById(organizationId, request.getCustomerId());
             invoice.setCustomer(customer);
         }
-
         if(request.getDueDate() != null) {
             invoice.setDueDate(request.getDueDate());
         }
-
-        // Add items
         InvoiceUtil.addItems(invoice, request.getItems());
-
         // Issue only when total amount is greater than 0
         if(request.getIssueDate() != null) {
             if(invoice.getTotalAmount().compareTo(BigDecimal.ZERO) <= 0) {
-                throw new ValidationException(InvoiceErrorCode.INVALID_INVOICE_FIELD,
-                    "Issue date must be after the total amount is greater than 0");
+                throw new ValidationException("Issue date must be after the total amount is greater than 0");
             }
             invoice.setIssueDate(request.getIssueDate());
         }
-        // Save invoice
+
         return invoiceRepository.save(invoice);
     }
 
     /**
      * Issues a draft invoice. If request is null or request.issueDate is null,
-     * the invoice will be issued using current date. Exceptions are thrown with
-     * clear messages and propagated to the controller.
+     * the invoice will be issued using current date.
      */
-    @org.springframework.transaction.annotation.Transactional
-    public Invoice issueInvoice(java.util.UUID organizationId, java.util.UUID invoiceId, IssueInvoiceRequest request) {
+    @Transactional
+    public Invoice issueInvoice
+    (
+        UUID organizationId, 
+        UUID invoiceId, 
+        IssueInvoiceRequest request
+    ) {
         if (invoiceId == null) {
-            throw new NotFoundException(InvoiceErrorCode.INVOICE_NOT_FOUND,
-                "Invoice not found with ID: " + invoiceId);
+            throw new NotFoundException("Invoice not found with ID: " + invoiceId);
         }
         Invoice invoice = InvoiceUtil.validateInvoiceWithOrganization(invoiceId, organizationId, invoiceRepository);
 
         if (!invoice.isDraft()) {
-            throw new ValidationException(InvoiceErrorCode.INVALID_INVOICE_FIELD,
+            throw new ValidationException(
                 "Invoice must be in draft state to be issued. Invoice with ID: " + invoiceId + " is not in draft state.");
         }
 
@@ -151,15 +136,13 @@ public class InvoiceService {
     /**
      * Gets an invoice by id.
      */
-    public Invoice getInvoice(java.util.UUID invoiceId) {
+    public Invoice getInvoice(UUID invoiceId) {
         return invoiceRepository.findById(invoiceId)
-                .orElseThrow(() -> new NotFoundException(InvoiceErrorCode.INVOICE_NOT_FOUND,
-                    "Invoice not found with ID: " + invoiceId));
+                .orElseThrow(() -> new NotFoundException("Invoice not found with ID: " + invoiceId));
     }
 
     /**
      * Updates mutable fields of a draft invoice.
-     * Throws exceptions with clear messages for easier debugging.
      */
     @Transactional
     public Invoice updateInvoice(
@@ -167,64 +150,46 @@ public class InvoiceService {
         UUID invoiceId, 
         InvoiceUpdateRequest request
     ) {
-
         if (request == null) {
-            throw new ValidationException(InvoiceErrorCode.INVALID_INVOICE_FIELD,
-                "Request must not be null");
+            throw new ValidationException("Request must not be null");
         }
-
         Invoice invoice = InvoiceUtil.validateInvoiceWithOrganization(invoiceId, organizationId, invoiceRepository);
-
         if (!invoice.isDraft()) {
-            throw new ValidationException(InvoiceErrorCode.INVALID_INVOICE_FIELD,
+            throw new ValidationException(
                 "Invoice must be in draft state to be updated. Invoice with ID: " + invoiceId + " is not in draft state.");
         }
-
         // invoice number update - ensure uniqueness within organization when changed
         if (request.getInvoiceNumber() != null) {
             String normalized = request.getInvoiceNumber().trim();
             if (normalized.isBlank()) {
-                throw new ValidationException(InvoiceErrorCode.INVALID_INVOICE_FIELD,
-                    "Invoice number must not be blank");
+                throw new ValidationException("Invoice number must not be blank");
             }
             if (!normalized.equals(invoice.getInvoiceNumber())
                     && invoiceRepository.existsByInvoiceNumberAndOrganizationId(normalized, organizationId)) {
-                throw new ValidationException(InvoiceErrorCode.INVALID_INVOICE_FIELD,
-                    "Invoice number must be unique within organization");
+                throw new ValidationException("Invoice number must be unique within organization");
             }
             invoice.setInvoiceNumber(normalized);
         }
 
-        // tax percentage
         if (request.getTaxPercentage() != null) {
             invoice.setTaxPercentage(request.getTaxPercentage());
         }
-
-        // createdBy user
         if (request.getCreatedByUserId() != null) {
-            User user = UserUtil.validateUserWithOrganization(request.getCreatedByUserId(), organizationId, userRepository);
+            User user = userService.getById(organizationId, request.getCreatedByUserId());
             invoice.setCreatedBy(user);
         }
-        
-        // customer
         if (request.getCustomerId() != null) {
-            Customer customer = CustomerUtil.validateCustomerWithOrganization(request.getCustomerId(), organizationId, customerRepository);
+            Customer customer = customerService.getCustomerById(organizationId, request.getCustomerId());
             invoice.setCustomer(customer);
         }
-        
-        // due date
         if (request.getDueDate() != null) {
             invoice.setDueDate(request.getDueDate());
         }
-
-        // items - replace existing items with provided list
         if (request.getItems() != null && !request.getItems().isEmpty()) {
-            // remove existing items safely
-            List<InvoiceItem> existing = new java.util.ArrayList<>(invoice.getItems());
+            List<InvoiceItem> existing = new ArrayList<>(invoice.getItems());
             for (com.paidpeace.domain.invoice.InvoiceItem item : existing) {
                 invoice.removeItem(item);
             }
-            // add new items (util.addItems will validate)
             InvoiceUtil.addItems(invoice, request.getItems());
         }
 
@@ -234,7 +199,6 @@ public class InvoiceService {
 
     /**
      * Hard delete an invoice if and only if it is in DRAFT state and belongs to the organization.
-     * Throws clear exceptions to propagate to controller for debugging.
      */
     @Transactional
     public void deleteInvoice(
@@ -242,23 +206,12 @@ public class InvoiceService {
         UUID invoiceId
     ) {
         if (invoiceId == null) {
-            throw new ValidationException(InvoiceErrorCode.INVALID_INVOICE_FIELD,
-                "Invoice ID must not be null");
+            throw new ValidationException("Invoice ID must not be null");
         }
-
-        OrganizationUtil.getOrganizationOrThrow(organizationId, organizationRepository);
-
-        Invoice invoice = invoiceRepository.findById(invoiceId)
-                .orElseThrow(() -> new NotFoundException(InvoiceErrorCode.INVOICE_NOT_FOUND,
-                    "Invoice not found with ID: " + invoiceId));
-
-        if (!invoice.getOrganization().getId().equals(organizationId)) {
-            throw new ValidationException(InvoiceErrorCode.INVALID_INVOICE_FIELD,
-                "Invoice with ID: " + invoiceId + " does not belong to organization with ID: " + organizationId);
-        }
-
+        organizationService.getById(organizationId);
+        Invoice invoice = InvoiceUtil.validateInvoiceWithOrganization(invoiceId, organizationId, invoiceRepository);
         if (!invoice.isDraft()) {
-            throw new ValidationException(InvoiceErrorCode.INVALID_INVOICE_FIELD,
+            throw new ValidationException(
                 "Invoice must be in draft state to be deleted. Invoice with ID: " + invoiceId + " is not in draft state.");
         }
 
@@ -266,7 +219,6 @@ public class InvoiceService {
         invoiceRepository.delete(invoice);
     }
 
-    /**
     /**
      * Return paginated invoices for an organization with optional filters.
      */
@@ -280,41 +232,34 @@ public class InvoiceService {
         LocalDate dueDate,
         Pageable pageable
     ) {
-        OrganizationUtil.getOrganizationOrThrow(organizationId, organizationRepository);
+        organizationService.getById(organizationId);
 
         Specification<Invoice> spec = (root, query, cb) -> {
             Predicate p = cb.equal(root.get("organization").get("id"), organizationId);
-
             if (timeStatus != null) {
                 p = cb.and(p, cb.equal(root.get("timeStatus"), timeStatus));
             }
-
             if (lifeCycleStatus != null) {
                 p = cb.and(p, cb.equal(root.get("lifeCycleStatus"), lifeCycleStatus));
             }
-
             if (invoiceNumber != null && !invoiceNumber.isBlank()) {
                 p = cb.and(p, cb.like(cb.lower(root.get("invoiceNumber")), "%" + invoiceNumber.toLowerCase() + "%"));
             }
-
             if (createdAt != null) {
                 p = cb.and(p, cb.between(root.get("createdAt"),
                         createdAt.atStartOfDay(),
                         createdAt.atTime(LocalTime.MAX)));
             }
-
             if (updatedAt != null) {
                 p = cb.and(p, cb.between(root.get("updatedAt"),
                         updatedAt.atStartOfDay(),
                         updatedAt.atTime(LocalTime.MAX)));
             }
-
             if (dueDate != null) {
                 p = cb.and(p, cb.between(root.get("dueDate"),
                         dueDate.atStartOfDay(),
                         dueDate.atTime(LocalTime.MAX)));
             }
-
             return p;
         };
 

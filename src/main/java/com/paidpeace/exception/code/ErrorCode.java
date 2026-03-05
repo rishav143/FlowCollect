@@ -1,4 +1,20 @@
 package com.paidpeace.exception.code;
 
-public interface ErrorCode {
+public enum ErrorCode {
+    BAD_REQUEST,
+    UNAUTHORIZED,
+    UNPROCESSABLE_CONTENT,
+    FORBIDDEN,
+    NOT_FOUND,
+    CONFLICT,
+    INTERNAL_SERVER_ERROR,
+    BAD_GATEWAY,
+    SERVICE_UNAVAILABLE,
+    GATEWAY_TIMEOUT,
+    PRECONDITION_FAILED,
+    PAYLOAD_TOO_LARGE,
+    URI_TOO_LONG,
+    UNSUPPORTED_MEDIA_TYPE,
+    REQUEST_TIMEOUT,
+    TOO_MANY_REQUESTS,
 }

@@ -15,8 +15,6 @@ import com.paidpeace.domain.invoice.followup.FollowUpChannel;
 import com.paidpeace.domain.invoice.followup.FollowUpStatus;
 import com.paidpeace.domain.invoice.followup.FollowUpTriggerType;
 import com.paidpeace.domain.template.Template;
-import com.paidpeace.exception.code.InvoiceErrorCode;
-import com.paidpeace.exception.code.TemplateErrorCode;
 import com.paidpeace.exception.http.NotFoundException;
 import com.paidpeace.exception.http.ValidationException;
 import com.paidpeace.infrastructure.persistence.invoice.FollowUpJpaRepository;
@@ -54,8 +52,7 @@ public class FollowUpService {
         FollowUpRequest request
     ) {
         if (request == null) {
-            throw new ValidationException(InvoiceErrorCode.INVALID_FOLLOW_UP_FIELD,
-                "Follow-up request must not be null. Invoice ID: " + invoiceId);
+            throw new ValidationException("Follow-up request must not be null. Invoice ID: " + invoiceId);
         }
 
         Invoice invoice = InvoiceUtil.getInvoiceOrThrow(invoiceId, invoiceRepository);
@@ -63,8 +60,7 @@ public class FollowUpService {
         // channel required
         FollowUpChannel channel = request.getChannel();
         if (channel == null) {
-            throw new ValidationException(InvoiceErrorCode.INVALID_FOLLOW_UP_FIELD,
-                "Follow-up channel must not be null");
+            throw new ValidationException("Follow-up channel must not be null");
         }
 
         // trigger type - default MANUAL if null
@@ -76,11 +72,9 @@ public class FollowUpService {
         Template template = null;
         if (request.getTemplateId() != null) {
             template = templateRepository.findById(request.getTemplateId())
-                    .orElseThrow(() -> new NotFoundException(TemplateErrorCode.TEMPLATE_NOT_FOUND,
-                        "Template not found with ID: " + request.getTemplateId()));
+                    .orElseThrow(() -> new NotFoundException("Template not found with ID: " + request.getTemplateId()));
             if (!template.isActive()) {
-                throw new ValidationException(TemplateErrorCode.INVALID_TEMPLATE_FIELD,
-                    "Template must be active. Template with ID: " + request.getTemplateId() + " is not active.");
+                throw new ValidationException("Template must be active. Template with ID: " + request.getTemplateId() + " is not active.");
             }
         }
 
@@ -150,8 +144,7 @@ public class FollowUpService {
             FollowUpRequest request
     ) {
         if (request == null) {
-            throw new ValidationException(InvoiceErrorCode.INVALID_FOLLOW_UP_FIELD,
-                "Request must not be null");
+            throw new ValidationException("Request must not be null");
         }
 
         FollowUp followUp = InvoiceUtil.getFollowUpOrThrow(invoiceId, followUpId, followUpRepository);
@@ -166,11 +159,9 @@ public class FollowUpService {
 
         if (request.getTemplateId() != null) {
             Template template = templateRepository.findById(request.getTemplateId())
-                    .orElseThrow(() -> new NotFoundException(TemplateErrorCode.TEMPLATE_NOT_FOUND,
-                        "Template not found with ID: " + request.getTemplateId()));
+                    .orElseThrow(() -> new NotFoundException("Template not found with ID: " + request.getTemplateId()));
             if (!template.isActive()) {
-                throw new ValidationException(TemplateErrorCode.INVALID_TEMPLATE_FIELD,
-                    "Template must not be null and must be active");
+                throw new ValidationException("Template must not be null and must be active");
             }
         }
         

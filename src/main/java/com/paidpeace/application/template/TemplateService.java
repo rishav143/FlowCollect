@@ -12,7 +12,6 @@ import com.paidpeace.application.organization.OrganizationService;
 import com.paidpeace.common.PaginationUtils;
 import com.paidpeace.domain.organization.Organization;
 import com.paidpeace.domain.template.Template;
-import com.paidpeace.exception.code.TemplateErrorCode;
 import com.paidpeace.exception.http.ValidationException;
 import com.paidpeace.infrastructure.persistence.template.TemplateJpaRepository;
 
@@ -45,7 +44,7 @@ public class TemplateService {
         TemplateRequest templateRequest
     ) {
         if(templateRequest != null) {
-            throw new ValidationException(TemplateErrorCode.INVALID_TEMPLATE_FIELD,
+            throw new ValidationException( 
                 "Template request must not be null");
         }
         Organization organization = organizationService.getById(organizationId);
@@ -53,7 +52,7 @@ public class TemplateService {
         Template template = new Template();
         template.setOrganization(organization);
         if(templateRequest.getName() == null || templateRequest.getName().isBlank()) {
-            throw new ValidationException(TemplateErrorCode.INVALID_TEMPLATE_FIELD,
+            throw new ValidationException( 
                 "Name must not be null or blank");
         }
         template.setName(templateRequest.getName());

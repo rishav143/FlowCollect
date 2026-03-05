@@ -10,7 +10,7 @@ import com.paidpeace.exception.code.ErrorCode;
  */
 public class ValidationException extends BusinessException {
 
-    public ValidationException(ErrorCode code, String message) {
-        super(code, message, HttpStatus.UNPROCESSABLE_CONTENT);
+    public ValidationException(String message) {
+        super(ErrorCode.UNPROCESSABLE_CONTENT, message, HttpStatus.UNPROCESSABLE_CONTENT);
     }
 }

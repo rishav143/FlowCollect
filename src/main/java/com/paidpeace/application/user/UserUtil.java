@@ -8,9 +8,6 @@ import java.util.UUID;
 import com.paidpeace.domain.user.User;
 import com.paidpeace.domain.user.UserRole;
 import com.paidpeace.domain.user.UserStatus;
-import com.paidpeace.exception.code.OrganizationErrorCode;
-import com.paidpeace.exception.code.ServerErrorCode;
-import com.paidpeace.exception.code.UserErrorCode;
 import com.paidpeace.exception.http.ConflictException;
 import com.paidpeace.exception.http.NotFoundException;
 import com.paidpeace.exception.http.ServiceUnavailableException;
@@ -21,14 +18,14 @@ public class UserUtil {
     
     public static User getUserOrThrow(UUID userId, UserJpaRepository userRepository) {
         if (userId == null) {
-            throw new ValidationException(UserErrorCode.INVALID_USER_FIELD,
+            throw new ValidationException( 
                 "User ID must not be null");
         }
         User user = userRepository.findById(userId)
-            .orElseThrow(() -> new NotFoundException(UserErrorCode.USER_NOT_FOUND,
+            .orElseThrow(() -> new NotFoundException( 
                 "User not found with ID: " + userId));
         if (user.getStatus() == UserStatus.INACTIVE) {
-            throw new NotFoundException(UserErrorCode.USER_NOT_FOUND,
+            throw new NotFoundException( 
                 "User with ID: " + userId + " is inactive");
         }
         return user;
@@ -36,24 +33,24 @@ public class UserUtil {
 
     public static User validateUserWithOrganization(UUID userId, UUID organizationId, UserJpaRepository userRepository) {
         if (userId == null) {
-            throw new ValidationException(UserErrorCode.INVALID_USER_FIELD,
+            throw new ValidationException( 
                 "User ID must not be null");
         }
         if (organizationId == null) {
-            throw new ValidationException(OrganizationErrorCode.INVALID_ORGANIZATION_FIELD,
+            throw new ValidationException( 
                 "Organization ID must not be null");
         }
         User user = getUserOrThrow(userId, userRepository);
         if (user.getOrganization().isDeleted()) {
-            throw new ConflictException(OrganizationErrorCode.ORGANIZATION_ALREADY_EXISTS,
+            throw new ConflictException( 
                 "Organization with ID: " + organizationId + " is already archived");
         }
         if (user.getStatus() == UserStatus.INACTIVE) {
-            throw new NotFoundException(UserErrorCode.USER_NOT_FOUND,
+            throw new NotFoundException( 
                 "User with ID: " + userId + " is inactive");
         }
         if (user.getOrganization().getId() != organizationId) {
-            throw new ConflictException(OrganizationErrorCode.ORGANIZATION_NOT_FOUND,
+            throw new ConflictException( 
                 "User with ID: " + userId + " is not associated with organization with ID: " + organizationId);
         }
         return user;
@@ -61,13 +58,13 @@ public class UserUtil {
 
     public static UserRole parseRole(String role) {
         if (role == null || role.isBlank()) {
-            throw new ValidationException(UserErrorCode.INVALID_USER_FIELD,
+            throw new ValidationException( 
                 "Role must not be null or blank");
         }
         try {
             return UserRole.valueOf(role.trim().toUpperCase());
         } catch (IllegalArgumentException ex) {
-            throw new ValidationException(UserErrorCode.INVALID_USER_FIELD,
+            throw new ValidationException( 
                 "Unsupported role value '" + role + "'");
         }
     }
@@ -79,7 +76,7 @@ public class UserUtil {
         try {
             return UserRole.valueOf(role.trim().toUpperCase());
         } catch (IllegalArgumentException ex) {
-            throw new ValidationException(UserErrorCode.INVALID_USER_FIELD,
+            throw new ValidationException( 
                 "Unsupported role value '" + role + "'");
         }
     }
@@ -91,7 +88,7 @@ public class UserUtil {
         try {
             return UserStatus.valueOf(status.trim().toUpperCase());
         } catch (IllegalArgumentException ex) {
-            throw new ValidationException(UserErrorCode.INVALID_USER_FIELD,
+            throw new ValidationException( 
                 "Unsupported status value '" + status + "'");
         }
     }
@@ -102,7 +99,7 @@ public class UserUtil {
             byte[] hashed = digest.digest(rawPassword.getBytes(StandardCharsets.UTF_8));
             return Base64.getEncoder().encodeToString(hashed);
         } catch (Exception ex) {
-            throw new ServiceUnavailableException(ServerErrorCode.SERVICE_UNAVAILABLE,
+            throw new ServiceUnavailableException( 
                 "Unable to hash password due to: " + ex.getMessage());
         }
     }

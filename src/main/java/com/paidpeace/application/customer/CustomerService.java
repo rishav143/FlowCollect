@@ -5,17 +5,18 @@ import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.stereotype.Service;
 
 import com.paidpeace.api.v1.customer.dto.CustomerRequest;
 import com.paidpeace.application.organization.OrganizationService;
 import com.paidpeace.domain.customer.Customer;
 import com.paidpeace.domain.organization.Organization;
-import com.paidpeace.exception.code.CustomerErrorCode;
 import com.paidpeace.exception.http.ValidationException;
 import com.paidpeace.infrastructure.persistence.customer.CustomerJpaRepository;
 
 import jakarta.persistence.criteria.Predicate;
 
+@Service
 public class CustomerService {
     private final OrganizationService organizationService;
     private final CustomerJpaRepository customerRepository;
@@ -35,8 +36,7 @@ public class CustomerService {
         CustomerRequest customerRequest
     ) {
         if (customerRequest == null) {
-            throw new ValidationException(CustomerErrorCode.INVALID_CUSTOMER_FIELD,
-                "Customer request cannot be null");
+            throw new ValidationException("Customer request cannot be null");
         }
         // validate and get organization from organization service
         Organization organization = organizationService.getById(organizationId);
@@ -44,8 +44,7 @@ public class CustomerService {
         Customer customer = new Customer();
         customer.setOrganization(organization);
         if (customerRequest.getName() == null) {
-            throw new ValidationException(CustomerErrorCode.INVALID_CUSTOMER_FIELD,
-                "Customer name cannot be null");
+            throw new ValidationException("Customer name cannot be null");
         }
         customer.setName(customerRequest.getName());
         if (customerRequest.getEmail() != null) {
@@ -72,8 +71,7 @@ public class CustomerService {
         UUID id
     ) {
         if(id == null) {
-            throw new ValidationException(CustomerErrorCode.INVALID_CUSTOMER_FIELD,
-                "Customer id cannot be null");
+            throw new ValidationException("Customer id cannot be null");
         }
         // validate organization from organization service
         organizationService.getById(organizationId);
@@ -123,12 +121,10 @@ public class CustomerService {
         CustomerRequest customerRequest
     ) {
        if(customerRequest == null) {
-        throw new ValidationException(CustomerErrorCode.INVALID_CUSTOMER_FIELD,
-            "Customer request cannot be null");
+        throw new ValidationException("Customer request cannot be null");
        }
        if(id == null) {
-        throw new ValidationException(CustomerErrorCode.INVALID_CUSTOMER_FIELD,
-            "Customer id cannot be null");
+        throw new ValidationException("Customer id cannot be null");
        }
        // validate organization from organization service
        organizationService.getById(organizationId);
@@ -160,8 +156,7 @@ public class CustomerService {
         UUID id
     ) {
         if(id == null) {
-            throw new ValidationException(CustomerErrorCode.INVALID_CUSTOMER_FIELD,
-                "Customer id cannot be null");
+            throw new ValidationException("Customer id cannot be null");
         }
         // validate organization from organization service
         organizationService.getById(organizationId);
@@ -180,8 +175,7 @@ public class CustomerService {
         UUID id
     ) {
         if(id == null) {
-            throw new ValidationException(CustomerErrorCode.INVALID_CUSTOMER_FIELD,
-                "Customer id cannot be null");
+            throw new ValidationException("Customer id cannot be null");
         }
         // validate organization from organization service
         organizationService.getById(organizationId);
@@ -197,8 +191,7 @@ public class CustomerService {
 
     public Customer deactivateCustomer(UUID organizationId, UUID id) {
         if(id == null) {
-            throw new ValidationException(CustomerErrorCode.INVALID_CUSTOMER_FIELD,
-                "Customer id cannot be null");
+            throw new ValidationException("Customer id cannot be null");
         }
         // validate organization from organization service
         organizationService.getById(organizationId);

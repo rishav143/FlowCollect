@@ -11,7 +11,7 @@ import com.paidpeace.exception.code.ErrorCode;
  */
 public class ConflictException extends BusinessException {
 
-    public ConflictException(ErrorCode code, String message) {
-        super(code, message, HttpStatus.CONFLICT);
+    public ConflictException(String message) {
+        super(ErrorCode.CONFLICT, message, HttpStatus.CONFLICT);
     }
 }

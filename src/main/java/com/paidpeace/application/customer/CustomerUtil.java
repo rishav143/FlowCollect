@@ -3,8 +3,6 @@ package com.paidpeace.application.customer;
 import java.util.UUID;
 
 import com.paidpeace.domain.customer.Customer;
-import com.paidpeace.exception.code.CustomerErrorCode;
-import com.paidpeace.exception.code.OrganizationErrorCode;
 import com.paidpeace.exception.http.NotFoundException;
 import com.paidpeace.exception.http.ValidationException;
 import com.paidpeace.infrastructure.persistence.customer.CustomerJpaRepository;
@@ -16,15 +14,12 @@ public class CustomerUtil {
         CustomerJpaRepository customerRepository
     ) {
         if (customerId == null) {
-            throw new ValidationException(CustomerErrorCode.INVALID_CUSTOMER_FIELD,
-                "Customer ID must not be null");
+            throw new ValidationException("Customer ID must not be null");
         }
         Customer customer = customerRepository.findById(customerId)
-            .orElseThrow(() -> new NotFoundException(CustomerErrorCode.CUSTOMER_NOT_FOUND,
-                "Customer not found with ID: " + customerId));
+            .orElseThrow(() -> new NotFoundException("Customer not found with ID: " + customerId));
         if (customer.getOrganization().isDeleted()) {
-            throw new NotFoundException(OrganizationErrorCode.ORGANIZATION_NOT_FOUND,
-                "Organization is archived with ID: " + customer.getOrganization().getId());
+            throw new NotFoundException("Organization is archived with ID: " + customer.getOrganization().getId());
         }
         return customer;
     }
@@ -36,17 +31,14 @@ public class CustomerUtil {
         CustomerJpaRepository customerRepository
     ) {
         if (customerId == null) {
-            throw new ValidationException(CustomerErrorCode.INVALID_CUSTOMER_FIELD,
-                "Customer ID must not be null");
+            throw new ValidationException("Customer ID must not be null");
         }
         if (organizationId == null) {
-            throw new ValidationException(OrganizationErrorCode.INVALID_ORGANIZATION_FIELD,
-                "Organization ID must not be null");
+            throw new ValidationException("Organization ID must not be null");
         }
         Customer customer = getCustomerOrThrow(customerId, customerRepository);
         if (customer.getOrganization().getId() != organizationId) {
-            throw new ValidationException(CustomerErrorCode.INVALID_CUSTOMER_FIELD,
-                "Customer is not associated with organization with ID: " + organizationId);
+            throw new ValidationException("Customer is not associated with organization with ID: " + organizationId);
         }
         return customer;
     }

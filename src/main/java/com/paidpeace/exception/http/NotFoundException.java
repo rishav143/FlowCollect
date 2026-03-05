@@ -10,11 +10,7 @@ import com.paidpeace.exception.code.ErrorCode;
  */
 public class NotFoundException extends BusinessException {
 
-    public NotFoundException(ErrorCode code, String message) {
-        super(code, message, HttpStatus.NOT_FOUND);
-    }
-
     public NotFoundException(String message) {
-        super(message, HttpStatus.NOT_FOUND);
+        super(ErrorCode.NOT_FOUND, message, HttpStatus.NOT_FOUND);
     }
 }

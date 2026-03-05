@@ -42,13 +42,14 @@ public class InvoiceController {
 
     /**
      * Creates a draft invoice.
-     * @param organizationId The ID of the organization to create the invoice for.
-     * @param request The request body containing the invoice create request.
-     * @return The created invoice.
      * Organization context comes from request payload, not from URI.
      */
     @PostMapping
-    public ResponseEntity<InvoiceResponse> createDraft(@PathVariable UUID organizationId, @Valid @RequestBody InvoiceRequest request) {
+    public ResponseEntity<InvoiceResponse> createDraft
+    (
+        @PathVariable UUID organizationId, 
+        @Valid @RequestBody InvoiceRequest request
+    ) {
         Invoice created = invoiceService.createInvoice(organizationId, request);
         URI location = ServletUriComponentsBuilder
                 .fromCurrentRequest()
@@ -60,8 +61,6 @@ public class InvoiceController {
 
     /**
      * Gets an invoice by id.
-     * @param id The ID of the invoice to get.
-     * @return The invoice.
      */
     @GetMapping("/{id}")
     public ResponseEntity<InvoiceResponse> getInvoice(@PathVariable UUID id) {
@@ -72,10 +71,6 @@ public class InvoiceController {
     /**
      * Updates mutable fields of a draft invoice.
      * Only allowed when invoice is in DRAFT lifecycle status.
-     * @param organizationId The ID of the organization to update the invoice for.
-     * @param invoiceId The ID of the invoice to update.
-     * @param request The request body containing the invoice update request.
-     * @return The updated invoice.
      */
     @PatchMapping("/{invoiceId}")
     public ResponseEntity<InvoiceResponse> updateDraftInvoice(
@@ -89,9 +84,6 @@ public class InvoiceController {
 
     /**
      * Hard-deletes a draft invoice. Only invoices in DRAFT lifecycle status may be deleted.
-     * @param organizationId The ID of the organization to delete the invoice for.
-     * @param invoiceId The ID of the invoice to delete.
-     * @return The void.
      */
     @DeleteMapping("/{invoiceId}")
     public ResponseEntity<Void> deleteDraftInvoice(
@@ -104,15 +96,6 @@ public class InvoiceController {
 
     /**
      * Gets paginated invoices.
-     * @param organizationId The ID of the organization to get invoices for.
-     * @param timeStatus The time status of the invoices to get.
-     * @param lifeCycleStatus The lifecycle status of the invoices to get.
-     * @param invoiceNumber The invoice number of the invoices to get.
-     * @param createdAt The created at date of the invoices to get.
-     * @param updatedAt The updated at date of the invoices to get.
-     * @param dueDate The due date of the invoices to get.
-     * @param pageable The pageable object to get the invoices.
-     * @return The invoices.
      */
     @GetMapping
     public ResponseEntity<Page<InvoiceResponse>> getPaginatedInvoices(
