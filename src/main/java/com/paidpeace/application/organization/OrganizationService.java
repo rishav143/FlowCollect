@@ -344,7 +344,7 @@ public class OrganizationService {
      * @throws OrganizationNotFoundException if no organization exists for the given id
      */
     @Transactional
-    public void delete(java.util.UUID organizationId) {
+    public void delete(UUID organizationId) {
         Organization organization = OrganizationUtil.getOrganizationOrThrow(organizationId, organizationRepository);
         organizationRepository.delete(organization);
     }
@@ -380,7 +380,7 @@ public class OrganizationService {
      * @return the updated organization
      */
     @Transactional
-    public Organization suspend(java.util.UUID organizationId) {
+    public Organization suspend(UUID organizationId) {
         Organization organization = OrganizationUtil.getOrganizationOrThrow(organizationId, organizationRepository);
 
         if (organization.isDeleted()) {
@@ -436,7 +436,7 @@ public class OrganizationService {
                 "Organization with ID: " + organizationId + " is already in trial.");
         }
 
-        organization.setStatus(OrganizationStatus.TRIAL);
+        organization.trial();
         return organizationRepository.save(organization);
     }
 
@@ -460,7 +460,7 @@ public class OrganizationService {
                 "Organization with ID: " + organizationId + " is already expired.");
         }
 
-        organization.setStatus(OrganizationStatus.EXPIRED);
+        organization.expired();
         return organizationRepository.save(organization);
     }
 

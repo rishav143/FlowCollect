@@ -100,4 +100,26 @@ public class TemplateController {
         templateService.deleteTemplateById(organizationId, id);
         return ResponseEntity.noContent().build();
     }
+
+    // Activate a template.
+    @PatchMapping("/{id}/activate")
+    public ResponseEntity<TemplateResponse> activateTemplate
+    (
+        @PathVariable UUID organizationId, 
+        @PathVariable UUID id
+    ) {
+        Template template = templateService.activateTemplate(organizationId, id);
+        return ResponseEntity.ok(TemplateMapper.toResponse(template));
+    }
+
+    // Deactivate a template.
+    @PatchMapping("/{id}/deactivate")
+    public ResponseEntity<TemplateResponse> deactivateTemplate
+    (
+        @PathVariable UUID organizationId, 
+        @PathVariable UUID id
+    ) {
+        Template template = templateService.deactivateTemplate(organizationId, id);
+        return ResponseEntity.ok(TemplateMapper.toResponse(template));
+    }
 }

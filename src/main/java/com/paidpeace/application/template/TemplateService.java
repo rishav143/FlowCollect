@@ -131,10 +131,10 @@ public class TemplateService {
         organizationService.getById(organizationId);
         TemplateUtil.validateTemplateWithOrganization(templateId, organizationId, templateRepository);
 
-        Template template = getTemplateById(organizationId, templateId);
+        Template template = TemplateUtil.getTemplateOrThrow(templateId, templateRepository);
         if(templateRequest.getName() != null) {
             template.setName(templateRequest.getName());
-        }
+        } 
         if(templateRequest.getChannel() != null) {
             template.setChannel(templateRequest.getChannel());
         }
@@ -164,5 +164,31 @@ public class TemplateService {
         TemplateUtil.validateTemplateWithOrganization(templateId, organizationId, templateRepository);
 
         templateRepository.deleteById(templateId);
+    }
+
+    public Template activateTemplate
+    (
+        UUID organizationId, 
+        UUID id
+    ) {
+        organizationService.getById(organizationId);
+        TemplateUtil.validateTemplateWithOrganization(id, organizationId, templateRepository);
+
+        Template template = TemplateUtil.getTemplateOrThrow(id, templateRepository);
+        template.activate();
+        return templateRepository.save(template);
+    }
+
+    public Template deactivateTemplate
+    (
+        UUID organizationId,
+        UUID id
+    ) {
+        organizationService.getById(organizationId);
+        TemplateUtil.validateTemplateWithOrganization(id, organizationId, templateRepository);
+
+        Template template = TemplateUtil.getTemplateOrThrow(id, templateRepository);
+        template.deactivate();
+        return templateRepository.save(template);
     }
 }

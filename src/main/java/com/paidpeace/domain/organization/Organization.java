@@ -23,14 +23,12 @@ public class Organization {
     private Long version;
 
     // Core Identity
-
     @NotBlank
     @Size(max = 100)
     @Column(nullable = false)
     private String name;
 
     // Contact Information
-
     @Email
     @NotBlank
     @Size(max = 100)
@@ -44,31 +42,25 @@ public class Organization {
     private String address;
 
     // Localization & Finance
-
     @NotNull
-    @Convert(converter = ZoneIdConverter.class)
     @Column(nullable = false, length = 50)
     private ZoneId timezone;
 
     @NotNull
-    @Convert(converter = CurrencyConverter.class)
     @Column(nullable = false, length = 3)
     private Currency currency;
 
     // Branding
-
     @Size(max = 255)
     private String logoUrl;
 
     // Status
-
     @NotNull
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private OrganizationStatus status = OrganizationStatus.ACTIVE;
 
     // Audit
-
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -83,7 +75,6 @@ public class Organization {
     private Instant deletedAt;
 
     // Constructors
-
     protected Organization() {
         // Required by JPA
     }
@@ -97,7 +88,6 @@ public class Organization {
     }
 
     // Callbacks (audit only)
-
     @PrePersist
     protected void onCreate() {
         this.createdAt = Instant.now();
@@ -109,31 +99,7 @@ public class Organization {
         this.updatedAt = Instant.now();
     }
 
-    // Business Logic Methods
-
-    public void activate() {
-        this.status = OrganizationStatus.ACTIVE;
-    }
-
-    public void suspend() {
-        this.status = OrganizationStatus.SUSPENDED;
-    }
-
-    public void archive() {
-        this.status = OrganizationStatus.ARCHIVED;
-        this.deletedAt = Instant.now();
-    }
-
-    public boolean isActive() {
-        return this.status == OrganizationStatus.ACTIVE;
-    }
-
-    public boolean isDeleted() {
-        return this.deletedAt != null;
-    }
-
     // Getters
-
     public UUID getId() {
         return id;
     }
@@ -194,8 +160,11 @@ public class Organization {
         return deletedAt;
     }
 
-    // Setters
+    public boolean isDeleted() {
+        return this.deletedAt != null;
+    }
 
+    // Setters
     public void setName(String name) {
         this.name = name;
     }
@@ -224,11 +193,33 @@ public class Organization {
         this.logoUrl = logoUrl;
     }
 
-    public void setStatus(OrganizationStatus status) {
-        this.status = status;
-    }
-
     public void setUpdatedBy(Long updatedBy) {
         this.updatedBy = updatedBy;
+    }
+
+    // Business Logic Methods
+    public void activate() {
+        this.status = OrganizationStatus.ACTIVE;
+    }
+
+    public void suspend() {
+        this.status = OrganizationStatus.SUSPENDED;
+    }
+
+    public void archive() {
+        this.status = OrganizationStatus.ARCHIVED;
+        this.deletedAt = Instant.now();
+    }
+
+    public boolean isActive() {
+        return this.status == OrganizationStatus.ACTIVE;
+    }
+
+    public void expired() {
+        this.status = OrganizationStatus.EXPIRED;
+    }
+
+    public void trial() {
+        this.status = OrganizationStatus.TRIAL;
     }
 }
