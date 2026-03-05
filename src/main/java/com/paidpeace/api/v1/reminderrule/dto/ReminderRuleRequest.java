@@ -1,11 +1,14 @@
 package com.paidpeace.api.v1.reminderrule.dto;
 
+import java.util.UUID;
+
 import com.paidpeace.domain.reminder.ReminderChannel;
 import com.paidpeace.domain.reminder.ReminderTriggerType;
 import com.paidpeace.domain.template.Template;
 
 public class ReminderRuleRequest {
     private String name;
+    private UUID organizationId;
     private int daysOffset;
     private ReminderTriggerType triggerType;
     private ReminderChannel channel;
@@ -14,6 +17,10 @@ public class ReminderRuleRequest {
 
     public String getName() {
         return name;
+    }
+
+    public UUID getOrganizationId() {
+        return organizationId;
     }
 
     public int getDaysOffset() {
@@ -38,6 +45,10 @@ public class ReminderRuleRequest {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public void setOrganizationId(UUID organizationId) {
+        this.organizationId = organizationId;
     }
 
     public void setDaysOffset(int daysOffset) {

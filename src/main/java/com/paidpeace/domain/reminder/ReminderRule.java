@@ -39,7 +39,7 @@ public class ReminderRule {
 
     // Trigger Logic
 
-    // Days relative to due date:
+    //  Days relative to due date:
     //  -2 → 2 days before due date
     //   0 → on due date
     //  +3 → 3 days after due date
@@ -57,13 +57,14 @@ public class ReminderRule {
     @Column(nullable = false)
     private ReminderChannel channel;
 
+    @NotNull
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "template_id")
     private Template template;
 
     // Lifecycle
     @Column(nullable = false)
-    private boolean active = true;
+    private boolean active = false;
 
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
@@ -152,6 +153,14 @@ public class ReminderRule {
 
     public void setTemplate(Template template) {
         this.template = template;
+    }
+
+    public void activate() {
+        this.active = true;
+    }
+
+    public void deactivate() {
+        this.active = false;
     }
 
     public void setActive(boolean active) {
