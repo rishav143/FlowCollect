@@ -73,9 +73,7 @@ public class TemplateService {
     }
 
 
-    /**
-     * Get a template by id.
-     */
+    // Get a template by id with organization context
     public Template getTemplateById
     (
         UUID organizationId,
@@ -85,10 +83,14 @@ public class TemplateService {
         return TemplateUtil.validateTemplateWithOrganization(templateId, organizationId, templateRepository);
     }
 
-    /**
-     * Get all templates for an organization with pagination.
-     */
+    // Get a template by id without organization context
+    public Template getTemplateById(UUID templateId) {
+        Template template = TemplateUtil.getTemplateOrThrow(templateId, templateRepository);
+        organizationService.getById(template.getOrganization().getId());
+        return template;
+    }
 
+    // Get all templates for an organization with pagination.
     public Page<Template> getAllTemplates
     (
         UUID organizationId,

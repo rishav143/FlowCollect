@@ -51,9 +51,7 @@ public class InvoiceService {
         this.customerService = customerService;
     }
 
-    /**
-     * Creates a draft invoice.
-     */
+    // Create a draft invoice.
     @Transactional
     public Invoice createInvoice
     (
@@ -102,10 +100,8 @@ public class InvoiceService {
         return invoiceRepository.save(invoice);
     }
 
-    /**
-     * Issues a draft invoice. If request is null or request.issueDate is null,
-     * the invoice will be issued using current date.
-     */
+    // Issue a draft invoice. If request is null or request.issueDate is null, 
+    // the invoice will be issued using current date.
     @Transactional
     public Invoice issueInvoice
     (
@@ -116,6 +112,7 @@ public class InvoiceService {
         if (invoiceId == null) {
             throw new NotFoundException("Invoice not found with ID: " + invoiceId);
         }
+        organizationService.getById(organizationId);
         Invoice invoice = InvoiceUtil.validateInvoiceWithOrganization(invoiceId, organizationId, invoiceRepository);
 
         if (!invoice.isDraft()) {
@@ -133,17 +130,20 @@ public class InvoiceService {
         return invoiceRepository.save(invoice);
     }
 
-    /**
-     * Gets an invoice by id.
-     */
-    public Invoice getInvoice(UUID invoiceId) {
-        return invoiceRepository.findById(invoiceId)
-                .orElseThrow(() -> new NotFoundException("Invoice not found with ID: " + invoiceId));
+    // Get invoice by id with organization context
+    public Invoice getInvoiceById(UUID organizationId, UUID invoiceId) {
+        organizationService.getById(organizationId);
+        return InvoiceUtil.validateInvoiceWithOrganization(invoiceId, organizationId, invoiceRepository);
     }
 
-    /**
-     * Updates mutable fields of a draft invoice.
-     */
+    // Get invoice by id without organization context
+    public Invoice getInvoiceById(UUID invoiceId) {
+        Invoice invoice = InvoiceUtil.getInvoiceOrThrow(invoiceId, invoiceRepository);
+        organizationService.getById(invoice.getOrganization().getId());
+        return invoice;
+    }
+
+    // Update mutable fields of a draft invoice.
     @Transactional
     public Invoice updateInvoice(
         UUID organizationId, 
@@ -153,6 +153,7 @@ public class InvoiceService {
         if (request == null) {
             throw new ValidationException("Request must not be null");
         }
+        organizationService.getById(organizationId);
         Invoice invoice = InvoiceUtil.validateInvoiceWithOrganization(invoiceId, organizationId, invoiceRepository);
         if (!invoice.isDraft()) {
             throw new ValidationException(
@@ -197,9 +198,7 @@ public class InvoiceService {
         return invoiceRepository.save(invoice);
     }
 
-    /**
-     * Hard delete an invoice if and only if it is in DRAFT state and belongs to the organization.
-     */
+    // Hard delete an invoice if and only if it is in DRAFT state and belongs to the organization.
     @Transactional
     public void deleteInvoice(
         UUID organizationId, 
@@ -219,9 +218,7 @@ public class InvoiceService {
         invoiceRepository.delete(invoice);
     }
 
-    /**
-     * Return paginated invoices for an organization with optional filters.
-     */
+    // Return paginated invoices for an organization with optional filters.
     public Page<Invoice> list(
         java.util.UUID organizationId,
         TimeStatus timeStatus,

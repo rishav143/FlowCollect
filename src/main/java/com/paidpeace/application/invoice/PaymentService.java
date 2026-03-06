@@ -14,26 +14,20 @@ import com.paidpeace.api.v1.invoice.dto.PaymentRequest;
 import com.paidpeace.domain.invoice.payment.Payment;
 import com.paidpeace.domain.invoice.payment.PaymentMode;
 import com.paidpeace.exception.http.ValidationException;
-import com.paidpeace.infrastructure.persistence.invoice.InvoiceJpaRepository;
 import com.paidpeace.infrastructure.persistence.invoice.PaymentJpaRepository;
 
 @Service
 public class PaymentService {
 
     private final PaymentJpaRepository paymentRepository;
-    private final InvoiceJpaRepository invoiceRepository;
+    private final InvoiceService invoiceService;
 
-    public PaymentService(PaymentJpaRepository paymentRepository, InvoiceJpaRepository invoiceRepository) {
+    public PaymentService(PaymentJpaRepository paymentRepository, InvoiceService invoiceService) {
         this.paymentRepository = paymentRepository;
-        this.invoiceRepository = invoiceRepository;
+        this.invoiceService = invoiceService;
     }
     
-    /**
-     * Creates a new payment for an invoice.
-     * @param invoiceId The ID of the invoice to create a payment for.
-     * @param paymentRequest The request body containing the payment details.
-     * @return The created payment.
-     */
+    // Create a new payment for an invoice.
     @Transactional
     public Payment createPayment
     (
@@ -43,7 +37,7 @@ public class PaymentService {
         if(paymentRequest == null) {
             throw new ValidationException("Payment request cannot be null");
         }
-        InvoiceUtil.getInvoiceOrThrow(invoiceId, invoiceRepository);
+        invoiceService.getInvoiceById(invoiceId);
 
         Payment payment = new Payment();
         if(paymentRequest.getAmount() != null) {
@@ -61,16 +55,12 @@ public class PaymentService {
         return paymentRepository.save(payment);
     }
 
-    /**
-     * Gets a payment by its ID.
-     */
+    // Get a payment by its ID.
     public Payment getPayment(UUID invoiceId, UUID paymentId) {
         return InvoiceUtil.getPaymentOrThrow(invoiceId, paymentId, paymentRepository);
     }
 
-    /**
-     * Gets all payments for an invoice.
-     */
+    // Get all payments for an invoice.
     public Page<Payment> getPayments(
         UUID invoiceId, 
         PaymentMode mode, 
@@ -78,7 +68,7 @@ public class PaymentService {
         Pageable pageable
     ) {
         // Validate the invoice ID.
-        InvoiceUtil.getInvoiceOrThrow(invoiceId, invoiceRepository);
+        invoiceService.getInvoiceById(invoiceId);
 
         // Create a specification for the payments.
         Specification<Payment> spec = (root, query, criteriaBuilder) -> {
@@ -94,9 +84,7 @@ public class PaymentService {
         return paymentRepository.findAll(spec, pageable);
     }
 
-    /**
-     * Updates a payment by its ID.
-     */
+    // Update a payment by its ID.
     @Transactional
     public Payment updatePayment
     (
@@ -107,7 +95,7 @@ public class PaymentService {
         if(paymentRequest == null) {
             throw new ValidationException("Payment request must not be null");
         }
-        InvoiceUtil.getInvoiceOrThrow(invoiceId, invoiceRepository);
+        invoiceService.getInvoiceById(invoiceId);
 
         Payment payment  = InvoiceUtil.getPaymentOrThrow(invoiceId, paymentId, paymentRepository);
         if(paymentRequest.getAmount() != null) {
@@ -122,6 +110,7 @@ public class PaymentService {
         if(paymentRequest.getNotes() != null) {
             payment.setNotes(paymentRequest.getNotes());
         }
+        
         return paymentRepository.save(payment);
     }
 }

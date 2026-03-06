@@ -63,8 +63,12 @@ public class InvoiceController {
      * Gets an invoice by id.
      */
     @GetMapping("/{id}")
-    public ResponseEntity<InvoiceResponse> getInvoice(@PathVariable UUID id) {
-        Invoice invoice = invoiceService.getInvoice(id);
+    public ResponseEntity<InvoiceResponse> getInvoice
+    (
+        @PathVariable UUID organizationId,
+        @PathVariable UUID invoiceId
+    ) {
+        Invoice invoice = invoiceService.getInvoiceById(organizationId, invoiceId);
         return ResponseEntity.ok(InvoiceMapper.toResponse(invoice));
     }
 

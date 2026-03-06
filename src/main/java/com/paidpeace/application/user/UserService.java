@@ -133,6 +133,7 @@ public class UserService {
             throw new ValidationException( 
                 "Request must not be null");
         }
+        organizationService.getById(organizationId);
         User user = UserUtil.validateUserWithOrganization(userId, organizationId, userRepository);
 
         boolean changed = false;
@@ -187,6 +188,7 @@ public class UserService {
         UUID organizationId, 
         UUID userId
     ) {
+        organizationService.getById(organizationId);
         User user = UserUtil.validateUserWithOrganization(userId, organizationId, userRepository);
         user.activate();
         return userRepository.save(user);
@@ -194,6 +196,7 @@ public class UserService {
 
     @Transactional
     public User deactivate(UUID organizationId, UUID userId) {
+        organizationService.getById(organizationId);
         User user = UserUtil.validateUserWithOrganization(userId, organizationId, userRepository);
 
         if (user.getStatus() == UserStatus.INACTIVE) {
@@ -207,6 +210,7 @@ public class UserService {
 
     @Transactional
     public void changePassword(UUID organizationId, UUID userId, UserPasswordChangeRequest request) {
+        organizationService.getById(organizationId);
         User user = UserUtil.validateUserWithOrganization(userId, organizationId, userRepository);
 
         if (request == null) {
@@ -248,6 +252,7 @@ public class UserService {
 
     @Transactional
     public void delete(UUID organizationId, UUID userId) {
+        organizationService.getById(organizationId);
         User user = UserUtil.validateUserWithOrganization(userId, organizationId, userRepository);
         userRepository.delete(user);
     }

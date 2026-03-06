@@ -5,65 +5,38 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
 import com.paidpeace.api.v1.organization.dto.OrganizationCreateRequest;
-import com.paidpeace.api.v1.organization.dto.OrganizationSettingsRequest;
 import com.paidpeace.api.v1.organization.dto.OrganizationUpdateRequest;
-import com.paidpeace.common.PaginationUtils;
 import com.paidpeace.domain.organization.Organization;
 import com.paidpeace.domain.organization.OrganizationStatus;
 import com.paidpeace.exception.http.ConflictException;
-import com.paidpeace.exception.http.NotFoundException;
-import com.paidpeace.exception.http.ServiceUnavailableException;
 import com.paidpeace.exception.http.ValidationException;
 import com.paidpeace.infrastructure.persistence.organization.OrganizationJpaRepository;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.ZoneId;
 import java.util.Currency;
-import java.util.Locale;
 import java.util.UUID;
 
-/**
- * Application service for organization use cases.
- * Validates business rules (timezone, currency, duplicate email) and delegates
- * persistence to the repository. Throws custom exceptions so the controller
- * layer can translate them into appropriate HTTP responses.
- */
 @Service
 public class OrganizationService {
 
     private final OrganizationJpaRepository organizationRepository;
-    private static final String LOGO_UPLOAD_DIR = "uploads/organizations";
 
     public OrganizationService(OrganizationJpaRepository organizationRepository) {
         this.organizationRepository = organizationRepository;
     }
 
-    /**
-     * Creates a new organization after validating timezone, currency, and email uniqueness.
-     *
-     * @param request validated create request (controller ensures @Valid)
-     * @return the persisted organization
-     */
+    // Create a new organization after validating timezone, currency, and email uniqueness.
     @Transactional
-    public Organization create
-    (
-        OrganizationCreateRequest request
-    ) {
+    public Organization create(OrganizationCreateRequest request) {
         if (request == null) {
             throw new ValidationException(
                 "Request must not be null");
         }
-
-
         if(request.getTimezone() == null || request.getTimezone().isBlank()) {
             throw new ValidationException(
                 "Timezone is required. Provide a valid timezone ID (e.g. America/New_York, Europe/London).");
@@ -104,183 +77,13 @@ public class OrganizationService {
         return organizationRepository.save(organization);
     }
 
-    /**
-     * Fetches an organization by id.
-     *
-     * @param organizationId organization identifier
-     * @return the organization
-     */
+    // Get an organization by id.
     @Transactional(readOnly = true)
     public Organization getById(UUID organizationId) {
         return OrganizationUtil.getOrganizationOrThrow(organizationId, organizationRepository);
     }
 
-    /**
-     * Fetches an organization's status by id.
-     *
-     * @param organizationId organization identifier
-     * @return current organization status
-     */
-    @Transactional(readOnly = true)
-    public OrganizationStatus getStatus(UUID organizationId) {
-        return OrganizationUtil.getOrganizationOrThrow(organizationId, organizationRepository).getStatus();
-    }
-
-    /**
-     * Fetches organization settings (timezone, currency) by id.
-     *
-     * @param organizationId organization identifier
-     * @return organization with current settings
-     */
-    @Transactional(readOnly = true)
-    public Organization getSettings(UUID organizationId) {
-        return OrganizationUtil.getOrganizationOrThrow(organizationId, organizationRepository);
-    }
-
-    /**
-     * Updates organization settings (timezone, currency).
-     *
-     * @param organizationId organization identifier
-     * @param request settings payload
-     * @return updated organization
-     */
-    @Transactional
-    public Organization updateSettings(UUID organizationId, OrganizationSettingsRequest request) {
-        Organization organization = OrganizationUtil.getOrganizationOrThrow(organizationId, organizationRepository);
-
-        if (organization.isDeleted()) {
-            throw new ValidationException(
-                "Organization with ID: " + organizationId + " is already archived.");
-        }
-
-        if (request == null) {
-            throw new ValidationException(
-                "Settings must not be null");
-        }
-
-        boolean hasTimezone = request.getTimezone() != null;
-        boolean hasCurrency = request.getCurrency() != null;
-        if (!hasTimezone && !hasCurrency) {
-            throw new ValidationException("Settings must contain timezone and currency");
-        }
-
-        boolean changed = false;
-        if (hasTimezone) {
-            ZoneId timezone = OrganizationUtil.parseTimezone(request.getTimezone());
-            if (!timezone.equals(organization.getTimezone())) {
-                organization.setTimezone(timezone);
-                changed = true;
-            }
-        }
-
-        if (hasCurrency) {
-            Currency currency = OrganizationUtil.parseCurrency(request.getCurrency());
-            if (!currency.equals(organization.getCurrency())) {
-                organization.setCurrency(currency);
-                changed = true;
-            }
-        }
-
-        if (!changed) {
-            return organization;
-        }
-
-        return organizationRepository.save(organization);
-    }
-
-    /**
-     * Uploads a logo file and updates the organization's logoUrl.
-     *
-     * @param organizationId organization identifier
-     * @param file logo file (multipart)
-     * @return updated organization
-     */
-    @Transactional
-    public Organization uploadLogo
-    (
-            UUID organizationId,
-            MultipartFile file
-    ) {
-        Organization organization = OrganizationUtil.getOrganizationOrThrow(organizationId, organizationRepository);
-
-        if (organization.isDeleted()) {
-            throw new ValidationException(
-                "Organization with ID: " + organizationId + " is already archived.");
-        }
-
-        if (file == null || file.isEmpty()) {
-            throw new ValidationException(
-                "Logo file must not be empty");
-        }
-
-        String contentType = file.getContentType();
-        if (contentType == null || !contentType.toLowerCase(Locale.ROOT).startsWith("image/")) {
-            throw new ValidationException(
-                "Logo file must be an image");
-        }
-
-        String filename = OrganizationUtil.buildLogoFilename(file.getOriginalFilename());
-        Path directory = Paths.get(LOGO_UPLOAD_DIR, String.valueOf(organizationId));
-        Path target = directory.resolve(filename);
-        try {
-            Files.createDirectories(directory);
-            file.transferTo(target);
-        } catch (IOException ex) {
-            throw new ServiceUnavailableException(
-                "Failed to store logo file for organization with ID: " + organizationId + " due to: " + ex.getMessage());
-        }
-
-        String logoUrl = "/" + directory.resolve(filename).toString().replace("\\", "/");
-        organization.setLogoUrl(logoUrl);
-        return organizationRepository.save(organization);
-    }
-
-    /**
-     * Removes an organization's logo.
-     * @param organizationId organization identifier
-     * @return the updated organization
-     */
-    @Transactional
-    public void removeLogo(UUID organizationId) {
-        Organization organization = OrganizationUtil.getOrganizationOrThrow(organizationId, organizationRepository);
-
-        if (organization.isDeleted()) {
-            throw new ValidationException(
-                "Organization with ID: " + organizationId + " is already archived.");
-        }
-
-        String logoUrl = organization.getLogoUrl();
-        if (logoUrl == null || logoUrl.isBlank()) {
-            throw new NotFoundException(
-                "Organization with ID: " + organizationId + " has no logo.");
-        }
-
-        OrganizationUtil.deleteLogoFileIfPresent(logoUrl);
-        organization.setLogoUrl(null);
-        organizationRepository.save(organization);
-    }
-
-    /**
-     * Retrieves the stored logo URL.
-     *
-     * @param organizationId organization identifier
-     * @return logo URL
-     */
-    @Transactional(readOnly = true)
-    public String getLogoUrl(UUID organizationId) {
-        Organization organization = OrganizationUtil.getOrganizationOrThrow(organizationId, organizationRepository);
-
-        String logoUrl = organization.getLogoUrl();
-        if (logoUrl == null || logoUrl.isBlank()) {
-            throw new NotFoundException(
-                "Organization with ID: " + organizationId + " has no logo.");
-        }
-        return logoUrl;
-    }
-
-    /**
-     * Lists organizations using filters and pagination.
-     */
+    // List organizations using filters and pagination.
     @Transactional(readOnly = true)
     public Page<Organization> list(
             String status,
@@ -290,30 +93,6 @@ public class OrganizationService {
             LocalDate createdTo,
             Pageable pageable
     ) {
-        try {
-            PaginationUtils.validatePageable(pageable);
-        } catch (ValidationException e) {
-            // Map user-level pageable validation errors to organization-level field errors
-            String message = e.getMessage();
-            String field = "page";
-            String reason = message;
-            try {
-                int start = message.indexOf('\'');
-                int end = message.indexOf('\'', start + 1);
-                if (start >= 0 && end > start) {
-                    field = message.substring(start + 1, end);
-                }
-                int colon = message.indexOf(':');
-                if (colon >= 0 && colon + 1 < message.length()) {
-                    reason = message.substring(colon + 1).trim();
-                }
-            } catch (Exception ignore) {
-                // fallback to full message
-                reason = message;
-            }
-            throw new ValidationException(
-                field + " " + reason + " for organization list");
-        }
         OrganizationUtil.validateDateRange(createdFrom, createdTo);
 
         OrganizationStatus parsedStatus = OrganizationUtil.parseOrganizationStatus(status);
@@ -343,25 +122,14 @@ public class OrganizationService {
         return organizationRepository.findAll(spec, pageable);
     }
 
-    /**
-     * Hard-deletes an organization by id.
-     *
-     * @param organizationId organization identifier
-     * @throws InvalidOrganizationIdException if id is null or non-positive
-     * @throws OrganizationNotFoundException if no organization exists for the given id
-     */
+    // Hard-delete an organization by id.
     @Transactional
     public void delete(UUID organizationId) {
         Organization organization = OrganizationUtil.getOrganizationOrThrow(organizationId, organizationRepository);
         organizationRepository.delete(organization);
     }
 
-    /**
-     * Activates an organization by id.
-     *
-     * @param organizationId organization identifier
-     * @return the updated organization
-     */
+    // Activate an organization by id.
     @Transactional
     public Organization activate(UUID organizationId) {
         Organization organization = OrganizationUtil.getOrganizationOrThrow(organizationId, organizationRepository);
@@ -380,12 +148,7 @@ public class OrganizationService {
         return organizationRepository.save(organization);
     }
 
-    /**
-     * Suspends an organization by id.
-     *
-     * @param organizationId organization identifier
-     * @return the updated organization
-     */
+    // Suspend an organization by id.
     @Transactional
     public Organization suspend(UUID organizationId) {
         Organization organization = OrganizationUtil.getOrganizationOrThrow(organizationId, organizationRepository);
@@ -404,12 +167,7 @@ public class OrganizationService {
         return organizationRepository.save(organization);
     }
 
-    /**
-     * Archives (soft-deletes) an organization by id.
-     *
-     * @param organizationId organization identifier
-     * @return the updated organization
-     */
+    // Archive (soft-delete) an organization by id.
     @Transactional
     public Organization archive(UUID organizationId) {
         Organization organization = OrganizationUtil.getOrganizationOrThrow(organizationId, organizationRepository);
@@ -423,61 +181,7 @@ public class OrganizationService {
         return organizationRepository.save(organization);
     }
 
-    /**
-     * Puts an organization into trial status by id.
-     *
-     * @param organizationId organization identifier
-     * @return the updated organization
-     */
-    @Transactional
-    public Organization trial(UUID organizationId) {
-        Organization organization = OrganizationUtil.getOrganizationOrThrow(organizationId, organizationRepository);
-
-        if (organization.isDeleted()) {
-            throw new ConflictException(
-                "Organization with ID: " + organizationId + " is already archived.");
-        }
-
-        if (organization.getStatus() == OrganizationStatus.TRIAL) {
-            throw new ConflictException(
-                "Organization with ID: " + organizationId + " is already in trial.");
-        }
-
-        organization.trial();
-        return organizationRepository.save(organization);
-    }
-
-    /**
-     * Marks an organization as expired by id.
-     *
-     * @param organizationId organization identifier
-     * @return the updated organization
-     */
-    @Transactional
-    public Organization expired(UUID organizationId) {
-        Organization organization = OrganizationUtil.getOrganizationOrThrow(organizationId, organizationRepository);
-
-        if (organization.isDeleted()) {
-            throw new ConflictException(
-                "Organization with ID: " + organizationId + " is already archived.");
-        }
-
-        if (organization.getStatus() == OrganizationStatus.EXPIRED) {
-            throw new ConflictException(
-                "Organization with ID: " + organizationId + " is already expired.");
-        }
-
-        organization.expired();
-        return organizationRepository.save(organization);
-    }
-
-    /**
-     * Updates an existing organization with the provided fields.
-     *
-     * @param organizationId organization identifier
-     * @param request update payload (nullable fields are ignored)
-     * @return the updated organization
-     */
+    // Update an existing organization with the provided fields.
     @Transactional
     public Organization update(UUID organizationId, OrganizationUpdateRequest request) {
         Organization organization = OrganizationUtil.getOrganizationOrThrow(organizationId, organizationRepository);
@@ -495,7 +199,6 @@ public class OrganizationService {
                 changed = true;
             }
         }
-
         if (request.getEmail() != null) {
             String email = request.getEmail().trim();
             if (email.isBlank()) {
@@ -512,7 +215,6 @@ public class OrganizationService {
                 changed = true;
             }
         }
-
         if (request.getTimezone() != null) {
             ZoneId timezone = OrganizationUtil.parseTimezone(request.getTimezone());
             if (!timezone.equals(organization.getTimezone())) {
@@ -520,7 +222,6 @@ public class OrganizationService {
                 changed = true;
             }
         }
-
         if (request.getCurrency() != null) {
             Currency currency = OrganizationUtil.parseCurrency(request.getCurrency());
             if (!currency.equals(organization.getCurrency())) {
@@ -528,7 +229,6 @@ public class OrganizationService {
                 changed = true;
             }
         }
-
         if (request.getPhone() != null) {
             String phone = request.getPhone().trim();
             String normalizedPhone = phone.isBlank() ? null : phone;
@@ -537,7 +237,6 @@ public class OrganizationService {
                 changed = true;
             }
         }
-
         if (request.getAddress() != null) {
             String address = request.getAddress().trim();
             String normalizedAddress = address.isBlank() ? null : address;
@@ -546,7 +245,6 @@ public class OrganizationService {
                 changed = true;
             }
         }
-
         if (request.getLogoUrl() != null) {
             String logoUrl = request.getLogoUrl().trim();
             String normalizedLogoUrl = logoUrl.isBlank() ? null : logoUrl;
@@ -555,7 +253,6 @@ public class OrganizationService {
                 changed = true;
             }
         }
-
         if (!changed) {
             return organization;
         }

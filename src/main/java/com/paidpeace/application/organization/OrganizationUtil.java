@@ -1,20 +1,13 @@
 package com.paidpeace.application.organization;
 
-import java.nio.file.Files;
-import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-
 import java.util.UUID;
 
 import com.paidpeace.domain.organization.Organization;
 import com.paidpeace.domain.organization.OrganizationStatus;
-import com.paidpeace.exception.http.ConflictException;
 import com.paidpeace.exception.http.NotFoundException;
 import com.paidpeace.exception.http.ValidationException;
 import com.paidpeace.infrastructure.persistence.organization.OrganizationJpaRepository;
 
-import java.util.Locale;
 import java.util.Currency;
 import java.time.ZoneId;
 import java.time.LocalDate;
@@ -34,7 +27,7 @@ public class OrganizationUtil {
                 .orElseThrow(() -> new NotFoundException(
                     "Organization not found with ID: " + organizationId));
         if (organization.isDeleted()) {
-            throw new ConflictException(
+            throw new NotFoundException(
                 "Organization with ID: " + organizationId + " is already archived.");
         }
         return organization;
@@ -100,43 +93,6 @@ public class OrganizationUtil {
         if (createdFrom != null && createdTo != null && createdFrom.isAfter(createdTo)) {
             throw new ValidationException(
                 "Created from must be before or equal to created to");
-        }
-    }
-
-    public static String buildLogoFilename
-    (
-        String originalName
-    ) {
-        if (originalName == null || originalName.isBlank()) {
-            throw new ValidationException(
-                "Original name must not be null or blank");
-        }
-        String extension = "";
-        if (originalName != null) {
-            int dotIndex = originalName.lastIndexOf('.');
-            if (dotIndex >= 0 && dotIndex < originalName.length() - 1) {
-                extension = originalName.substring(dotIndex).toLowerCase(Locale.ROOT);
-            }
-        }
-        String base = "logo-" + UUID.randomUUID();
-        return extension.isBlank() ? base : base + extension;
-    }
-
-    private static final String LOGO_UPLOAD_DIR = "uploads/organizations";
-
-    public static void deleteLogoFileIfPresent(String logoUrl) {
-        if (logoUrl == null || logoUrl.isBlank()) {
-            return;
-        }
-        String normalized = logoUrl.startsWith("/") ? logoUrl.substring(1) : logoUrl;
-        if (!normalized.startsWith(LOGO_UPLOAD_DIR)) {
-            return;
-        }
-        Path path = Paths.get(normalized);
-        try {
-            Files.deleteIfExists(path);
-        } catch (IOException ignored) {
-            // Best-effort cleanup; persistence is handled by clearing logoUrl.
         }
     }
 }
