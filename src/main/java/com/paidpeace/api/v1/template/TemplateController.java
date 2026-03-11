@@ -18,6 +18,8 @@ import com.paidpeace.api.v1.template.dto.TemplateRequest;
 import com.paidpeace.api.v1.template.dto.TemplateResponse;
 import com.paidpeace.application.template.TemplateService;
 import com.paidpeace.domain.template.Template;
+import com.paidpeace.domain.user.UserRole;
+import com.paidpeace.security.RequireRole;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Page;
@@ -26,6 +28,7 @@ import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1/organizations/{organizationId}/templates")
+@RequireRole({ UserRole.ADMIN, UserRole.STAFF })
 public class TemplateController {
     private final TemplateService templateService;
 

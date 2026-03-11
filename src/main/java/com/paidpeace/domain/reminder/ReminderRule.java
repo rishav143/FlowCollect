@@ -59,8 +59,11 @@ public class ReminderRule {
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "template_id")
+    @JoinColumn(name = "template_id", nullable = false)
     private Template template;
+
+    @Column(name = "attach_pdf", nullable = false)
+    private boolean attachPdf = false;
 
     // Lifecycle
     @Column(nullable = false)
@@ -118,6 +121,10 @@ public class ReminderRule {
         return template;
     }
 
+    public boolean isAttachPdf() {
+        return attachPdf;
+    }
+
     public boolean isActive() {
         return active;
     }
@@ -153,6 +160,10 @@ public class ReminderRule {
 
     public void setTemplate(Template template) {
         this.template = template;
+    }
+
+    public void setAttachPdf(boolean attachPdf) {
+        this.attachPdf = attachPdf;
     }
 
     public void activate() {

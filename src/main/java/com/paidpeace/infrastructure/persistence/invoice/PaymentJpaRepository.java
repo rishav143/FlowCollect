@@ -1,5 +1,6 @@
 package com.paidpeace.infrastructure.persistence.invoice;
 
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -10,5 +11,5 @@ import com.paidpeace.domain.invoice.payment.Payment;
 
 @Repository
     public interface PaymentJpaRepository extends JpaRepository<Payment, UUID>, JpaSpecificationExecutor<Payment> {
-        
+        List<Payment> findByInvoiceId(UUID invoiceId);
     }

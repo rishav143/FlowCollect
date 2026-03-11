@@ -2,6 +2,8 @@ package com.paidpeace.api.v1.invoice;
 
 import java.time.Instant;
 import java.util.UUID;
+import com.paidpeace.domain.user.UserRole;
+import com.paidpeace.security.RequireRole;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -23,6 +25,7 @@ import com.paidpeace.domain.invoice.payment.PaymentMode;
 
 @RestController
 @RequestMapping("/api/v1/invoices/{invoiceId}/payments")
+@RequireRole({ UserRole.ADMIN, UserRole.STAFF })
 public class PaymentController {
 
     private final PaymentService paymentService;

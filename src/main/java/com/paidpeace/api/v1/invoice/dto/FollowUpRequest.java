@@ -1,5 +1,6 @@
 package com.paidpeace.api.v1.invoice.dto;
 
+import java.time.LocalDate;
 import java.util.UUID;
 
 import com.paidpeace.domain.invoice.followup.FollowUpChannel;
@@ -17,6 +18,10 @@ public class FollowUpRequest {
     private UUID invoiceId;
 
     private UUID templateId;
+
+    private LocalDate scheduledForDate;
+
+    private Boolean attachPdf;
 
     public UUID getInvoiceId() {
         return invoiceId;
@@ -48,6 +53,22 @@ public class FollowUpRequest {
 
     public void setTemplateId(UUID templateId) {
         this.templateId = templateId;
+    }
+
+    public LocalDate getScheduledForDate() {
+        return scheduledForDate;
+    }
+
+    public void setScheduledForDate(LocalDate scheduledForDate) {
+        this.scheduledForDate = scheduledForDate;
+    }
+
+    public Boolean getAttachPdf() {
+        return attachPdf;
+    }
+
+    public void setAttachPdf(Boolean attachPdf) {
+        this.attachPdf = attachPdf;
     }
 }
 

@@ -200,6 +200,14 @@ public class Invoice {
         return lifeCycleStatus == LifeCycleStatus.ISSUED;
     }
 
+    public boolean isPartiallyPaid() {
+        return lifeCycleStatus == LifeCycleStatus.PARTIALLY_PAID;
+    }
+
+    public boolean isPaid() {
+        return lifeCycleStatus == LifeCycleStatus.PAID;
+    }
+
     public boolean isCancelled() {
         return lifeCycleStatus == LifeCycleStatus.CANCELLED;
     }
@@ -255,22 +263,45 @@ public class Invoice {
         this.lifeCycleStatus = LifeCycleStatus.CANCELLED;
     }
 
+    public void updateLifeCycleStatus(BigDecimal totalPaid) {
+        if (lifeCycleStatus == LifeCycleStatus.DRAFT || lifeCycleStatus == LifeCycleStatus.CANCELLED) {
+            return;
+        }
+
+        if (totalPaid.compareTo(BigDecimal.ZERO) <= 0) {
+            this.lifeCycleStatus = LifeCycleStatus.ISSUED;
+        } else if (totalPaid.compareTo(this.totalAmount) >= 0) {
+            this.lifeCycleStatus = LifeCycleStatus.PAID;
+        } else {
+            this.lifeCycleStatus = LifeCycleStatus.PARTIALLY_PAID;
+        }
+    }
+
     public void setDueDate(LocalDate dueDate) {
         if (dueDate == null) {
             throw new IllegalArgumentException("Due date cannot be null");
         }
-        if(dueDate.isEqual(LocalDate.now())) {
+        this.dueDate = dueDate;
+    }
+
+    public void refreshTimeStatus(LocalDate referenceDate) {
+        if (referenceDate == null) {
+            throw new IllegalArgumentException("Reference date cannot be null");
+        }
+        if (this.dueDate == null) {
+            this.timeStatus = TimeStatus.NOT_DUE;
+            return;
+        }
+        if (this.dueDate.isEqual(referenceDate)) {
             this.timeStatus = TimeStatus.DUE_TODAY;
-        } else if(dueDate.isBefore(LocalDate.now())) {
+        } else if (this.dueDate.isBefore(referenceDate)) {
             this.timeStatus = TimeStatus.OVERDUE;
         } else {
             this.timeStatus = TimeStatus.NOT_DUE;
         }
-        this.dueDate = dueDate;
     }
 
     // Domain Behavior
-
     // Adds an item to this invoice and recalculates totals.
     public void addItem(String description, int quantity, BigDecimal unitPrice) {
         if (lifeCycleStatus != LifeCycleStatus.DRAFT) {

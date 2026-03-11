@@ -1,5 +1,7 @@
 package com.paidpeace.application.invoice;
+import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.data.domain.Page;
@@ -11,19 +13,23 @@ import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
 import com.paidpeace.api.v1.invoice.dto.PaymentRequest;
+import com.paidpeace.domain.invoice.Invoice;
 import com.paidpeace.domain.invoice.payment.Payment;
 import com.paidpeace.domain.invoice.payment.PaymentMode;
 import com.paidpeace.exception.http.ValidationException;
+import com.paidpeace.infrastructure.persistence.invoice.InvoiceJpaRepository;
 import com.paidpeace.infrastructure.persistence.invoice.PaymentJpaRepository;
 
 @Service
 public class PaymentService {
 
     private final PaymentJpaRepository paymentRepository;
+    private final InvoiceJpaRepository invoiceRepository;
     private final InvoiceService invoiceService;
 
-    public PaymentService(PaymentJpaRepository paymentRepository, InvoiceService invoiceService) {
+    public PaymentService(PaymentJpaRepository paymentRepository, InvoiceJpaRepository invoiceRepository, InvoiceService invoiceService) {
         this.paymentRepository = paymentRepository;
+        this.invoiceRepository = invoiceRepository;
         this.invoiceService = invoiceService;
     }
     
@@ -37,9 +43,10 @@ public class PaymentService {
         if(paymentRequest == null) {
             throw new ValidationException("Payment request cannot be null");
         }
-        invoiceService.getInvoiceById(invoiceId);
+        Invoice invoice = invoiceService.getInvoiceById(invoiceId);
 
         Payment payment = new Payment();
+        payment.setInvoice(invoice);
         if(paymentRequest.getAmount() != null) {
             payment.setAmount(paymentRequest.getAmount());
         }
@@ -52,7 +59,22 @@ public class PaymentService {
         if(paymentRequest.getNotes() != null) {
             payment.setNotes(paymentRequest.getNotes());
         }
-        return paymentRepository.save(payment);
+        
+        Payment savedPayment = paymentRepository.save(payment);
+        updateInvoiceStatus(invoiceId);
+        return savedPayment;
+    }
+
+    private void updateInvoiceStatus(UUID invoiceId) {
+        Invoice invoice = invoiceService.getInvoiceById(invoiceId);
+        List<Payment> payments = paymentRepository.findByInvoiceId(invoiceId);
+        
+        BigDecimal totalPaid = payments.stream()
+                .map(Payment::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        
+        invoice.updateLifeCycleStatus(totalPaid);
+        invoiceRepository.save(invoice);
     }
 
     // Get a payment by its ID.
@@ -111,6 +133,8 @@ public class PaymentService {
             payment.setNotes(paymentRequest.getNotes());
         }
         
-        return paymentRepository.save(payment);
+        Payment savedPayment = paymentRepository.save(payment);
+        updateInvoiceStatus(invoiceId);
+        return savedPayment;
     }
 }

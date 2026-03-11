@@ -21,6 +21,8 @@ import com.paidpeace.api.v1.user.dto.UserResponse;
 import com.paidpeace.api.v1.user.dto.UserUpdateRequest;
 import com.paidpeace.application.user.UserService;
 import com.paidpeace.domain.user.User;
+import com.paidpeace.domain.user.UserRole;
+import com.paidpeace.security.RequireRole;
 
 import java.net.URI;
 import java.util.UUID;
@@ -37,6 +39,7 @@ public class UserController {
 
     // Create User
     @PostMapping
+    @RequireRole({ UserRole.ADMIN })
     public ResponseEntity<UserResponse> create(
             @PathVariable UUID organizationId,
             @Valid @RequestBody UserCreateRequest request
@@ -52,6 +55,7 @@ public class UserController {
 
     // Get All Users
     @GetMapping
+    @RequireRole({ UserRole.ADMIN, UserRole.STAFF })
     public ResponseEntity<Page<UserResponse>> list(
             @PathVariable UUID organizationId,
             @RequestParam(required = false) String status,
@@ -66,6 +70,7 @@ public class UserController {
 
     // Get User by ID
     @GetMapping("/{userId}")
+    @RequireRole({ UserRole.ADMIN, UserRole.STAFF })
     public ResponseEntity<UserResponse> getById(
             @PathVariable UUID organizationId,
             @PathVariable UUID userId
@@ -76,6 +81,7 @@ public class UserController {
 
     // Update User
     @PatchMapping("/{userId}")
+    @RequireRole({ UserRole.ADMIN })
     public ResponseEntity<UserResponse> update(
             @PathVariable UUID organizationId,
             @PathVariable UUID userId,
@@ -87,6 +93,7 @@ public class UserController {
 
     // Activate User
     @PostMapping("/{userId}/activate")
+    @RequireRole({ UserRole.ADMIN })
     public ResponseEntity<UserResponse> activate(
             @PathVariable UUID organizationId,
             @PathVariable UUID userId
@@ -97,6 +104,7 @@ public class UserController {
 
     // Deactivate User
     @PostMapping("/{userId}/deactivate")
+    @RequireRole({ UserRole.ADMIN })
     public ResponseEntity<UserResponse> deactivate(
             @PathVariable UUID organizationId,
             @PathVariable UUID userId
@@ -107,6 +115,7 @@ public class UserController {
 
     // Change User Password
     @PostMapping("/{userId}/password")
+    @RequireRole({ UserRole.ADMIN, UserRole.STAFF })
     public ResponseEntity<Void> changePassword(
             @PathVariable UUID organizationId,
             @PathVariable UUID userId,
@@ -118,6 +127,7 @@ public class UserController {
 
     // Delete User
     @DeleteMapping("/{userId}")
+    @RequireRole({ UserRole.ADMIN })
     public ResponseEntity<Void> delete(
             @PathVariable UUID organizationId,
             @PathVariable UUID userId

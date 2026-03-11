@@ -7,6 +7,8 @@ import com.paidpeace.api.v1.customer.dto.CustomerRequest;
 import com.paidpeace.api.v1.customer.dto.CustomerResponse;
 import com.paidpeace.application.customer.CustomerService;
 import com.paidpeace.domain.customer.Customer;
+import com.paidpeace.domain.user.UserRole;
+import com.paidpeace.security.RequireRole;
 
 import jakarta.validation.Valid;
 
@@ -27,6 +29,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 @RestController
 @RequestMapping("/api/v1/organizations/{organizationId}/customers")
+@RequireRole({ UserRole.ADMIN, UserRole.STAFF })
 public class CustomerController {
     private final CustomerService customerService;
 

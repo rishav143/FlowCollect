@@ -19,6 +19,9 @@ import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.ZoneId;
 import java.util.Currency;
+import com.paidpeace.domain.organization.OrganizationStatus;
+import java.util.Collection;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -81,6 +84,11 @@ public class OrganizationService {
     @Transactional(readOnly = true)
     public Organization getById(UUID organizationId) {
         return OrganizationUtil.getOrganizationOrThrow(organizationId, organizationRepository);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Organization> getEligibleOrganizationsForReminders(Collection<OrganizationStatus> statuses) {
+        return organizationRepository.findAllByDeletedAtIsNullAndStatusIn(statuses);
     }
 
     // List organizations using filters and pagination.

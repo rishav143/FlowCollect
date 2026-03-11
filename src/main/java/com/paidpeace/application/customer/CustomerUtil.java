@@ -37,7 +37,7 @@ public class CustomerUtil {
             throw new ValidationException("Organization ID must not be null");
         }
         Customer customer = getCustomerOrThrow(customerId, customerRepository);
-        if (customer.getOrganization().getId() != organizationId) {
+        if (!customer.getOrganization().getId().equals(organizationId)) {
             throw new ValidationException("Customer is not associated with organization with ID: " + organizationId);
         }
         return customer;

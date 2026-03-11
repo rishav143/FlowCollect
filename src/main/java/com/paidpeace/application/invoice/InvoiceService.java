@@ -21,6 +21,7 @@ import com.paidpeace.domain.organization.Organization;
 import com.paidpeace.domain.user.User;
 import com.paidpeace.exception.http.NotFoundException;
 import com.paidpeace.exception.http.ValidationException;
+import com.paidpeace.infrastructure.pdf.InvoicePdfGenerator;
 import com.paidpeace.infrastructure.persistence.invoice.InvoiceJpaRepository;
 
 import jakarta.persistence.criteria.Predicate;
@@ -38,17 +39,20 @@ public class InvoiceService {
     private final UserService userService;
     private final CustomerService customerService;
     private final OrganizationService organizationService;
+    private final InvoicePdfGenerator invoicePdfGenerator;
     
     public InvoiceService(
             InvoiceJpaRepository invoiceRepository,
             UserService userService,
             CustomerService customerService,
-            OrganizationService organizationService
+            OrganizationService organizationService,
+            InvoicePdfGenerator invoicePdfGenerator
     ) {
         this.invoiceRepository = invoiceRepository;
         this.userService = userService;
         this.organizationService = organizationService;
         this.customerService = customerService;
+        this.invoicePdfGenerator = invoicePdfGenerator;
     }
 
     // Create a draft invoice.
@@ -130,6 +134,21 @@ public class InvoiceService {
         return invoiceRepository.save(invoice);
     }
 
+    @Transactional(readOnly = true)
+    public List<Invoice> getInvoicesForReminders(UUID organizationId, List<LifeCycleStatus> statuses, LocalDate dueDate) {
+        return invoiceRepository.findAllByOrganizationIdAndLifeCycleStatusInAndDueDate(organizationId, statuses, dueDate);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Invoice> getInvoicesWithDueDate(UUID organizationId, List<LifeCycleStatus> statuses) {
+        return invoiceRepository.findAllByOrganizationIdAndLifeCycleStatusInAndDueDateIsNotNull(organizationId, statuses);
+    }
+
+    @Transactional
+    public void saveAll(List<Invoice> invoices) {
+        invoiceRepository.saveAll(invoices);
+    }
+
     // Get invoice by id with organization context
     public Invoice getInvoiceById(UUID organizationId, UUID invoiceId) {
         organizationService.getById(organizationId);
@@ -141,6 +160,15 @@ public class InvoiceService {
         Invoice invoice = InvoiceUtil.getInvoiceOrThrow(invoiceId, invoiceRepository);
         organizationService.getById(invoice.getOrganization().getId());
         return invoice;
+    }
+
+    @Transactional(readOnly = true)
+    public InvoicePdfFile generateInvoicePdf(UUID organizationId, UUID invoiceId) {
+        Invoice invoice = getInvoiceById(organizationId, invoiceId);
+        return new InvoicePdfFile(
+                invoicePdfGenerator.generate(invoice),
+                invoicePdfGenerator.buildFileName(invoice)
+        );
     }
 
     // Update mutable fields of a draft invoice.

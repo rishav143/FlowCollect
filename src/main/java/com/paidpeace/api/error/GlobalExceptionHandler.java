@@ -3,7 +3,6 @@ package com.paidpeace.api.error;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -11,7 +10,6 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import com.paidpeace.exception.base.AppException;
 
 import java.time.Instant;
-import java.util.stream.Collectors;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -22,23 +20,25 @@ public class GlobalExceptionHandler {
             MethodArgumentNotValidException ex,
             HttpServletRequest request
     ) {
-
+    
         var errors = ex.getBindingResult()
                 .getFieldErrors()
                 .stream()
-                .collect(Collectors.toMap(
-                        FieldError::getField,
-                        FieldError::getDefaultMessage
-                ));
-
+                .map(error -> new FieldValidationError(
+                        error.getField(),
+                        error.getDefaultMessage()
+                ))
+                .toList();
+    
         ErrorResponse response = new ErrorResponse(
                 "VALIDATION_ERROR",
-                errors.toString(),
+                "Validation failed",
                 HttpStatus.BAD_REQUEST.value(),
                 Instant.now(),
-                request.getRequestURI()
+                request.getRequestURI(),
+                errors
         );
-
+    
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(response);
@@ -50,15 +50,16 @@ public class GlobalExceptionHandler {
             AppException ex,
             HttpServletRequest request
     ) {
+        String code = ex.getCode() != null ? ex.getCode().toString() : ex.getClass().getSimpleName();
 
         ErrorResponse response = new ErrorResponse(
-                ex.getCode().toString(),
+                code,
                 ex.getMessage(),
                 ex.getStatus().value(),
                 Instant.now(),
                 request.getRequestURI()
         );
-
+    
         return ResponseEntity
                 .status(ex.getStatus())
                 .body(response);
@@ -70,17 +71,18 @@ public class GlobalExceptionHandler {
             Exception ex,
             HttpServletRequest request
     ) {
+        HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
 
         ErrorResponse response = new ErrorResponse(
-                "INTERNAL_ERROR",
+                ex.getClass().getSimpleName(),
                 "Something went wrong",
-                HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                status.value(),
                 Instant.now(),
                 request.getRequestURI()
         );
 
         return ResponseEntity
-                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .status(status)
                 .body(response);
     }
 }

@@ -15,6 +15,18 @@ import com.paidpeace.exception.http.ValidationException;
 import com.paidpeace.infrastructure.persistence.user.UserJpaRepository;
 
 public class UserUtil {
+
+    public static boolean ValidateUser(User user) {
+        if (user == null) {
+            throw new ValidationException( 
+                "User must not be null");
+        }
+        if (user.getStatus() == UserStatus.INACTIVE) {
+            throw new NotFoundException( 
+                "User with ID: " + user.getId() + " is inactive");
+        }
+        return true;
+    }
     
     public static User getUserOrThrow(UUID userId, UserJpaRepository userRepository) {
         if (userId == null) {
@@ -49,7 +61,7 @@ public class UserUtil {
             throw new NotFoundException( 
                 "User with ID: " + userId + " is inactive");
         }
-        if (user.getOrganization().getId() != organizationId) {
+        if (!user.getOrganization().getId().equals(organizationId)) {
             throw new ConflictException( 
                 "User with ID: " + userId + " is not associated with organization with ID: " + organizationId);
         }

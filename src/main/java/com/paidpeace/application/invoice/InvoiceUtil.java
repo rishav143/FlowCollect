@@ -59,7 +59,7 @@ public class InvoiceUtil {
             throw new ValidationException("organizationId must not be null");
         }
         Invoice invoice = getInvoiceOrThrow(invoiceId, invoiceRepository);
-        if (invoice.getOrganization().getId() != organizationId) {
+        if (!invoice.getOrganization().getId().equals(organizationId)) {
             throw new ValidationException("invoice is not associated with organization with id " + organizationId);
         }
         return invoice;
@@ -85,7 +85,7 @@ public class InvoiceUtil {
     }
 
     public static void validatePayment(UUID invoiceId, Payment payment) {
-        if(payment.getInvoice().getId() != invoiceId) {
+        if (!payment.getInvoice().getId().equals(invoiceId)) {
             throw new ValidationException("payment does not belong to invoice with id " + invoiceId);
         }
     }
@@ -108,7 +108,7 @@ public class InvoiceUtil {
         UUID invoiceId, 
         FollowUp followUp
     ) {
-        if (followUp.getInvoice().getId() != invoiceId) {
+        if (!followUp.getInvoice().getId().equals(invoiceId)) {
             throw new ValidationException("follow-up must belong to invoice with id " + invoiceId);
         }
     }

@@ -4,12 +4,22 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.UUID;
 
 import com.paidpeace.domain.invoice.Invoice;
+import com.paidpeace.domain.reminder.ReminderRule;
 import com.paidpeace.domain.template.Template;
 @Entity
-@Table(name = "follow_ups")
+@Table(
+        name = "follow_ups",
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        name = "uk_follow_up_invoice_rule_schedule",
+                        columnNames = {"invoice_id", "reminder_rule_id", "scheduled_for_date"}
+                )
+        }
+)
 public class FollowUp {
 
     @Id
@@ -26,6 +36,13 @@ public class FollowUp {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "template_id")
     private Template template;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "reminder_rule_id")
+    private ReminderRule reminderRule;
+
+    @Column(name = "attach_pdf", nullable = false)
+    private boolean attachPdf = false;
 
     // Core Attributes
 
@@ -45,6 +62,9 @@ public class FollowUp {
     private FollowUpTriggerType triggerType;
 
     // Timing
+
+    @Column(name = "scheduled_for_date")
+    private LocalDate scheduledForDate;
 
     private Instant sentAt;
 
@@ -108,6 +128,30 @@ public class FollowUp {
 
     public void setTemplate(Template template) {
         this.template = template;
+    }
+
+    public ReminderRule getReminderRule() {
+        return reminderRule;
+    }
+
+    public void setReminderRule(ReminderRule reminderRule) {
+        this.reminderRule = reminderRule;
+    }
+
+    public boolean isAttachPdf() {
+        return attachPdf;
+    }
+
+    public void setAttachPdf(boolean attachPdf) {
+        this.attachPdf = attachPdf;
+    }
+
+    public LocalDate getScheduledForDate() {
+        return scheduledForDate;
+    }
+
+    public void setScheduledForDate(LocalDate scheduledForDate) {
+        this.scheduledForDate = scheduledForDate;
     }
 
     public Instant getSentAt() {

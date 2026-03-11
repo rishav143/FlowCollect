@@ -13,12 +13,15 @@ import com.paidpeace.api.v1.organization.dto.OrganizationResponse;
 import com.paidpeace.api.v1.organization.dto.OrganizationUpdateRequest;
 import com.paidpeace.application.organization.OrganizationService;
 import com.paidpeace.domain.organization.Organization;
+import com.paidpeace.domain.user.UserRole;
+import com.paidpeace.security.RequireRole;
 import java.net.URI;
 import java.time.LocalDate;
 import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/organizations")
+@RequireRole({ UserRole.ADMIN })
 public class OrganizationController {
 
     private final OrganizationService organizationService;
@@ -38,6 +41,13 @@ public class OrganizationController {
                 .buildAndExpand(created.getId())
                 .toUri();
         return ResponseEntity.created(location).body(response);
+    }
+
+    // Get an organization by id.
+    @GetMapping("/{organizationId}")
+    public ResponseEntity<OrganizationResponse> getById(@PathVariable UUID organizationId) {
+        Organization organization = organizationService.getById(organizationId);
+        return ResponseEntity.ok(OrganizationMapper.toResponse(organization));
     }
 
     // List organizations with filters and pagination.

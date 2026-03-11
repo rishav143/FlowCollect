@@ -34,7 +34,7 @@ public class ReminderUtil {
                 "Organization ID cannot be null");
         }
         ReminderRule reminderRule = validateReminderRule(reminderRuleId, reminderRuleRepository);
-        if(reminderRule.getOrganization().getId() != organizationId) {
+        if (!reminderRule.getOrganization().getId().equals(organizationId)) {
             throw new NotFoundException( 
                 "Reminder rule not found");
         }

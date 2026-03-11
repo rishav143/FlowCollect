@@ -3,6 +3,9 @@ package com.paidpeace.api.v1.invoice;
 import jakarta.validation.Valid;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,10 +23,13 @@ import com.paidpeace.api.v1.invoice.dto.InvoiceRequest;
 import com.paidpeace.api.v1.invoice.dto.InvoiceResponse;
 import com.paidpeace.api.v1.invoice.dto.InvoiceUpdateRequest;
 import com.paidpeace.api.v1.invoice.dto.IssueInvoiceRequest;
+import com.paidpeace.application.invoice.InvoicePdfFile;
 import com.paidpeace.application.invoice.InvoiceService;
 import com.paidpeace.domain.invoice.Invoice;
 import com.paidpeace.domain.invoice.LifeCycleStatus;
 import com.paidpeace.domain.invoice.TimeStatus;
+import com.paidpeace.domain.user.UserRole;
+import com.paidpeace.security.RequireRole;
 
 import java.net.URI;
 import java.time.LocalDate;
@@ -32,6 +38,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/organizations/{organizationId}/invoices")
+@RequireRole({ UserRole.ADMIN, UserRole.STAFF })
 public class InvoiceController {
 
     private final InvoiceService invoiceService;
@@ -137,5 +144,25 @@ public class InvoiceController {
     ) {
         Invoice issued = invoiceService.issueInvoice(organizationId, invoiceId, request);
         return ResponseEntity.ok(InvoiceMapper.toResponse(issued));
+    }
+
+    /**
+     * Downloads the invoice as a PDF file.
+     */
+    @GetMapping(value = "/{invoiceId}/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
+    public ResponseEntity<byte[]> downloadInvoicePdf(
+            @PathVariable UUID organizationId,
+            @PathVariable UUID invoiceId
+    ) {
+        InvoicePdfFile pdfFile = invoiceService.generateInvoicePdf(organizationId, invoiceId);
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment()
+                        .filename(pdfFile.fileName())
+                        .build()
+                        .toString())
+                .contentType(MediaType.APPLICATION_PDF)
+                .contentLength(pdfFile.content().length)
+                .body(pdfFile.content());
     }
 }

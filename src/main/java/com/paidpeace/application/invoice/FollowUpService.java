@@ -1,5 +1,10 @@
 package com.paidpeace.application.invoice;
 
+import java.util.EnumMap;
+import java.util.Map;
+import java.util.Objects;
+import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.data.domain.Page;
@@ -9,13 +14,19 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.paidpeace.api.v1.invoice.dto.FollowUpRequest;
+import com.paidpeace.api.v1.invoice.dto.MultiChannelFollowUpRequest;
+import com.paidpeace.application.reminder.NotificationSender;
+import com.paidpeace.application.template.TemplateRenderer;
 import com.paidpeace.application.template.TemplateService;
+import com.paidpeace.domain.customer.Customer;
 import com.paidpeace.domain.invoice.Invoice;
 import com.paidpeace.domain.invoice.followup.FollowUp;
 import com.paidpeace.domain.invoice.followup.FollowUpChannel;
 import com.paidpeace.domain.invoice.followup.FollowUpStatus;
 import com.paidpeace.domain.invoice.followup.FollowUpTriggerType;
 import com.paidpeace.domain.template.Template;
+import com.paidpeace.domain.template.TemplateChannel;
+import com.paidpeace.exception.http.InternalException;
 import com.paidpeace.exception.http.NotFoundException;
 import com.paidpeace.exception.http.ValidationException;
 import com.paidpeace.infrastructure.persistence.invoice.FollowUpJpaRepository;
@@ -28,15 +39,50 @@ public class FollowUpService {
     private final FollowUpJpaRepository followUpRepository;
     private final InvoiceService invoiceService;
     private final TemplateService templateService;
+    private final TemplateRenderer templateRenderer;
+    private final Map<FollowUpChannel, NotificationSender> notificationSenders;
 
     public FollowUpService(
             FollowUpJpaRepository followUpRepository,
             InvoiceService invoiceService,
-            TemplateService templateService
+            TemplateService templateService,
+            TemplateRenderer templateRenderer,
+            List<NotificationSender> notificationSenders
     ) {
         this.followUpRepository = followUpRepository;
         this.invoiceService = invoiceService;
         this.templateService = templateService;
+        this.templateRenderer = templateRenderer;
+        this.notificationSenders = indexSenders(notificationSenders);
+    }
+
+    @Transactional(readOnly = true)
+    public boolean existsByInvoiceIdAndReminderRuleIdAndScheduledForDate(
+            UUID invoiceId, UUID reminderRuleId, LocalDate scheduledForDate) {
+        if (invoiceId == null || reminderRuleId == null || scheduledForDate == null) {
+            return false;
+        }
+        return followUpRepository.existsByInvoiceIdAndReminderRuleIdAndScheduledForDate(invoiceId, reminderRuleId, scheduledForDate);
+    }
+
+    @Transactional(readOnly = true)
+    public List<FollowUp> getPendingAutomatedFollowUps(UUID organizationId) {
+        if (organizationId == null) {
+            return List.of();
+        }
+        return followUpRepository.findByStatusAndTriggerTypeAndInvoiceOrganizationId(
+                FollowUpStatus.PENDING,
+                FollowUpTriggerType.AUTOMATED,
+                organizationId
+        );
+    }
+
+    @Transactional
+    public FollowUp save(FollowUp followUp) {
+        if (followUp == null) {
+            throw new ValidationException("Follow-up must not be null");
+        }
+        return followUpRepository.save(followUp);
     }
 
     // Create a follow-up for an invoice.
@@ -76,11 +122,61 @@ public class FollowUpService {
         followUp.setChannel(channel);
         followUp.setTriggerType(triggerType);
         followUp.setStatus(FollowUpStatus.PENDING);
+        if (request.getScheduledForDate() != null) {
+            followUp.setScheduledForDate(request.getScheduledForDate());
+        }
+        if (request.getAttachPdf() != null) {
+            followUp.setAttachPdf(request.getAttachPdf());
+        }
         if (template != null) {
             followUp.setTemplate(template);
         }
 
         return followUpRepository.save(followUp);
+    }
+
+    /**
+     * Creates and dispatches manual follow-ups for multiple channels.
+     * One FollowUp is created per channel and dispatched via the existing dispatch logic.
+     */
+    @Transactional
+    public List<FollowUp> createAndDispatchFollowUps(
+            UUID invoiceId,
+            MultiChannelFollowUpRequest request
+    ) {
+        if (request == null) {
+            throw new ValidationException("Multi-channel follow-up request must not be null. Invoice ID: " + invoiceId);
+        }
+        if (request.getChannels() == null || request.getChannels().isEmpty()) {
+            throw new ValidationException("At least one follow-up channel must be provided");
+        }
+
+        // Deduplicate while preserving order
+        List<FollowUpChannel> channels = request.getChannels()
+                .stream()
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        if (channels.isEmpty()) {
+            throw new ValidationException("At least one non-null follow-up channel must be provided");
+        }
+
+        // Reuse existing single-channel creation logic for correctness
+        List<FollowUp> createdAndDispatched = new java.util.ArrayList<>(channels.size());
+        for (FollowUpChannel channel : channels) {
+            FollowUpRequest singleRequest = new FollowUpRequest();
+            singleRequest.setChannel(channel);
+            singleRequest.setTriggerType(FollowUpTriggerType.MANUAL);
+            singleRequest.setTemplateId(request.getTemplateId());
+            singleRequest.setScheduledForDate(request.getScheduledForDate());
+            singleRequest.setAttachPdf(request.getAttachPdf());
+
+            FollowUp followUp = createFollowUp(invoiceId, singleRequest);
+            FollowUp dispatched = dispatchFollowUp(followUp);
+            createdAndDispatched.add(dispatched);
+        }
+
+        return createdAndDispatched;
     }
 
     // Get a follow-up by id. Validates invoice ownership.
@@ -143,12 +239,52 @@ public class FollowUpService {
             if (!template.isActive()) {
                 throw new ValidationException("Template must not be null and must be active");
             }
+            followUp.setTemplate(template);
+        }
+        if (request.getScheduledForDate() != null) {
+            followUp.setScheduledForDate(request.getScheduledForDate());
+        }
+        if (request.getAttachPdf() != null) {
+            followUp.setAttachPdf(request.getAttachPdf());
         }
         
         return followUpRepository.save(followUp);
     }
 
-    // Send a follow-up. Sets the status to SENT and the sentAt to the current time.
+    /**
+     * Dispatches (delivers) a follow-up via its configured channel, then marks it SENT or FAILED.
+     * This is used by both automated schedulers and manual API operations to ensure consistent logic.
+     */
+    @Transactional
+    public FollowUp dispatchFollowUp(UUID invoiceId, UUID followUpId) {
+        FollowUp followUp = InvoiceUtil.getFollowUpOrThrow(invoiceId, followUpId, followUpRepository);
+        return dispatchFollowUp(followUp);
+    }
+
+    @Transactional
+    public FollowUp dispatchFollowUp(FollowUp followUp) {
+        if (followUp == null || !followUp.isPending()) {
+            return followUp;
+        }
+
+        try {
+            Customer customer = requireDispatchableCustomer(followUp);
+            Template template = requireDispatchableTemplate(followUp);
+            String subject = templateRenderer.renderSubject(template, followUp.getInvoice(), customer);
+            String body = templateRenderer.renderBody(template, followUp.getInvoice(), customer);
+            NotificationSender sender = resolveSender(followUp.getChannel());
+            sender.send(customer, subject, body, followUp.isAttachPdf(), followUp.getInvoice());
+
+            followUp.send();
+            return followUpRepository.save(followUp);
+        } catch (RuntimeException ex) {
+            followUp.fail();
+            followUpRepository.save(followUp);
+            throw ex;
+        }
+    }
+
+    // Mark a follow-up as SENT without dispatching (rare; prefer dispatchFollowUp).
     public FollowUp sendFollowUp
     (
             UUID invoiceId,
@@ -168,6 +304,52 @@ public class FollowUpService {
         FollowUp followUp = InvoiceUtil.getFollowUpOrThrow(invoiceId, followUpId, followUpRepository);
         followUp.fail();
         return followUpRepository.save(followUp);
+    }
+
+    private NotificationSender resolveSender(FollowUpChannel channel) {
+        NotificationSender sender = notificationSenders.get(channel);
+        if (sender == null) {
+            throw new InternalException("No notification sender configured for channel " + channel);
+        }
+        return sender;
+    }
+
+    private Customer requireDispatchableCustomer(FollowUp followUp) {
+        Invoice invoice = Objects.requireNonNull(followUp.getInvoice(), "Follow-up invoice must not be null");
+        if (!invoice.isIssued()) {
+            throw new ValidationException("Only issued invoices can have follow-ups dispatched");
+        }
+
+        Customer customer = invoice.getCustomer();
+        if (customer == null) {
+            throw new ValidationException("Invoice customer must not be null");
+        }
+        if (!customer.isActive()) {
+            throw new ValidationException("Invoice customer must be active");
+        }
+        return customer;
+    }
+
+    private Template requireDispatchableTemplate(FollowUp followUp) {
+        Template template = followUp.getTemplate();
+        if (template == null || !template.isActive()) {
+            throw new ValidationException("Follow-up template must be active");
+        }
+        if (template.getChannel() != TemplateChannel.valueOf(followUp.getChannel().name())) {
+            throw new ValidationException("Template channel must match follow-up channel");
+        }
+        return template;
+    }
+
+    private Map<FollowUpChannel, NotificationSender> indexSenders(List<NotificationSender> senders) {
+        Map<FollowUpChannel, NotificationSender> indexedSenders = new EnumMap<>(FollowUpChannel.class);
+        for (NotificationSender sender : senders) {
+            NotificationSender existing = indexedSenders.putIfAbsent(sender.channel(), sender);
+            if (existing != null) {
+                throw new InternalException("Duplicate notification sender configured for channel " + sender.channel());
+            }
+        }
+        return indexedSenders;
     }
 }
 

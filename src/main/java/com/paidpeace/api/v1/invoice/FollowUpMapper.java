@@ -12,6 +12,8 @@ public class FollowUpMapper {
         followUpResponse.setTriggerType(f.getTriggerType());
         followUpResponse.setStatus(f.getStatus());
         followUpResponse.setTemplateId(f.getTemplate() != null ? f.getTemplate().getId() : null);
+        followUpResponse.setReminderRuleId(f.getReminderRule() != null ? f.getReminderRule().getId() : null);
+        followUpResponse.setScheduledForDate(f.getScheduledForDate());
         followUpResponse.setSentAt(f.getSentAt());
         followUpResponse.setCreatedAt(f.getCreatedAt());
         return followUpResponse;

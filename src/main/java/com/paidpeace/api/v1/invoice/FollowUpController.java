@@ -1,6 +1,11 @@
 package com.paidpeace.api.v1.invoice;
 
 import jakarta.validation.Valid;
+import com.paidpeace.domain.user.UserRole;
+import com.paidpeace.security.RequireRole;
+
+import java.util.List;
+import java.util.UUID;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -16,16 +21,16 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.paidpeace.api.v1.invoice.dto.FollowUpRequest;
 import com.paidpeace.api.v1.invoice.dto.FollowUpResponse;
+import com.paidpeace.api.v1.invoice.dto.MultiChannelFollowUpRequest;
 import com.paidpeace.application.invoice.FollowUpService;
 import com.paidpeace.domain.invoice.followup.FollowUp;
 import com.paidpeace.domain.invoice.followup.FollowUpChannel;
 import com.paidpeace.domain.invoice.followup.FollowUpStatus;
 import com.paidpeace.domain.invoice.followup.FollowUpTriggerType;
 
-import java.util.UUID;
-
 @RestController
 @RequestMapping("/api/v1/invoices/{invoiceId}/followups")
+@RequireRole({ UserRole.ADMIN, UserRole.STAFF })
 public class FollowUpController {
 
     private final FollowUpService followUpService;
@@ -45,6 +50,23 @@ public class FollowUpController {
     ) {
         FollowUp created = followUpService.createFollowUp(invoiceId, request);
         return ResponseEntity.ok(FollowUpMapper.toResponse(created));
+    }
+
+    /**
+     * Creates and dispatches manual follow-ups across multiple channels in a single call.
+     * Each requested channel results in a separate FollowUp that is immediately dispatched.
+     */
+    @PostMapping("/dispatch")
+    public ResponseEntity<List<FollowUpResponse>> createAndDispatchFollowUps(
+            @PathVariable UUID invoiceId,
+            @Valid @RequestBody MultiChannelFollowUpRequest request
+    ) {
+        List<FollowUp> followUps = followUpService.createAndDispatchFollowUps(invoiceId, request);
+        List<FollowUpResponse> responses = followUps
+                .stream()
+                .map(FollowUpMapper::toResponse)
+                .toList();
+        return ResponseEntity.ok(responses);
     }
 
     /**
@@ -97,8 +119,8 @@ public class FollowUpController {
             @PathVariable UUID invoiceId,
             @PathVariable UUID followUpId
     ) {
-        FollowUp sent = followUpService.sendFollowUp(invoiceId, followUpId);
-        return ResponseEntity.ok(FollowUpMapper.toResponse(sent));
+        FollowUp dispatched = followUpService.dispatchFollowUp(invoiceId, followUpId);
+        return ResponseEntity.ok(FollowUpMapper.toResponse(dispatched));
     }
 
     /**

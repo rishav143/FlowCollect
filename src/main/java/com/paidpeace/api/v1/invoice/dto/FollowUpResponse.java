@@ -1,6 +1,7 @@
 package com.paidpeace.api.v1.invoice.dto;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.UUID;
 
 import com.paidpeace.domain.invoice.followup.FollowUpChannel;
@@ -14,6 +15,8 @@ public class FollowUpResponse {
     private FollowUpTriggerType triggerType;
     private FollowUpStatus status;
     private UUID templateId;
+    private UUID reminderRuleId;
+    private LocalDate scheduledForDate;
     private Instant sentAt;
     private Instant createdAt;
 
@@ -63,6 +66,22 @@ public class FollowUpResponse {
 
     public void setTemplateId(UUID templateId) {
         this.templateId = templateId;
+    }
+
+    public UUID getReminderRuleId() {
+        return reminderRuleId;
+    }
+
+    public void setReminderRuleId(UUID reminderRuleId) {
+        this.reminderRuleId = reminderRuleId;
+    }
+
+    public LocalDate getScheduledForDate() {
+        return scheduledForDate;
+    }
+
+    public void setScheduledForDate(LocalDate scheduledForDate) {
+        this.scheduledForDate = scheduledForDate;
     }
 
     public Instant getSentAt() {

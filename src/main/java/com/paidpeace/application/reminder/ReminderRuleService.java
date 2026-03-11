@@ -1,5 +1,6 @@
 package com.paidpeace.application.reminder;
 
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.data.domain.Page;
@@ -13,6 +14,7 @@ import com.paidpeace.application.organization.OrganizationService;
 import com.paidpeace.domain.organization.Organization;
 import com.paidpeace.domain.reminder.ReminderRule;
 import com.paidpeace.exception.http.NotFoundException;
+import com.paidpeace.exception.http.ValidationException;
 import com.paidpeace.infrastructure.persistence.reminder.ReminderRuleJpaRepository;
 
 @Service
@@ -35,7 +37,7 @@ public class ReminderRuleService {
         ReminderRuleRequest reminderRuleRequest
     ) {
         if(reminderRuleRequest == null) {
-            throw new NotFoundException( 
+            throw new ValidationException( 
                 "Reminder rule request cannot be null");
         }
         Organization organization = organizationService.getById(organizationId);
@@ -43,23 +45,23 @@ public class ReminderRuleService {
         ReminderRule reminderRule = new ReminderRule();
         reminderRule.setOrganization(organization);
         if(reminderRuleRequest.getName() == null) {
-            throw new NotFoundException( 
+            throw new ValidationException( 
                 "Reminder rule name cannot be null");
         }
         reminderRule.setName(reminderRuleRequest.getName());
         reminderRule.setDaysOffset(reminderRuleRequest.getDaysOffset());
         if(reminderRuleRequest.getTriggerType() == null) {
-            throw new NotFoundException( 
+            throw new ValidationException( 
                 "Reminder rule trigger type cannot be null");
         }
         reminderRule.setTriggerType(reminderRuleRequest.getTriggerType());
         if(reminderRuleRequest.getChannel() == null) {
-            throw new NotFoundException( 
+            throw new ValidationException( 
                 "Reminder rule channel cannot be null");
         }
         reminderRule.setChannel(reminderRuleRequest.getChannel());
         if(reminderRuleRequest.getTemplate() == null) {
-            throw new NotFoundException( 
+            throw new ValidationException( 
                 "Reminder rule template cannot be null");
             }
         reminderRule.setTemplate(reminderRuleRequest.getTemplate());
@@ -68,6 +70,10 @@ public class ReminderRuleService {
         }
 
         return reminderRuleRepository.save(reminderRule);
+    }
+
+    public List<ReminderRule> getActiveReminderRules(UUID organizationId) {
+        return reminderRuleRepository.findByOrganizationIdAndActiveTrue(organizationId);
     }
 
     public ReminderRule getReminderRule

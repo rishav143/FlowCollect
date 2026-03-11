@@ -119,6 +119,7 @@ public class UserService {
 
     @Transactional(readOnly = true)
     public User getById(UUID organizationId, UUID userId) {
+        organizationService.getById(organizationId);
         return UserUtil.validateUserWithOrganization(userId, organizationId, userRepository);
     }
 

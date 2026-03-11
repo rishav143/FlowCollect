@@ -3,9 +3,6 @@ package com.paidpeace.api.v1.organization;
 import com.paidpeace.api.v1.organization.dto.OrganizationResponse;
 import com.paidpeace.domain.organization.Organization;
 
-/**
- * Maps domain {@link Organization} to API {@link OrganizationResponse}.
- */
 public final class OrganizationMapper {
 
     private OrganizationMapper() {

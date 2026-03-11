@@ -20,9 +20,12 @@ import com.paidpeace.api.v1.reminderrule.dto.ReminderRuleRequest;
 import com.paidpeace.api.v1.reminderrule.dto.ReminderRuleResponse;
 import com.paidpeace.application.reminder.ReminderRuleService;
 import com.paidpeace.domain.reminder.ReminderRule;
+import com.paidpeace.domain.user.UserRole;
+import com.paidpeace.security.RequireRole;
 
 @RestController
 @RequestMapping("/api/v1/organizations/{organizationId}/reminder-rules")
+@RequireRole({ UserRole.ADMIN, UserRole.STAFF })
 public class ReminderRuleController {
 
     private final ReminderRuleService reminderRuleService;
