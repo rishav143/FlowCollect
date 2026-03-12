@@ -69,7 +69,7 @@ public class InvoiceController {
     /**
      * Gets an invoice by id.
      */
-    @GetMapping("/{id}")
+    @GetMapping("/{invoiceId}")
     public ResponseEntity<InvoiceResponse> getInvoice
     (
         @PathVariable UUID organizationId,

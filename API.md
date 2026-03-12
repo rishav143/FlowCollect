@@ -9,7 +9,7 @@ This document provides a comprehensive description of the PaidPeace API endpoint
 ## Authentication
 Most endpoints require a Bearer token in the `Authorization` header.
 - **Header**: `Authorization: Bearer <token>`
-- **Multi-tenancy**: Most endpoints require `{organizationId}` (UUID) in the path to ensure data isolation.
+- **Multi-tenancy**: Most organization-scoped endpoints use `{organizationId}` (UUID) in the path. Payment and follow-up endpoints are currently nested under `{invoiceId}`.
 
 ---
 
@@ -60,33 +60,34 @@ Manage organizations. Admin-only for global management.
 - **Description**: Returns a paginated list of organizations.
 - **Response**: `200 OK` with `Page` of `OrganizationResponse` objects.
 
-### Get Organization
+### Get Organization (Admin Only)
 - **Endpoint**: `GET /api/v1/organizations/{organizationId}`
 - **Description**: Retrieves details of a specific organization.
 - **Response**: `200 OK` with `OrganizationResponse`.
 
-### Update Organization
+### Update Organization (Admin Only)
 - **Endpoint**: `PATCH /api/v1/organizations/{organizationId}`
 - **Body** (All Optional):
   - `name` (String)
   - `email` (String)
   - `phone` (String)
   - `address` (String)
+  - `logoUrl` (String)
   - `currency` (String)
   - `timezone` (String)
 - **Description**: Partially updates organization details.
 - **Response**: `200 OK` with updated `OrganizationResponse`.
 
-### Delete Organization
+### Delete Organization (Admin Only)
 - **Endpoint**: `DELETE /api/v1/organizations/{organizationId}`
 - **Description**: Permanently removes the organization and all its data.
 - **Response**: `204 No Content`.
 
-### Organization State Transitions
+### Organization State Transitions (Admin Only)
 - **Activate**: `POST /api/v1/organizations/{organizationId}/activate`
 - **Suspend**: `POST /api/v1/organizations/{organizationId}/suspend`
 - **Archive**: `POST /api/v1/organizations/{organizationId}/archive`
-- **Description**: Transitions the organization through different lifecycle states.
+- **Description**: Transitions the organization through different lifecycle states. Requires `ADMIN` role.
 - **Response**: `200 OK` with updated `OrganizationResponse`.
 
 ---
@@ -127,9 +128,9 @@ Manage users within an organization.
 ### User Password Change
 - **Endpoint**: `POST /api/v1/organizations/{organizationId}/users/{userId}/password`
 - **Body**:
-  - `oldPassword` (String, Required)
+  - `oldPassword` (String, Optional)
   - `newPassword` (String, Required)
-- **Description**: Updates user's password.
+- **Description**: Updates user's password. Accessible to `ADMIN` and `STAFF`.
 - **Response**: `204 No Content`.
 
 ### User State Transitions (Admin Only)
@@ -146,13 +147,13 @@ Manage users within an organization.
 ---
 
 ## 2.2 Customer (Hierarchy: Organization -> Customer)
-Manage customers belonging to an organization.
+Manage customers belonging to an organization. Requires `ADMIN` or `STAFF` role.
 
 ### Create Customer
 - **Endpoint**: `POST /api/v1/organizations/{organizationId}/customers`
 - **Body**:
   - `name` (String, Required): Full name of the customer.
-  - `email` (String, Required): Contact email.
+  - `email` (String, Optional): Contact email.
   - `phone` (String, Optional): Contact phone.
   - `address` (String, Optional): Physical address.
   - `companyName` (String, Optional): Customer's company name.
@@ -166,40 +167,42 @@ Manage customers belonging to an organization.
 - **Response**: `200 OK` with `Page` of `CustomerResponse` objects.
 
 ### Get Customer
-- **Endpoint**: `GET /api/v1/organizations/{organizationId}/customers/{customerId}`
+- **Endpoint**: `GET /api/v1/organizations/{organizationId}/customers/{id}`
 - **Description**: Retrieves details of a specific customer.
 - **Response**: `200 OK` with `CustomerResponse`.
 
 ### Update Customer
-- **Endpoint**: `PUT /api/v1/organizations/{organizationId}/customers/{customerId}`
-- **Body**:
-  - `name` (String, Required)
-  - `email` (String, Required)
-  - `phone` (String, Optional)
-  - `address` (String, Optional)
-  - `companyName` (String, Optional)
+- **Endpoint**: `PUT /api/v1/organizations/{organizationId}/customers/{id}`
+- **Body** (All Optional):
+  - `name` (String)
+  - `email` (String)
+  - `phone` (String)
+  - `address` (String)
+  - `companyName` (String)
 - **Description**: Performs a full update of customer details.
 - **Response**: `200 OK` with updated `CustomerResponse`.
 
 ### Customer State Transitions
-- **Activate**: `PUT /api/v1/organizations/{organizationId}/customers/{customerId}/activate`
-- **Deactivate**: `PUT /api/v1/organizations/{organizationId}/customers/{customerId}/deactivate`
+- **Activate**: `PUT /api/v1/organizations/{organizationId}/customers/{id}/activate`
+- **Deactivate**: `PUT /api/v1/organizations/{organizationId}/customers/{id}/deactivate`
 - **Description**: Toggles the active status of a customer.
 - **Response**: `200 OK` with updated `CustomerResponse`.
 
 ### Delete Customer
-- **Endpoint**: `DELETE /api/v1/organizations/{organizationId}/customers/{customerId}`
+- **Endpoint**: `DELETE /api/v1/organizations/{organizationId}/customers/{id}`
 - **Description**: Permanently removes the customer.
 - **Response**: `204 No Content`.
 
 ---
 
 ## 2.2.1 Invoice (Hierarchy: Customer -> Invoice)
-Manage invoices issued to customers.
+Manage invoices issued to customers. Requires `ADMIN` or `STAFF` role.
 
 ### Create Draft Invoice
 - **Endpoint**: `POST /api/v1/organizations/{organizationId}/invoices`
 - **Body**:
+  - `organizationId` (UUID, Required): Organization identifier also expected in the request body by the current implementation.
+  - `createdByUserId` (UUID, Optional): User who created the invoice.
   - `customerId` (UUID, Required): The customer this invoice belongs to.
   - `invoiceNumber` (String, Required): Unique number for the invoice (max 100).
   - `items` (Array, Required): List of **InvoiceItems** (see below).
@@ -230,10 +233,10 @@ Invoice items are submitted as part of the invoice body.
 ### Update Draft Invoice
 - **Endpoint**: `PATCH /api/v1/organizations/{organizationId}/invoices/{invoiceId}`
 - **Body** (All Optional):
+  - `createdByUserId` (UUID)
   - `customerId` (UUID)
   - `invoiceNumber` (String)
   - `items` (Array of InvoiceItems)
-  - `issueDate` (String)
   - `dueDate` (String)
   - `taxPercentage` (Decimal)
 - **Description**: Updates fields of a draft invoice. Only allowed in `DRAFT` status.
@@ -260,22 +263,21 @@ Invoice items are submitted as part of the invoice body.
 ---
 
 ## 2.2.1.2 Payment (Hierarchy: Invoice -> Payment)
-Record and manage payments against an invoice.
+Record and manage payments against an invoice. Requires `ADMIN` or `STAFF` role.
 
 ### Record Payment
 - **Endpoint**: `POST /api/v1/invoices/{invoiceId}/payments`
 - **Body**:
   - `amount` (Decimal, Required): Positive amount paid.
-  - `mode` (String, Required): One of `CASH`, `BANK_TRANSFER`, `CHEQUE`, `ONLINE`.
+  - `mode` (String, Required): One of `CASH`, `UPI`, `BANK_TRANSFER`, `CARD`, `CHEQUE`.
   - `referenceId` (String, Optional): Transaction reference ID.
   - `notes` (String, Optional): Internal notes about the payment.
-  - `paidAt` (Timestamp, Optional): When the payment occurred.
 - **Description**: Records a payment against an issued invoice. Automatically updates the invoice payment status.
 - **Response**: `200 OK` with `PaymentResponse`.
 
 ### List Payments
 - **Endpoint**: `GET /api/v1/invoices/{invoiceId}/payments`
-- **Query Params**: `mode`, `paidAt`, `page`, `size`, `sort`
+- **Query Params**: `mode`, `page`, `size`, `sort`
 - **Description**: Lists all payments recorded for a specific invoice.
 - **Response**: `200 OK` with `Page` of `PaymentResponse` objects.
 
@@ -293,15 +295,16 @@ Record and manage payments against an invoice.
 ---
 
 ## 2.2.1.3 FollowUp (Hierarchy: Invoice -> FollowUp)
-Manual and automated follow-ups for an invoice.
+Manual and automated follow-ups for an invoice. Requires `ADMIN` or `STAFF` role.
 
 ### Create Follow-up
 - **Endpoint**: `POST /api/v1/invoices/{invoiceId}/followups`
 - **Body**:
   - `channel` (String, Required): `EMAIL`, `SMS`, or `WHATSAPP`.
-  - `triggerType` (String, Required): `MANUAL` or `AUTOMATED`.
+  - `triggerType` (String, Optional): `MANUAL` or `AUTOMATED`. Defaults to `MANUAL` when omitted.
   - `templateId` (UUID, Optional): The template to use for the message.
-  - `scheduledFor` (Timestamp, Optional): When to send the follow-up.
+  - `scheduledForDate` (String, Optional): Scheduled date in `YYYY-MM-DD` format.
+  - `attachPdf` (Boolean, Optional): Whether to attach the invoice PDF.
 - **Description**: Creates a follow-up record for an invoice.
 - **Response**: `200 OK` with `FollowUpResponse`.
 
@@ -310,6 +313,7 @@ Manual and automated follow-ups for an invoice.
 - **Body**:
   - `channels` (Array of String, Required): List of channels (e.g., `["EMAIL", "SMS"]`).
   - `templateId` (UUID, Optional): Template to use.
+  - `scheduledForDate` (String, Optional): Scheduled date in `YYYY-MM-DD` format.
   - `attachPdf` (Boolean, Optional): Whether to attach the invoice PDF (Email only).
 - **Description**: Immediately creates and sends follow-ups across multiple specified channels.
 - **Response**: `200 OK` with `List` of `FollowUpResponse` objects (one per channel).
@@ -340,16 +344,16 @@ Manual and automated follow-ups for an invoice.
 ---
 
 ## 2.3 Template (Hierarchy: Organization -> Template)
-Messaging templates for follow-ups.
+Messaging templates for follow-ups. Requires `ADMIN` or `STAFF` role.
 
 ### Create Template
 - **Endpoint**: `POST /api/v1/organizations/{organizationId}/templates`
 - **Body**:
   - `name` (String, Required): Unique name for the template.
-  - `channel` (String, Required): `EMAIL`, `SMS`, or `WHATSAPP`.
-  - `subject` (String, Required for Email): Subject line.
-  - `body` (String, Required): The message content with placeholders (e.g., `{{customerName}}`).
-  - `tone` (String, Optional): `POLITE`, `FIRM`, or `URGENT`.
+  - `channel` (String, Optional): `EMAIL`, `SMS`, or `WHATSAPP`.
+  - `subject` (String, Optional): Subject line.
+  - `body` (String, Optional): The message content with placeholders (e.g., `{{customerName}}`).
+  - `tone` (String, Optional): `POLITE`, `NEUTRAL`, or `FIRM`.
 - **Description**: Creates a new messaging template for the organization.
 - **Response**: `200 OK` with `TemplateResponse`.
 
@@ -360,40 +364,41 @@ Messaging templates for follow-ups.
 - **Response**: `200 OK` with `Page` of `TemplateResponse` objects.
 
 ### Get Template
-- **Endpoint**: `GET /api/v1/organizations/{organizationId}/templates/{templateId}`
+- **Endpoint**: `GET /api/v1/organizations/{organizationId}/templates/{id}`
 - **Description**: Retrieves template details.
 - **Response**: `200 OK` with `TemplateResponse`.
 
 ### Update Template
-- **Endpoint**: `PATCH /api/v1/organizations/{organizationId}/templates/{templateId}`
+- **Endpoint**: `PATCH /api/v1/organizations/{organizationId}/templates/{id}`
 - **Body** (All Optional): Same fields as Create Template.
 - **Description**: Updates template details.
 - **Response**: `200 OK` with updated `TemplateResponse`.
 
 ### Template State Transitions
-- **Activate**: `PATCH /api/v1/organizations/{organizationId}/templates/{templateId}/activate`
-- **Deactivate**: `PATCH /api/v1/organizations/{organizationId}/templates/{templateId}/deactivate`
+- **Activate**: `PATCH /api/v1/organizations/{organizationId}/templates/{id}/activate`
+- **Deactivate**: `PATCH /api/v1/organizations/{organizationId}/templates/{id}/deactivate`
 - **Description**: Toggles whether a template is available for use.
 - **Response**: `200 OK` with updated `TemplateResponse`.
 
 ### Delete Template
-- **Endpoint**: `DELETE /api/v1/organizations/{organizationId}/templates/{templateId}`
+- **Endpoint**: `DELETE /api/v1/organizations/{organizationId}/templates/{id}`
 - **Description**: Permanently removes the template.
 - **Response**: `204 No Content`.
 
 ---
 
 ## 2.4 Reminder Rule (Hierarchy: Organization -> ReminderRule)
-Rules for automated payment reminders.
+Rules for automated payment reminders. Requires `ADMIN` or `STAFF` role.
 
 ### Create Reminder Rule
 - **Endpoint**: `POST /api/v1/organizations/{organizationId}/reminder-rules`
 - **Body**:
   - `name` (String, Required): Rule name.
   - `daysOffset` (Integer, Required): Days relative to due date (e.g., -2 means 2 days before due).
-  - `triggerType` (String, Required): `BEFORE_DUE`, `ON_DUE`, or `AFTER_DUE`.
+  - `triggerType` (String, Required): `BEFORE_DUE_DATE`, `ON_DUE_DATE`, or `AFTER_DUE_DATE`.
   - `channel` (String, Required): `EMAIL`, `SMS`, or `WHATSAPP`.
-  - `templateId` (UUID, Optional): Template to use for the automated reminder.
+  - `template` (Template, Required): Template object used for the automated reminder.
+  - `active` (Boolean, Optional): Whether the rule starts active.
 - **Description**: Configures an automated reminder rule.
 - **Response**: `200 OK` with `ReminderRuleResponse`.
 
@@ -404,24 +409,24 @@ Rules for automated payment reminders.
 - **Response**: `200 OK` with `Page` of `ReminderRuleResponse` objects.
 
 ### Get Reminder Rule
-- **Endpoint**: `GET /api/v1/organizations/{organizationId}/reminder-rules/{ruleId}`
+- **Endpoint**: `GET /api/v1/organizations/{organizationId}/reminder-rules/{reminderRuleId}`
 - **Description**: Retrieves rule details.
 - **Response**: `200 OK` with `ReminderRuleResponse`.
 
 ### Update Reminder Rule
-- **Endpoint**: `PATCH /api/v1/organizations/{organizationId}/reminder-rules/{ruleId}`
+- **Endpoint**: `PATCH /api/v1/organizations/{organizationId}/reminder-rules/{reminderRuleId}`
 - **Body** (All Optional): Same fields as Create Reminder Rule.
 - **Description**: Updates rule configuration.
 - **Response**: `200 OK` with updated `ReminderRuleResponse`.
 
 ### Reminder Rule State Transitions
-- **Activate**: `POST /api/v1/organizations/{organizationId}/reminder-rules/{ruleId}/activate`
-- **Deactivate**: `POST /api/v1/organizations/{organizationId}/reminder-rules/{ruleId}/deactivate`
+- **Activate**: `POST /api/v1/organizations/{organizationId}/reminder-rules/{reminderRuleId}/activate`
+- **Deactivate**: `POST /api/v1/organizations/{organizationId}/reminder-rules/{reminderRuleId}/deactivate`
 - **Description**: Toggles whether the rule is processed by the scheduler.
 - **Response**: `204 No Content`.
 
 ### Delete Reminder Rule
-- **Endpoint**: `DELETE /api/v1/organizations/{organizationId}/reminder-rules/{ruleId}`
+- **Endpoint**: `DELETE /api/v1/organizations/{organizationId}/reminder-rules/{reminderRuleId}`
 - **Description**: Permanently removes the reminder rule.
 - **Response**: `204 No Content`.
 
