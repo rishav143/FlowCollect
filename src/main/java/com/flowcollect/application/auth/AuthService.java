@@ -92,7 +92,7 @@ public class AuthService {
         orgReq.setCurrency(request.getCurrency());
         orgReq.setTimezone(request.getTimezone());
 
-        Organization organization = organizationService.create(orgReq);
+        Organization organization = organizationService.createForRegistration(orgReq);
 
         // 2. Create Owner User
         UserCreateRequest userReq = new UserCreateRequest();

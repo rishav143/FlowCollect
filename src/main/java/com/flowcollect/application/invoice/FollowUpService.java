@@ -226,6 +226,7 @@ public class FollowUpService {
         if (request == null) {
             throw new ValidationException("Request must not be null");
         }
+        invoiceService.getInvoiceById(invoiceId);
         FollowUp followUp = InvoiceUtil.getFollowUpOrThrow(invoiceId, followUpId, followUpRepository);
 
         if (request.getChannel() != null) {
@@ -257,6 +258,7 @@ public class FollowUpService {
      */
     @Transactional
     public FollowUp dispatchFollowUp(UUID invoiceId, UUID followUpId) {
+        invoiceService.getInvoiceById(invoiceId);
         FollowUp followUp = InvoiceUtil.getFollowUpOrThrow(invoiceId, followUpId, followUpRepository);
         return dispatchFollowUp(followUp);
     }
@@ -290,6 +292,7 @@ public class FollowUpService {
             UUID invoiceId,
             UUID followUpId
     ) {
+        invoiceService.getInvoiceById(invoiceId);
         FollowUp followUp = InvoiceUtil.getFollowUpOrThrow(invoiceId, followUpId, followUpRepository);
         followUp.send();
         return followUpRepository.save(followUp);
@@ -301,6 +304,7 @@ public class FollowUpService {
             UUID invoiceId,
             UUID followUpId
     ) {
+        invoiceService.getInvoiceById(invoiceId);
         FollowUp followUp = InvoiceUtil.getFollowUpOrThrow(invoiceId, followUpId, followUpRepository);
         followUp.fail();
         return followUpRepository.save(followUp);

@@ -9,7 +9,7 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.cashclarity</groupId>
-	<artifactId>PaidPeace</artifactId>
+	<artifactId>FlowCollect</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>cashclarity</name>
 	<description>cash clarity </description>

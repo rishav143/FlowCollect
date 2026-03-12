@@ -21,7 +21,6 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/organizations")
-@RequireRole({ UserRole.ADMIN })
 public class OrganizationController {
 
     private final OrganizationService organizationService;
@@ -32,6 +31,7 @@ public class OrganizationController {
 
     // Create a new organization.
     @PostMapping
+    @RequireRole({ UserRole.ADMIN })
     public ResponseEntity<OrganizationResponse> create(@Valid @RequestBody OrganizationCreateRequest request) {
         Organization created = organizationService.create(request);
         OrganizationResponse response = OrganizationMapper.toResponse(created);
@@ -45,13 +45,15 @@ public class OrganizationController {
 
     // Get an organization by id.
     @GetMapping("/{organizationId}")
+    @RequireRole({ UserRole.ADMIN, UserRole.STAFF })
     public ResponseEntity<OrganizationResponse> getById(@PathVariable UUID organizationId) {
-        Organization organization = organizationService.getById(organizationId);
+        Organization organization = organizationService.getAuthorizedById(organizationId);
         return ResponseEntity.ok(OrganizationMapper.toResponse(organization));
     }
 
     // List organizations with filters and pagination.
     @GetMapping
+    @RequireRole({ UserRole.ADMIN, UserRole.STAFF })
     public ResponseEntity<Page<OrganizationResponse>> list(
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String email,
@@ -60,7 +62,7 @@ public class OrganizationController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate createdTo,
             Pageable pageable
     ) {
-        Page<Organization> organizations = organizationService.list(
+        Page<Organization> organizations = organizationService.listAuthorized(
                 status,
                 email,
                 name,
@@ -73,39 +75,44 @@ public class OrganizationController {
 
     // Update an organization by id.
     @PatchMapping("/{organizationId}")
+    @RequireRole({ UserRole.ADMIN })
     public ResponseEntity<OrganizationResponse> update(
             @PathVariable UUID organizationId,
             @Valid @RequestBody OrganizationUpdateRequest request
     ) {
-        Organization updated = organizationService.update(organizationId, request);
+        Organization updated = organizationService.updateAuthorized(organizationId, request);
         return ResponseEntity.ok(OrganizationMapper.toResponse(updated));
     }
 
     // Hard-delete an organization by id.
     @DeleteMapping("/{organizationId}")
+    @RequireRole({ UserRole.ADMIN })
     public ResponseEntity<Void> delete(@PathVariable UUID organizationId) {
-        organizationService.delete(organizationId);
+        organizationService.deleteAuthorized(organizationId);
         return ResponseEntity.noContent().build();
     }
 
     // Activate an organization by id.
     @PostMapping("/{organizationId}/activate")
+    @RequireRole({ UserRole.ADMIN })
     public ResponseEntity<OrganizationResponse> activate(@PathVariable UUID organizationId) {
-        Organization activated = organizationService.activate(organizationId);
+        Organization activated = organizationService.activateAuthorized(organizationId);
         return ResponseEntity.ok(OrganizationMapper.toResponse(activated));
     }
 
     // Suspend an organization by id.
     @PostMapping("/{organizationId}/suspend")
+    @RequireRole({ UserRole.ADMIN })
     public ResponseEntity<OrganizationResponse> suspend(@PathVariable UUID organizationId) {
-        Organization suspended = organizationService.suspend(organizationId);
+        Organization suspended = organizationService.suspendAuthorized(organizationId);
         return ResponseEntity.ok(OrganizationMapper.toResponse(suspended));
     }
 
     // Archive an organization by id.
     @PostMapping("/{organizationId}/archive")
+    @RequireRole({ UserRole.ADMIN })
     public ResponseEntity<OrganizationResponse> archive(@PathVariable UUID organizationId) {
-        Organization archived = organizationService.archive(organizationId);
+        Organization archived = organizationService.archiveAuthorized(organizationId);
         return ResponseEntity.ok(OrganizationMapper.toResponse(archived));
     }
 }

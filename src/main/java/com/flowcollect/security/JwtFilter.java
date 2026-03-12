@@ -1,6 +1,7 @@
 package com.flowcollect.security;
 
 import com.flowcollect.api.error.ErrorResponse;
+import com.flowcollect.domain.organization.Organization;
 import com.flowcollect.domain.user.User;
 import com.flowcollect.domain.user.UserStatus;
 import com.flowcollect.exception.http.ForbiddenException;
@@ -21,6 +22,7 @@ import java.util.regex.Pattern;
 
 import com.flowcollect.exception.http.UnauthorizedException;
 import com.flowcollect.infrastructure.persistence.user.UserJpaRepository;
+import com.flowcollect.infrastructure.persistence.organization.OrganizationJpaRepository;
 
 @Component
 @Order(1)
@@ -37,13 +39,16 @@ public class JwtFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
     private final UserJpaRepository userRepository;
+    private final OrganizationJpaRepository organizationRepository;
 
     public JwtFilter(
             JwtService jwtService,
-            UserJpaRepository userRepository
+            UserJpaRepository userRepository,
+            OrganizationJpaRepository organizationRepository
     ) {
         this.jwtService = jwtService;
         this.userRepository = userRepository;
+        this.organizationRepository = organizationRepository;
     }
 
     @Override
@@ -99,8 +104,11 @@ public class JwtFilter extends OncePerRequestFilter {
         if (user.getStatus() != UserStatus.ACTIVE) {
             throw new UnauthorizedException("User account is inactive");
         }
-        if (user.getOrganization().isDeleted()) {
-            throw new UnauthorizedException("Organization is archived");
+        Organization organization = organizationRepository.findById(claims.organizationId())
+                .orElseThrow(() -> new UnauthorizedException("Authenticated organization no longer exists"));
+        
+        if (organization.isDeleted()) {
+            throw new UnauthorizedException("Authenticated organization is archived");
         }
 
         return user;

@@ -43,9 +43,12 @@ public class TemplateService {
         UUID organizationId,
         TemplateRequest templateRequest
     ) {
-        if(templateRequest != null) {
+        if(templateRequest == null) {
             throw new ValidationException( 
                 "Template request must not be null");
+        }
+        if (templateRequest.getOrganizationId() != null && !templateRequest.getOrganizationId().equals(organizationId)) {
+            throw new ValidationException("Organization ID in request must match path organization ID");
         }
         Organization organization = organizationService.getById(organizationId);
 
@@ -129,6 +132,12 @@ public class TemplateService {
         UUID templateId, 
         TemplateRequest templateRequest
     ) {
+        if (templateRequest == null) {
+            throw new ValidationException("Template request must not be null");
+        }
+        if (templateRequest.getOrganizationId() != null && !templateRequest.getOrganizationId().equals(organizationId)) {
+            throw new ValidationException("Organization ID in request must match path organization ID");
+        }
         organizationService.getById(organizationId);
         TemplateUtil.validateTemplateWithOrganization(templateId, organizationId, templateRepository);
 

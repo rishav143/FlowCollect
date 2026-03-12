@@ -11,8 +11,10 @@ import com.flowcollect.api.v1.organization.dto.OrganizationUpdateRequest;
 import com.flowcollect.domain.organization.Organization;
 import com.flowcollect.domain.organization.OrganizationStatus;
 import com.flowcollect.exception.http.ConflictException;
+import com.flowcollect.exception.http.ForbiddenException;
 import com.flowcollect.exception.http.ValidationException;
 import com.flowcollect.infrastructure.persistence.organization.OrganizationJpaRepository;
+import com.flowcollect.security.AuthContext;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -35,6 +37,97 @@ public class OrganizationService {
     // Create a new organization after validating timezone, currency, and email uniqueness.
     @Transactional
     public Organization create(OrganizationCreateRequest request) {
+        if (AuthContext.get() != null) {
+            throw new ForbiddenException("Authenticated users cannot create organizations");
+        }
+        return createInternal(request);
+    }
+
+    @Transactional
+    public Organization createForRegistration(OrganizationCreateRequest request) {
+        return createInternal(request);
+    }
+
+    // Get an organization by id.
+    @Transactional(readOnly = true)
+    public Organization getAuthorizedById(UUID organizationId) {
+        enforceCurrentOrganizationAccess(organizationId);
+        return getById(organizationId);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<Organization> listAuthorized(
+            String status,
+            String email,
+            String name,
+            LocalDate createdFrom,
+            LocalDate createdTo,
+            Pageable pageable
+    ) {
+        UUID authenticatedOrganizationId = getAuthenticatedOrganizationId();
+        getById(authenticatedOrganizationId);
+
+        OrganizationUtil.validateDateRange(createdFrom, createdTo);
+
+        OrganizationStatus parsedStatus = OrganizationUtil.parseOrganizationStatus(status);
+
+        Instant createdFromInstant = createdFrom != null ? createdFrom.atStartOfDay(ZoneOffset.UTC).toInstant() : null;
+        Instant createdToInstant = createdTo != null ? createdTo.plusDays(1).atStartOfDay(ZoneOffset.UTC).minusNanos(1).toInstant() : null;
+
+        Specification<Organization> spec = (root, query, cb) ->
+                cb.equal(root.get("id"), authenticatedOrganizationId);
+        if (parsedStatus != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("status"), parsedStatus));
+        }
+        if (email != null && !email.isBlank()) {
+            String emailLike = "%" + email.trim().toLowerCase() + "%";
+            spec = spec.and((root, query, cb) -> cb.like(cb.lower(root.get("email")), emailLike));
+        }
+        if (name != null && !name.isBlank()) {
+            String nameLike = "%" + name.trim().toLowerCase() + "%";
+            spec = spec.and((root, query, cb) -> cb.like(cb.lower(root.get("name")), nameLike));
+        }
+        if (createdFromInstant != null) {
+            spec = spec.and((root, query, cb) -> cb.greaterThanOrEqualTo(root.get("createdAt"), createdFromInstant));
+        }
+        if (createdToInstant != null) {
+            spec = spec.and((root, query, cb) -> cb.lessThanOrEqualTo(root.get("createdAt"), createdToInstant));
+        }
+
+        return organizationRepository.findAll(spec, pageable);
+    }
+
+    @Transactional
+    public Organization updateAuthorized(UUID organizationId, OrganizationUpdateRequest request) {
+        enforceCurrentOrganizationAccess(organizationId);
+        return update(organizationId, request);
+    }
+
+    @Transactional
+    public void deleteAuthorized(UUID organizationId) {
+        getAuthorizedById(organizationId);
+        throw new ForbiddenException("Authenticated users cannot delete organizations");
+    }
+
+    @Transactional
+    public Organization activateAuthorized(UUID organizationId) {
+        getAuthorizedById(organizationId);
+        throw new ForbiddenException("Authenticated users cannot activate organizations");
+    }
+
+    @Transactional
+    public Organization suspendAuthorized(UUID organizationId) {
+        getAuthorizedById(organizationId);
+        throw new ForbiddenException("Authenticated users cannot suspend organizations");
+    }
+
+    @Transactional
+    public Organization archiveAuthorized(UUID organizationId) {
+        getAuthorizedById(organizationId);
+        throw new ForbiddenException("Authenticated users cannot archive organizations");
+    }
+
+    private Organization createInternal(OrganizationCreateRequest request) {
         if (request == null) {
             throw new ValidationException(
                 "Request must not be null");
@@ -79,15 +172,21 @@ public class OrganizationService {
         return organizationRepository.save(organization);
     }
 
-    // Get an organization by id.
-    @Transactional(readOnly = true)
-    public Organization getById(UUID organizationId) {
-        return OrganizationUtil.getOrganizationOrThrow(organizationId, organizationRepository);
-    }
-
     @Transactional(readOnly = true)
     public List<Organization> getEligibleOrganizationsForReminders(Collection<OrganizationStatus> statuses) {
         return organizationRepository.findAllByDeletedAtIsNullAndStatusIn(statuses);
+    }
+
+    // Get an organization by id.
+    @Transactional(readOnly = true)
+    public Organization getById(UUID organizationId) {
+        Organization organization = OrganizationUtil.getOrganizationOrThrow(organizationId, organizationRepository);
+        AuthContext authContext = AuthContext.get();
+        if (authContext != null && authContext.getOrganizationId() != null
+                && !authContext.getOrganizationId().equals(organization.getId())) {
+            throw new ForbiddenException("You cannot access another organization");
+        }
+        return organization;
     }
 
     // List organizations using filters and pagination.
@@ -265,5 +364,23 @@ public class OrganizationService {
         }
 
         return organizationRepository.save(organization);
+    }
+
+    private void enforceCurrentOrganizationAccess(UUID organizationId) {
+        if (organizationId == null) {
+            throw new ValidationException("Organization ID must not be null");
+        }
+        UUID authenticatedOrganizationId = getAuthenticatedOrganizationId();
+        if (!authenticatedOrganizationId.equals(organizationId)) {
+            throw new ForbiddenException("You cannot access another organization");
+        }
+    }
+
+    private UUID getAuthenticatedOrganizationId() {
+        AuthContext authContext = AuthContext.get();
+        if (authContext == null || authContext.getOrganizationId() == null) {
+            throw new ForbiddenException("Authenticated organization context is required");
+        }
+        return authContext.getOrganizationId();
     }
 }

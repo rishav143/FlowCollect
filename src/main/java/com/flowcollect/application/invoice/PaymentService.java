@@ -79,6 +79,7 @@ public class PaymentService {
 
     // Get a payment by its ID.
     public Payment getPayment(UUID invoiceId, UUID paymentId) {
+        invoiceService.getInvoiceById(invoiceId);
         return InvoiceUtil.getPaymentOrThrow(invoiceId, paymentId, paymentRepository);
     }
 

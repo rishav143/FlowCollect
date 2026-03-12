@@ -11,6 +11,7 @@ import com.flowcollect.api.v1.invoice.dto.InvoiceUpdateRequest;
 import com.flowcollect.api.v1.invoice.dto.IssueInvoiceRequest;
 import com.flowcollect.application.customer.CustomerService;
 import com.flowcollect.application.organization.OrganizationService;
+import com.flowcollect.application.organization.OrganizationUtil;
 import com.flowcollect.application.user.UserService;
 import com.flowcollect.domain.customer.Customer;
 import com.flowcollect.domain.invoice.Invoice;
@@ -66,9 +67,10 @@ public class InvoiceService {
         if (request == null) {
             throw new ValidationException("Request must not be null");
         }
+        OrganizationUtil.validateOrganizationIds(organizationId, request.getOrganizationId());
         Organization organization = organizationService.getById(organizationId);
         String normalizedInvoiceNumber = request.getInvoiceNumber().trim();
-        if (invoiceRepository.existsByInvoiceNumberAndOrganizationId(normalizedInvoiceNumber, request.getOrganizationId())) {
+        if (invoiceRepository.existsByInvoiceNumberAndOrganizationId(normalizedInvoiceNumber, organizationId)) {
             throw new ValidationException(
                 "Invoice number must be unique within organization. Invoice number: " + normalizedInvoiceNumber + " already exists.");
         }

@@ -39,6 +39,10 @@ public class ReminderRuleService {
             throw new ValidationException( 
                 "Reminder rule request cannot be null");
         }
+        if (reminderRuleRequest.getOrganizationId() != null
+                && !reminderRuleRequest.getOrganizationId().equals(organizationId)) {
+            throw new ValidationException("Organization ID in request must match path organization ID");
+        }
         Organization organization = organizationService.getById(organizationId);
 
         ReminderRule reminderRule = new ReminderRule();
@@ -113,6 +117,13 @@ public class ReminderRuleService {
         UUID reminderRuleId,
         ReminderRuleRequest reminderRuleRequest
     ) {
+        if (reminderRuleRequest == null) {
+            throw new ValidationException("Reminder rule request cannot be null");
+        }
+        if (reminderRuleRequest.getOrganizationId() != null
+                && !reminderRuleRequest.getOrganizationId().equals(organizationId)) {
+            throw new ValidationException("Organization ID in request must match path organization ID");
+        }
         // Validate organization
         organizationService.getById(organizationId);
         ReminderRule reminderRule = ReminderUtil.validateReminderRuleAndOrganization(
@@ -121,10 +132,6 @@ public class ReminderRuleService {
 
         if(reminderRuleRequest.getName() != null) {
             reminderRule.setName(reminderRuleRequest.getName());
-        }
-        if(reminderRuleRequest.getOrganizationId() != null) {
-            Organization newOrganization = organizationService.getById(reminderRuleRequest.getOrganizationId());
-            reminderRule.setOrganization(newOrganization);
         }
         if(reminderRuleRequest.getDaysOffset() != 0) {
             reminderRule.setDaysOffset(reminderRuleRequest.getDaysOffset());
