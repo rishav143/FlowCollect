@@ -13,4 +13,8 @@ import com.flowcollect.domain.customer.Customer;
 public interface CustomerJpaRepository extends JpaRepository<Customer, UUID>, JpaSpecificationExecutor<Customer> {
 
     Optional<Customer> findByIdAndOrganizationId(UUID id, java.util.UUID organizationId);
+
+    boolean existsByEmailAndOrganizationId(String email, UUID organizationId);
+
+    boolean existsByPhoneAndOrganizationId(String phone, UUID organizationId);
 }

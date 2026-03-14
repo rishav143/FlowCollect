@@ -47,9 +47,10 @@ public class PaymentService {
 
         Payment payment = new Payment();
         payment.setInvoice(invoice);
-        if(paymentRequest.getAmount() != null) {
-            payment.setAmount(paymentRequest.getAmount());
+        if(paymentRequest.getAmount() == null || paymentRequest.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new ValidationException("Amount must be greater than zero");
         }
+        payment.setAmount(paymentRequest.getAmount());
         if(paymentRequest.getMode() != null) {
             payment.setMode(paymentRequest.getMode());
         }
@@ -95,7 +96,7 @@ public class PaymentService {
 
         // Create a specification for the payments.
         Specification<Payment> spec = (root, query, criteriaBuilder) -> {
-            Predicate p = criteriaBuilder.equal(root.get("invoice"), invoiceId);
+            Predicate p = criteriaBuilder.equal(root.get("invoice").get("id"), invoiceId);
             if(mode != null) {
                 p = criteriaBuilder.and(p, criteriaBuilder.equal(root.get("mode"), mode));
             }

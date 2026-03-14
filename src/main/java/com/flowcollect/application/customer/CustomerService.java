@@ -11,10 +11,12 @@ import com.flowcollect.api.v1.customer.dto.CustomerRequest;
 import com.flowcollect.application.organization.OrganizationService;
 import com.flowcollect.domain.customer.Customer;
 import com.flowcollect.domain.organization.Organization;
+import com.flowcollect.exception.http.ConflictException;
 import com.flowcollect.exception.http.ValidationException;
 import com.flowcollect.infrastructure.persistence.customer.CustomerJpaRepository;
 
 import jakarta.persistence.criteria.Predicate;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class CustomerService {
@@ -48,10 +50,30 @@ public class CustomerService {
         }
         customer.setName(customerRequest.getName());
         if (customerRequest.getEmail() != null) {
-            customer.setEmail(customerRequest.getEmail());
+            String email = customerRequest.getEmail().trim();
+            if (email.isBlank()) {
+                throw new ValidationException(
+                    "Email must not be blank");
+            }
+            if (!email.equalsIgnoreCase(organization.getEmail())
+                    && customerRepository.existsByEmailAndOrganizationId(email, organizationId)) {
+                throw new ConflictException(
+                    "Customer with email: " + email + " already exists.");
+            }
+            customer.setEmail(email);
         }
         if (customerRequest.getPhone() != null) {
-            customer.setPhone(customerRequest.getPhone());
+            String phone = customerRequest.getPhone().trim();
+            if (phone.isBlank()) {
+                throw new ValidationException(
+                    "Phone must not be blank");
+            }
+            if (!phone.equals(customer.getPhone())
+                    && customerRepository.existsByPhoneAndOrganizationId(phone, organizationId)) {
+                throw new ConflictException(
+                    "Customer with phone: " + phone + " already exists.");
+            }
+            customer.setPhone(phone);
         }
         
         if (customerRequest.getCompanyName() != null) {
@@ -114,6 +136,7 @@ public class CustomerService {
         return customerRepository.findAll(spec, pageable);
     }
 
+    @Transactional
     public Customer updateCustomer
     (
         UUID organizationId, 
@@ -128,9 +151,8 @@ public class CustomerService {
        }
        // validate organization from organization service
        organizationService.getById(organizationId);
-       CustomerUtil.validateCustomerWithOrganization(id, organizationId, customerRepository);
+       Customer customer = CustomerUtil.validateCustomerWithOrganization(id, organizationId, customerRepository);
 
-       Customer customer = new Customer();
        if(customerRequest.getName() != null) {
         customer.setName(customerRequest.getName());
        }

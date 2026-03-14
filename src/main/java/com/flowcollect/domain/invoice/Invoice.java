@@ -7,6 +7,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -248,14 +249,14 @@ public class Invoice {
         this.lifeCycleStatus = LifeCycleStatus.ISSUED;
     }
 
-    public void setIssuedNow() {
+    public void setIssuedNow(ZoneId timezone) {
         if (lifeCycleStatus != LifeCycleStatus.DRAFT) {
             throw new IllegalStateException("Only draft invoices can be issued. Current status: " + lifeCycleStatus);
         }
         if(totalAmount.compareTo(BigDecimal.ZERO) <= 0){
             throw new IllegalArgumentException("Total amount cannot be zero or negative");
         }
-        this.issueDate = LocalDate.now();
+        this.issueDate = LocalDate.now(timezone);
         this.lifeCycleStatus = LifeCycleStatus.ISSUED;
     }
 

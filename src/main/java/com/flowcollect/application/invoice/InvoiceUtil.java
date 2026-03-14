@@ -40,9 +40,6 @@ public class InvoiceUtil {
         }
         Invoice invoice = invoiceRepository.findById(invoiceId)
             .orElseThrow(() -> new NotFoundException("invoice not found with id " + invoiceId));
-        if (invoice.getOrganization().isDeleted()) {
-            throw new NotFoundException("organization is archived with id " + invoice.getOrganization().getId());
-        }
         return invoice;
     }
 

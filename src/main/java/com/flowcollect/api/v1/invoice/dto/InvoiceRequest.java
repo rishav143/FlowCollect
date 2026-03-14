@@ -15,9 +15,6 @@ import java.util.UUID;
 
 public class InvoiceRequest {
 
-    @NotNull(message = "organizationId is required")
-    private UUID organizationId;
-
     private UUID createdByUserId;
 
     private UUID customerId;
@@ -36,14 +33,6 @@ public class InvoiceRequest {
 
     @Valid
     private List<InvoiceItemRequest> items = new ArrayList<>();
-
-    public UUID getOrganizationId() {
-        return organizationId;
-    }
-
-    public void setOrganizationId(UUID organizationId) {
-        this.organizationId = organizationId;
-    }
 
     public UUID getCreatedByUserId() {
         return createdByUserId;

@@ -8,6 +8,7 @@ public class CustomerMapper {
         CustomerResponse response = new CustomerResponse();
         response.setId(customer.getId());
         response.setName(customer.getName());
+        response.setOrganizationId(customer.getOrganization().getId());
         response.setEmail(customer.getEmail());
         response.setPhone(customer.getPhone());
         response.setAddress(customer.getAddress());

@@ -20,7 +20,7 @@ public class OverdueInvoiceScheduler {
         this.schedulerEnabled = schedulerEnabled;
     }
 
-    @Scheduled(cron = "${scheduler.invoice-status.cron:0 0 * * * *}")
+    @Scheduled(cron = "${scheduler.invoice-status.cron:0 * * * * *}")
     public void runInvoiceStatusSyncJob() {
         if (!schedulerEnabled) {
             return;

@@ -1,5 +1,7 @@
 package com.flowcollect.application.invoice;
 
+import com.flowcollect.exception.http.ForbiddenException;
+import com.flowcollect.security.AuthContext;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -11,7 +13,6 @@ import com.flowcollect.api.v1.invoice.dto.InvoiceUpdateRequest;
 import com.flowcollect.api.v1.invoice.dto.IssueInvoiceRequest;
 import com.flowcollect.application.customer.CustomerService;
 import com.flowcollect.application.organization.OrganizationService;
-import com.flowcollect.application.organization.OrganizationUtil;
 import com.flowcollect.application.user.UserService;
 import com.flowcollect.domain.customer.Customer;
 import com.flowcollect.domain.invoice.Invoice;
@@ -67,7 +68,6 @@ public class InvoiceService {
         if (request == null) {
             throw new ValidationException("Request must not be null");
         }
-        OrganizationUtil.validateOrganizationIds(organizationId, request.getOrganizationId());
         Organization organization = organizationService.getById(organizationId);
         String normalizedInvoiceNumber = request.getInvoiceNumber().trim();
         if (invoiceRepository.existsByInvoiceNumberAndOrganizationId(normalizedInvoiceNumber, organizationId)) {
@@ -93,6 +93,7 @@ public class InvoiceService {
         }
         if(request.getDueDate() != null) {
             invoice.setDueDate(request.getDueDate());
+            invoice.refreshTimeStatus(LocalDate.now(organization.getTimezone()));
         }
         InvoiceUtil.addItems(invoice, request.getItems());
         // Issue only when total amount is greater than 0
@@ -118,7 +119,7 @@ public class InvoiceService {
         if (invoiceId == null) {
             throw new NotFoundException("Invoice not found with ID: " + invoiceId);
         }
-        organizationService.getById(organizationId);
+        Organization organization = organizationService.getById(organizationId);
         Invoice invoice = InvoiceUtil.validateInvoiceWithOrganization(invoiceId, organizationId, invoiceRepository);
 
         if (!invoice.isDraft()) {
@@ -130,7 +131,7 @@ public class InvoiceService {
         if (request != null && request.getIssueDate() != null) {
             invoice.setIssueDate(request.getIssueDate());
         } else {
-            invoice.setIssuedNow();
+            invoice.setIssuedNow(organization.getTimezone());
         }
 
         return invoiceRepository.save(invoice);

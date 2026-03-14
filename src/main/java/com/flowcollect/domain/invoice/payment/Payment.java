@@ -32,7 +32,6 @@ public class Payment {
     @Column(nullable = false, precision = 15, scale = 2)
     private BigDecimal amount;
 
-    @NotNull
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private PaymentMode mode;

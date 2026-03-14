@@ -9,6 +9,7 @@ import com.flowcollect.domain.invoice.LifeCycleStatus;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
@@ -19,4 +20,6 @@ public interface InvoiceJpaRepository extends JpaRepository<Invoice, UUID>, JpaS
     List<Invoice> findAllByOrganizationIdAndLifeCycleStatusInAndDueDate(UUID organizationId, List<LifeCycleStatus> statuses, LocalDate dueDate);
 
     List<Invoice> findAllByOrganizationIdAndLifeCycleStatusInAndDueDateIsNotNull(UUID organizationId, List<LifeCycleStatus> statuses);
+
+    Optional<Invoice> findByIdAndOrganizationId(UUID invoiceId, UUID orgId);
 }

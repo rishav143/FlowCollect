@@ -201,7 +201,6 @@ Manage invoices issued to customers. Requires `ADMIN` or `STAFF` role.
 ### Create Draft Invoice
 - **Endpoint**: `POST /api/v1/organizations/{organizationId}/invoices`
 - **Body**:
-  - `organizationId` (UUID, Required): Organization identifier also expected in the request body by the current implementation.
   - `createdByUserId` (UUID, Optional): User who created the invoice.
   - `customerId` (UUID, Required): The customer this invoice belongs to.
   - `invoiceNumber` (String, Required): Unique number for the invoice (max 100).
@@ -433,7 +432,7 @@ Rules for automated payment reminders. Requires `ADMIN` or `STAFF` role.
 ---
 
 ## 3. Background Schedulers
-PaidPeace uses background workers to automate status management and reminders.
+FlowCollect uses background workers to automate status management and reminders.
 
 ### Overdue Invoice Sync
 - **Job Name**: `runInvoiceStatusSyncJob`
