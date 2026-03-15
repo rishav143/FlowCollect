@@ -8,14 +8,13 @@ import com.flowcollect.domain.invoice.followup.FollowUp;
 import com.flowcollect.domain.invoice.followup.FollowUpStatus;
 import com.flowcollect.domain.invoice.followup.FollowUpTriggerType;
 
-import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
 @Repository
 public interface FollowUpJpaRepository extends JpaRepository<FollowUp, UUID>, JpaSpecificationExecutor<FollowUp> {
 
-    boolean existsByInvoiceIdAndReminderRuleIdAndScheduledForDate(UUID invoiceId, UUID reminderRuleId, LocalDate scheduledForDate);
+    boolean existsByInvoiceIdAndReminderRuleIdAndOccurrenceIndex(UUID invoiceId, UUID reminderRuleId, int occurrenceIndex);
 
     List<FollowUp> findByStatusAndTriggerType(FollowUpStatus status, FollowUpTriggerType triggerType);
 

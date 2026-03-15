@@ -8,15 +8,19 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 import com.flowcollect.domain.invoice.Invoice;
+import com.flowcollect.domain.invoice.paymentlink.PaymentLink;
 import com.flowcollect.domain.reminder.ReminderRule;
 import com.flowcollect.domain.template.Template;
 @Entity
 @Table(
         name = "follow_ups",
         uniqueConstraints = {
+                // Guarantees each occurrence of a rule fires at most once per invoice.
+                // occurrence_index is 0 for non-cyclic rules and 0..maxOccurrences-1 for cyclic ones.
+                // reminder_rule_id is NULL for manual follow-ups, so the constraint only applies to automated ones.
                 @UniqueConstraint(
-                        name = "uk_follow_up_invoice_rule_schedule",
-                        columnNames = {"invoice_id", "reminder_rule_id", "scheduled_for_date"}
+                        name = "uk_follow_up_invoice_rule_occurrence",
+                        columnNames = {"invoice_id", "reminder_rule_id", "occurrence_index"}
                 )
         }
 )
@@ -40,6 +44,15 @@ public class FollowUp {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "reminder_rule_id")
     private ReminderRule reminderRule;
+
+    /**
+     * Optional payment link attached to this follow-up.
+     * When set, the link's public URL is injected into the message body
+     * via the {{paymentLink}} template placeholder.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "payment_link_id")
+    private PaymentLink paymentLink;
 
     @Column(name = "attach_pdf", nullable = false)
     private boolean attachPdf = false;
@@ -65,6 +78,11 @@ public class FollowUp {
 
     @Column(name = "scheduled_for_date")
     private LocalDate scheduledForDate;
+
+    // Zero-based index of which occurrence within a cyclic rule this follow-up represents.
+    // Always 0 for non-cyclic (single-occurrence) rules and for manual follow-ups.
+    @Column(name = "occurrence_index", nullable = false)
+    private int occurrenceIndex = 0;
 
     private Instant sentAt;
 
@@ -146,12 +164,28 @@ public class FollowUp {
         this.attachPdf = attachPdf;
     }
 
+    public PaymentLink getPaymentLink() {
+        return paymentLink;
+    }
+
+    public void setPaymentLink(PaymentLink paymentLink) {
+        this.paymentLink = paymentLink;
+    }
+
     public LocalDate getScheduledForDate() {
         return scheduledForDate;
     }
 
     public void setScheduledForDate(LocalDate scheduledForDate) {
         this.scheduledForDate = scheduledForDate;
+    }
+
+    public int getOccurrenceIndex() {
+        return occurrenceIndex;
+    }
+
+    public void setOccurrenceIndex(int occurrenceIndex) {
+        this.occurrenceIndex = occurrenceIndex;
     }
 
     public Instant getSentAt() {

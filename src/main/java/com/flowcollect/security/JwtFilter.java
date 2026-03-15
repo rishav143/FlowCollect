@@ -37,6 +37,12 @@ public class JwtFilter extends OncePerRequestFilter {
             "/actuator"
     );
 
+    /** Path prefixes that are publicly accessible (no JWT required). */
+    private static final List<String> SKIP_PREFIXES = List.of(
+            "/pay/",               // payment link customer redirect
+            "/api/v1/webhooks/"    // gateway webhook receivers (verified by gateway signature)
+    );
+
     private final JwtService jwtService;
     private final UserJpaRepository userRepository;
     private final OrganizationJpaRepository organizationRepository;
@@ -55,6 +61,9 @@ public class JwtFilter extends OncePerRequestFilter {
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getRequestURI();
         if (path.startsWith("/actuator")) {
+            return true;
+        }
+        if (SKIP_PREFIXES.stream().anyMatch(path::startsWith)) {
             return true;
         }
         return SKIP_PATHS.stream().anyMatch(path::equalsIgnoreCase);

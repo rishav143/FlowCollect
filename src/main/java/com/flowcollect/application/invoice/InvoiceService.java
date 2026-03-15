@@ -1,7 +1,5 @@
 package com.flowcollect.application.invoice;
 
-import com.flowcollect.exception.http.ForbiddenException;
-import com.flowcollect.security.AuthContext;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -28,6 +26,7 @@ import com.flowcollect.infrastructure.persistence.invoice.InvoiceJpaRepository;
 
 import jakarta.persistence.criteria.Predicate;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
@@ -260,7 +259,7 @@ public class InvoiceService {
         LocalDate dueDate,
         Pageable pageable
     ) {
-        organizationService.getById(organizationId);
+        Organization organization = organizationService.getById(organizationId);
 
         Specification<Invoice> spec = (root, query, cb) -> {
             Predicate p = cb.equal(root.get("organization").get("id"), organizationId);
@@ -274,19 +273,17 @@ public class InvoiceService {
                 p = cb.and(p, cb.like(cb.lower(root.get("invoiceNumber")), "%" + invoiceNumber.toLowerCase() + "%"));
             }
             if (createdAt != null) {
-                p = cb.and(p, cb.between(root.get("createdAt"),
-                        createdAt.atStartOfDay(),
-                        createdAt.atTime(LocalTime.MAX)));
+                Instant start = createdAt.atStartOfDay(organization.getTimezone()).toInstant();
+                Instant end = createdAt.atTime(LocalTime.MAX).atZone(organization.getTimezone()).toInstant();
+                p = cb.and(p, cb.between(root.get("createdAt"), start, end));
             }
             if (updatedAt != null) {
-                p = cb.and(p, cb.between(root.get("updatedAt"),
-                        updatedAt.atStartOfDay(),
-                        updatedAt.atTime(LocalTime.MAX)));
+                Instant start = updatedAt.atStartOfDay(organization.getTimezone()).toInstant();
+                Instant end = updatedAt.atTime(LocalTime.MAX).atZone(organization.getTimezone()).toInstant();
+                p = cb.and(p, cb.between(root.get("updatedAt"), start, end));
             }
             if (dueDate != null) {
-                p = cb.and(p, cb.between(root.get("dueDate"),
-                        dueDate.atStartOfDay(),
-                        dueDate.atTime(LocalTime.MAX)));
+                p = cb.and(p, cb.equal(root.get("dueDate"), dueDate));
             }
             return p;
         };

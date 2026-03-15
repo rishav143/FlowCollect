@@ -1,5 +1,6 @@
 package com.flowcollect.api.v1.reminderrule.dto;
 
+import java.time.LocalDate;
 import java.util.UUID;
 
 import com.flowcollect.domain.reminder.ReminderChannel;
@@ -14,6 +15,12 @@ public class ReminderRuleRequest {
     private ReminderChannel channel;
     private Template template;
     private boolean active;
+
+    // Cycle & Recurrence
+    // Nullable — null means "not provided" (use existing value on update, default on create).
+    private Integer maxOccurrences;
+    private Integer cycleIntervalDays;
+    private LocalDate startDate;
 
     public String getName() {
         return name;
@@ -69,5 +76,29 @@ public class ReminderRuleRequest {
 
     public void setActive(boolean active) {
         this.active = active;
+    }
+
+    public Integer getMaxOccurrences() {
+        return maxOccurrences;
+    }
+
+    public void setMaxOccurrences(Integer maxOccurrences) {
+        this.maxOccurrences = maxOccurrences;
+    }
+
+    public Integer getCycleIntervalDays() {
+        return cycleIntervalDays;
+    }
+
+    public void setCycleIntervalDays(Integer cycleIntervalDays) {
+        this.cycleIntervalDays = cycleIntervalDays;
+    }
+
+    public LocalDate getStartDate() {
+        return startDate;
+    }
+
+    public void setStartDate(LocalDate startDate) {
+        this.startDate = startDate;
     }
 }

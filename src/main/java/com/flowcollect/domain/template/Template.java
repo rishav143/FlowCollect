@@ -34,21 +34,18 @@ public class Template {
     private Organization organization;
 
     // Identity
-
     @NotBlank
     @Size(max = 100)
     @Column(nullable = false)
     private String name;
 
     // Channel
-
     @NotNull
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private TemplateChannel channel = TemplateChannel.EMAIL;
+    private TemplateChannel channel;
 
     // Content
-
     @Size(max = 200)
     private String subject; // email only
 
@@ -57,14 +54,11 @@ public class Template {
     private String body;
 
     // Tone (optional intelligence)
-
-    @NotNull
+    @NotBlank
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private TemplateTone tone = TemplateTone.NEUTRAL;
+    private TemplateTone tone;
 
     // Lifecycle
-
     @Column(nullable = false)
     private boolean active = true;
 

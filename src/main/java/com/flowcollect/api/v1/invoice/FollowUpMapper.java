@@ -16,6 +16,14 @@ public class FollowUpMapper {
         followUpResponse.setScheduledForDate(f.getScheduledForDate());
         followUpResponse.setSentAt(f.getSentAt());
         followUpResponse.setCreatedAt(f.getCreatedAt());
+
+        if (f.getPaymentLink() != null) {
+            followUpResponse.setPaymentLinkId(f.getPaymentLink().getId());
+            followUpResponse.setPaymentLinkUrl(f.getPaymentLink().getPublicUrl());
+            followUpResponse.setPaymentLinkGateway(f.getPaymentLink().getGateway());
+            followUpResponse.setPaymentLinkStatus(f.getPaymentLink().getStatus());
+        }
+
         return followUpResponse;
     }
 }

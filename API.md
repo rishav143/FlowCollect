@@ -1,4 +1,4 @@
-# PaidPeace API Documentation
+# FlowCollect API Documentation
 
 This document provides a comprehensive description of the PaidPeace API endpoints, following the design hierarchy:
 **Organization -> User, Customer -> Invoice -> (InvoiceItem, Payment, FollowUp), Template, ReminderRule.**
@@ -305,7 +305,25 @@ Manual and automated follow-ups for an invoice. Requires `ADMIN` or `STAFF` role
   - `scheduledForDate` (String, Optional): Scheduled date in `YYYY-MM-DD` format.
   - `attachPdf` (Boolean, Optional): Whether to attach the invoice PDF.
 - **Description**: Creates a follow-up record for an invoice.
-- **Response**: `200 OK` with `FollowUpResponse`.
+- **Response**: `200 OK` with `FollowUpResponse` (see field list below).
+
+#### FollowUpResponse fields
+| Field | Type | Notes |
+|---|---|---|
+| `id` | UUID | |
+| `invoiceId` | UUID | |
+| `channel` | String | `EMAIL`, `SMS`, or `WHATSAPP` |
+| `triggerType` | String | `MANUAL` or `AUTOMATED` |
+| `status` | String | Current delivery status |
+| `templateId` | UUID | nullable |
+| `reminderRuleId` | UUID | nullable — set when triggered by a reminder rule |
+| `scheduledForDate` | String | `YYYY-MM-DD`, nullable |
+| `sentAt` | Instant | nullable |
+| `createdAt` | Instant | |
+| `paymentLinkId` | UUID | nullable — present when a payment link was attached |
+| `paymentLinkUrl` | String | nullable — public short URL for the customer |
+| `paymentLinkGateway` | String | nullable — `STRIPE` or `RAZORPAY` |
+| `paymentLinkStatus` | String | nullable — `ACTIVE`, `PAID`, `EXPIRED`, etc. |
 
 ### Dispatch Multi-channel Follow-up
 - **Endpoint**: `POST /api/v1/invoices/{invoiceId}/followups/dispatch`
@@ -314,6 +332,8 @@ Manual and automated follow-ups for an invoice. Requires `ADMIN` or `STAFF` role
   - `templateId` (UUID, Optional): Template to use.
   - `scheduledForDate` (String, Optional): Scheduled date in `YYYY-MM-DD` format.
   - `attachPdf` (Boolean, Optional): Whether to attach the invoice PDF (Email only).
+  - `includePaymentLink` (Boolean, Optional, default: `false`): When `true`, generates a payment link and embeds it via the `{{paymentLink}}` placeholder in the template body.
+  - `paymentGateway` (String, Optional): `STRIPE` or `RAZORPAY`. Required when `includePaymentLink` is `true`. The organization must have an active connection for the chosen gateway.
 - **Description**: Immediately creates and sends follow-ups across multiple specified channels.
 - **Response**: `200 OK` with `List` of `FollowUpResponse` objects (one per channel).
 
@@ -397,9 +417,12 @@ Rules for automated payment reminders. Requires `ADMIN` or `STAFF` role.
   - `triggerType` (String, Required): `BEFORE_DUE_DATE`, `ON_DUE_DATE`, or `AFTER_DUE_DATE`.
   - `channel` (String, Required): `EMAIL`, `SMS`, or `WHATSAPP`.
   - `template` (Template, Required): Template object used for the automated reminder.
-  - `active` (Boolean, Optional): Whether the rule starts active.
-- **Description**: Configures an automated reminder rule.
-- **Response**: `200 OK` with `ReminderRuleResponse`.
+  - `active` (Boolean, Optional): Whether the rule starts active. Defaults to `false`.
+  - `maxOccurrences` (Integer, Optional): Maximum number of times this rule fires per invoice. `null` means unlimited.
+  - `cycleIntervalDays` (Integer, Optional): Days between repeat firings when recurring. Used together with `maxOccurrences` to configure repeating reminders.
+  - `startDate` (String, Optional): Date from which the rule begins applying (`YYYY-MM-DD`). Invoices before this date are ignored.
+- **Description**: Configures an automated reminder rule. Supports one-shot and recurring (cycled) reminders.
+- **Response**: `200 OK` with `ReminderRuleResponse` (`id`, `name`, `daysOffset`, `triggerType`, `channel`, `template`, `active`, `maxOccurrences`, `cycleIntervalDays`, `startDate`, `createdAt`, `updatedAt`).
 
 ### List Reminder Rules
 - **Endpoint**: `GET /api/v1/organizations/{organizationId}/reminder-rules`
@@ -414,14 +437,14 @@ Rules for automated payment reminders. Requires `ADMIN` or `STAFF` role.
 
 ### Update Reminder Rule
 - **Endpoint**: `PATCH /api/v1/organizations/{organizationId}/reminder-rules/{reminderRuleId}`
-- **Body** (All Optional): Same fields as Create Reminder Rule.
+- **Body** (All Optional): Same fields as Create Reminder Rule, including `maxOccurrences`, `cycleIntervalDays`, and `startDate`. Omitted cycle fields retain their existing values.
 - **Description**: Updates rule configuration.
 - **Response**: `200 OK` with updated `ReminderRuleResponse`.
 
 ### Reminder Rule State Transitions
 - **Activate**: `POST /api/v1/organizations/{organizationId}/reminder-rules/{reminderRuleId}/activate`
 - **Deactivate**: `POST /api/v1/organizations/{organizationId}/reminder-rules/{reminderRuleId}/deactivate`
-- **Description**: Toggles whether the rule is processed by the scheduler.
+- **Description**: Toggles whether the rule is processed by the scheduler. Inactive rules are skipped entirely during the automated reminder job.
 - **Response**: `204 No Content`.
 
 ### Delete Reminder Rule
@@ -431,7 +454,74 @@ Rules for automated payment reminders. Requires `ADMIN` or `STAFF` role.
 
 ---
 
-## 3. Background Schedulers
+## 2.5 Gateway Connections (Hierarchy: Organization -> Gateway)
+Manage payment gateway integrations (Stripe, Razorpay) for an organization. All endpoints require `ADMIN` role.
+
+### List Gateway Connections
+- **Endpoint**: `GET /api/v1/organizations/{organizationId}/gateways`
+- **Description**: Lists all configured gateway connections. Never exposes raw credentials — returns masked hints only.
+- **Response**: `200 OK` with `List` of `GatewayConnectionResponse` (`id`, `gateway`, `status`, `accountHint`, `connectedAt`, `disconnectedAt`).
+
+### Stripe Connect — Get Authorize URL
+- **Endpoint**: `GET /api/v1/organizations/{organizationId}/gateways/stripe/authorize-url`
+- **Description**: Returns the Stripe OAuth URL. The frontend should open or redirect to this URL to begin the Stripe Connect authorization flow.
+- **Response**: `200 OK` with `{ "authorizeUrl": "<url>" }`.
+
+### Stripe Connect — Complete Connection
+- **Endpoint**: `POST /api/v1/organizations/{organizationId}/gateways/stripe/connect`
+- **Query Params**: `code` (String, Required) — the authorization code returned by Stripe after user consent.
+- **Description**: Exchanges the authorization code for a Stripe connected account ID and persists the connection. Called by the frontend after Stripe redirects back.
+- **Response**: `200 OK` with `GatewayConnectionResponse`.
+
+### Stripe Connect — Disconnect
+- **Endpoint**: `DELETE /api/v1/organizations/{organizationId}/gateways/stripe`
+- **Description**: Disconnects the Stripe account. Existing active payment links will stop working.
+- **Response**: `200 OK` with `GatewayConnectionResponse`.
+
+### Razorpay — Connect (Manual Key Entry)
+- **Endpoint**: `POST /api/v1/organizations/{organizationId}/gateways/razorpay/connect`
+- **Body**:
+  - `keyId` (String, Required): Razorpay Key ID.
+  - `keySecret` (String, Required): Razorpay Key Secret.
+  - `webhookSecret` (String, Required): Razorpay webhook signing secret.
+- **Description**: Saves encrypted Razorpay credentials. Keys are validated against the Razorpay API before storage. Idempotent — calling again with new keys updates the existing connection.
+- **Response**: `200 OK` with `GatewayConnectionResponse`.
+
+### Razorpay — Disconnect
+- **Endpoint**: `DELETE /api/v1/organizations/{organizationId}/gateways/razorpay`
+- **Description**: Disconnects Razorpay and clears all stored credentials.
+- **Response**: `200 OK` with `GatewayConnectionResponse`.
+
+---
+
+## 3. Public & Webhook Endpoints
+These endpoints are excluded from JWT authentication.
+
+### Payment Link Redirect (Customer-Facing)
+- **Endpoint**: `GET /pay/{token}`
+- **Auth**: None — `token` is an unguessable UUID.
+- **Description**: Looks up the payment link by token and performs a `302` redirect to the gateway checkout page. Returns `410 Gone` if the link has already been paid or has expired.
+- **Response**: `302 Found` (redirect to gateway) or `410 Gone`.
+
+### Stripe Webhook
+- **Endpoint**: `POST /api/v1/webhooks/stripe`
+- **Auth**: Verified via `Stripe-Signature` header (HMAC-SHA256). No JWT required.
+- **Headers**: `Stripe-Signature` (String, Required).
+- **Body**: Raw Stripe event payload.
+- **Description**: Receives `checkout.session.completed` events from Stripe. Marks the associated payment link as paid and records the payment automatically.
+- **Response**: `200 OK`.
+
+### Razorpay Webhook
+- **Endpoint**: `POST /api/v1/webhooks/razorpay`
+- **Auth**: Verified via `X-Razorpay-Signature` header (HMAC-SHA256). No JWT required.
+- **Headers**: `X-Razorpay-Signature` (String, Required).
+- **Body**: Raw Razorpay event payload.
+- **Description**: Receives `payment_link.paid` events from Razorpay. Marks the associated payment link as paid and records the payment automatically.
+- **Response**: `200 OK`.
+
+---
+
+## 4. Background Schedulers
 FlowCollect uses background workers to automate status management and reminders.
 
 ### Overdue Invoice Sync
@@ -442,4 +532,9 @@ FlowCollect uses background workers to automate status management and reminders.
 ### Automated Reminder Engine
 - **Job Name**: `runAutomatedReminderJob`
 - **Schedule**: Every 15 minutes (`0 */15 * * * *`)
-- **Description**: Scans all active `ReminderRules` across all organizations. If an invoice matches a rule's criteria (e.g., 2 days before due date), it automatically generates and dispatches a `FollowUp` using the associated `Template`.
+- **Description**: Scans all active `ReminderRules` across all organizations. If an invoice matches a rule's criteria (e.g., 2 days before due date), it automatically generates and dispatches a `FollowUp` using the associated `Template`. Respects `startDate`, `maxOccurrences`, and `cycleIntervalDays` when configured.
+
+### Payment Link Expiry
+- **Job Name**: `expireOverduePaymentLinks`
+- **Schedule**: Daily at midnight (`0 0 0 * * *`)
+- **Description**: Marks `ACTIVE` and `PARTIALLY_PAID` payment links as `EXPIRED` once their `expiresAt` timestamp has passed.

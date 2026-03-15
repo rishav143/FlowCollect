@@ -7,6 +7,8 @@ import java.util.UUID;
 import com.flowcollect.domain.invoice.followup.FollowUpChannel;
 import com.flowcollect.domain.invoice.followup.FollowUpStatus;
 import com.flowcollect.domain.invoice.followup.FollowUpTriggerType;
+import com.flowcollect.domain.invoice.paymentlink.PaymentGateway;
+import com.flowcollect.domain.invoice.paymentlink.PaymentLinkStatus;
 
 public class FollowUpResponse {
     private UUID id;
@@ -19,6 +21,12 @@ public class FollowUpResponse {
     private LocalDate scheduledForDate;
     private Instant sentAt;
     private Instant createdAt;
+
+    // Payment link fields — null when no payment link was attached
+    private UUID paymentLinkId;
+    private String paymentLinkUrl;
+    private PaymentGateway paymentLinkGateway;
+    private PaymentLinkStatus paymentLinkStatus;
 
     public UUID getId() {
         return id;
@@ -99,5 +107,17 @@ public class FollowUpResponse {
     public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
+
+    public UUID getPaymentLinkId() { return paymentLinkId; }
+    public void setPaymentLinkId(UUID paymentLinkId) { this.paymentLinkId = paymentLinkId; }
+
+    public String getPaymentLinkUrl() { return paymentLinkUrl; }
+    public void setPaymentLinkUrl(String paymentLinkUrl) { this.paymentLinkUrl = paymentLinkUrl; }
+
+    public PaymentGateway getPaymentLinkGateway() { return paymentLinkGateway; }
+    public void setPaymentLinkGateway(PaymentGateway paymentLinkGateway) { this.paymentLinkGateway = paymentLinkGateway; }
+
+    public PaymentLinkStatus getPaymentLinkStatus() { return paymentLinkStatus; }
+    public void setPaymentLinkStatus(PaymentLinkStatus paymentLinkStatus) { this.paymentLinkStatus = paymentLinkStatus; }
 }
 

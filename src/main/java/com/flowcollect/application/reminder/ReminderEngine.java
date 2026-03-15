@@ -80,34 +80,48 @@ public class ReminderEngine {
                 continue;
             }
 
-            LocalDate targetDueDate = organizationToday.minusDays(rule.getDaysOffset());
-            List<Invoice> invoices = invoiceService.getInvoicesForReminders(
-                    organization.getId(),
-                    ELIGIBLE_INVOICE_STATUSES,
-                    targetDueDate
-            );
+            // Honor the optional custom start date (evaluated in the organization's timezone).
+            if (rule.getStartDate() != null && organizationToday.isBefore(rule.getStartDate())) {
+                continue;
+            }
 
-            for (Invoice invoice : invoices) {
-                if (followUpService.existsByInvoiceIdAndReminderRuleIdAndScheduledForDate(
-                        invoice.getId(),
-                        rule.getId(),
-                        organizationToday
-                )) {
-                    continue;
+            // Iterate over each occurrence (0-based). For non-cyclic rules maxOccurrences == 1,
+            // so the loop runs exactly once with occurrence index 0.
+            for (int occurrence = 0; occurrence < rule.getMaxOccurrences(); occurrence++) {
+                // Each successive occurrence targets invoices that are further past their due date.
+                int effectiveOffset = rule.getDaysOffset() + (rule.getCycleIntervalDays() * occurrence);
+                LocalDate targetDueDate = organizationToday.minusDays(effectiveOffset);
+
+                List<Invoice> invoices = invoiceService.getInvoicesForReminders(
+                        organization.getId(),
+                        ELIGIBLE_INVOICE_STATUSES,
+                        targetDueDate
+                );
+
+                for (Invoice invoice : invoices) {
+                    // Skip if this occurrence has already been created for this invoice+rule pair.
+                    if (followUpService.existsByInvoiceIdAndReminderRuleIdAndOccurrenceIndex(
+                            invoice.getId(),
+                            rule.getId(),
+                            occurrence
+                    )) {
+                        continue;
+                    }
+
+                    FollowUp followUp = new FollowUp();
+                    followUp.setInvoice(invoice);
+                    followUp.setTemplate(rule.getTemplate());
+                    followUp.setReminderRule(rule);
+                    followUp.setChannel(FollowUpChannel.valueOf(rule.getChannel().name()));
+                    followUp.setTriggerType(FollowUpTriggerType.AUTOMATED);
+                    followUp.setStatus(FollowUpStatus.PENDING);
+                    followUp.setScheduledForDate(organizationToday);
+                    followUp.setAttachPdf(rule.isAttachPdf());
+                    followUp.setOccurrenceIndex(occurrence);
+
+                    followUpService.save(followUp);
+                    createdCount++;
                 }
-
-                FollowUp followUp = new FollowUp();
-                followUp.setInvoice(invoice);
-                followUp.setTemplate(rule.getTemplate());
-                followUp.setReminderRule(rule);
-                followUp.setChannel(FollowUpChannel.valueOf(rule.getChannel().name()));
-                followUp.setTriggerType(FollowUpTriggerType.AUTOMATED);
-                followUp.setStatus(FollowUpStatus.PENDING);
-                followUp.setScheduledForDate(organizationToday);
-                followUp.setAttachPdf(rule.isAttachPdf());
-
-                followUpService.save(followUp);
-                createdCount++;
             }
         }
 
@@ -149,8 +163,15 @@ public class ReminderEngine {
         if (rule.getTemplate().getChannel() != TemplateChannel.valueOf(rule.getChannel().name())) {
             return false;
         }
-        
-        // Ensure the daysOffset sign matches the triggerType
+        if (rule.getMaxOccurrences() < 1) {
+            return false;
+        }
+        // A cyclic rule must define a positive interval; otherwise occurrences would all target the same due date.
+        if (rule.isCyclic() && rule.getCycleIntervalDays() < 1) {
+            return false;
+        }
+
+        // Ensure the base daysOffset sign matches the triggerType
         return switch (rule.getTriggerType()) {
             case BEFORE_DUE_DATE -> rule.getDaysOffset() <= 0;
             case ON_DUE_DATE -> rule.getDaysOffset() == 0;

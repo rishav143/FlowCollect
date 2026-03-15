@@ -9,8 +9,6 @@ public class TemplateRequest {
 
     private String name;
 
-    private UUID organizationId;
-
     private TemplateChannel channel;
     
     private String subject;
@@ -21,14 +19,6 @@ public class TemplateRequest {
 
     public String getName() {
         return name;
-    }
-
-    public UUID getOrganizationId() {
-        return organizationId;
-    }
-
-    public void setOrganizationId(UUID organizationId) {
-        this.organizationId = organizationId;
     }
 
     public void setName(String name) {

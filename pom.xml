@@ -135,6 +135,27 @@
 			<artifactId>pdfbox</artifactId>
 			<version>3.0.6</version>
 		</dependency>
+
+		<!-- Generates spring-configuration-metadata.json so IDEs recognise @ConfigurationProperties -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-configuration-processor</artifactId>
+			<optional>true</optional>
+		</dependency>
+
+		<!-- Stripe payment gateway -->
+		<dependency>
+			<groupId>com.stripe</groupId>
+			<artifactId>stripe-java</artifactId>
+			<version>26.3.0</version>
+		</dependency>
+
+		<!-- Razorpay payment gateway (UPI + cards for INR) -->
+		<dependency>
+			<groupId>com.razorpay</groupId>
+			<artifactId>razorpay-java</artifactId>
+			<version>1.4.8</version>
+		</dependency>
     </dependencies>
 
 	<build>

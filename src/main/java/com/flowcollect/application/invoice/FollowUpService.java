@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.flowcollect.api.v1.invoice.dto.FollowUpRequest;
 import com.flowcollect.api.v1.invoice.dto.MultiChannelFollowUpRequest;
+import com.flowcollect.application.paymentlink.PaymentLinkService;
 import com.flowcollect.application.reminder.NotificationSender;
 import com.flowcollect.application.template.TemplateRenderer;
 import com.flowcollect.application.template.TemplateService;
@@ -24,6 +25,8 @@ import com.flowcollect.domain.invoice.followup.FollowUp;
 import com.flowcollect.domain.invoice.followup.FollowUpChannel;
 import com.flowcollect.domain.invoice.followup.FollowUpStatus;
 import com.flowcollect.domain.invoice.followup.FollowUpTriggerType;
+import com.flowcollect.domain.invoice.paymentlink.PaymentGateway;
+import com.flowcollect.domain.invoice.paymentlink.PaymentLink;
 import com.flowcollect.domain.template.Template;
 import com.flowcollect.domain.template.TemplateChannel;
 import com.flowcollect.exception.http.InternalException;
@@ -40,6 +43,7 @@ public class FollowUpService {
     private final InvoiceService invoiceService;
     private final TemplateService templateService;
     private final TemplateRenderer templateRenderer;
+    private final PaymentLinkService paymentLinkService;
     private final Map<FollowUpChannel, NotificationSender> notificationSenders;
 
     public FollowUpService(
@@ -47,22 +51,24 @@ public class FollowUpService {
             InvoiceService invoiceService,
             TemplateService templateService,
             TemplateRenderer templateRenderer,
+            PaymentLinkService paymentLinkService,
             List<NotificationSender> notificationSenders
     ) {
         this.followUpRepository = followUpRepository;
         this.invoiceService = invoiceService;
         this.templateService = templateService;
         this.templateRenderer = templateRenderer;
+        this.paymentLinkService = paymentLinkService;
         this.notificationSenders = indexSenders(notificationSenders);
     }
 
     @Transactional(readOnly = true)
-    public boolean existsByInvoiceIdAndReminderRuleIdAndScheduledForDate(
-            UUID invoiceId, UUID reminderRuleId, LocalDate scheduledForDate) {
-        if (invoiceId == null || reminderRuleId == null || scheduledForDate == null) {
+    public boolean existsByInvoiceIdAndReminderRuleIdAndOccurrenceIndex(
+            UUID invoiceId, UUID reminderRuleId, int occurrenceIndex) {
+        if (invoiceId == null || reminderRuleId == null) {
             return false;
         }
-        return followUpRepository.existsByInvoiceIdAndReminderRuleIdAndScheduledForDate(invoiceId, reminderRuleId, scheduledForDate);
+        return followUpRepository.existsByInvoiceIdAndReminderRuleIdAndOccurrenceIndex(invoiceId, reminderRuleId, occurrenceIndex);
     }
 
     @Transactional(readOnly = true)
@@ -124,6 +130,8 @@ public class FollowUpService {
         followUp.setStatus(FollowUpStatus.PENDING);
         if (request.getScheduledForDate() != null) {
             followUp.setScheduledForDate(request.getScheduledForDate());
+        } else if (triggerType == FollowUpTriggerType.MANUAL) {
+            followUp.setScheduledForDate(LocalDate.now(invoice.getOrganization().getTimezone()));
         }
         if (request.getAttachPdf() != null) {
             followUp.setAttachPdf(request.getAttachPdf());
@@ -138,6 +146,10 @@ public class FollowUpService {
     /**
      * Creates and dispatches manual follow-ups for multiple channels.
      * One FollowUp is created per channel and dispatched via the existing dispatch logic.
+     *
+     * When {@code request.isIncludePaymentLink()} is true, a single PaymentLink is created
+     * for the invoice (shared across all channels) and embedded in every message via
+     * the {@code {{paymentLink}}} template placeholder.
      */
     @Transactional
     public List<FollowUp> createAndDispatchFollowUps(
@@ -161,6 +173,20 @@ public class FollowUpService {
             throw new ValidationException("At least one non-null follow-up channel must be provided");
         }
 
+        // Validate payment link request before creating any follow-ups
+        if (request.isIncludePaymentLink() && request.getPaymentGateway() == null) {
+            throw new ValidationException("paymentGateway is required when includePaymentLink is true");
+        }
+
+        Invoice invoice = invoiceService.getInvoiceById(invoiceId);
+
+        // Create one shared payment link for all channels (avoids duplicate gateway sessions)
+        PaymentLink paymentLink = null;
+        if (request.isIncludePaymentLink()) {
+            PaymentGateway gateway = request.getPaymentGateway();
+            paymentLink = paymentLinkService.createPaymentLink(invoice, gateway);
+        }
+
         // Reuse existing single-channel creation logic for correctness
         List<FollowUp> createdAndDispatched = new java.util.ArrayList<>(channels.size());
         for (FollowUpChannel channel : channels) {
@@ -172,6 +198,10 @@ public class FollowUpService {
             singleRequest.setAttachPdf(request.getAttachPdf());
 
             FollowUp followUp = createFollowUp(invoiceId, singleRequest);
+            if (paymentLink != null) {
+                followUp.setPaymentLink(paymentLink);
+                followUp = followUpRepository.save(followUp);
+            }
             FollowUp dispatched = dispatchFollowUp(followUp);
             createdAndDispatched.add(dispatched);
         }
@@ -273,7 +303,13 @@ public class FollowUpService {
             Customer customer = requireDispatchableCustomer(followUp);
             Template template = requireDispatchableTemplate(followUp);
             String subject = templateRenderer.renderSubject(template, followUp.getInvoice(), customer);
-            String body = templateRenderer.renderBody(template, followUp.getInvoice(), customer);
+
+            // Inject the payment link URL when one is attached to this follow-up
+            String paymentLinkUrl = followUp.getPaymentLink() != null
+                    ? followUp.getPaymentLink().getPublicUrl()
+                    : null;
+            String body = templateRenderer.renderBody(template, followUp.getInvoice(), customer, paymentLinkUrl);
+
             NotificationSender sender = resolveSender(followUp.getChannel());
             sender.send(customer, subject, body, followUp.isAttachPdf(), followUp.getInvoice());
 
@@ -320,8 +356,8 @@ public class FollowUpService {
 
     private Customer requireDispatchableCustomer(FollowUp followUp) {
         Invoice invoice = Objects.requireNonNull(followUp.getInvoice(), "Follow-up invoice must not be null");
-        if (!invoice.isIssued()) {
-            throw new ValidationException("Only issued invoices can have follow-ups dispatched");
+        if (!invoice.isIssued() && !invoice.isPartiallyPaid()) {
+            throw new ValidationException("Follow-ups can only be dispatched for issued or partially paid invoices");
         }
 
         Customer customer = invoice.getCustomer();

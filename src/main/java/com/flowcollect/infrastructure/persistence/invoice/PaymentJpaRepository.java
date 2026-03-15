@@ -12,4 +12,7 @@ import com.flowcollect.domain.invoice.payment.Payment;
 @Repository
     public interface PaymentJpaRepository extends JpaRepository<Payment, UUID>, JpaSpecificationExecutor<Payment> {
         List<Payment> findByInvoiceId(UUID invoiceId);
+
+        /** Used by PaymentLinkService to prevent double-recording a webhook payment. */
+        boolean existsByInvoiceIdAndReferenceId(UUID invoiceId, String referenceId);
     }

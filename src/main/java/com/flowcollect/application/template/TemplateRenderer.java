@@ -20,14 +20,23 @@ public class TemplateRenderer {
         if (template.getSubject() == null || template.getSubject().isBlank()) {
             return "Invoice reminder: " + invoice.getInvoiceNumber();
         }
-        return render(template.getSubject(), invoice, customer);
+        return render(template.getSubject(), invoice, customer, null);
     }
 
     public String renderBody(Template template, Invoice invoice, Customer customer) {
-        return render(template.getBody(), invoice, customer);
+        return render(template.getBody(), invoice, customer, null);
     }
 
-    private String render(String raw, Invoice invoice, Customer customer) {
+    /**
+     * Renders the template body with an optional payment link URL.
+     * Use this overload when dispatching a follow-up that has a payment link attached.
+     * The URL is available in templates via the {@code {{paymentLink}}} placeholder.
+     */
+    public String renderBody(Template template, Invoice invoice, Customer customer, String paymentLinkUrl) {
+        return render(template.getBody(), invoice, customer, paymentLinkUrl);
+    }
+
+    private String render(String raw, Invoice invoice, Customer customer, String paymentLinkUrl) {
         Map<String, String> values = new LinkedHashMap<>();
         values.put("customerName", safe(customer.getName()));
         values.put("companyName", safe(customer.getCompanyName()));
@@ -37,6 +46,7 @@ public class TemplateRenderer {
         values.put("totalAmount", safe(invoice.getTotalAmount()));
         values.put("organizationName", safe(invoice.getOrganization().getName()));
         values.put("organizationEmail", safe(invoice.getOrganization().getEmail()));
+        values.put("paymentLink", safe(paymentLinkUrl));
 
         String rendered = raw == null ? "" : raw;
         for (Map.Entry<String, String> entry : values.entrySet()) {

@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.UUID;
 
 import com.flowcollect.domain.organization.Organization;
@@ -64,6 +65,22 @@ public class ReminderRule {
 
     @Column(name = "attach_pdf", nullable = false)
     private boolean attachPdf = false;
+
+    // Cycle & Recurrence
+
+    // How many times this rule fires per invoice. Minimum 1.
+    @Column(name = "max_occurrences", nullable = false)
+    private int maxOccurrences = 1;
+
+    // Interval in days between consecutive occurrences.
+    // Must be >= 1 when maxOccurrences > 1; ignored (0) when maxOccurrences == 1.
+    @Column(name = "cycle_interval_days", nullable = false)
+    private int cycleIntervalDays = 0;
+
+    // Optional date on or after which the automation engine begins processing this rule.
+    // Null means no restriction — the engine starts immediately.
+    @Column(name = "start_date")
+    private LocalDate startDate;
 
     // Lifecycle
     @Column(nullable = false)
@@ -125,6 +142,22 @@ public class ReminderRule {
         return attachPdf;
     }
 
+    public int getMaxOccurrences() {
+        return maxOccurrences;
+    }
+
+    public int getCycleIntervalDays() {
+        return cycleIntervalDays;
+    }
+
+    public LocalDate getStartDate() {
+        return startDate;
+    }
+
+    public boolean isCyclic() {
+        return maxOccurrences > 1;
+    }
+
     public boolean isActive() {
         return active;
     }
@@ -164,6 +197,18 @@ public class ReminderRule {
 
     public void setAttachPdf(boolean attachPdf) {
         this.attachPdf = attachPdf;
+    }
+
+    public void setMaxOccurrences(int maxOccurrences) {
+        this.maxOccurrences = maxOccurrences;
+    }
+
+    public void setCycleIntervalDays(int cycleIntervalDays) {
+        this.cycleIntervalDays = cycleIntervalDays;
+    }
+
+    public void setStartDate(LocalDate startDate) {
+        this.startDate = startDate;
     }
 
     public void activate() {

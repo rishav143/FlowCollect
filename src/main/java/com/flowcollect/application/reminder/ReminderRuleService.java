@@ -72,6 +72,28 @@ public class ReminderRuleService {
             reminderRule.setActive(true);
         }
 
+        int maxOccurrences = reminderRuleRequest.getMaxOccurrences() != null
+                ? reminderRuleRequest.getMaxOccurrences()
+                : 1;
+        if (maxOccurrences < 1) {
+            throw new ValidationException("maxOccurrences must be at least 1");
+        }
+
+        int cycleIntervalDays = reminderRuleRequest.getCycleIntervalDays() != null
+                ? reminderRuleRequest.getCycleIntervalDays()
+                : 0;
+        if (maxOccurrences > 1 && cycleIntervalDays < 1) {
+            throw new ValidationException("cycleIntervalDays must be at least 1 when maxOccurrences > 1");
+        }
+        // Normalize: interval is irrelevant and misleading when there is only one occurrence.
+        if (maxOccurrences == 1) {
+            cycleIntervalDays = 0;
+        }
+
+        reminderRule.setMaxOccurrences(maxOccurrences);
+        reminderRule.setCycleIntervalDays(cycleIntervalDays);
+        reminderRule.setStartDate(reminderRuleRequest.getStartDate());
+
         return reminderRuleRepository.save(reminderRule);
     }
 
@@ -101,7 +123,7 @@ public class ReminderRuleService {
         organizationService.getById(organizationId);
 
         Specification<ReminderRule> specification = (root, query, criteriaBuilder) -> {
-            Predicate predicate = criteriaBuilder.equal(root.get("organization"), organizationId);
+            Predicate predicate = criteriaBuilder.equal(root.get("organization").get("id"), organizationId);
             if(name != null) {
                 predicate = criteriaBuilder.and(predicate, criteriaBuilder.like(root.get("name"), "%" + name + "%"));
             }
@@ -147,6 +169,30 @@ public class ReminderRuleService {
         }
         if(reminderRuleRequest.isActive() == true) {
             reminderRule.activate();
+        }
+        if (reminderRuleRequest.getStartDate() != null) {
+            reminderRule.setStartDate(reminderRuleRequest.getStartDate());
+        }
+
+        // Update cycle fields only when at least one is explicitly provided.
+        Integer newMaxOccurrences = reminderRuleRequest.getMaxOccurrences();
+        Integer newCycleIntervalDays = reminderRuleRequest.getCycleIntervalDays();
+        if (newMaxOccurrences != null || newCycleIntervalDays != null) {
+            int maxOccurrences = newMaxOccurrences != null ? newMaxOccurrences : reminderRule.getMaxOccurrences();
+            int cycleIntervalDays = newCycleIntervalDays != null ? newCycleIntervalDays : reminderRule.getCycleIntervalDays();
+
+            if (maxOccurrences < 1) {
+                throw new ValidationException("maxOccurrences must be at least 1");
+            }
+            if (maxOccurrences > 1 && cycleIntervalDays < 1) {
+                throw new ValidationException("cycleIntervalDays must be at least 1 when maxOccurrences > 1");
+            }
+            if (maxOccurrences == 1) {
+                cycleIntervalDays = 0;
+            }
+
+            reminderRule.setMaxOccurrences(maxOccurrences);
+            reminderRule.setCycleIntervalDays(cycleIntervalDays);
         }
 
         return reminderRuleRepository.save(reminderRule);

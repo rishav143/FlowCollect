@@ -47,9 +47,6 @@ public class TemplateService {
             throw new ValidationException( 
                 "Template request must not be null");
         }
-        if (templateRequest.getOrganizationId() != null && !templateRequest.getOrganizationId().equals(organizationId)) {
-            throw new ValidationException("Organization ID in request must match path organization ID");
-        }
         Organization organization = organizationService.getById(organizationId);
 
         Template template = new Template();
@@ -58,19 +55,29 @@ public class TemplateService {
             throw new ValidationException( 
                 "Name must not be null or blank");
         }
-        template.setName(templateRequest.getName());
-        if(templateRequest.getChannel() != null) {
-            template.setChannel(templateRequest.getChannel());
+        if(templateRepository.existsByNameAndOrganizationId(templateRequest.getName(), organizationId)) {
+            throw new ValidationException( 
+                "A template with the name '" + templateRequest.getName() + "' already exists for this organization");
         }
+        template.setName(templateRequest.getName());
+        if (templateRepository.existsByNameAndOrganizationId(templateRequest.getName(), organizationId)) {
+            throw new ValidationException("A template with the name '" + templateRequest.getName() + "' already exists for this organization");
+        }
+        if(templateRequest.getChannel() == null) {
+            throw new ValidationException("Channel must not be null");
+        }
+        template.setChannel(templateRequest.getChannel());
         if(templateRequest.getSubject() != null) {
             template.setSubject(templateRequest.getSubject());
         }
-        if(templateRequest.getBody() != null) {
-            template.setBody(templateRequest.getBody());
+        if(templateRequest.getTone() == null) {
+            throw new ValidationException("Body must not be null");
         }
-        if(templateRequest.getTone() != null) {
-            template.setTone(templateRequest.getTone());
+        template.setBody(templateRequest.getBody());
+        if(templateRequest.getTone() == null) {
+            throw new ValidationException("Tone must not be null");
         }
+        template.setTone(templateRequest.getTone());
 
         return templateRepository.save(template);
     }
@@ -134,9 +141,6 @@ public class TemplateService {
     ) {
         if (templateRequest == null) {
             throw new ValidationException("Template request must not be null");
-        }
-        if (templateRequest.getOrganizationId() != null && !templateRequest.getOrganizationId().equals(organizationId)) {
-            throw new ValidationException("Organization ID in request must match path organization ID");
         }
         organizationService.getById(organizationId);
         TemplateUtil.validateTemplateWithOrganization(templateId, organizationId, templateRepository);

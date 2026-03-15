@@ -11,7 +11,7 @@ import java.util.UUID;
 
 @Repository
 public interface TemplateJpaRepository extends JpaRepository<Template, UUID>, JpaSpecificationExecutor<Template> {
-    // find methods can be added later if required
     Optional<Template> findById(UUID id);
+    boolean existsByNameAndOrganizationId(String name, UUID organizationId);
 }
 

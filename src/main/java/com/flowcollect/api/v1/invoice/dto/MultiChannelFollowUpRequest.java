@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.UUID;
 
 import com.flowcollect.domain.invoice.followup.FollowUpChannel;
+import com.flowcollect.domain.invoice.paymentlink.PaymentGateway;
 
 import jakarta.validation.constraints.NotEmpty;
 
@@ -22,6 +23,19 @@ public class MultiChannelFollowUpRequest {
     private LocalDate scheduledForDate;
 
     private Boolean attachPdf;
+
+    /**
+     * When true, a payment link is generated and embedded in the message body
+     * via the {{paymentLink}} template placeholder.
+     * Requires paymentGateway to be specified.
+     */
+    private boolean includePaymentLink = false;
+
+    /**
+     * Gateway to use for generating the payment link.
+     * Required when includePaymentLink is true.
+     */
+    private PaymentGateway paymentGateway;
 
     public List<FollowUpChannel> getChannels() {
         return channels;
@@ -53,6 +67,22 @@ public class MultiChannelFollowUpRequest {
 
     public void setAttachPdf(Boolean attachPdf) {
         this.attachPdf = attachPdf;
+    }
+
+    public boolean isIncludePaymentLink() {
+        return includePaymentLink;
+    }
+
+    public void setIncludePaymentLink(boolean includePaymentLink) {
+        this.includePaymentLink = includePaymentLink;
+    }
+
+    public PaymentGateway getPaymentGateway() {
+        return paymentGateway;
+    }
+
+    public void setPaymentGateway(PaymentGateway paymentGateway) {
+        this.paymentGateway = paymentGateway;
     }
 }
 

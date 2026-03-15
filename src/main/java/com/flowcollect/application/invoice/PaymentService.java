@@ -78,6 +78,33 @@ public class PaymentService {
         invoiceRepository.save(invoice);
     }
 
+    /**
+     * Internal method for recording a payment received through a payment gateway webhook.
+     * Bypasses the API DTO layer so the application layer stays clean.
+     * Callers (PaymentLinkService) are responsible for idempotency checks before calling this.
+     */
+    @Transactional
+    public Payment recordGatewayPayment(
+            UUID invoiceId,
+            BigDecimal amount,
+            PaymentMode mode,
+            String referenceId,
+            String notes
+    ) {
+        Invoice invoice = invoiceService.getInvoiceById(invoiceId);
+
+        Payment payment = new Payment();
+        payment.setInvoice(invoice);
+        payment.setAmount(amount);
+        payment.setMode(mode != null ? mode : PaymentMode.CARD);
+        if (referenceId != null) payment.setReferenceId(referenceId);
+        if (notes != null) payment.setNotes(notes);
+
+        Payment saved = paymentRepository.save(payment);
+        updateInvoiceStatus(invoiceId);
+        return saved;
+    }
+
     // Get a payment by its ID.
     public Payment getPayment(UUID invoiceId, UUID paymentId) {
         invoiceService.getInvoiceById(invoiceId);
