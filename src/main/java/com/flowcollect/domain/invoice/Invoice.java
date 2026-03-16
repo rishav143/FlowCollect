@@ -78,6 +78,9 @@ public class Invoice {
     @Column(name = "total_amount", precision = 15, scale = 2)
     private BigDecimal totalAmount =  BigDecimal.ZERO;
 
+    @Column(name = "total_paid", precision = 15, scale = 2)
+    private BigDecimal totalPaid = BigDecimal.ZERO;
+
     // Composition
 
     @OneToMany(
@@ -181,6 +184,10 @@ public class Invoice {
         return totalAmount;
     }
 
+    public BigDecimal getTotalPaid() {
+        return totalPaid != null ? totalPaid : BigDecimal.ZERO;
+    }
+
     public List<InvoiceItem> getItems() {
         return items;
     }
@@ -269,6 +276,8 @@ public class Invoice {
             return;
         }
 
+        this.totalPaid = totalPaid.max(BigDecimal.ZERO).setScale(2, RoundingMode.HALF_UP);
+
         if (totalPaid.compareTo(BigDecimal.ZERO) <= 0) {
             this.lifeCycleStatus = LifeCycleStatus.ISSUED;
         } else if (totalPaid.compareTo(this.totalAmount) >= 0) {
@@ -276,6 +285,11 @@ public class Invoice {
         } else {
             this.lifeCycleStatus = LifeCycleStatus.PARTIALLY_PAID;
         }
+    }
+
+    public BigDecimal getRemainingAmount() {
+        BigDecimal paid = this.totalPaid != null ? this.totalPaid : BigDecimal.ZERO;
+        return this.totalAmount.subtract(paid).max(BigDecimal.ZERO).setScale(2, RoundingMode.HALF_UP);
     }
 
     public void setDueDate(LocalDate dueDate) {

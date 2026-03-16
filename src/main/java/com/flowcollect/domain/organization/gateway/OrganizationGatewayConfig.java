@@ -69,6 +69,14 @@ public class OrganizationGatewayConfig {
     @Column(name = "stripe_account_id", length = 100)
     private String stripeAccountId;
 
+    /**
+     * Human-readable name of the connected account shown in the UI.
+     * For Stripe: the account's business/display name fetched from the Stripe API.
+     * For Razorpay: the key ID prefix (e.g. "rzp_live_AbCdEf").
+     */
+    @Column(name = "display_name", length = 255)
+    private String displayName;
+
     // Razorpay fields (AES-encrypted values)
 
     /** Encrypted Razorpay Key ID (rzp_live_... or rzp_test_...). Null for Stripe. */
@@ -135,6 +143,7 @@ public class OrganizationGatewayConfig {
         this.encryptedKeyId = null;
         this.encryptedKeySecret = null;
         this.webhookSecret = null;
+        this.displayName = null;
     }
 
     public boolean isConnected() {
@@ -155,6 +164,9 @@ public class OrganizationGatewayConfig {
 
     public String getStripeAccountId() { return stripeAccountId; }
     public void setStripeAccountId(String stripeAccountId) { this.stripeAccountId = stripeAccountId; }
+
+    public String getDisplayName() { return displayName; }
+    public void setDisplayName(String displayName) { this.displayName = displayName; }
 
     public String getEncryptedKeyId() { return encryptedKeyId; }
     public void setEncryptedKeyId(String encryptedKeyId) { this.encryptedKeyId = encryptedKeyId; }

@@ -44,6 +44,8 @@ public class TemplateRenderer {
         values.put("issueDate", safe(invoice.getIssueDate()));
         values.put("dueDate", safe(invoice.getDueDate()));
         values.put("totalAmount", safe(invoice.getTotalAmount()));
+        values.put("totalPaid", safe(invoice.getTotalPaid()));
+        values.put("remainingAmount", safe(invoice.getRemainingAmount()));
         values.put("organizationName", safe(invoice.getOrganization().getName()));
         values.put("organizationEmail", safe(invoice.getOrganization().getEmail()));
         values.put("paymentLink", safe(paymentLinkUrl));

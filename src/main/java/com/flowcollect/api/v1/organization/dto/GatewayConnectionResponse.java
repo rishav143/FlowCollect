@@ -18,6 +18,14 @@ public class GatewayConnectionResponse {
     private GatewayConnectionStatus status;
 
     /**
+     * Human-readable name of the connected account.
+     * For Stripe: the business name fetched from the Stripe account (e.g. "Acme Corp").
+     * For Razorpay: the key ID prefix (e.g. "rzp_live_AbCdEf...").
+     * null if not connected.
+     */
+    private String displayName;
+
+    /**
      * For Stripe: last 4 chars of the connected account ID (acct_...XXXX).
      * For Razorpay: masked key ID showing only the first 8 chars.
      * null if not connected.
@@ -32,6 +40,7 @@ public class GatewayConnectionResponse {
         r.id = config.getId();
         r.gateway = config.getGateway();
         r.status = config.getStatus();
+        r.displayName = config.getDisplayName();
         r.connectedAt = config.getConnectedAt();
         r.disconnectedAt = config.getDisconnectedAt();
 
@@ -39,8 +48,6 @@ public class GatewayConnectionResponse {
             String acct = config.getStripeAccountId();
             r.accountHint = "acct_****" + acct.substring(Math.max(0, acct.length() - 4));
         }
-        // For Razorpay: key ID is encrypted — we can't show it without decrypting,
-        // but we know the user entered it, so show a generic masked hint
         if (config.getGateway() == PaymentGateway.RAZORPAY && config.getEncryptedKeyId() != null) {
             r.accountHint = "rzp_****";
         }
@@ -51,6 +58,7 @@ public class GatewayConnectionResponse {
     public UUID getId() { return id; }
     public PaymentGateway getGateway() { return gateway; }
     public GatewayConnectionStatus getStatus() { return status; }
+    public String getDisplayName() { return displayName; }
     public String getAccountHint() { return accountHint; }
     public Instant getConnectedAt() { return connectedAt; }
     public Instant getDisconnectedAt() { return disconnectedAt; }

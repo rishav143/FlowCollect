@@ -10,10 +10,10 @@ import com.flowcollect.domain.template.Template;
 public class ReminderRuleRequest {
     private String name;
     private UUID organizationId;
-    private int daysOffset;
+    private Integer daysOffset;
     private ReminderTriggerType triggerType;
     private ReminderChannel channel;
-    private Template template;
+    private UUID templateId;
     private boolean active;
 
     // Cycle & Recurrence
@@ -30,7 +30,7 @@ public class ReminderRuleRequest {
         return organizationId;
     }
 
-    public int getDaysOffset() {
+    public Integer getDaysOffset() {
         return daysOffset;
     }
 
@@ -42,8 +42,8 @@ public class ReminderRuleRequest {
         return channel;
     }
 
-    public Template getTemplate() {
-        return template;
+    public UUID getTemplateId() {
+        return templateId;
     }
 
     public boolean isActive() {
@@ -58,7 +58,7 @@ public class ReminderRuleRequest {
         this.organizationId = organizationId;
     }
 
-    public void setDaysOffset(int daysOffset) {
+    public void setDaysOffset(Integer daysOffset) {
         this.daysOffset = daysOffset;
     }
 
@@ -70,8 +70,8 @@ public class ReminderRuleRequest {
         this.channel = channel;
     }
 
-    public void setTemplate(Template template) {
-        this.template = template;
+    public void setTemplateId(UUID templateId) {
+        this.templateId = templateId;
     }
 
     public void setActive(boolean active) {

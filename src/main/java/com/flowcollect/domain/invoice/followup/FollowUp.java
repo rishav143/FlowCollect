@@ -210,6 +210,26 @@ public class FollowUp {
         this.sentAt = null;
     }
 
+    /**
+     * Cancels this follow-up. Used when the invoice is no longer eligible
+     * (e.g. paid or voided) before the follow-up has been dispatched.
+     * Semantically distinct from FAILED: no delivery was attempted — the
+     * follow-up was intentionally skipped because it was no longer needed.
+     *
+     * @throws IllegalStateException if the follow-up has already been sent.
+     */
+    public void cancel() {
+        if (this.status == FollowUpStatus.SENT) {
+            throw new IllegalStateException("Follow-up " + this.id + " cannot be cancelled because it has already been sent");
+        }
+        this.status = FollowUpStatus.CANCELLED;
+        this.sentAt = null;
+    }
+
+    public boolean isCancelled() {
+        return this.status == FollowUpStatus.CANCELLED;
+    }
+
     public boolean isSent() {
         return this.status == FollowUpStatus.SENT;
     }

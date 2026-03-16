@@ -7,10 +7,13 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.flowcollect.api.v1.invoice.dto.FollowUpRequest;
@@ -38,6 +41,8 @@ import jakarta.persistence.criteria.Predicate;
 
 @Service
 public class FollowUpService {
+
+    private static final Logger log = LoggerFactory.getLogger(FollowUpService.class);
 
     private final FollowUpJpaRepository followUpRepository;
     private final InvoiceService invoiceService;
@@ -89,6 +94,30 @@ public class FollowUpService {
             throw new ValidationException("Follow-up must not be null");
         }
         return followUpRepository.save(followUp);
+    }
+
+    /**
+     * Marks a follow-up as CANCELLED and commits the change in an isolated transaction.
+     *
+     * <p>Uses {@link Propagation#REQUIRES_NEW} to match {@link #dispatchFollowUp(FollowUp)}'s
+     * isolation contract: the cancellation is committed independently of the outer
+     * scheduler transaction, so it persists even if the outer transaction rolls back.
+     *
+     * <p>If the follow-up is not found in the DB (e.g. created in the same uncommitted
+     * outer transaction) or is no longer PENDING, this is a no-op — the follow-up will
+     * be re-evaluated on the next scheduler run.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public FollowUp cancelFollowUp(FollowUp followUp) {
+        if (followUp == null) {
+            return null;
+        }
+        FollowUp fresh = followUpRepository.findById(followUp.getId()).orElse(null);
+        if (fresh == null || !fresh.isPending()) {
+            return followUp;
+        }
+        fresh.cancel();
+        return followUpRepository.save(fresh);
     }
 
     // Create a follow-up for an invoice.
@@ -293,32 +322,40 @@ public class FollowUpService {
         return dispatchFollowUp(followUp);
     }
 
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public FollowUp dispatchFollowUp(FollowUp followUp) {
-        if (followUp == null || !followUp.isPending()) {
+        if (followUp == null) {
+            return null;
+        }
+
+        // Re-load in this new transaction. If the row isn't visible (e.g. created in the
+        // same scheduler run whose outer transaction hasn't committed yet), findById returns
+        // empty and we skip — the follow-up will be dispatched on the next scheduler run.
+        FollowUp fresh = followUpRepository.findById(followUp.getId()).orElse(null);
+        if (fresh == null || !fresh.isPending()) {
             return followUp;
         }
 
         try {
-            Customer customer = requireDispatchableCustomer(followUp);
-            Template template = requireDispatchableTemplate(followUp);
-            String subject = templateRenderer.renderSubject(template, followUp.getInvoice(), customer);
+            Customer customer = requireDispatchableCustomer(fresh);
+            Template template = requireDispatchableTemplate(fresh);
+            String subject = templateRenderer.renderSubject(template, fresh.getInvoice(), customer);
 
             // Inject the payment link URL when one is attached to this follow-up
-            String paymentLinkUrl = followUp.getPaymentLink() != null
-                    ? followUp.getPaymentLink().getPublicUrl()
+            String paymentLinkUrl = fresh.getPaymentLink() != null
+                    ? fresh.getPaymentLink().getPublicUrl()
                     : null;
-            String body = templateRenderer.renderBody(template, followUp.getInvoice(), customer, paymentLinkUrl);
+            String body = templateRenderer.renderBody(template, fresh.getInvoice(), customer, paymentLinkUrl);
 
-            NotificationSender sender = resolveSender(followUp.getChannel());
-            sender.send(customer, subject, body, followUp.isAttachPdf(), followUp.getInvoice());
+            NotificationSender sender = resolveSender(fresh.getChannel());
+            sender.send(customer, subject, body, fresh.isAttachPdf(), fresh.getInvoice());
 
-            followUp.send();
-            return followUpRepository.save(followUp);
+            fresh.send();
+            return followUpRepository.save(fresh);
         } catch (RuntimeException ex) {
-            followUp.fail();
-            followUpRepository.save(followUp);
-            throw ex;
+            log.warn("[followUp={}] Dispatch failed — marking FAILED", fresh.getId(), ex);
+            fresh.fail();
+            return followUpRepository.save(fresh);
         }
     }
 

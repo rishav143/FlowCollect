@@ -1,5 +1,6 @@
 package com.flowcollect.application.reminder;
 
+import com.flowcollect.application.template.TemplateService;
 import java.util.List;
 import java.util.UUID;
 
@@ -18,16 +19,18 @@ import com.flowcollect.infrastructure.persistence.reminder.ReminderRuleJpaReposi
 
 @Service
 public class ReminderRuleService {
+    private final TemplateService templateService;
     private final OrganizationService organizationService;
     private final ReminderRuleJpaRepository reminderRuleRepository;
 
     public ReminderRuleService
     (
         OrganizationService organizationService, 
-        ReminderRuleJpaRepository reminderRuleRepository
+        ReminderRuleJpaRepository reminderRuleRepository, TemplateService templateService
     ) {
         this.organizationService = organizationService;
         this.reminderRuleRepository = reminderRuleRepository;
+        this.templateService = templateService;
     }
 
     public ReminderRule createReminderRule
@@ -52,6 +55,9 @@ public class ReminderRuleService {
                 "Reminder rule name cannot be null");
         }
         reminderRule.setName(reminderRuleRequest.getName());
+        if (reminderRuleRequest.getDaysOffset() == null) {
+            throw new ValidationException("daysOffset cannot be null");
+        }
         reminderRule.setDaysOffset(reminderRuleRequest.getDaysOffset());
         if(reminderRuleRequest.getTriggerType() == null) {
             throw new ValidationException( 
@@ -63,11 +69,13 @@ public class ReminderRuleService {
                 "Reminder rule channel cannot be null");
         }
         reminderRule.setChannel(reminderRuleRequest.getChannel());
-        if(reminderRuleRequest.getTemplate() == null) {
+        if(reminderRuleRequest.getTemplateId() == null) {
             throw new ValidationException( 
                 "Reminder rule template cannot be null");
             }
-        reminderRule.setTemplate(reminderRuleRequest.getTemplate());
+        reminderRule.setTemplate(templateService.getTemplateById(reminderRuleRequest.getTemplateId()
+    
+    ));
         if(reminderRuleRequest.isActive() == true) {
             reminderRule.setActive(true);
         }
@@ -155,7 +163,7 @@ public class ReminderRuleService {
         if(reminderRuleRequest.getName() != null) {
             reminderRule.setName(reminderRuleRequest.getName());
         }
-        if(reminderRuleRequest.getDaysOffset() != 0) {
+        if (reminderRuleRequest.getDaysOffset() != null) {
             reminderRule.setDaysOffset(reminderRuleRequest.getDaysOffset());
         }
         if(reminderRuleRequest.getTriggerType() != null) {
@@ -164,9 +172,12 @@ public class ReminderRuleService {
         if(reminderRuleRequest.getChannel() != null) {
             reminderRule.setChannel(reminderRuleRequest.getChannel());
         }
-        if(reminderRuleRequest.getTemplate() != null) {
-            reminderRule.setTemplate(reminderRuleRequest.getTemplate());
+        if(reminderRuleRequest.getTemplateId() == null) {
+            throw new ValidationException( 
+                "Reminder rule template cannot be null");
         }
+        reminderRule.setTemplate(templateService.getTemplateById(reminderRuleRequest.getTemplateId()));
+        
         if(reminderRuleRequest.isActive() == true) {
             reminderRule.activate();
         }

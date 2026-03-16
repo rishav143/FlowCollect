@@ -20,7 +20,8 @@ public class ReminderScheduler {
         this.schedulerEnabled = schedulerEnabled;
     }
 
-    @Scheduled(cron = "${scheduler.reminder.cron:0 */15 * * * *}")
+//    @Scheduled(cron = "${scheduler.reminder.cron:0 */15 * * * *}")
+    @Scheduled(cron = "${scheduler.reminder.cron:0 * * * * *}")
     public void runAutomatedReminderJob() {
         if (!schedulerEnabled) {
             return;

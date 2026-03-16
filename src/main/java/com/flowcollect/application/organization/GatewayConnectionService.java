@@ -12,6 +12,7 @@ import com.flowcollect.infrastructure.config.StripeProperties;
 import com.flowcollect.infrastructure.persistence.organization.OrganizationGatewayConfigRepository;
 import com.stripe.Stripe;
 import com.stripe.exception.StripeException;
+import com.stripe.model.Account;
 import com.stripe.model.oauth.TokenResponse;
 import com.stripe.net.OAuth;
 import org.slf4j.Logger;
@@ -126,8 +127,22 @@ public class GatewayConnectionService {
             }
         });
 
+        // Fetch the connected account's display name to show in the UI
+        String displayName = null;
+        try {
+            Account account = Account.retrieve(stripeAccountId);
+            if (account.getBusinessProfile() != null && account.getBusinessProfile().getName() != null) {
+                displayName = account.getBusinessProfile().getName();
+            } else if (account.getEmail() != null) {
+                displayName = account.getEmail();
+            }
+        } catch (StripeException e) {
+            log.warn("Could not fetch Stripe account name for {}: {}", stripeAccountId, e.getMessage());
+        }
+
         OrganizationGatewayConfig config = findOrCreate(organization, PaymentGateway.STRIPE);
         config.setStripeAccountId(stripeAccountId);
+        config.setDisplayName(displayName);
         config.connect();
 
         OrganizationGatewayConfig saved = configRepository.save(config);
@@ -162,10 +177,15 @@ public class GatewayConnectionService {
 
         validateRazorpayCredentials(keyId, keySecret);
 
+        // Store the key ID prefix as a display name (e.g. "rzp_live_AbCdEf")
+        // so the UI can show which account is connected without exposing the full key.
+        String displayName = keyId.length() > 14 ? keyId.substring(0, 14) + "..." : keyId;
+
         OrganizationGatewayConfig config = findOrCreate(organization, PaymentGateway.RAZORPAY);
         config.setEncryptedKeyId(encryption.encrypt(keyId));
         config.setEncryptedKeySecret(encryption.encrypt(keySecret));
         config.setWebhookSecret(encryption.encrypt(webhookSecret));
+        config.setDisplayName(displayName);
         config.connect();
 
         OrganizationGatewayConfig saved = configRepository.save(config);
