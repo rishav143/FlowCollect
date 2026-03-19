@@ -1,0 +1,14 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Spring Boot-FlowCollect<FlowCollect>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.flowcollect.FlowCollect",
+            "projectName": "FlowCollect",
+            "args": "",
+            "envFile": "${workspaceFolder}/server/.env"
+        }
+    ]
+}

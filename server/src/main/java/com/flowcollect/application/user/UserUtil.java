@@ -1,16 +1,13 @@
 package com.flowcollect.application.user;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.util.Base64;
 import java.util.UUID;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import com.flowcollect.domain.user.User;
 import com.flowcollect.domain.user.UserRole;
 import com.flowcollect.domain.user.UserStatus;
 import com.flowcollect.exception.http.ConflictException;
 import com.flowcollect.exception.http.NotFoundException;
-import com.flowcollect.exception.http.ServiceUnavailableException;
 import com.flowcollect.exception.http.ValidationException;
 import com.flowcollect.infrastructure.persistence.user.UserJpaRepository;
 
@@ -105,18 +102,13 @@ public class UserUtil {
         }
     }
 
+    private static final BCryptPasswordEncoder PASSWORD_ENCODER = new BCryptPasswordEncoder();
+
     public static String hashPassword(String rawPassword) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hashed = digest.digest(rawPassword.getBytes(StandardCharsets.UTF_8));
-            return Base64.getEncoder().encodeToString(hashed);
-        } catch (Exception ex) {
-            throw new ServiceUnavailableException( 
-                "Unable to hash password due to: " + ex.getMessage());
-        }
+        return PASSWORD_ENCODER.encode(rawPassword);
     }
 
     public static boolean verifyPassword(String rawPassword, String expectedHash) {
-        return hashPassword(rawPassword).equals(expectedHash);
+        return PASSWORD_ENCODER.matches(rawPassword, expectedHash);
     }
 }

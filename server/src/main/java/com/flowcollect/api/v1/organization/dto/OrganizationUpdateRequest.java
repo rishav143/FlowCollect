@@ -27,6 +27,9 @@ public class OrganizationUpdateRequest {
     @Size(max = 50)
     private String timezone;
 
+    /** PAYMENT_LINK or CONFIRMATION_FLOW. Null means no change. */
+    private String paymentCollectionMode;
+
     /* ======================
        Getters & Setters
        ====================== */
@@ -85,5 +88,13 @@ public class OrganizationUpdateRequest {
 
     public void setTimezone(String timezone) {
         this.timezone = timezone;
+    }
+
+    public String getPaymentCollectionMode() {
+        return paymentCollectionMode;
+    }
+
+    public void setPaymentCollectionMode(String paymentCollectionMode) {
+        this.paymentCollectionMode = paymentCollectionMode;
     }
 }

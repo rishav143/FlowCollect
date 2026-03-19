@@ -60,6 +60,16 @@ public class Organization {
     @Column(nullable = false, length = 20)
     private OrganizationStatus status = OrganizationStatus.ACTIVE;
 
+    /**
+     * How this organization collects payment from customers.
+     * Defaults to {@link PaymentCollectionMode#PAYMENT_LINK} for backward compatibility
+     * with organizations created before this field existed.
+     */
+    @NotNull
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_collection_mode", nullable = false, length = 20)
+    private PaymentCollectionMode paymentCollectionMode = PaymentCollectionMode.PAYMENT_LINK;
+
     // Audit
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
@@ -162,6 +172,14 @@ public class Organization {
 
     public boolean isDeleted() {
         return this.deletedAt != null;
+    }
+
+    public PaymentCollectionMode getPaymentCollectionMode() {
+        return paymentCollectionMode;
+    }
+
+    public void setPaymentCollectionMode(PaymentCollectionMode paymentCollectionMode) {
+        this.paymentCollectionMode = paymentCollectionMode;
     }
 
     // Setters

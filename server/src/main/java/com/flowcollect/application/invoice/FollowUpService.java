@@ -18,13 +18,16 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.flowcollect.api.v1.invoice.dto.FollowUpRequest;
 import com.flowcollect.api.v1.invoice.dto.MultiChannelFollowUpRequest;
+import com.flowcollect.application.confirmation.ConfirmationLinkService;
 import com.flowcollect.application.paymentlink.PaymentLinkService;
 import com.flowcollect.application.reminder.NotificationSender;
 import com.flowcollect.application.template.TemplateRenderer;
 import com.flowcollect.application.template.TemplateService;
+import com.flowcollect.domain.confirmation.ConfirmationLink;
 import com.flowcollect.domain.customer.Customer;
 import com.flowcollect.domain.invoice.Invoice;
 import com.flowcollect.domain.invoice.followup.FollowUp;
+import com.flowcollect.domain.organization.PaymentCollectionMode;
 import com.flowcollect.domain.invoice.followup.FollowUpChannel;
 import com.flowcollect.domain.invoice.followup.FollowUpStatus;
 import com.flowcollect.domain.invoice.followup.FollowUpTriggerType;
@@ -49,6 +52,7 @@ public class FollowUpService {
     private final TemplateService templateService;
     private final TemplateRenderer templateRenderer;
     private final PaymentLinkService paymentLinkService;
+    private final ConfirmationLinkService confirmationLinkService;
     private final Map<FollowUpChannel, NotificationSender> notificationSenders;
 
     public FollowUpService(
@@ -57,6 +61,7 @@ public class FollowUpService {
             TemplateService templateService,
             TemplateRenderer templateRenderer,
             PaymentLinkService paymentLinkService,
+            ConfirmationLinkService confirmationLinkService,
             List<NotificationSender> notificationSenders
     ) {
         this.followUpRepository = followUpRepository;
@@ -64,6 +69,7 @@ public class FollowUpService {
         this.templateService = templateService;
         this.templateRenderer = templateRenderer;
         this.paymentLinkService = paymentLinkService;
+        this.confirmationLinkService = confirmationLinkService;
         this.notificationSenders = indexSenders(notificationSenders);
     }
 
@@ -341,11 +347,23 @@ public class FollowUpService {
             Template template = requireDispatchableTemplate(fresh);
             String subject = templateRenderer.renderSubject(template, fresh.getInvoice(), customer);
 
-            // Inject the payment link URL when one is attached to this follow-up
+            // Resolve the gateway payment link URL (attached explicitly to this follow-up)
             String paymentLinkUrl = fresh.getPaymentLink() != null
                     ? fresh.getPaymentLink().getPublicUrl()
                     : null;
-            String body = templateRenderer.renderBody(template, fresh.getInvoice(), customer, paymentLinkUrl);
+
+            // Resolve the confirmation link URL when the org uses the confirmation-flow mode.
+            // getOrCreateForInvoice is idempotent — the same link/token is returned on every dispatch.
+            String confirmationLinkUrl = null;
+            if (fresh.getInvoice().getOrganization().getPaymentCollectionMode()
+                    == PaymentCollectionMode.CONFIRMATION_FLOW) {
+                ConfirmationLink confirmationLink =
+                        confirmationLinkService.getOrCreateForInvoice(fresh.getInvoice());
+                confirmationLinkUrl = confirmationLink.getPublicUrl();
+            }
+
+            String body = templateRenderer.renderBody(
+                    template, fresh.getInvoice(), customer, paymentLinkUrl, confirmationLinkUrl);
 
             NotificationSender sender = resolveSender(fresh.getChannel());
             sender.send(customer, subject, body, fresh.isAttachPdf(), fresh.getInvoice());

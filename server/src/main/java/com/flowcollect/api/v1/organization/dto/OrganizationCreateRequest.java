@@ -29,6 +29,13 @@ public class OrganizationCreateRequest {
     @Size(max = 50, message = "Timezone must not exceed 50 characters.")
     private String timezone;
 
+    /**
+     * Optional. Determines how customers are asked to pay.
+     * Accepted values: PAYMENT_LINK | CONFIRMATION_FLOW.
+     * Defaults to PAYMENT_LINK when omitted.
+     */
+    private String paymentCollectionMode;
+
     /* ======================
        Getters & Setters
        ====================== */
@@ -79,5 +86,13 @@ public class OrganizationCreateRequest {
 
     public void setTimezone(String timezone) {
         this.timezone = timezone;
+    }
+
+    public String getPaymentCollectionMode() {
+        return paymentCollectionMode;
+    }
+
+    public void setPaymentCollectionMode(String paymentCollectionMode) {
+        this.paymentCollectionMode = paymentCollectionMode;
     }
 }

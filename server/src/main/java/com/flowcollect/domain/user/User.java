@@ -48,9 +48,12 @@ public class User {
 
     // Security
 
-    @NotBlank
-    @Column(name = "password_hash", nullable = false)
+    /** Null for OAuth-only accounts (created via social login with no password set). */
+    @Column(name = "password_hash")
     private String passwordHash;
+
+    @Column(name = "profile_image_url")
+    private String profileImageUrl;
 
     @NotNull
     @Enumerated(EnumType.STRING)
@@ -80,7 +83,7 @@ public class User {
         this.organization = organization;
         this.name = name;
         this.email = email;
-        this.passwordHash = passwordHash;
+        this.passwordHash = passwordHash;  // null is valid for OAuth-only accounts
         this.role = role;
         this.status = UserStatus.ACTIVE;
     }
@@ -160,6 +163,14 @@ public class User {
 
     public void setRole(UserRole role) {
         this.role = role;
+    }
+
+    public String getProfileImageUrl() {
+        return profileImageUrl;
+    }
+
+    public void setProfileImageUrl(String profileImageUrl) {
+        this.profileImageUrl = profileImageUrl;
     }
 
     public void deactivate() {

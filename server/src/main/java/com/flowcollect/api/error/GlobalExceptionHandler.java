@@ -79,7 +79,7 @@ public class GlobalExceptionHandler {
         HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
 
         ErrorResponse response = new ErrorResponse(
-                ex.getClass().getSimpleName(),
+                "INTERNAL_SERVER_ERROR",
                 "Something went wrong",
                 status.value(),
                 Instant.now(),

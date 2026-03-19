@@ -1,5 +1,6 @@
 package com.flowcollect.security;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.flowcollect.api.error.ErrorResponse;
 import com.flowcollect.domain.organization.Organization;
 import com.flowcollect.domain.user.User;
@@ -37,24 +38,34 @@ public class JwtFilter extends OncePerRequestFilter {
             "/actuator"
     );
 
+    /** Path prefixes for OAuth endpoints (no JWT required). */
+    private static final List<String> OAUTH_PREFIXES = List.of(
+            "/api/v1/auth/oauth/"
+    );
+
     /** Path prefixes that are publicly accessible (no JWT required). */
     private static final List<String> SKIP_PREFIXES = List.of(
             "/pay/",               // payment link customer redirect
-            "/api/v1/webhooks/"    // gateway webhook receivers (verified by gateway signature)
+            "/api/v1/webhooks/",   // gateway webhook receivers (verified by gateway signature)
+            "/api/v1/diagnostics/",// dev/staging diagnostics — remove before production
+            "/api/v1/public/"      // public unauthenticated endpoints (confirmation flow, etc.)
     );
 
     private final JwtService jwtService;
     private final UserJpaRepository userRepository;
     private final OrganizationJpaRepository organizationRepository;
+    private final ObjectMapper objectMapper;
 
     public JwtFilter(
             JwtService jwtService,
             UserJpaRepository userRepository,
-            OrganizationJpaRepository organizationRepository
+            OrganizationJpaRepository organizationRepository,
+            ObjectMapper objectMapper
     ) {
         this.jwtService = jwtService;
         this.userRepository = userRepository;
         this.organizationRepository = organizationRepository;
+        this.objectMapper = objectMapper;
     }
 
     @Override
@@ -64,6 +75,9 @@ public class JwtFilter extends OncePerRequestFilter {
             return true;
         }
         if (SKIP_PREFIXES.stream().anyMatch(path::startsWith)) {
+            return true;
+        }
+        if (OAUTH_PREFIXES.stream().anyMatch(path::startsWith)) {
             return true;
         }
         return SKIP_PATHS.stream().anyMatch(path::equalsIgnoreCase);
@@ -167,23 +181,7 @@ public class JwtFilter extends OncePerRequestFilter {
         response.getWriter().write(toJson(body));
     }
 
-    private String toJson(ErrorResponse body) {
-        return "{"
-                + "\"code\":\"" + escapeJson(body.code()) + "\","
-                + "\"message\":\"" + escapeJson(body.message()) + "\","
-                + "\"status\":" + body.status() + ","
-                + "\"timestamp\":\"" + body.timestamp() + "\","
-                + "\"path\":\"" + escapeJson(body.path()) + "\","
-                + "\"errors\":[]"
-                + "}";
-    }
-
-    private String escapeJson(String value) {
-        if (value == null) {
-            return "";
-        }
-        return value
-                .replace("\\", "\\\\")
-                .replace("\"", "\\\"");
+    private String toJson(ErrorResponse body) throws IOException {
+        return objectMapper.writeValueAsString(body);
     }
 }

@@ -17,6 +17,7 @@ public class LoginResponse {
     private UserRole role;
     private UserStatus status;
     private Instant expiresAt;
+    private String profileImageUrl;
 
     public String getToken() {
         return token;
@@ -88,5 +89,13 @@ public class LoginResponse {
 
     public void setExpiresAt(Instant expiresAt) {
         this.expiresAt = expiresAt;
+    }
+
+    public String getProfileImageUrl() {
+        return profileImageUrl;
+    }
+
+    public void setProfileImageUrl(String profileImageUrl) {
+        this.profileImageUrl = profileImageUrl;
     }
 }

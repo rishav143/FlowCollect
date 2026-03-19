@@ -1,6 +1,5 @@
 package com.flowcollect.application.auth;
 
-import java.time.Instant;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -20,7 +19,6 @@ import com.flowcollect.domain.user.UserStatus;
 import com.flowcollect.exception.http.UnauthorizedException;
 import com.flowcollect.exception.http.ValidationException;
 import com.flowcollect.infrastructure.persistence.user.UserJpaRepository;
-import com.flowcollect.security.JwtService;
 
 @Service
 public class AuthService {
@@ -28,18 +26,18 @@ public class AuthService {
     private final UserJpaRepository userRepository;
     private final OrganizationService organizationService;
     private final UserService userService;
-    private final JwtService jwtService;
+    private final LoginResponseFactory loginResponseFactory;
 
     public AuthService(
             UserJpaRepository userRepository,
             OrganizationService organizationService,
             UserService userService,
-            JwtService jwtService
+            LoginResponseFactory loginResponseFactory
     ) {
         this.userRepository = userRepository;
         this.organizationService = organizationService;
         this.userService = userService;
-        this.jwtService = jwtService;
+        this.loginResponseFactory = loginResponseFactory;
     }
 
     @Transactional(readOnly = true)
@@ -72,11 +70,17 @@ public class AuthService {
         if (user.getStatus() != UserStatus.ACTIVE) {
             throw new UnauthorizedException("User account is inactive");
         }
+
+        // OAuth-only accounts have no password hash; direct them to social login
+        if (user.getPasswordHash() == null) {
+            throw new UnauthorizedException(
+                    "This account was created via social login. Please sign in with Google or Microsoft.");
+        }
         if (!UserUtil.verifyPassword(password, user.getPasswordHash())) {
             throw new UnauthorizedException("Invalid email or password");
         }
 
-        return buildLoginResponse(user);
+        return loginResponseFactory.create(user);
     }
 
     @Transactional
@@ -104,23 +108,6 @@ public class AuthService {
         User user = userService.create(organization.getId(), userReq);
 
         // 3. Return Token
-        return buildLoginResponse(user);
-    }
-
-    private LoginResponse buildLoginResponse(User user) {
-        String token = jwtService.createToken(user.getId(), user.getOrganization().getId(), user.getRole());
-        Instant expiresAt = Instant.now().plusMillis(jwtService.getExpirationMs());
-
-        LoginResponse response = new LoginResponse();
-        response.setToken(token);
-        response.setType("Bearer");
-        response.setId(user.getId());
-        response.setOrganizationId(user.getOrganization().getId());
-        response.setName(user.getName());
-        response.setEmail(user.getEmail());
-        response.setRole(user.getRole());
-        response.setStatus(user.getStatus());
-        response.setExpiresAt(expiresAt);
-        return response;
+        return loginResponseFactory.create(user);
     }
 }

@@ -54,7 +54,7 @@ public class Template {
     private String body;
 
     // Tone (optional intelligence)
-    @NotBlank
+    @NotNull
     @Enumerated(EnumType.STRING)
     private TemplateTone tone;
 

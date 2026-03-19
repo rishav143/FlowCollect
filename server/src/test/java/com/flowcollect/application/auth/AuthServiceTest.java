@@ -11,7 +11,6 @@ import com.flowcollect.domain.user.User;
 import com.flowcollect.domain.user.UserRole;
 import com.flowcollect.domain.user.UserStatus;
 import com.flowcollect.infrastructure.persistence.user.UserJpaRepository;
-import com.flowcollect.security.JwtService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -35,14 +34,14 @@ class AuthServiceTest {
     @Mock
     private UserService userService;
     @Mock
-    private JwtService jwtService;
+    private LoginResponseFactory loginResponseFactory;
 
     private AuthService authService;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        authService = new AuthService(userRepository, organizationService, userService, jwtService);
+        authService = new AuthService(userRepository, organizationService, userService, loginResponseFactory);
     }
 
     @Test
@@ -58,10 +57,9 @@ class AuthServiceTest {
 
         Organization organization = new Organization("Test Org", "owner@test.com", ZoneId.of("UTC"), Currency.getInstance("USD"));
         UUID orgId = UUID.randomUUID();
-        // Use reflection or a trick if id is not settable, but for mock it's easier to mock the service return
         Organization mockedOrg = mock(Organization.class);
         when(mockedOrg.getId()).thenReturn(orgId);
-        when(organizationService.create(any(OrganizationCreateRequest.class))).thenReturn(mockedOrg);
+        when(organizationService.createForRegistration(any(OrganizationCreateRequest.class))).thenReturn(mockedOrg);
 
         User user = mock(User.class);
         UUID userId = UUID.randomUUID();
@@ -73,8 +71,13 @@ class AuthServiceTest {
         when(user.getStatus()).thenReturn(UserStatus.ACTIVE);
 
         when(userService.create(eq(orgId), any(UserCreateRequest.class))).thenReturn(user);
-        when(jwtService.createToken(any(), any(), any())).thenReturn("mocked-token");
-        when(jwtService.getExpirationMs()).thenReturn(3600000L);
+
+        LoginResponse expectedResponse = new LoginResponse();
+        expectedResponse.setToken("mocked-token");
+        expectedResponse.setEmail("owner@test.com");
+        expectedResponse.setOrganizationId(orgId);
+        expectedResponse.setId(userId);
+        when(loginResponseFactory.create(user)).thenReturn(expectedResponse);
 
         // When
         LoginResponse response = authService.register(request);
@@ -86,7 +89,8 @@ class AuthServiceTest {
         assertEquals(orgId, response.getOrganizationId());
         assertEquals(userId, response.getId());
 
-        verify(organizationService).create(any(OrganizationCreateRequest.class));
+        verify(organizationService).createForRegistration(any(OrganizationCreateRequest.class));
         verify(userService).create(eq(orgId), any(UserCreateRequest.class));
+        verify(loginResponseFactory).create(user);
     }
 }

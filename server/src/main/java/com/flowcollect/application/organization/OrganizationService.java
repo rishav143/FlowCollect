@@ -10,6 +10,7 @@ import com.flowcollect.api.v1.organization.dto.OrganizationCreateRequest;
 import com.flowcollect.api.v1.organization.dto.OrganizationUpdateRequest;
 import com.flowcollect.domain.organization.Organization;
 import com.flowcollect.domain.organization.OrganizationStatus;
+import com.flowcollect.domain.organization.PaymentCollectionMode;
 import com.flowcollect.exception.http.ConflictException;
 import com.flowcollect.exception.http.ForbiddenException;
 import com.flowcollect.exception.http.ValidationException;
@@ -167,6 +168,10 @@ public class OrganizationService {
         }
         if (request.getAddress() != null && !request.getAddress().isBlank()) {
             organization.setAddress(request.getAddress().trim());
+        }
+        if (request.getPaymentCollectionMode() != null) {
+            organization.setPaymentCollectionMode(
+                parsePaymentCollectionMode(request.getPaymentCollectionMode()));
         }
 
         return organizationRepository.save(organization);
@@ -359,11 +364,27 @@ public class OrganizationService {
                 changed = true;
             }
         }
+        if (request.getPaymentCollectionMode() != null) {
+            PaymentCollectionMode mode = parsePaymentCollectionMode(request.getPaymentCollectionMode());
+            if (mode != organization.getPaymentCollectionMode()) {
+                organization.setPaymentCollectionMode(mode);
+                changed = true;
+            }
+        }
         if (!changed) {
             return organization;
         }
 
         return organizationRepository.save(organization);
+    }
+
+    private PaymentCollectionMode parsePaymentCollectionMode(String value) {
+        try {
+            return PaymentCollectionMode.valueOf(value.trim().toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            throw new ValidationException(
+                "Invalid paymentCollectionMode: '" + value + "'. Accepted values: PAYMENT_LINK, CONFIRMATION_FLOW.");
+        }
     }
 
     private void enforceCurrentOrganizationAccess(UUID organizationId) {

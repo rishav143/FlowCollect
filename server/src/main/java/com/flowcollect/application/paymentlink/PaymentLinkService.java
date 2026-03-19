@@ -146,6 +146,14 @@ public class PaymentLinkService {
             return;
         }
 
+        // Currency mismatch guard — prevents a payment in a different currency
+        // (e.g. INR) from being recorded against a USD invoice
+        if (event.currency() != null && !event.currency().equalsIgnoreCase(link.getCurrency())) {
+            log.warn("Currency mismatch for session {}: expected {} but got {} — ignoring webhook",
+                    event.sessionId(), link.getCurrency(), event.currency());
+            return;
+        }
+
         // Idempotency guard
         if (event.transactionReference() != null
                 && paymentRepository.existsByInvoiceIdAndReferenceId(

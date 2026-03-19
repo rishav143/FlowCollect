@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 import com.flowcollect.domain.organization.OrganizationStatus;
+import com.flowcollect.domain.organization.PaymentCollectionMode;
 
 public class OrganizationResponse {
 
@@ -16,6 +17,7 @@ public class OrganizationResponse {
     private String currency;
     private String logoUrl;
     private OrganizationStatus status;
+    private PaymentCollectionMode paymentCollectionMode;
     private Instant createdAt;
     private Instant updatedAt;
 
@@ -93,6 +95,14 @@ public class OrganizationResponse {
 
     public void setStatus(OrganizationStatus status) {
         this.status = status;
+    }
+
+    public PaymentCollectionMode getPaymentCollectionMode() {
+        return paymentCollectionMode;
+    }
+
+    public void setPaymentCollectionMode(PaymentCollectionMode paymentCollectionMode) {
+        this.paymentCollectionMode = paymentCollectionMode;
     }
 
     public Instant getCreatedAt() {
