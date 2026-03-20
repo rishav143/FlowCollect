@@ -64,7 +64,7 @@ public class User {
 
     @NotNull
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 50)
     private UserStatus status = UserStatus.ACTIVE;
 
     @Column(nullable = false, updatable = false)

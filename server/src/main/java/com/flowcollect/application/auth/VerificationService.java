@@ -172,10 +172,7 @@ public class VerificationService {
             helper.setTo(to);
             helper.setFrom(fromAddress);
             helper.setSubject("Verify your " + fromName + " account");
-            helper.setText(
-                "Hi " + name + ", please verify your email by visiting: " + verifyUrl,
-                html
-            );
+            helper.setText(html, true);
             mailSender.send(message);
         } catch (Exception ex) {
             throw new InternalException("Failed to send verification email: " + ex.getMessage());
