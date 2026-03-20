@@ -50,7 +50,7 @@ public class Template {
     private String subject; // email only
 
     @NotBlank
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String body;
 
     // Tone (optional intelligence)

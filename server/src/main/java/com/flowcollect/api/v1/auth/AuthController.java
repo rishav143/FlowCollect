@@ -14,7 +14,9 @@ import com.flowcollect.api.v1.auth.dto.LoginRequest;
 import com.flowcollect.api.v1.auth.dto.LoginResponse;
 import com.flowcollect.api.v1.auth.dto.RegisterRequest;
 import com.flowcollect.api.v1.auth.dto.RegisterResponse;
+import com.flowcollect.api.v1.auth.dto.ForgotPasswordRequest;
 import com.flowcollect.api.v1.auth.dto.ResendVerificationRequest;
+import com.flowcollect.api.v1.auth.dto.ResetPasswordRequest;
 import com.flowcollect.api.v1.auth.dto.VerifyPhoneRequest;
 import com.flowcollect.application.auth.AuthService;
 
@@ -65,6 +67,21 @@ public class AuthController {
     @PostMapping("/resend-phone-otp")
     public ResponseEntity<Void> resendPhoneOtp(@Valid @RequestBody ResendVerificationRequest request) {
         authService.resendPhoneOtp(request.getOrganizationId());
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Always returns 204 regardless of whether the email exists — prevents user enumeration.
+     */
+    @PostMapping("/forgot-password")
+    public ResponseEntity<Void> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        authService.forgotPassword(request.getOrganizationId(), request.getEmail());
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<Void> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        authService.resetPassword(request.getToken(), request.getNewPassword());
         return ResponseEntity.noContent().build();
     }
 }

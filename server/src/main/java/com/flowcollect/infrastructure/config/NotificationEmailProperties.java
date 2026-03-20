@@ -7,22 +7,20 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "notification.email")
 public class NotificationEmailProperties {
 
+    /** From address for invoice/payment reminder emails sent to customers. */
     private String fromAddress;
-    private String fromName = "PaidPeace";
 
-    public String getFromAddress() {
-        return fromAddress;
-    }
+    /** From address for account emails (verification, password reset) sent to org owners. */
+    private String authFromAddress;
 
-    public void setFromAddress(String fromAddress) {
-        this.fromAddress = fromAddress;
-    }
+    private String fromName = "FlowCollect";
 
-    public String getFromName() {
-        return fromName;
-    }
+    public String getFromAddress() { return fromAddress; }
+    public void setFromAddress(String fromAddress) { this.fromAddress = fromAddress; }
 
-    public void setFromName(String fromName) {
-        this.fromName = fromName;
-    }
+    public String getAuthFromAddress() { return authFromAddress; }
+    public void setAuthFromAddress(String authFromAddress) { this.authFromAddress = authFromAddress; }
+
+    public String getFromName() { return fromName; }
+    public void setFromName(String fromName) { this.fromName = fromName; }
 }

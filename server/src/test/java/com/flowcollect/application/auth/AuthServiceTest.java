@@ -12,6 +12,7 @@ import com.flowcollect.domain.user.User;
 import com.flowcollect.domain.user.UserRole;
 import com.flowcollect.domain.user.UserStatus;
 import com.flowcollect.exception.http.UnauthorizedException;
+import com.flowcollect.exception.http.ValidationException;
 import com.flowcollect.infrastructure.persistence.user.UserJpaRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -205,5 +206,124 @@ class AuthServiceTest {
         when(organizationService.getById(orgId)).thenReturn(org);
 
         assertThrows(UnauthorizedException.class, () -> authService.login(request));
+    }
+
+    // -----------------------------------------------------------------------
+    // forgotPassword()
+    // -----------------------------------------------------------------------
+
+    @Test
+    void forgotPassword_existingUser_sendsResetEmail() {
+        UUID orgId = UUID.randomUUID();
+        Organization org = mock(Organization.class);
+        when(org.isDeleted()).thenReturn(false);
+        when(organizationService.getById(orgId)).thenReturn(org);
+
+        User user = mock(User.class);
+        when(user.getPasswordHash()).thenReturn("some-hash");
+        when(userRepository.findByEmailAndOrganizationId("owner@test.com", orgId))
+                .thenReturn(Optional.of(user));
+
+        authService.forgotPassword(orgId, "owner@test.com");
+
+        verify(verificationService).sendPasswordResetEmail(user);
+    }
+
+    @Test
+    void forgotPassword_unknownEmail_doesNotThrowAndSendsNothing() {
+        UUID orgId = UUID.randomUUID();
+        Organization org = mock(Organization.class);
+        when(org.isDeleted()).thenReturn(false);
+        when(organizationService.getById(orgId)).thenReturn(org);
+        when(userRepository.findByEmailAndOrganizationId(any(), eq(orgId)))
+                .thenReturn(Optional.empty());
+
+        // Must never throw — prevents user enumeration
+        assertDoesNotThrow(() -> authService.forgotPassword(orgId, "ghost@test.com"));
+        verify(verificationService, never()).sendPasswordResetEmail(any());
+    }
+
+    @Test
+    void forgotPassword_oauthOnlyUser_doesNotSendResetEmail() {
+        UUID orgId = UUID.randomUUID();
+        Organization org = mock(Organization.class);
+        when(org.isDeleted()).thenReturn(false);
+        when(organizationService.getById(orgId)).thenReturn(org);
+
+        User oauthUser = mock(User.class);
+        when(oauthUser.getPasswordHash()).thenReturn(null); // OAuth-only — no password
+        when(userRepository.findByEmailAndOrganizationId("oauth@test.com", orgId))
+                .thenReturn(Optional.of(oauthUser));
+
+        assertDoesNotThrow(() -> authService.forgotPassword(orgId, "oauth@test.com"));
+        verify(verificationService, never()).sendPasswordResetEmail(any());
+    }
+
+    @Test
+    void forgotPassword_archivedOrg_doesNotThrow() {
+        UUID orgId = UUID.randomUUID();
+        Organization org = mock(Organization.class);
+        when(org.isDeleted()).thenReturn(true);
+        when(organizationService.getById(orgId)).thenReturn(org);
+
+        assertDoesNotThrow(() -> authService.forgotPassword(orgId, "owner@test.com"));
+        verify(verificationService, never()).sendPasswordResetEmail(any());
+    }
+
+    @Test
+    void forgotPassword_nullInputs_doesNotThrow() {
+        assertDoesNotThrow(() -> authService.forgotPassword(null, "owner@test.com"));
+        assertDoesNotThrow(() -> authService.forgotPassword(UUID.randomUUID(), null));
+        assertDoesNotThrow(() -> authService.forgotPassword(UUID.randomUUID(), "  "));
+        verify(verificationService, never()).sendPasswordResetEmail(any());
+    }
+
+    // -----------------------------------------------------------------------
+    // resetPassword()
+    // -----------------------------------------------------------------------
+
+    @Test
+    void resetPassword_validToken_updatesPasswordHash() {
+        String newPassword = "newSecurePass1";
+        User user = mock(User.class);
+        when(user.getPasswordHash()).thenReturn("old-hash");
+        when(verificationService.validatePasswordResetToken("valid-token")).thenReturn(user);
+
+        authService.resetPassword("valid-token", newPassword);
+
+        verify(user).setPasswordHash(any());
+        verify(userRepository).save(user);
+    }
+
+    @Test
+    void resetPassword_samePassword_throwsValidationException() {
+        String password = "samePassword1";
+        String existingHash = com.flowcollect.application.user.UserUtil.hashPassword(password);
+
+        User user = mock(User.class);
+        when(user.getPasswordHash()).thenReturn(existingHash);
+        when(verificationService.validatePasswordResetToken("token")).thenReturn(user);
+
+        assertThrows(ValidationException.class,
+                () -> authService.resetPassword("token", password));
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void resetPassword_blankToken_throwsValidationException() {
+        assertThrows(ValidationException.class,
+                () -> authService.resetPassword("  ", "newPassword1"));
+    }
+
+    @Test
+    void resetPassword_tooShortPassword_throwsValidationException() {
+        assertThrows(ValidationException.class,
+                () -> authService.resetPassword("token", "short"));
+    }
+
+    @Test
+    void resetPassword_nullPassword_throwsValidationException() {
+        assertThrows(ValidationException.class,
+                () -> authService.resetPassword("token", null));
     }
 }

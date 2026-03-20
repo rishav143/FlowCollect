@@ -2,6 +2,8 @@ package com.flowcollect.application.auth;
 
 import java.util.UUID;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +26,8 @@ import com.flowcollect.infrastructure.persistence.user.UserJpaRepository;
 
 @Service
 public class AuthService {
+
+    private static final Logger log = LoggerFactory.getLogger(AuthService.class);
 
     private final UserJpaRepository userRepository;
     private final OrganizationService organizationService;
@@ -174,6 +178,54 @@ public class AuthService {
         Organization organization = organizationService.getById(organizationId);
         organization.verifyPhone();
         organizationService.save(organization);
+    }
+
+    /**
+     * Initiates a password reset for the given email + org.
+     * Always returns silently — never reveals whether the email exists (prevents user enumeration).
+     */
+    @Transactional
+    public void forgotPassword(UUID organizationId, String email) {
+        if (organizationId == null || email == null || email.isBlank()) {
+            return;
+        }
+        try {
+            Organization organization = organizationService.getById(organizationId);
+            if (organization.isDeleted()) {
+                return;
+            }
+            userRepository.findByEmailAndOrganizationId(email.trim().toLowerCase(), organizationId)
+                    .ifPresent(user -> {
+                        // OAuth-only accounts have no password — skip silently
+                        if (user.getPasswordHash() != null) {
+                            verificationService.sendPasswordResetEmail(user);
+                        }
+                    });
+        } catch (Exception ex) {
+            log.warn("forgotPassword silently failed for org={} email={}: {}", organizationId, email, ex.getMessage());
+        }
+    }
+
+    @Transactional
+    public void resetPassword(String token, String newPassword) {
+        if (token == null || token.isBlank()) {
+            throw new ValidationException("Token must not be blank");
+        }
+        if (newPassword == null || newPassword.isBlank()) {
+            throw new ValidationException("New password must not be blank");
+        }
+        if (newPassword.length() < 8 || newPassword.length() > 100) {
+            throw new ValidationException("Password must be between 8 and 100 characters");
+        }
+
+        User user = verificationService.validatePasswordResetToken(token);
+
+        if (user.getPasswordHash() != null && UserUtil.verifyPassword(newPassword, user.getPasswordHash())) {
+            throw new ValidationException("New password must be different from your current password");
+        }
+
+        user.setPasswordHash(UserUtil.hashPassword(newPassword));
+        userRepository.save(user);
     }
 
     @Transactional
