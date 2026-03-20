@@ -31,6 +31,10 @@ public class RegisterRequest {
     @Size(min = 8, max = 100, message = "Password must be between 8 and 100 characters")
     private String password;
 
+    /** Optional. If provided, an OTP will be sent to this number for verification. */
+    @Size(max = 20, message = "Phone must not exceed 20 characters")
+    private String phone;
+
     public String getOrganizationName() {
         return organizationName;
     }
@@ -77,5 +81,13 @@ public class RegisterRequest {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public String getPhone() {
+        return phone;
+    }
+
+    public void setPhone(String phone) {
+        this.phone = phone;
     }
 }

@@ -2,5 +2,6 @@ package com.flowcollect.domain.user;
 
 public enum UserStatus {
     ACTIVE,
-    INACTIVE
+    INACTIVE,
+    PENDING_EMAIL_VERIFICATION
 }

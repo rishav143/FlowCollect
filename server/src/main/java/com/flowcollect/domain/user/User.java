@@ -88,6 +88,11 @@ public class User {
         this.status = UserStatus.ACTIVE;
     }
 
+    public User(Organization organization, String name, String email, String passwordHash, UserRole role, UserStatus status) {
+        this(organization, name, email, passwordHash, role);
+        this.status = status;
+    }
+
     // Callbacks
 
     @PrePersist

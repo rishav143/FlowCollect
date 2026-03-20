@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
 import com.flowcollect.domain.user.User;
+import com.flowcollect.domain.user.UserRole;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -17,6 +18,8 @@ public interface UserJpaRepository extends JpaRepository<User, UUID>, JpaSpecifi
     Optional<User> findByOrganizationId(UUID id);
 
     Optional<User> findByEmailAndOrganizationId(String email, UUID organizationId);
+
+    Optional<User> findFirstByOrganizationIdAndRole(UUID organizationId, UserRole role);
 
     boolean existsByEmailAndOrganizationId(String email, UUID organizationId);
 

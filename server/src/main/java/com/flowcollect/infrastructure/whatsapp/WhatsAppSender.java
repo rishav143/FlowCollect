@@ -189,9 +189,45 @@ public class WhatsAppSender implements NotificationSender {
     }
 
     private String buildMessageText(String subject, String body) {
-        return subject != null && !subject.isBlank()
-                ? subject + System.lineSeparator() + System.lineSeparator() + (body == null ? "" : body)
-                : (body == null ? "" : body);
+        String formattedBody = formatForWhatsApp(body == null ? "" : body);
+        String formattedSubject = subject != null && !subject.isBlank()
+                ? formatForWhatsApp(subject)
+                : null;
+        return formattedSubject != null
+                ? "*" + formattedSubject + "*\n\n" + formattedBody
+                : formattedBody;
+    }
+
+    /**
+     * Converts template body (written in our simplified syntax) to WhatsApp native markdown.
+     *
+     * Template syntax → WhatsApp:
+     *   **text**   → *text*   (bold)
+     *   *text*     → _text_   (italic)
+     *   - item     → • item   (bullet)
+     *   \n         → \n       (line breaks work natively)
+     */
+    private String formatForWhatsApp(String text) {
+        String[] lines = text.split("\n", -1);
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < lines.length; i++) {
+            String line = lines[i];
+            String trimmed = line.trim();
+            if (trimmed.startsWith("- ") || trimmed.startsWith("* ")) {
+                sb.append("• ").append(convertInline(trimmed.substring(2)));
+            } else {
+                sb.append(convertInline(line));
+            }
+            if (i < lines.length - 1) sb.append("\n");
+        }
+        return sb.toString();
+    }
+
+    /** **bold** → *bold*  and  *italic* → _italic_  for WhatsApp rendering. */
+    private String convertInline(String text) {
+        text = text.replaceAll("\\*\\*(.+?)\\*\\*", "*$1*");
+        text = text.replaceAll("\\*(.+?)\\*", "_$1_");
+        return text;
     }
 
     private void ensureEnabled() {

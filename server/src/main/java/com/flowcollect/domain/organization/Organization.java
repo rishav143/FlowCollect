@@ -54,6 +54,10 @@ public class Organization {
     @Size(max = 255)
     private String logoUrl;
 
+    // Verification
+    @Column(nullable = false)
+    private boolean phoneVerified = false;
+
     // Status
     @NotNull
     @Enumerated(EnumType.STRING)
@@ -193,6 +197,14 @@ public class Organization {
 
     public void setPhone(String phone) {
         this.phone = phone;
+    }
+
+    public boolean isPhoneVerified() {
+        return phoneVerified;
+    }
+
+    public void verifyPhone() {
+        this.phoneVerified = true;
     }
 
     public void setAddress(String address) {

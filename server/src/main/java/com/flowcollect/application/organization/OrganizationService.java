@@ -49,6 +49,11 @@ public class OrganizationService {
         return createInternal(request);
     }
 
+    @Transactional
+    public Organization save(Organization organization) {
+        return organizationRepository.save(organization);
+    }
+
     // Get an organization by id.
     @Transactional(readOnly = true)
     public Organization getAuthorizedById(UUID organizationId) {

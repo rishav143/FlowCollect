@@ -37,9 +37,21 @@ public class UserService {
     }
 
     @Transactional
+    public User createPending(Organization organization, String name, String email, String password) {
+        String normalizedEmail = email.trim().toLowerCase();
+        if (userRepository.existsByEmailAndOrganizationId(normalizedEmail, organization.getId())) {
+            throw new ConflictException(
+                "Email " + normalizedEmail + " must be unique within organization with ID: " + organization.getId());
+        }
+        String passwordHash = UserUtil.hashPassword(password);
+        User user = new User(organization, name.trim(), normalizedEmail, passwordHash, UserRole.ADMIN, UserStatus.PENDING_EMAIL_VERIFICATION);
+        return userRepository.save(user);
+    }
+
+    @Transactional
     public User create
     (
-        UUID organizationId, 
+        UUID organizationId,
         UserCreateRequest request
     ) {
         if(request == null) {
