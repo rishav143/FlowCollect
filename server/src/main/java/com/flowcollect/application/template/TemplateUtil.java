@@ -34,8 +34,7 @@ public class TemplateUtil {
         Template template = getTemplateOrThrow(templateId, templateRepository);
 
         if(!template.getOrganization().getId().equals(organizationId)) {
-            throw new ValidationException( 
-                "Template is not associated with the organization ID: " + organizationId);
+            throw new NotFoundException("Template not found with ID: " + templateId);
         }
 
         return template;

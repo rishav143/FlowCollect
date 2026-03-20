@@ -1,7 +1,5 @@
 package com.flowcollect.api.v1.template.dto;
 
-import java.util.UUID;
-
 import com.flowcollect.domain.template.TemplateChannel;
 import com.flowcollect.domain.template.TemplateTone;
 
@@ -15,8 +13,6 @@ public class TemplateRequest {
 
     private String body;
     private TemplateTone tone;
-    private boolean active;
-
     public String getName() {
         return name;
     }
@@ -57,11 +53,4 @@ public class TemplateRequest {
         this.tone = tone;
     }
 
-    public boolean isActive() {
-        return active;
-    }
-
-    public void setActive(boolean active) {
-        this.active = active;
-    }
 }

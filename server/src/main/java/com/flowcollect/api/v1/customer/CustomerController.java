@@ -37,7 +37,7 @@ public class CustomerController {
         @RequestBody @Valid CustomerRequest customerRequest
     ) {
         Customer customer = customerService.createCustomer(organizationId, customerRequest);
-        return ResponseEntity.ok(CustomerMapper.toResponse(customer));
+        return ResponseEntity.status(201).body(CustomerMapper.toResponse(customer));
     }
 
     // Get Customer by ID
@@ -60,7 +60,7 @@ public class CustomerController {
         @RequestParam(required = false) String email,
         @RequestParam(required = false) String phone,
         @RequestParam(required = false) String companyName,
-        @RequestParam(required = false) boolean active,
+        @RequestParam(required = false) Boolean active,
         Pageable pageable
     ) {
         Page<Customer> customers = customerService.getAllCustomers(organizationId, name, email, phone, companyName, active, pageable);

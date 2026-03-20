@@ -1,6 +1,6 @@
 package com.flowcollect.api.v1.invoice;
 
-import java.time.Instant;
+import java.time.LocalDate;
 import java.util.UUID;
 import com.flowcollect.domain.user.UserRole;
 import com.flowcollect.security.RequireRole;
@@ -8,6 +8,7 @@ import com.flowcollect.security.RequireRole;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -24,7 +25,7 @@ import com.flowcollect.domain.invoice.payment.Payment;
 import com.flowcollect.domain.invoice.payment.PaymentMode;
 
 @RestController
-@RequestMapping("/api/v1/invoices/{invoiceId}/payments")
+@RequestMapping("/api/v1/organizations/{organizationId}/invoices/{invoiceId}/payments")
 @RequireRole({ UserRole.ADMIN, UserRole.STAFF })
 public class PaymentController {
 
@@ -33,41 +34,62 @@ public class PaymentController {
     public PaymentController(PaymentService paymentService) {
         this.paymentService = paymentService;
     }
-    
+
     // Create Payment for an Invoice
     @PostMapping
-    public ResponseEntity<PaymentResponse> createPayment(@PathVariable UUID invoiceId, @RequestBody PaymentRequest paymentRequest) {
-        Payment payment = paymentService.createPayment(invoiceId, paymentRequest);
-        return ResponseEntity.ok(PaymentMapper.toResponse(payment));
+    public ResponseEntity<PaymentResponse> createPayment(
+        @PathVariable UUID organizationId,
+        @PathVariable UUID invoiceId,
+        @RequestBody PaymentRequest paymentRequest
+    ) {
+        Payment payment = paymentService.createPayment(organizationId, invoiceId, paymentRequest);
+        return ResponseEntity.status(201).body(PaymentMapper.toResponse(payment));
     }
 
     // Get Payment by ID
     @GetMapping("/{paymentId}")
-    public ResponseEntity<PaymentResponse> getPayment(@PathVariable UUID invoiceId, @PathVariable UUID paymentId) {
-        Payment payment = paymentService.getPayment(invoiceId, paymentId);
+    public ResponseEntity<PaymentResponse> getPayment(
+        @PathVariable UUID organizationId,
+        @PathVariable UUID invoiceId,
+        @PathVariable UUID paymentId
+    ) {
+        Payment payment = paymentService.getPayment(organizationId, invoiceId, paymentId);
         return ResponseEntity.ok(PaymentMapper.toResponse(payment));
     }
 
     // Get All Payments for an Invoice
     @GetMapping
     public ResponseEntity<Page<PaymentResponse>> getPayments(
+        @PathVariable UUID organizationId,
         @PathVariable UUID invoiceId,
         @RequestParam(required = false) PaymentMode mode,
-        @RequestParam(required = false) Instant paidAt,
+        @RequestParam(required = false) LocalDate paidOn,
         Pageable pageable
     ) {
-        Page<Payment> payments = paymentService.getPayments(invoiceId, mode, paidAt, pageable);
+        Page<Payment> payments = paymentService.getPayments(organizationId, invoiceId, mode, paidOn, pageable);
         return ResponseEntity.ok(payments.map(PaymentMapper::toResponse));
     }
 
     // Update Payment by ID
     @PatchMapping("/{paymentId}")
     public ResponseEntity<PaymentResponse> updatePayment(
-        @PathVariable UUID invoiceId, 
-        @PathVariable UUID paymentId, 
+        @PathVariable UUID organizationId,
+        @PathVariable UUID invoiceId,
+        @PathVariable UUID paymentId,
         @RequestBody PaymentRequest paymentRequest
     ) {
-        Payment payment = paymentService.updatePayment(invoiceId, paymentId, paymentRequest);
+        Payment payment = paymentService.updatePayment(organizationId, invoiceId, paymentId, paymentRequest);
         return ResponseEntity.ok(PaymentMapper.toResponse(payment));
+    }
+
+    // Delete Payment by ID
+    @DeleteMapping("/{paymentId}")
+    public ResponseEntity<Void> deletePayment(
+        @PathVariable UUID organizationId,
+        @PathVariable UUID invoiceId,
+        @PathVariable UUID paymentId
+    ) {
+        paymentService.deletePayment(organizationId, invoiceId, paymentId);
+        return ResponseEntity.noContent().build();
     }
 }

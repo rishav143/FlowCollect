@@ -5,9 +5,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import com.flowcollect.exception.base.AppException;
 
@@ -48,6 +50,38 @@ public class GlobalExceptionHandler {
                 .body(response);
     }
 
+    // Invalid enum values in query/path params (e.g. ?channel=PIGEON)
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ErrorResponse> handleTypeMismatch(
+            MethodArgumentTypeMismatchException ex,
+            HttpServletRequest request
+    ) {
+        ErrorResponse response = new ErrorResponse(
+                "BAD_REQUEST",
+                "Invalid value '" + ex.getValue() + "' for parameter '" + ex.getName() + "'",
+                HttpStatus.BAD_REQUEST.value(),
+                Instant.now(),
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    }
+
+    // Malformed JSON or invalid enum values in request body
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ErrorResponse> handleNotReadable(
+            HttpMessageNotReadableException ex,
+            HttpServletRequest request
+    ) {
+        ErrorResponse response = new ErrorResponse(
+                "BAD_REQUEST",
+                "Malformed request body or invalid field value",
+                HttpStatus.BAD_REQUEST.value(),
+                Instant.now(),
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    }
+
     // ALL business exceptions
     @ExceptionHandler(AppException.class)
     public ResponseEntity<ErrorResponse> handleAppException(
@@ -67,6 +101,38 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(ex.getStatus())
                 .body(response);
+    }
+
+    // Domain validation failures (IllegalArgumentException) → 422
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ErrorResponse> handleIllegalArgument(
+            IllegalArgumentException ex,
+            HttpServletRequest request
+    ) {
+        ErrorResponse response = new ErrorResponse(
+                "UNPROCESSABLE_CONTENT",
+                ex.getMessage(),
+                422,
+                Instant.now(),
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(422).body(response);
+    }
+
+    // Domain state violations (IllegalStateException) → 409
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<ErrorResponse> handleIllegalState(
+            IllegalStateException ex,
+            HttpServletRequest request
+    ) {
+        ErrorResponse response = new ErrorResponse(
+                "CONFLICT",
+                ex.getMessage(),
+                HttpStatus.CONFLICT.value(),
+                Instant.now(),
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
     }
 
     // unexpected bugs

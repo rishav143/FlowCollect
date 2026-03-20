@@ -1,6 +1,6 @@
 # FlowCollect API Documentation
 
-This document provides a comprehensive description of the PaidPeace API endpoints, following the design hierarchy:
+This document provides a comprehensive description of the FlowCollect API endpoints, following the design hierarchy:
 **Organization -> User, Customer -> Invoice -> (InvoiceItem, Payment, FollowUp), Template, ReminderRule.**
 
 ## Base URL
@@ -26,7 +26,7 @@ Endpoints for registration, logging in, and obtaining a JWT.
   - `email` (String, Required): Owner's email address (max 100).
   - `password` (String, Required): Owner's password (8-100 characters).
 - **Description**: Registers a new organization and its first administrative user. Returns a JWT token upon successful registration.
-- **Response**: `200 OK` with `LoginResponse` containing the JWT `token`, `expiresAt`, and user details (`id`, `name`, `email`, `role`, `status`).
+- **Response**: `200 OK` with `LoginResponse` (see fields below).
 
 ### Login
 - **Endpoint**: `POST /api/v1/auth/login`
@@ -35,37 +35,75 @@ Endpoints for registration, logging in, and obtaining a JWT.
   - `email` (String, Required): User's email address.
   - `password` (String, Required): User's password.
 - **Description**: Authenticates a user and returns a JWT token along with user details. Use this token in the `Authorization` header for subsequent requests.
-- **Response**: `200 OK` with `LoginResponse` containing the JWT `token`, `expiresAt`, and user details (`id`, `name`, `email`, `role`, `status`).
+- **Response**: `200 OK` with `LoginResponse` (see fields below).
+
+#### LoginResponse fields
+| Field | Type | Notes |
+|---|---|---|
+| `token` | String | JWT bearer token |
+| `type` | String | Always `"Bearer"` |
+| `id` | UUID | User ID |
+| `organizationId` | UUID | Organization the user belongs to |
+| `name` | String | User's full name |
+| `email` | String | User's email |
+| `role` | String | `ADMIN` or `STAFF` |
+| `status` | String | User account status |
+| `expiresAt` | Instant | Token expiry timestamp |
+| `profileImageUrl` | String | nullable — set when user signed in via OAuth |
+
+### OAuth 2.0 — Get Authorize URL
+- **Endpoint**: `GET /api/v1/auth/oauth/{provider}/authorize-url`
+- **Auth**: None required.
+- **Path Params**:
+  - `provider`: `google` or `microsoft` (case-insensitive)
+- **Query Params**:
+  - `mode` (String, Required): `LOGIN` or `REGISTER`
+  - `redirectUri` (String, Required): URI the provider redirects back to (must be registered in the OAuth app settings)
+  - `organizationId` (UUID, Required when `mode=LOGIN`): Omit for `REGISTER`
+- **Description**: Returns the provider's OAuth 2.0 consent page URL. The frontend should redirect the user to this URL.
+- **Response**: `200 OK` with `{ "authorizeUrl": "<url>" }`.
+
+### OAuth 2.0 — Callback
+- **Endpoint**: `GET /api/v1/auth/oauth/{provider}/callback`
+- **Auth**: None required.
+- **Path Params**:
+  - `provider`: `google` or `microsoft`
+- **Query Params**:
+  - `code` (String, Required): Authorization code returned by the provider.
+  - `state` (String, Required): CSRF state token issued by `/authorize-url`.
+  - `redirectUri` (String, Required): Must exactly match the URI used in the authorization request.
+- **Description**: Exchanges the authorization code for a JWT. On first OAuth login/register, creates the user if needed. Returns the same `LoginResponse` as password login.
+- **Response**: `200 OK` with `LoginResponse`.
 
 ---
 
 ## 2. Organization (Root)
-Manage organizations. Admin-only for global management.
+Manage organizations.
 
-### Create Organization (Admin Only)
-- **Endpoint**: `POST /api/v1/organizations`
-- **Body**:
-  - `name` (String, Required): Name of the organization (max 100).
-  - `email` (String, Required): Contact email for the organization.
-  - `currency` (String, Required): 3-letter ISO code (e.g., USD, INR).
-  - `timezone` (String, Required): Timezone name (e.g., America/New_York).
-  - `phone` (String, Optional): Contact phone number.
-  - `address` (String, Optional): Physical address.
-- **Description**: Creates a new organization. Requires `ADMIN` role.
-- **Response**: `201 Created` with `OrganizationResponse` (full organization details).
+> **Note on org creation:** Organizations cannot be created directly via `POST /api/v1/organizations` by an authenticated user — that endpoint is blocked. The only way to create an organization is through **`POST /api/v1/auth/register`** (see Section 1).
 
-### List Organizations (Admin Only)
-- **Endpoint**: `GET /api/v1/organizations`
-- **Query Params**: `status`, `email`, `name`, `createdFrom`, `createdTo`, `page`, `size`, `sort`
-- **Description**: Returns a paginated list of organizations.
-- **Response**: `200 OK` with `Page` of `OrganizationResponse` objects.
+> **Note on state transitions:** The `activate`, `suspend`, `archive`, and `delete` endpoints below always return `403 Forbidden` for authenticated users. They are reserved for internal/admin tooling only.
 
-### Get Organization (Admin Only)
+### Get Organization
 - **Endpoint**: `GET /api/v1/organizations/{organizationId}`
-- **Description**: Retrieves details of a specific organization.
+- **Auth**: `ADMIN` or `STAFF` role required.
+- **Description**: Retrieves details of the caller's own organization. Returns `403` if the ID does not match the authenticated user's organization.
 - **Response**: `200 OK` with `OrganizationResponse`.
 
-### Update Organization (Admin Only)
+### List Organizations
+- **Endpoint**: `GET /api/v1/organizations`
+- **Auth**: `ADMIN` or `STAFF` role required.
+- **Query Params**:
+  - `status` (String, Optional): Filter by status — `ACTIVE`, `SUSPENDED`, `ARCHIVED`, `TRIAL`, or `EXPIRED`.
+  - `email` (String, Optional): Partial match on email.
+  - `name` (String, Optional): Partial match on name.
+  - `createdFrom` (Date `YYYY-MM-DD`, Optional): Start of creation date range.
+  - `createdTo` (Date `YYYY-MM-DD`, Optional): End of creation date range (inclusive). Must be ≥ `createdFrom`.
+  - `page`, `size`, `sort`
+- **Description**: Returns the caller's own organization matching the filters. Always scoped to the authenticated organization — returns at most 1 result.
+- **Response**: `200 OK` with `Page` of `OrganizationResponse` objects.
+
+### Update Organization
 - **Endpoint**: `PATCH /api/v1/organizations/{organizationId}`
 - **Body** (All Optional):
   - `name` (String)
@@ -75,20 +113,39 @@ Manage organizations. Admin-only for global management.
   - `logoUrl` (String)
   - `currency` (String)
   - `timezone` (String)
+  - `paymentCollectionMode` (String): `PAYMENT_LINK` or `CONFIRMATION_FLOW`. Null means no change.
 - **Description**: Partially updates organization details.
 - **Response**: `200 OK` with updated `OrganizationResponse`.
 
-### Delete Organization (Admin Only)
-- **Endpoint**: `DELETE /api/v1/organizations/{organizationId}`
-- **Description**: Permanently removes the organization and all its data.
-- **Response**: `204 No Content`.
+#### OrganizationResponse fields
+| Field | Type | Notes |
+|---|---|---|
+| `id` | UUID | |
+| `name` | String | |
+| `email` | String | |
+| `phone` | String | nullable |
+| `address` | String | nullable |
+| `timezone` | String | |
+| `currency` | String | ISO 4217 code |
+| `logoUrl` | String | nullable |
+| `status` | String | `ACTIVE`, `TRIAL`, `SUSPENDED`, `ARCHIVED` |
+| `paymentCollectionMode` | String | `PAYMENT_LINK` or `CONFIRMATION_FLOW` |
+| `createdAt` | Instant | |
+| `updatedAt` | Instant | |
 
-### Organization State Transitions (Admin Only)
+### Delete Organization
+- **Endpoint**: `DELETE /api/v1/organizations/{organizationId}`
+- **Auth**: `ADMIN` role required.
+- **Description**: Always returns `403 Forbidden` for authenticated users. Reserved for internal tooling.
+- **Response**: `403 Forbidden`.
+
+### Organization State Transitions
 - **Activate**: `POST /api/v1/organizations/{organizationId}/activate`
 - **Suspend**: `POST /api/v1/organizations/{organizationId}/suspend`
 - **Archive**: `POST /api/v1/organizations/{organizationId}/archive`
-- **Description**: Transitions the organization through different lifecycle states. Requires `ADMIN` role.
-- **Response**: `200 OK` with updated `OrganizationResponse`.
+- **Auth**: `ADMIN` role required.
+- **Description**: Always return `403 Forbidden` for authenticated users. Reserved for internal tooling.
+- **Response**: `403 Forbidden`.
 
 ---
 
@@ -538,3 +595,101 @@ FlowCollect uses background workers to automate status management and reminders.
 - **Job Name**: `expireOverduePaymentLinks`
 - **Schedule**: Daily at midnight (`0 0 0 * * *`)
 - **Description**: Marks `ACTIVE` and `PARTIALLY_PAID` payment links as `EXPIRED` once their `expiresAt` timestamp has passed.
+
+---
+
+## 5. Payment Confirmation Flow
+
+The **Confirmation Flow** is an alternative to direct payment links. Instead of redirecting customers to a gateway checkout, the organization sends a `{{confirmationLink}}` in the follow-up. The customer self-reports their payment, and a business user approves or rejects the claim.
+
+Enable it by setting `paymentCollectionMode=CONFIRMATION_FLOW` on the organization.
+
+### Public — Get Confirmation View (Customer-Facing)
+- **Endpoint**: `GET /api/v1/public/confirmations/{token}`
+- **Auth**: None — `token` is an unguessable 32-char hex value.
+- **Description**: Returns a read-only invoice summary the customer sees before submitting a payment claim. Internal IDs are intentionally omitted.
+- **Response**: `200 OK` with `CustomerConfirmationView`.
+
+#### CustomerConfirmationView fields
+| Field | Type | Notes |
+|---|---|---|
+| `invoiceNumber` | String | |
+| `organizationName` | String | |
+| `customerName` | String | |
+| `totalAmount` | Decimal | |
+| `totalPaid` | Decimal | Amount already approved |
+| `remainingAmount` | Decimal | |
+| `dueDate` | String | `YYYY-MM-DD`, nullable |
+| `currency` | String | ISO 4217 code |
+| `linkStatus` | String | `OPEN` or `CLOSED` |
+
+### Public — Submit Payment Claim (Customer-Facing)
+- **Endpoint**: `POST /api/v1/public/confirmations/{token}`
+- **Auth**: None — token acts as a capability grant.
+- **Body**:
+  - `amountClaimed` (Decimal, Required): Must be > 0.
+  - `customerNote` (String, Optional): Free-text note, e.g. "Paid via NEFT, ref: TXN123456" (max 500 chars).
+- **Description**: Customer self-reports a payment. Returns `409 Conflict` if a claim is already pending or the invoice is no longer collectible.
+- **Response**: `201 Created` with `{ "id": "<confirmationId>" }`.
+
+### List Payment Confirmations
+- **Endpoint**: `GET /api/v1/organizations/{organizationId}/payment-confirmations`
+- **Auth**: `ADMIN` or `STAFF` role required.
+- **Query Params**: `status` (`PENDING_APPROVAL`, `APPROVED`, `REJECTED`), `page`, `size`, `sort`
+- **Description**: Lists all payment confirmation claims submitted by customers for this organization.
+- **Response**: `200 OK` with `Page` of `PaymentConfirmationResponse`.
+
+### Get Payment Confirmation
+- **Endpoint**: `GET /api/v1/organizations/{organizationId}/payment-confirmations/{confirmationId}`
+- **Auth**: `ADMIN` or `STAFF` role required.
+- **Response**: `200 OK` with `PaymentConfirmationResponse`.
+
+### Approve Payment Confirmation
+- **Endpoint**: `POST /api/v1/organizations/{organizationId}/payment-confirmations/{confirmationId}/approve`
+- **Auth**: `ADMIN` or `STAFF` role required.
+- **Body** (Optional):
+  - `businessNote` (String): Internal note from the reviewer.
+- **Description**: Approves the customer's payment claim. Records the claimed amount as a payment on the invoice. If the invoice becomes fully paid, the confirmation link is automatically closed.
+- **Response**: `200 OK` with updated `PaymentConfirmationResponse`.
+
+### Reject Payment Confirmation
+- **Endpoint**: `POST /api/v1/organizations/{organizationId}/payment-confirmations/{confirmationId}/reject`
+- **Auth**: `ADMIN` or `STAFF` role required.
+- **Body** (Optional):
+  - `businessNote` (String): Reason for rejection visible internally.
+- **Description**: Rejects the claim. No payment is recorded. The confirmation link stays open so the customer may resubmit.
+- **Response**: `200 OK` with updated `PaymentConfirmationResponse`.
+
+#### PaymentConfirmationResponse fields
+| Field | Type | Notes |
+|---|---|---|
+| `id` | UUID | |
+| `invoiceId` | UUID | |
+| `invoiceNumber` | String | |
+| `confirmationLinkId` | UUID | |
+| `amountClaimed` | Decimal | Amount self-reported by customer |
+| `customerNote` | String | nullable |
+| `status` | String | `PENDING_APPROVAL`, `APPROVED`, `REJECTED` |
+| `businessNote` | String | nullable — set by reviewer on approve/reject |
+| `reviewedAt` | Instant | nullable |
+| `createdAt` | Instant | |
+
+---
+
+## 6. Diagnostics (Development Only)
+
+These endpoints are excluded from JWT authentication and are intended for verifying infrastructure integrations during local development and staging. **Remove or guard them before going to production.**
+
+### Test Email
+- **Endpoint**: `POST /api/v1/diagnostics/test-email?to={email}`
+- **Auth**: None.
+- **Query Params**: `to` (String, Required) — recipient email address.
+- **Description**: Sends a plain-text probe email via the configured Resend SMTP credentials.
+- **Response**: `200 OK` with `{ "status": "sent", "to": "...", "from": "...", "message": "..." }` or `503`/`500` on error.
+
+### Test SMS
+- **Endpoint**: `POST /api/v1/diagnostics/test-sms?to={phone}`
+- **Auth**: None.
+- **Query Params**: `to` (String, Required) — recipient phone number in E.164 format (e.g. `+917876596480`).
+- **Description**: Sends a probe SMS via the configured Twilio credentials. Returns `503` if `TWILIO_ENABLED=false` or credentials are incomplete.
+- **Response**: `200 OK` with `{ "status": "sent", "to": "...", "from": "...", "message": "..." }` or error object.

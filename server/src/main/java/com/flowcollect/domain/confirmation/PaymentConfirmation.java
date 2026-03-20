@@ -65,12 +65,21 @@ public class PaymentConfirmation {
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
+    @Column(nullable = false)
+    private Instant updatedAt;
+
     // JPA
     public PaymentConfirmation() {}
 
     @PrePersist
     protected void onCreate() {
         this.createdAt = Instant.now();
+        this.updatedAt = Instant.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        this.updatedAt = Instant.now();
     }
 
     // Domain behavior
@@ -122,6 +131,7 @@ public class PaymentConfirmation {
     public String getBusinessNote()                 { return businessNote; }
     public Instant getReviewedAt()                  { return reviewedAt; }
     public Instant getCreatedAt()                   { return createdAt; }
+    public Instant getUpdatedAt()                   { return updatedAt; }
 
     // Setters
 

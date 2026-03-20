@@ -154,14 +154,6 @@ public class Template {
         this.tone = tone;
     }
 
-    public void setActive() {
-        this.active = true;
-    }
-
-    public void setDisabled() {
-        this.active = false;
-    }
-
     public void activate() {
         this.active = true;
     }

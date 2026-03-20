@@ -36,7 +36,6 @@ import com.flowcollect.domain.invoice.paymentlink.PaymentLink;
 import com.flowcollect.domain.template.Template;
 import com.flowcollect.domain.template.TemplateChannel;
 import com.flowcollect.exception.http.InternalException;
-import com.flowcollect.exception.http.NotFoundException;
 import com.flowcollect.exception.http.ValidationException;
 import com.flowcollect.infrastructure.persistence.invoice.FollowUpJpaRepository;
 
@@ -104,14 +103,6 @@ public class FollowUpService {
 
     /**
      * Marks a follow-up as CANCELLED and commits the change in an isolated transaction.
-     *
-     * <p>Uses {@link Propagation#REQUIRES_NEW} to match {@link #dispatchFollowUp(FollowUp)}'s
-     * isolation contract: the cancellation is committed independently of the outer
-     * scheduler transaction, so it persists even if the outer transaction rolls back.
-     *
-     * <p>If the follow-up is not found in the DB (e.g. created in the same uncommitted
-     * outer transaction) or is no longer PENDING, this is a no-op — the follow-up will
-     * be re-evaluated on the next scheduler run.
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public FollowUp cancelFollowUp(FollowUp followUp) {
@@ -128,33 +119,26 @@ public class FollowUpService {
 
     // Create a follow-up for an invoice.
     @Transactional
-    public FollowUp createFollowUp
-    (
-        UUID invoiceId, 
-        FollowUpRequest request
-    ) {
+    public FollowUp createFollowUp(UUID organizationId, UUID invoiceId, FollowUpRequest request) {
         if (request == null) {
-            throw new ValidationException("Follow-up request must not be null. Invoice ID: " + invoiceId);
+            throw new ValidationException("Follow-up request must not be null");
         }
-        Invoice invoice = invoiceService.getInvoiceById(invoiceId);
+        Invoice invoice = invoiceService.getInvoiceById(organizationId, invoiceId);
 
-        // channel required
         FollowUpChannel channel = request.getChannel();
         if (channel == null) {
             throw new ValidationException("Follow-up channel must not be null");
         }
 
-        // trigger type - default MANUAL if null
-        FollowUpTriggerType triggerType = request.getTriggerType() == null 
-        ? FollowUpTriggerType.MANUAL 
-        : request.getTriggerType();
+        FollowUpTriggerType triggerType = request.getTriggerType() == null
+                ? FollowUpTriggerType.MANUAL
+                : request.getTriggerType();
 
-        // template - optional
         Template template = null;
         if (request.getTemplateId() != null) {
             template = templateService.getTemplateById(request.getTemplateId());
             if (!template.isActive()) {
-                throw new ValidationException("Template must be active. Template with ID: " + request.getTemplateId() + " is not active.");
+                throw new ValidationException("Template with ID " + request.getTemplateId() + " is not active");
             }
         }
 
@@ -180,25 +164,16 @@ public class FollowUpService {
 
     /**
      * Creates and dispatches manual follow-ups for multiple channels.
-     * One FollowUp is created per channel and dispatched via the existing dispatch logic.
-     *
-     * When {@code request.isIncludePaymentLink()} is true, a single PaymentLink is created
-     * for the invoice (shared across all channels) and embedded in every message via
-     * the {@code {{paymentLink}}} template placeholder.
      */
     @Transactional
-    public List<FollowUp> createAndDispatchFollowUps(
-            UUID invoiceId,
-            MultiChannelFollowUpRequest request
-    ) {
+    public List<FollowUp> createAndDispatchFollowUps(UUID organizationId, UUID invoiceId, MultiChannelFollowUpRequest request) {
         if (request == null) {
-            throw new ValidationException("Multi-channel follow-up request must not be null. Invoice ID: " + invoiceId);
+            throw new ValidationException("Multi-channel follow-up request must not be null");
         }
         if (request.getChannels() == null || request.getChannels().isEmpty()) {
             throw new ValidationException("At least one follow-up channel must be provided");
         }
 
-        // Deduplicate while preserving order
         List<FollowUpChannel> channels = request.getChannels()
                 .stream()
                 .filter(Objects::nonNull)
@@ -208,21 +183,18 @@ public class FollowUpService {
             throw new ValidationException("At least one non-null follow-up channel must be provided");
         }
 
-        // Validate payment link request before creating any follow-ups
         if (request.isIncludePaymentLink() && request.getPaymentGateway() == null) {
             throw new ValidationException("paymentGateway is required when includePaymentLink is true");
         }
 
-        Invoice invoice = invoiceService.getInvoiceById(invoiceId);
+        Invoice invoice = invoiceService.getInvoiceById(organizationId, invoiceId);
 
-        // Create one shared payment link for all channels (avoids duplicate gateway sessions)
         PaymentLink paymentLink = null;
         if (request.isIncludePaymentLink()) {
             PaymentGateway gateway = request.getPaymentGateway();
             paymentLink = paymentLinkService.createPaymentLink(invoice, gateway);
         }
 
-        // Reuse existing single-channel creation logic for correctness
         List<FollowUp> createdAndDispatched = new java.util.ArrayList<>(channels.size());
         for (FollowUpChannel channel : channels) {
             FollowUpRequest singleRequest = new FollowUpRequest();
@@ -232,7 +204,7 @@ public class FollowUpService {
             singleRequest.setScheduledForDate(request.getScheduledForDate());
             singleRequest.setAttachPdf(request.getAttachPdf());
 
-            FollowUp followUp = createFollowUp(invoiceId, singleRequest);
+            FollowUp followUp = createFollowUp(organizationId, invoiceId, singleRequest);
             if (paymentLink != null) {
                 followUp.setPaymentLink(paymentLink);
                 followUp = followUpRepository.save(followUp);
@@ -245,24 +217,21 @@ public class FollowUpService {
     }
 
     // Get a follow-up by id. Validates invoice ownership.
-    public FollowUp getFollowUp
-    (
-        UUID invoiceId, 
-        UUID followUpId
-    ) throws ValidationException, NotFoundException {
-        invoiceService.getInvoiceById(invoiceId);
+    public FollowUp getFollowUp(UUID organizationId, UUID invoiceId, UUID followUpId) {
+        invoiceService.getInvoiceById(organizationId, invoiceId);
         return InvoiceUtil.getFollowUpOrThrow(invoiceId, followUpId, followUpRepository);
     }
 
-    // Get follow-ups for an invoice by status, trigger type, and channel.
+    // Get follow-ups for an invoice filtered by status, trigger type, and channel.
     public Page<FollowUp> getFollowUps(
-        UUID invoiceId,
-        FollowUpStatus status, 
-        FollowUpTriggerType triggerType, 
-        FollowUpChannel channel, 
-        Pageable pageable
+            UUID organizationId,
+            UUID invoiceId,
+            FollowUpStatus status,
+            FollowUpTriggerType triggerType,
+            FollowUpChannel channel,
+            Pageable pageable
     ) {
-        invoiceService.getInvoiceById(invoiceId);
+        invoiceService.getInvoiceById(organizationId, invoiceId);
 
         Specification<FollowUp> spec = (root, query, cb) -> {
             Predicate p = cb.equal(root.get("invoice").get("id"), invoiceId);
@@ -281,18 +250,18 @@ public class FollowUpService {
         return followUpRepository.findAll(spec, pageable);
     }
 
-    // Update a follow-up. Updates the channel, trigger type, and template.
-    public FollowUp updateFollowUp
-    (
-            UUID invoiceId,
-            UUID followUpId,
-            FollowUpRequest request
-    ) {
+    // Update a PENDING follow-up's channel, template, scheduled date, or attachPdf.
+    @Transactional
+    public FollowUp updateFollowUp(UUID organizationId, UUID invoiceId, UUID followUpId, FollowUpRequest request) {
         if (request == null) {
             throw new ValidationException("Request must not be null");
         }
-        invoiceService.getInvoiceById(invoiceId);
+        invoiceService.getInvoiceById(organizationId, invoiceId);
         FollowUp followUp = InvoiceUtil.getFollowUpOrThrow(invoiceId, followUpId, followUpRepository);
+
+        if (!followUp.isPending()) {
+            throw new ValidationException("Only PENDING follow-ups can be updated. Current status: " + followUp.getStatus());
+        }
 
         if (request.getChannel() != null) {
             followUp.setChannel(request.getChannel());
@@ -303,7 +272,7 @@ public class FollowUpService {
         if (request.getTemplateId() != null) {
             Template template = templateService.getTemplateById(request.getTemplateId());
             if (!template.isActive()) {
-                throw new ValidationException("Template must not be null and must be active");
+                throw new ValidationException("Template must be active");
             }
             followUp.setTemplate(template);
         }
@@ -313,17 +282,16 @@ public class FollowUpService {
         if (request.getAttachPdf() != null) {
             followUp.setAttachPdf(request.getAttachPdf());
         }
-        
+
         return followUpRepository.save(followUp);
     }
 
     /**
      * Dispatches (delivers) a follow-up via its configured channel, then marks it SENT or FAILED.
-     * This is used by both automated schedulers and manual API operations to ensure consistent logic.
      */
     @Transactional
-    public FollowUp dispatchFollowUp(UUID invoiceId, UUID followUpId) {
-        invoiceService.getInvoiceById(invoiceId);
+    public FollowUp dispatchFollowUp(UUID organizationId, UUID invoiceId, UUID followUpId) {
+        invoiceService.getInvoiceById(organizationId, invoiceId);
         FollowUp followUp = InvoiceUtil.getFollowUpOrThrow(invoiceId, followUpId, followUpRepository);
         return dispatchFollowUp(followUp);
     }
@@ -334,9 +302,6 @@ public class FollowUpService {
             return null;
         }
 
-        // Re-load in this new transaction. If the row isn't visible (e.g. created in the
-        // same scheduler run whose outer transaction hasn't committed yet), findById returns
-        // empty and we skip — the follow-up will be dispatched on the next scheduler run.
         FollowUp fresh = followUpRepository.findById(followUp.getId()).orElse(null);
         if (fresh == null || !fresh.isPending()) {
             return followUp;
@@ -347,13 +312,10 @@ public class FollowUpService {
             Template template = requireDispatchableTemplate(fresh);
             String subject = templateRenderer.renderSubject(template, fresh.getInvoice(), customer);
 
-            // Resolve the gateway payment link URL (attached explicitly to this follow-up)
             String paymentLinkUrl = fresh.getPaymentLink() != null
                     ? fresh.getPaymentLink().getPublicUrl()
                     : null;
 
-            // Resolve the confirmation link URL when the org uses the confirmation-flow mode.
-            // getOrCreateForInvoice is idempotent — the same link/token is returned on every dispatch.
             String confirmationLinkUrl = null;
             if (fresh.getInvoice().getOrganization().getPaymentCollectionMode()
                     == PaymentCollectionMode.CONFIRMATION_FLOW) {
@@ -377,28 +339,24 @@ public class FollowUpService {
         }
     }
 
-    // Mark a follow-up as SENT without dispatching (rare; prefer dispatchFollowUp).
-    public FollowUp sendFollowUp
-    (
-            UUID invoiceId,
-            UUID followUpId
-    ) {
-        invoiceService.getInvoiceById(invoiceId);
-        FollowUp followUp = InvoiceUtil.getFollowUpOrThrow(invoiceId, followUpId, followUpRepository);
-        followUp.send();
-        return followUpRepository.save(followUp);
-    }
-
-    // Fail a follow-up. Sets the status to FAILED.
-    public FollowUp failFollowUp
-    (
-            UUID invoiceId,
-            UUID followUpId
-    ) {
-        invoiceService.getInvoiceById(invoiceId);
+    // Manually marks a follow-up as FAILED.
+    @Transactional
+    public FollowUp failFollowUp(UUID organizationId, UUID invoiceId, UUID followUpId) {
+        invoiceService.getInvoiceById(organizationId, invoiceId);
         FollowUp followUp = InvoiceUtil.getFollowUpOrThrow(invoiceId, followUpId, followUpRepository);
         followUp.fail();
         return followUpRepository.save(followUp);
+    }
+
+    // Delete a PENDING or FAILED follow-up.
+    @Transactional
+    public void deleteFollowUp(UUID organizationId, UUID invoiceId, UUID followUpId) {
+        invoiceService.getInvoiceById(organizationId, invoiceId);
+        FollowUp followUp = InvoiceUtil.getFollowUpOrThrow(invoiceId, followUpId, followUpRepository);
+        if (followUp.isSent()) {
+            throw new ValidationException("Cannot delete a follow-up that has already been sent");
+        }
+        followUpRepository.delete(followUp);
     }
 
     private NotificationSender resolveSender(FollowUpChannel channel) {
@@ -447,4 +405,3 @@ public class FollowUpService {
         return indexedSenders;
     }
 }
-

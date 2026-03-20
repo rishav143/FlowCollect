@@ -12,6 +12,8 @@ import com.flowcollect.application.organization.OrganizationService;
 import com.flowcollect.common.PaginationUtils;
 import com.flowcollect.domain.organization.Organization;
 import com.flowcollect.domain.template.Template;
+import com.flowcollect.domain.template.TemplateChannel;
+import com.flowcollect.domain.template.TemplateTone;
 import com.flowcollect.exception.http.ValidationException;
 import com.flowcollect.infrastructure.persistence.template.TemplateJpaRepository;
 
@@ -23,77 +25,59 @@ public class TemplateService {
 
     private final TemplateJpaRepository templateRepository;
     private final OrganizationService organizationService;
-    
-    public TemplateService
-    (
-        TemplateJpaRepository templateRepository, 
+
+    public TemplateService(
+        TemplateJpaRepository templateRepository,
         OrganizationService organizationService
     ) {
         this.templateRepository = templateRepository;
         this.organizationService = organizationService;
     }
 
-
-    /**
-     * Create a new template for an organization.
-     */
+    // Create a new template for an organization.
     @Transactional
-    public Template createTemplate
-    (
-        UUID organizationId,
-        TemplateRequest templateRequest
-    ) {
-        if(templateRequest == null) {
-            throw new ValidationException( 
-                "Template request must not be null");
+    public Template createTemplate(UUID organizationId, TemplateRequest request) {
+        if (request == null) {
+            throw new ValidationException("Template request must not be null");
         }
         Organization organization = organizationService.getById(organizationId);
 
-        Template template = new Template();
-        template.setOrganization(organization);
-        if(templateRequest.getName() == null || templateRequest.getName().isBlank()) {
-            throw new ValidationException( 
-                "Name must not be null or blank");
+        if (request.getName() == null || request.getName().isBlank()) {
+            throw new ValidationException("Name must not be null or blank");
         }
-        if(templateRepository.existsByNameAndOrganizationId(templateRequest.getName(), organizationId)) {
-            throw new ValidationException( 
-                "A template with the name '" + templateRequest.getName() + "' already exists for this organization");
+        if (templateRepository.existsByNameAndOrganizationId(request.getName().trim(), organizationId)) {
+            throw new ValidationException("A template named '" + request.getName().trim() + "' already exists for this organization");
         }
-        template.setName(templateRequest.getName());
-        if (templateRepository.existsByNameAndOrganizationId(templateRequest.getName(), organizationId)) {
-            throw new ValidationException("A template with the name '" + templateRequest.getName() + "' already exists for this organization");
-        }
-        if(templateRequest.getChannel() == null) {
+        if (request.getChannel() == null) {
             throw new ValidationException("Channel must not be null");
         }
-        template.setChannel(templateRequest.getChannel());
-        if(templateRequest.getSubject() != null) {
-            template.setSubject(templateRequest.getSubject());
+        if (request.getBody() == null || request.getBody().isBlank()) {
+            throw new ValidationException("Body must not be null or blank");
         }
-        if(templateRequest.getTone() == null) {
-            throw new ValidationException("Body must not be null");
-        }
-        template.setBody(templateRequest.getBody());
-        if(templateRequest.getTone() == null) {
+        if (request.getTone() == null) {
             throw new ValidationException("Tone must not be null");
         }
-        template.setTone(templateRequest.getTone());
+
+        Template template = new Template();
+        template.setOrganization(organization);
+        template.setName(request.getName().trim());
+        template.setChannel(request.getChannel());
+        template.setBody(request.getBody());
+        template.setTone(request.getTone());
+        if (request.getSubject() != null) {
+            template.setSubject(request.getSubject());
+        }
 
         return templateRepository.save(template);
     }
 
-
-    // Get a template by id with organization context
-    public Template getTemplateById
-    (
-        UUID organizationId,
-        UUID templateId
-    ) {
+    // Get a template by id with organization context.
+    public Template getTemplateById(UUID organizationId, UUID templateId) {
         organizationService.getById(organizationId);
         return TemplateUtil.validateTemplateWithOrganization(templateId, organizationId, templateRepository);
     }
 
-    // Get a template by id without organization context
+    // Get a template by id without organization context (internal use).
     public Template getTemplateById(UUID templateId) {
         Template template = TemplateUtil.getTemplateOrThrow(templateId, templateRepository);
         organizationService.getById(template.getOrganization().getId());
@@ -101,12 +85,11 @@ public class TemplateService {
     }
 
     // Get all templates for an organization with pagination.
-    public Page<Template> getAllTemplates
-    (
+    public Page<Template> getAllTemplates(
         UUID organizationId,
-        String name, 
-        String channel, 
-        String tone, 
+        String name,
+        TemplateChannel channel,
+        TemplateTone tone,
         Pageable pageable
     ) {
         organizationService.getById(organizationId);
@@ -114,14 +97,14 @@ public class TemplateService {
 
         Specification<Template> spec = (root, query, cb) -> {
             Predicate p = cb.equal(root.get("organization").get("id"), organizationId);
-            if(name != null && !name.isBlank()) {
-                p = cb.and(p, cb.like(root.get("name"), "%" + name + "%"));
+            if (name != null && !name.isBlank()) {
+                p = cb.and(p, cb.like(cb.lower(root.get("name")), "%" + name.toLowerCase() + "%"));
             }
-            if(channel != null && !channel.isBlank()) {
-                p = cb.and(p, cb.like(root.get("channel"), "%" + channel + "%"));
+            if (channel != null) {
+                p = cb.and(p, cb.equal(root.get("channel"), channel));
             }
-            if(tone != null && !tone.isBlank()) {
-                p = cb.and(p, cb.like(root.get("tone"), "%" + tone + "%"));
+            if (tone != null) {
+                p = cb.and(p, cb.equal(root.get("tone"), tone));
             }
             return p;
         };
@@ -129,79 +112,67 @@ public class TemplateService {
         return templateRepository.findAll(spec, pageable);
     }
 
-
-    /**
-     * Update a template.
-     */
-    public Template updateTemplate
-    (
-        UUID organizationId, 
-        UUID templateId, 
-        TemplateRequest templateRequest
-    ) {
-        if (templateRequest == null) {
+    // Update a template.
+    @Transactional
+    public Template updateTemplate(UUID organizationId, UUID templateId, TemplateRequest request) {
+        if (request == null) {
             throw new ValidationException("Template request must not be null");
         }
         organizationService.getById(organizationId);
-        TemplateUtil.validateTemplateWithOrganization(templateId, organizationId, templateRepository);
+        Template template = TemplateUtil.validateTemplateWithOrganization(templateId, organizationId, templateRepository);
 
-        Template template = TemplateUtil.getTemplateOrThrow(templateId, templateRepository);
-        if(templateRequest.getName() != null) {
-            template.setName(templateRequest.getName());
-        } 
-        if(templateRequest.getChannel() != null) {
-            template.setChannel(templateRequest.getChannel());
+        if (request.getName() != null) {
+            if (request.getName().isBlank()) {
+                throw new ValidationException("Name must not be blank");
+            }
+            String trimmed = request.getName().trim();
+            if (!trimmed.equals(template.getName()) &&
+                    templateRepository.existsByNameAndOrganizationId(trimmed, organizationId)) {
+                throw new ValidationException("A template named '" + trimmed + "' already exists for this organization");
+            }
+            template.setName(trimmed);
         }
-        if(templateRequest.getTone() != null) {
-            template.setTone(templateRequest.getTone());
+        if (request.getChannel() != null) {
+            template.setChannel(request.getChannel());
         }
-        if(templateRequest.getSubject() != null) {
-            template.setSubject(templateRequest.getSubject());
+        if (request.getTone() != null) {
+            template.setTone(request.getTone());
         }
-        if(templateRequest.getBody() != null) {
-            template.setBody(templateRequest.getBody());
+        if (request.getSubject() != null) {
+            template.setSubject(request.getSubject());
+        }
+        if (request.getBody() != null) {
+            if (request.getBody().isBlank()) {
+                throw new ValidationException("Body must not be blank");
+            }
+            template.setBody(request.getBody());
         }
 
         return templateRepository.save(template);
     }
 
-
-    /**
-     * Delete a template by id.
-     */
-    public void deleteTemplateById
-    (
-        UUID organizationId,
-        UUID templateId
-    ) {
+    // Delete a template by id.
+    @Transactional
+    public void deleteTemplateById(UUID organizationId, UUID templateId) {
         organizationService.getById(organizationId);
         TemplateUtil.validateTemplateWithOrganization(templateId, organizationId, templateRepository);
-
         templateRepository.deleteById(templateId);
     }
 
-    public Template activateTemplate
-    (
-        UUID organizationId, 
-        UUID id
-    ) {
+    // Activate a template.
+    @Transactional
+    public Template activateTemplate(UUID organizationId, UUID templateId) {
         organizationService.getById(organizationId);
-        TemplateUtil.validateTemplateWithOrganization(id, organizationId, templateRepository);
-
-        Template template = TemplateUtil.getTemplateOrThrow(id, templateRepository);
+        Template template = TemplateUtil.validateTemplateWithOrganization(templateId, organizationId, templateRepository);
         template.activate();
         return templateRepository.save(template);
     }
 
-    public Template deactivateTemplate
-    (
-        UUID organizationId,
-        UUID id
-    ) {
+    // Deactivate a template.
+    @Transactional
+    public Template deactivateTemplate(UUID organizationId, UUID templateId) {
         organizationService.getById(organizationId);
-        TemplateUtil.validateTemplateWithOrganization(id, organizationId, templateRepository);
-
-        Template template = TemplateUtil.getTemplateOrThrow(id, templateRepository);
+        Template template = TemplateUtil.validateTemplateWithOrganization(templateId, organizationId, templateRepository);
         template.deactivate();
         return templateRepository.save(template);
     }

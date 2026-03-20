@@ -26,6 +26,7 @@ public final class InvoiceMapper {
         response.setSubtotal(invoice.getSubtotal());
         response.setTaxPercentage(invoice.getTaxInPercentage());
         response.setTotalAmount(invoice.getTotalAmount());
+        response.setTotalPaid(invoice.getTotalPaid());
         response.setItems(toItemResponses(invoice.getItems()));
         response.setCreatedAt(invoice.getCreatedAt());
         response.setUpdatedAt(invoice.getUpdatedAt());

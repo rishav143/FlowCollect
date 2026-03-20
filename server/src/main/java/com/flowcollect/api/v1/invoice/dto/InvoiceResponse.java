@@ -24,6 +24,7 @@ public class InvoiceResponse {
     private BigDecimal subtotal;
     private BigDecimal taxPercentage;
     private BigDecimal totalAmount;
+    private BigDecimal totalPaid;
     private List<InvoiceItemResponse> items = new ArrayList<>();
     private Instant createdAt;
     private Instant updatedAt;
@@ -118,6 +119,14 @@ public class InvoiceResponse {
 
     public void setTotalAmount(BigDecimal totalAmount) {
         this.totalAmount = totalAmount;
+    }
+
+    public BigDecimal getTotalPaid() {
+        return totalPaid;
+    }
+
+    public void setTotalPaid(BigDecimal totalPaid) {
+        this.totalPaid = totalPaid;
     }
 
     public List<InvoiceItemResponse> getItems() {

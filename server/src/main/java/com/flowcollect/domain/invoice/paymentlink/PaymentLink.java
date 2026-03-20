@@ -55,7 +55,7 @@ public class PaymentLink {
     @NotNull
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private PaymentLinkStatus status;
+    private PaymentLinkStatus status = PaymentLinkStatus.ACTIVE;
 
     /** Invoice total amount at the time this link was created. */
     @NotNull
@@ -98,6 +98,9 @@ public class PaymentLink {
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
+    @Column(name = "updated_at", nullable = false)
+    private Instant updatedAt;
+
     // JPA
 
     public PaymentLink() {
@@ -109,9 +112,12 @@ public class PaymentLink {
     @PrePersist
     protected void onCreate() {
         this.createdAt = Instant.now();
-        if (this.status == null) {
-            this.status = PaymentLinkStatus.ACTIVE;
-        }
+        this.updatedAt = Instant.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        this.updatedAt = Instant.now();
     }
 
     // Domain Behaviour
@@ -183,4 +189,6 @@ public class PaymentLink {
     public Instant getPaidAt() { return paidAt; }
 
     public Instant getCreatedAt() { return createdAt; }
+
+    public Instant getUpdatedAt() { return updatedAt; }
 }

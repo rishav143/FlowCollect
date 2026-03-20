@@ -18,6 +18,8 @@ import com.flowcollect.api.v1.template.dto.TemplateRequest;
 import com.flowcollect.api.v1.template.dto.TemplateResponse;
 import com.flowcollect.application.template.TemplateService;
 import com.flowcollect.domain.template.Template;
+import com.flowcollect.domain.template.TemplateChannel;
+import com.flowcollect.domain.template.TemplateTone;
 import com.flowcollect.domain.user.UserRole;
 import com.flowcollect.security.RequireRole;
 
@@ -46,7 +48,7 @@ public class TemplateController {
         @RequestBody @Valid TemplateRequest templateRequest
     ) {
         Template template = templateService.createTemplate(organizationId, templateRequest);
-        return ResponseEntity.ok(TemplateMapper.toResponse(template));
+        return ResponseEntity.status(201).body(TemplateMapper.toResponse(template));
     }
 
     /**
@@ -69,8 +71,8 @@ public class TemplateController {
     public ResponseEntity<Page<TemplateResponse>> getAllTemplates(
         @PathVariable UUID organizationId,
         @RequestParam(required = false) String name,
-        @RequestParam(required = false) String channel,
-        @RequestParam(required = false) String tone,
+        @RequestParam(required = false) TemplateChannel channel,
+        @RequestParam(required = false) TemplateTone tone,
         Pageable pageable
     ) {
         Page<Template> templates = templateService.getAllTemplates(organizationId, name, channel, tone, pageable);

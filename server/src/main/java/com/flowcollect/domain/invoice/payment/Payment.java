@@ -117,10 +117,6 @@ public class Payment {
         return paidAt;
     }
 
-    public void setPaidAt(Instant paidAt) {
-        this.paidAt = paidAt;
-    }
-
     public Instant getCreatedAt() {
         return createdAt;
     }

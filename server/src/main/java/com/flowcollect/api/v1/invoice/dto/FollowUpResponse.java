@@ -19,8 +19,10 @@ public class FollowUpResponse {
     private UUID templateId;
     private UUID reminderRuleId;
     private LocalDate scheduledForDate;
+    private boolean attachPdf;
     private Instant sentAt;
     private Instant createdAt;
+    private Instant updatedAt;
 
     // Payment link fields — null when no payment link was attached
     private UUID paymentLinkId;
@@ -92,6 +94,14 @@ public class FollowUpResponse {
         this.scheduledForDate = scheduledForDate;
     }
 
+    public boolean isAttachPdf() {
+        return attachPdf;
+    }
+
+    public void setAttachPdf(boolean attachPdf) {
+        this.attachPdf = attachPdf;
+    }
+
     public Instant getSentAt() {
         return sentAt;
     }
@@ -106,6 +116,14 @@ public class FollowUpResponse {
 
     public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public Instant getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(Instant updatedAt) {
+        this.updatedAt = updatedAt;
     }
 
     public UUID getPaymentLinkId() { return paymentLinkId; }

@@ -38,7 +38,7 @@ public class CustomerUtil {
         }
         Customer customer = getCustomerOrThrow(customerId, customerRepository);
         if (!customer.getOrganization().getId().equals(organizationId)) {
-            throw new ValidationException("Customer is not associated with organization with ID: " + organizationId);
+            throw new NotFoundException("Customer not found with ID: " + customerId);
         }
         return customer;
     }

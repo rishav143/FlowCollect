@@ -89,6 +89,9 @@ public class FollowUp {
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
+    @Column(nullable = false)
+    private Instant updatedAt;
+
     // JPA
 
     public FollowUp() {
@@ -100,6 +103,12 @@ public class FollowUp {
     @PrePersist
     protected void onCreate() {
         this.createdAt = Instant.now();
+        this.updatedAt = Instant.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        this.updatedAt = Instant.now();
     }
 
     // Getters & Setters
@@ -195,6 +204,11 @@ public class FollowUp {
     public Instant getCreatedAt() {
         return createdAt;
     }
+
+    public Instant getUpdatedAt() {
+        return updatedAt;
+    }
+
     // Domain Behavior
 
     public void send() {

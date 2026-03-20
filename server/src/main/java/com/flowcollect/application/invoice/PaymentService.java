@@ -1,6 +1,7 @@
 package com.flowcollect.application.invoice;
 import java.math.BigDecimal;
-import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
 
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Service;
 
 import com.flowcollect.api.v1.invoice.dto.PaymentRequest;
 import com.flowcollect.domain.invoice.Invoice;
+import com.flowcollect.domain.invoice.LifeCycleStatus;
 import com.flowcollect.domain.invoice.payment.Payment;
 import com.flowcollect.domain.invoice.payment.PaymentMode;
 import com.flowcollect.exception.http.ValidationException;
@@ -32,18 +34,29 @@ public class PaymentService {
         this.invoiceRepository = invoiceRepository;
         this.invoiceService = invoiceService;
     }
-    
+
     // Create a new payment for an invoice.
     @Transactional
     public Payment createPayment
     (
-        UUID invoiceId, 
+        UUID organizationId,
+        UUID invoiceId,
         PaymentRequest paymentRequest
     ) {
         if(paymentRequest == null) {
             throw new ValidationException("Payment request cannot be null");
         }
-        Invoice invoice = invoiceService.getInvoiceById(invoiceId);
+        Invoice invoice = invoiceService.getInvoiceById(organizationId, invoiceId);
+
+        if (invoice.getLifeCycleStatus() == LifeCycleStatus.DRAFT) {
+            throw new ValidationException("Cannot record payment on a draft invoice — issue it first");
+        }
+        if (invoice.getLifeCycleStatus() == LifeCycleStatus.CANCELLED) {
+            throw new ValidationException("Cannot record payment on a cancelled invoice");
+        }
+        if (invoice.getLifeCycleStatus() == LifeCycleStatus.PAID) {
+            throw new ValidationException("Invoice is already fully paid");
+        }
 
         Payment payment = new Payment();
         payment.setInvoice(invoice);
@@ -51,16 +64,17 @@ public class PaymentService {
             throw new ValidationException("Amount must be greater than zero");
         }
         payment.setAmount(paymentRequest.getAmount());
-        if(paymentRequest.getMode() != null) {
-            payment.setMode(paymentRequest.getMode());
+        if(paymentRequest.getMode() == null) {
+            throw new ValidationException("Payment mode is required");
         }
+        payment.setMode(paymentRequest.getMode());
         if(paymentRequest.getReferenceId() != null) {
             payment.setReferenceId(paymentRequest.getReferenceId());
         }
         if(paymentRequest.getNotes() != null) {
             payment.setNotes(paymentRequest.getNotes());
         }
-        
+
         Payment savedPayment = paymentRepository.save(payment);
         updateInvoiceStatus(invoiceId);
         return savedPayment;
@@ -69,11 +83,11 @@ public class PaymentService {
     private void updateInvoiceStatus(UUID invoiceId) {
         Invoice invoice = invoiceService.getInvoiceById(invoiceId);
         List<Payment> payments = paymentRepository.findByInvoiceId(invoiceId);
-        
+
         BigDecimal totalPaid = payments.stream()
                 .map(Payment::getAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
-        
+
         invoice.updateLifeCycleStatus(totalPaid);
         invoiceRepository.save(invoice);
     }
@@ -106,29 +120,31 @@ public class PaymentService {
     }
 
     // Get a payment by its ID.
-    public Payment getPayment(UUID invoiceId, UUID paymentId) {
-        invoiceService.getInvoiceById(invoiceId);
+    public Payment getPayment(UUID organizationId, UUID invoiceId, UUID paymentId) {
+        invoiceService.getInvoiceById(organizationId, invoiceId);
         return InvoiceUtil.getPaymentOrThrow(invoiceId, paymentId, paymentRepository);
     }
 
     // Get all payments for an invoice.
     public Page<Payment> getPayments(
-        UUID invoiceId, 
-        PaymentMode mode, 
-        Instant paidAt, 
+        UUID organizationId,
+        UUID invoiceId,
+        PaymentMode mode,
+        LocalDate paidOn,
         Pageable pageable
     ) {
-        // Validate the invoice ID.
-        invoiceService.getInvoiceById(invoiceId);
+        invoiceService.getInvoiceById(organizationId, invoiceId);
 
-        // Create a specification for the payments.
-        Specification<Payment> spec = (root, query, criteriaBuilder) -> {
-            Predicate p = criteriaBuilder.equal(root.get("invoice").get("id"), invoiceId);
-            if(mode != null) {
-                p = criteriaBuilder.and(p, criteriaBuilder.equal(root.get("mode"), mode));
+        Specification<Payment> spec = (root, query, cb) -> {
+            Predicate p = cb.equal(root.get("invoice").get("id"), invoiceId);
+            if (mode != null) {
+                p = cb.and(p, cb.equal(root.get("mode"), mode));
             }
-            if(paidAt != null) {
-                p = criteriaBuilder.and(p, criteriaBuilder.equal(root.get("paidAt"), paidAt));
+            if (paidOn != null) {
+                var start = paidOn.atStartOfDay().toInstant(ZoneOffset.UTC);
+                var end = paidOn.plusDays(1).atStartOfDay().toInstant(ZoneOffset.UTC);
+                p = cb.and(p, cb.greaterThanOrEqualTo(root.get("paidAt"), start));
+                p = cb.and(p, cb.lessThan(root.get("paidAt"), end));
             }
             return p;
         };
@@ -139,17 +155,21 @@ public class PaymentService {
     @Transactional
     public Payment updatePayment
     (
-        UUID invoiceId, 
-        UUID paymentId, 
+        UUID organizationId,
+        UUID invoiceId,
+        UUID paymentId,
         PaymentRequest paymentRequest
     ) {
         if(paymentRequest == null) {
             throw new ValidationException("Payment request must not be null");
         }
-        invoiceService.getInvoiceById(invoiceId);
+        invoiceService.getInvoiceById(organizationId, invoiceId);
 
         Payment payment  = InvoiceUtil.getPaymentOrThrow(invoiceId, paymentId, paymentRepository);
         if(paymentRequest.getAmount() != null) {
+            if (paymentRequest.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
+                throw new ValidationException("Amount must be greater than zero");
+            }
             payment.setAmount(paymentRequest.getAmount());
         }
         if(paymentRequest.getMode() != null) {
@@ -161,9 +181,18 @@ public class PaymentService {
         if(paymentRequest.getNotes() != null) {
             payment.setNotes(paymentRequest.getNotes());
         }
-        
+
         Payment savedPayment = paymentRepository.save(payment);
         updateInvoiceStatus(invoiceId);
         return savedPayment;
+    }
+
+    // Delete a payment by its ID and recalculate invoice status.
+    @Transactional
+    public void deletePayment(UUID organizationId, UUID invoiceId, UUID paymentId) {
+        invoiceService.getInvoiceById(organizationId, invoiceId);
+        Payment payment = InvoiceUtil.getPaymentOrThrow(invoiceId, paymentId, paymentRepository);
+        paymentRepository.delete(payment);
+        updateInvoiceStatus(invoiceId);
     }
 }

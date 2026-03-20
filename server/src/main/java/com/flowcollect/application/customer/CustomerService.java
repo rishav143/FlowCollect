@@ -45,10 +45,10 @@ public class CustomerService {
 
         Customer customer = new Customer();
         customer.setOrganization(organization);
-        if (customerRequest.getName() == null) {
-            throw new ValidationException("Customer name cannot be null");
+        if (customerRequest.getName() == null || customerRequest.getName().isBlank()) {
+            throw new ValidationException("Customer name is required");
         }
-        customer.setName(customerRequest.getName());
+        customer.setName(customerRequest.getName().trim());
         if (customerRequest.getEmail() != null) {
             String email = customerRequest.getEmail().trim();
             if (email.isBlank()) {
@@ -102,32 +102,32 @@ public class CustomerService {
 
     public Page<Customer> getAllCustomers
     (
-        UUID organizationId, 
-        String name, 
-        String email, 
+        UUID organizationId,
+        String name,
+        String email,
         String phone,
-        String companyName, 
-        boolean active, 
+        String companyName,
+        Boolean active,
         Pageable pageable
     ) {
         // validate organization from organization service
         organizationService.getById(organizationId);
-        
+
         Specification<Customer> spec = (root, query, cb) -> {
             Predicate p = cb.equal(root.get("organization").get("id"), organizationId);
             if(name != null && !name.isBlank()) {
-                p = cb.and(p, cb.like(root.get("name"), "%" + name + "%"));
+                p = cb.and(p, cb.like(cb.lower(root.get("name")), "%" + name.trim().toLowerCase() + "%"));
             }
             if(email != null && !email.isBlank()) {
-                p = cb.and(p, cb.like(root.get("email"), "%" + email + "%"));
+                p = cb.and(p, cb.like(cb.lower(root.get("email")), "%" + email.trim().toLowerCase() + "%"));
             }
             if(phone != null && !phone.isBlank()) {
-                p = cb.and(p, cb.like(root.get("phone"), "%" + phone + "%"));
+                p = cb.and(p, cb.like(root.get("phone"), "%" + phone.trim() + "%"));
             }
             if(companyName != null && !companyName.isBlank()) {
-                p = cb.and(p, cb.like(root.get("companyName"), "%" + companyName + "%"));
+                p = cb.and(p, cb.like(cb.lower(root.get("companyName")), "%" + companyName.trim().toLowerCase() + "%"));
             }
-            if(active) {
+            if(active != null) {
                 p = cb.and(p, cb.equal(root.get("active"), active));
             }
             return p;
@@ -154,19 +154,39 @@ public class CustomerService {
        Customer customer = CustomerUtil.validateCustomerWithOrganization(id, organizationId, customerRepository);
 
        if(customerRequest.getName() != null) {
-        customer.setName(customerRequest.getName());
+           String name = customerRequest.getName().trim();
+           if(name.isBlank()) {
+               throw new ValidationException("Customer name must not be blank");
+           }
+           customer.setName(name);
        }
        if(customerRequest.getEmail() != null) {
-        customer.setEmail(customerRequest.getEmail());
+           String email = customerRequest.getEmail().trim();
+           if(email.isBlank()) {
+               throw new ValidationException("Email must not be blank");
+           }
+           if(!email.equalsIgnoreCase(customer.getEmail())
+                   && customerRepository.existsByEmailAndOrganizationId(email, organizationId)) {
+               throw new ConflictException("Customer with email: " + email + " already exists.");
+           }
+           customer.setEmail(email);
        }
        if(customerRequest.getPhone() != null) {
-        customer.setPhone(customerRequest.getPhone());
+           String phone = customerRequest.getPhone().trim();
+           if(phone.isBlank()) {
+               throw new ValidationException("Phone must not be blank");
+           }
+           if(!phone.equals(customer.getPhone())
+                   && customerRepository.existsByPhoneAndOrganizationId(phone, organizationId)) {
+               throw new ConflictException("Customer with phone: " + phone + " already exists.");
+           }
+           customer.setPhone(phone);
        }
        if(customerRequest.getCompanyName() != null) {
-        customer.setCompanyName(customerRequest.getCompanyName());
+           customer.setCompanyName(customerRequest.getCompanyName().trim());
        }
        if(customerRequest.getAddress() != null) {
-        customer.setAddress(customerRequest.getAddress());
+           customer.setAddress(customerRequest.getAddress().trim());
        }
 
        return customerRepository.save(customer);

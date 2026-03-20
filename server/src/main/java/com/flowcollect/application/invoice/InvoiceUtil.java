@@ -57,7 +57,7 @@ public class InvoiceUtil {
         }
         Invoice invoice = getInvoiceOrThrow(invoiceId, invoiceRepository);
         if (!invoice.getOrganization().getId().equals(organizationId)) {
-            throw new ValidationException("invoice is not associated with organization with id " + organizationId);
+            throw new NotFoundException("invoice not found with id " + invoiceId);
         }
         return invoice;
     }
