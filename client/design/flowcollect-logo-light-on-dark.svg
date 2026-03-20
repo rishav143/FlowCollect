@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="120" viewBox="0 0 480 120">
+  <defs>
+    <linearGradient id="accent_g2" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#4FC3F7"/>
+      <stop offset="100%" stop-color="#29B6F6"/>
+    </linearGradient>
+  </defs>
+  <rect width="480" height="120" fill="#1B2838" rx="12"/>
+  <g transform="translate(10,10) scale(0.195)">
+    <rect width="512" height="512" rx="96" fill="#243546"/>
+    <line x1="148" y1="358" x2="256" y2="256" stroke="#2E7A8E" stroke-width="10" stroke-linecap="round"/>
+    <line x1="256" y1="256" x2="364" y2="148" stroke="#2E7A8E" stroke-width="10" stroke-linecap="round"/>
+    <line x1="256" y1="256" x2="374" y2="292" stroke="#2E7A8E" stroke-width="10" stroke-linecap="round"/>
+    <circle cx="148" cy="358" r="44" fill="#2E7A8E"/>
+    <circle cx="364" cy="148" r="44" fill="#2E7A8E"/>
+    <circle cx="374" cy="292" r="40" fill="#2E7A8E"/>
+    <circle cx="256" cy="256" r="62" fill="url(#accent_g2)"/>
+    <path d="M232 258 L250 278 L284 240" fill="none" stroke="#243546" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="148" cy="358" r="6" fill="#29B6F6"/>
+    <circle cx="364" cy="148" r="6" fill="#29B6F6"/>
+    <circle cx="374" cy="292" r="5" fill="#29B6F6"/>
+  </g>
+  <text x="126" y="72" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-weight="700" font-size="38" fill="#FFFFFF" letter-spacing="-0.5">Flow<tspan fill="#29B6F6">Collect</tspan></text>
+  <text x="127" y="92" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-weight="400" font-size="12" fill="#8A9BAE" letter-spacing="3.5">INVOICE MANAGEMENT</text>
+</svg>

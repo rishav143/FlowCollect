@@ -59,6 +59,9 @@ public class Customer {
     @Column(nullable = false)
     private boolean active = false;
 
+    @Column(nullable = false)
+    private boolean automationEnabled = true;
+
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -118,6 +121,10 @@ public class Customer {
         return active;
     }
 
+    public boolean isAutomationEnabled() {
+        return automationEnabled;
+    }
+
     public Instant getCreatedAt() {
         return createdAt;
     }
@@ -158,5 +165,13 @@ public class Customer {
 
     public void activate() {
         this.active = true;
+    }
+
+    public void enableAutomation() {
+        this.automationEnabled = true;
+    }
+
+    public void disableAutomation() {
+        this.automationEnabled = false;
     }
 }

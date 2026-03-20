@@ -12,6 +12,7 @@ public class CustomerResponse {
     private String address;
     private String companyName;
     private boolean active;
+    private boolean automationEnabled;
     private Instant createdAt;
     private Instant updatedAt;
 
@@ -47,6 +48,10 @@ public class CustomerResponse {
 
     public boolean isActive() {
         return active;
+    }
+
+    public boolean isAutomationEnabled() {
+        return automationEnabled;
     }
 
     public Instant getCreatedAt() {
@@ -89,6 +94,10 @@ public class CustomerResponse {
 
     public void setActive(boolean active) {
         this.active = active;
+    }
+
+    public void setAutomationEnabled(boolean automationEnabled) {
+        this.automationEnabled = automationEnabled;
     }
 
     public void setCreatedAt(Instant createdAt) {

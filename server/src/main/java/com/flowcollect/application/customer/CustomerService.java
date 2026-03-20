@@ -239,11 +239,31 @@ public class CustomerService {
         organizationService.getById(organizationId);
         Customer customer = CustomerUtil.validateCustomerWithOrganization
         (
-            id, 
-            organizationId, 
+            id,
+            organizationId,
             customerRepository
         );
         customer.deactivate();
+        return customerRepository.save(customer);
+    }
+
+    public Customer enableAutomation(UUID organizationId, UUID id) {
+        if(id == null) {
+            throw new ValidationException("Customer id cannot be null");
+        }
+        organizationService.getById(organizationId);
+        Customer customer = CustomerUtil.validateCustomerWithOrganization(id, organizationId, customerRepository);
+        customer.enableAutomation();
+        return customerRepository.save(customer);
+    }
+
+    public Customer disableAutomation(UUID organizationId, UUID id) {
+        if(id == null) {
+            throw new ValidationException("Customer id cannot be null");
+        }
+        organizationService.getById(organizationId);
+        Customer customer = CustomerUtil.validateCustomerWithOrganization(id, organizationId, customerRepository);
+        customer.disableAutomation();
         return customerRepository.save(customer);
     }
 }

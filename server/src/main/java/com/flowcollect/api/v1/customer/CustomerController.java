@@ -111,5 +111,27 @@ public class CustomerController {
         Customer customer = customerService.deactivateCustomer(organizationId, id);
         return ResponseEntity.ok(CustomerMapper.toResponse(customer));
     }
+
+    // Enable Automation
+    @PutMapping("/{id}/automation/enable")
+    public ResponseEntity<CustomerResponse> enableAutomation
+    (
+        @PathVariable UUID organizationId,
+        @PathVariable UUID id
+    ) {
+        Customer customer = customerService.enableAutomation(organizationId, id);
+        return ResponseEntity.ok(CustomerMapper.toResponse(customer));
+    }
+
+    // Disable Automation
+    @PutMapping("/{id}/automation/disable")
+    public ResponseEntity<CustomerResponse> disableAutomation
+    (
+        @PathVariable UUID organizationId,
+        @PathVariable UUID id
+    ) {
+        Customer customer = customerService.disableAutomation(organizationId, id);
+        return ResponseEntity.ok(CustomerMapper.toResponse(customer));
+    }
 }
  

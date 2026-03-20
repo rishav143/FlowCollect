@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="120" viewBox="0 0 480 120">
+  <g transform="translate(10,10) scale(0.195)">
+    <rect width="512" height="512" rx="96" fill="none" stroke="#FFFFFF" stroke-width="8"/>
+    <line x1="148" y1="358" x2="256" y2="256" stroke="#FFFFFF" stroke-width="10" stroke-linecap="round" opacity="0.5"/>
+    <line x1="256" y1="256" x2="364" y2="148" stroke="#FFFFFF" stroke-width="10" stroke-linecap="round" opacity="0.5"/>
+    <line x1="256" y1="256" x2="374" y2="292" stroke="#FFFFFF" stroke-width="10" stroke-linecap="round" opacity="0.5"/>
+    <circle cx="148" cy="358" r="44" fill="none" stroke="#FFFFFF" stroke-width="6"/>
+    <circle cx="364" cy="148" r="44" fill="none" stroke="#FFFFFF" stroke-width="6"/>
+    <circle cx="374" cy="292" r="40" fill="none" stroke="#FFFFFF" stroke-width="6"/>
+    <circle cx="256" cy="256" r="62" fill="#FFFFFF"/>
+    <path d="M232 258 L250 278 L284 240" fill="none" stroke="#000" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <text x="126" y="72" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-weight="700" font-size="38" fill="#FFFFFF" letter-spacing="-0.5">FlowCollect</text>
+  <text x="127" y="92" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-weight="400" font-size="12" fill="#FFFFFF" letter-spacing="3.5" opacity="0.6">INVOICE MANAGEMENT</text>
+</svg>

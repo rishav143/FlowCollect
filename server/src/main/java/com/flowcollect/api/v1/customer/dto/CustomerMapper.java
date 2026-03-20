@@ -14,6 +14,7 @@ public class CustomerMapper {
         response.setAddress(customer.getAddress());
         response.setCompanyName(customer.getCompanyName());
         response.setActive(customer.isActive());
+        response.setAutomationEnabled(customer.isAutomationEnabled());
         response.setCreatedAt(customer.getCreatedAt());
         response.setUpdatedAt(customer.getUpdatedAt());
         return response;

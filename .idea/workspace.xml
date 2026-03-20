@@ -5,13 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="eecd9ba8-299b-462e-89e5-cb6b55cc603b" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/flowcollect/api/error/GlobalExceptionHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/server/src/main/java/com/flowcollect/api/error/GlobalExceptionHandler.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/flowcollect/api/v1/auth/dto/LoginResponse.java" beforeDir="false" afterPath="$PROJECT_DIR$/server/src/main/java/com/flowcollect/api/v1/auth/dto/LoginResponse.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/flowcollect/application/auth/AuthService.java" beforeDir="false" afterPath="$PROJECT_DIR$/server/src/main/java/com/flowcollect/application/auth/AuthService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/flowcollect/domain/user/User.java" beforeDir="false" afterPath="$PROJECT_DIR$/server/src/main/java/com/flowcollect/domain/user/User.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/flowcollect/security/JwtFilter.java" beforeDir="false" afterPath="$PROJECT_DIR$/server/src/main/java/com/flowcollect/security/JwtFilter.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/server/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/server/src/main/resources/application.properties" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/server/src/test/java/com/flowcollect/application/auth/AuthServiceTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/server/src/test/java/com/flowcollect/application/auth/AuthServiceTest.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/API.md" beforeDir="false" afterPath="$PROJECT_DIR$/server/API.md" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -80,8 +74,8 @@
     "junie.onboarding.icon.badge.shown": "true",
     "kotlin-language-version-configured": "true",
     "last_opened_file_path": "/Users/rishavchoudhary/Desktop/dream Project/PaidPeace",
-    "project.structure.last.edited": "Project",
-    "project.structure.proportion": "0.0",
+    "project.structure.last.edited": "Modules",
+    "project.structure.proportion": "0.15",
     "project.structure.side.proportion": "0.2",
     "settings.editor.selected.configurable": "preferences.pluginManager",
     "to.speed.mode.migration.done": "true"

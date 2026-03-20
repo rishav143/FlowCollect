@@ -100,6 +100,9 @@ public class ReminderOrgProcessor {
         for (Invoice invoice : invoiceService.getInvoicesForReminders(
                 organization.getId(), ELIGIBLE_INVOICE_STATUSES, targetDueDate)) {
 
+            if (invoice.getCustomer() != null && !invoice.getCustomer().isAutomationEnabled()) {
+                continue;
+            }
             if (followUpService.existsByInvoiceIdAndReminderRuleIdAndOccurrenceIndex(
                     invoice.getId(), rule.getId(), occurrence)) {
                 continue;
