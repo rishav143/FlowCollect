@@ -8,6 +8,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import jakarta.persistence.criteria.Predicate;
 
 import com.flowcollect.api.v1.reminderrule.dto.ReminderRuleRequest;
@@ -19,179 +20,157 @@ import com.flowcollect.infrastructure.persistence.reminder.ReminderRuleJpaReposi
 
 @Service
 public class ReminderRuleService {
+
     private final TemplateService templateService;
     private final OrganizationService organizationService;
     private final ReminderRuleJpaRepository reminderRuleRepository;
 
-    public ReminderRuleService
-    (
-        OrganizationService organizationService, 
-        ReminderRuleJpaRepository reminderRuleRepository, TemplateService templateService
+    public ReminderRuleService(
+        OrganizationService organizationService,
+        ReminderRuleJpaRepository reminderRuleRepository,
+        TemplateService templateService
     ) {
         this.organizationService = organizationService;
         this.reminderRuleRepository = reminderRuleRepository;
         this.templateService = templateService;
     }
 
-    public ReminderRule createReminderRule
-    (
-        UUID organizationId, 
-        ReminderRuleRequest reminderRuleRequest
-    ) {
-        if(reminderRuleRequest == null) {
-            throw new ValidationException( 
-                "Reminder rule request cannot be null");
+    @Transactional
+    public ReminderRule createReminderRule(UUID organizationId, ReminderRuleRequest request) {
+        if (request == null) {
+            throw new ValidationException("Reminder rule request cannot be null");
         }
-        if (reminderRuleRequest.getOrganizationId() != null
-                && !reminderRuleRequest.getOrganizationId().equals(organizationId)) {
+        if (request.getOrganizationId() != null && !request.getOrganizationId().equals(organizationId)) {
             throw new ValidationException("Organization ID in request must match path organization ID");
         }
         Organization organization = organizationService.getById(organizationId);
 
-        ReminderRule reminderRule = new ReminderRule();
-        reminderRule.setOrganization(organization);
-        if(reminderRuleRequest.getName() == null) {
-            throw new ValidationException( 
-                "Reminder rule name cannot be null");
+        if (request.getName() == null || request.getName().isBlank()) {
+            throw new ValidationException("Reminder rule name cannot be null or blank");
         }
-        reminderRule.setName(reminderRuleRequest.getName());
-        if (reminderRuleRequest.getDaysOffset() == null) {
+        String name = request.getName().trim();
+        if (reminderRuleRepository.existsByNameAndOrganizationId(name, organizationId)) {
+            throw new ValidationException("A reminder rule named '" + name + "' already exists for this organization");
+        }
+        if (request.getDaysOffset() == null) {
             throw new ValidationException("daysOffset cannot be null");
         }
-        reminderRule.setDaysOffset(reminderRuleRequest.getDaysOffset());
-        if(reminderRuleRequest.getTriggerType() == null) {
-            throw new ValidationException( 
-                "Reminder rule trigger type cannot be null");
+        if (request.getTriggerType() == null) {
+            throw new ValidationException("Trigger type cannot be null");
         }
-        reminderRule.setTriggerType(reminderRuleRequest.getTriggerType());
-        if(reminderRuleRequest.getChannel() == null) {
-            throw new ValidationException( 
-                "Reminder rule channel cannot be null");
+        if (request.getChannel() == null) {
+            throw new ValidationException("Channel cannot be null");
         }
-        reminderRule.setChannel(reminderRuleRequest.getChannel());
-        if(reminderRuleRequest.getTemplateId() == null) {
-            throw new ValidationException( 
-                "Reminder rule template cannot be null");
-            }
-        reminderRule.setTemplate(templateService.getTemplateById(reminderRuleRequest.getTemplateId()
-    
-    ));
-        if(reminderRuleRequest.isActive() == true) {
-            reminderRule.setActive(true);
+        if (request.getTemplateId() == null) {
+            throw new ValidationException("Template ID cannot be null");
         }
 
-        int maxOccurrences = reminderRuleRequest.getMaxOccurrences() != null
-                ? reminderRuleRequest.getMaxOccurrences()
-                : 1;
+        int maxOccurrences = request.getMaxOccurrences() != null ? request.getMaxOccurrences() : 1;
         if (maxOccurrences < 1) {
             throw new ValidationException("maxOccurrences must be at least 1");
         }
-
-        int cycleIntervalDays = reminderRuleRequest.getCycleIntervalDays() != null
-                ? reminderRuleRequest.getCycleIntervalDays()
-                : 0;
+        int cycleIntervalDays = request.getCycleIntervalDays() != null ? request.getCycleIntervalDays() : 0;
         if (maxOccurrences > 1 && cycleIntervalDays < 1) {
             throw new ValidationException("cycleIntervalDays must be at least 1 when maxOccurrences > 1");
         }
-        // Normalize: interval is irrelevant and misleading when there is only one occurrence.
         if (maxOccurrences == 1) {
             cycleIntervalDays = 0;
         }
 
-        reminderRule.setMaxOccurrences(maxOccurrences);
-        reminderRule.setCycleIntervalDays(cycleIntervalDays);
-        reminderRule.setStartDate(reminderRuleRequest.getStartDate());
+        ReminderRule rule = new ReminderRule();
+        rule.setOrganization(organization);
+        rule.setName(name);
+        rule.setDaysOffset(request.getDaysOffset());
+        rule.setTriggerType(request.getTriggerType());
+        rule.setChannel(request.getChannel());
+        rule.setTemplate(templateService.getTemplateById(request.getTemplateId()));
+        rule.setMaxOccurrences(maxOccurrences);
+        rule.setCycleIntervalDays(cycleIntervalDays);
+        if (request.getStartDate() != null) {
+            rule.setStartDate(request.getStartDate());
+        }
+        if (Boolean.TRUE.equals(request.isActive())) {
+            rule.activate();
+        }
 
-        return reminderRuleRepository.save(reminderRule);
+        return reminderRuleRepository.save(rule);
     }
 
     public List<ReminderRule> getActiveReminderRules(UUID organizationId) {
         return reminderRuleRepository.findByOrganizationIdAndActiveTrue(organizationId);
     }
 
-    public ReminderRule getReminderRule
-    (
-        UUID organizationId, 
-        UUID reminderRuleId
-    ) {
-        // Validate organization
+    public ReminderRule getReminderRule(UUID organizationId, UUID reminderRuleId) {
         organizationService.getById(organizationId);
-        return ReminderUtil.validateReminderRuleAndOrganization(
-            reminderRuleId, organizationId, reminderRuleRepository
-        );
+        return ReminderUtil.validateReminderRuleAndOrganization(reminderRuleId, organizationId, reminderRuleRepository);
     }
 
-    public Page<ReminderRule> getAllReminderRules
-    (
-        UUID organizationId, 
-        String name, 
-        Pageable pageable
-    ) {
-        // Validate organization
+    public Page<ReminderRule> getAllReminderRules(UUID organizationId, String name, Pageable pageable) {
         organizationService.getById(organizationId);
 
-        Specification<ReminderRule> specification = (root, query, criteriaBuilder) -> {
-            Predicate predicate = criteriaBuilder.equal(root.get("organization").get("id"), organizationId);
-            if(name != null) {
-                predicate = criteriaBuilder.and(predicate, criteriaBuilder.like(root.get("name"), "%" + name + "%"));
+        Specification<ReminderRule> spec = (root, query, cb) -> {
+            Predicate p = cb.equal(root.get("organization").get("id"), organizationId);
+            if (name != null && !name.isBlank()) {
+                p = cb.and(p, cb.like(cb.lower(root.get("name")), "%" + name.toLowerCase() + "%"));
             }
-            return predicate;
+            return p;
         };
 
-        return reminderRuleRepository.findAll(specification, pageable);
+        return reminderRuleRepository.findAll(spec, pageable);
     }
 
-    public ReminderRule updateReminderRule
-    (
-        UUID organizationId, 
-        UUID reminderRuleId,
-        ReminderRuleRequest reminderRuleRequest
-    ) {
-        if (reminderRuleRequest == null) {
+    @Transactional
+    public ReminderRule updateReminderRule(UUID organizationId, UUID reminderRuleId, ReminderRuleRequest request) {
+        if (request == null) {
             throw new ValidationException("Reminder rule request cannot be null");
         }
-        if (reminderRuleRequest.getOrganizationId() != null
-                && !reminderRuleRequest.getOrganizationId().equals(organizationId)) {
+        if (request.getOrganizationId() != null && !request.getOrganizationId().equals(organizationId)) {
             throw new ValidationException("Organization ID in request must match path organization ID");
         }
-        // Validate organization
         organizationService.getById(organizationId);
-        ReminderRule reminderRule = ReminderUtil.validateReminderRuleAndOrganization(
+        ReminderRule rule = ReminderUtil.validateReminderRuleAndOrganization(
             reminderRuleId, organizationId, reminderRuleRepository
         );
 
-        if(reminderRuleRequest.getName() != null) {
-            reminderRule.setName(reminderRuleRequest.getName());
+        if (request.getName() != null) {
+            if (request.getName().isBlank()) {
+                throw new ValidationException("Name must not be blank");
+            }
+            String trimmed = request.getName().trim();
+            if (!trimmed.equals(rule.getName()) &&
+                    reminderRuleRepository.existsByNameAndOrganizationId(trimmed, organizationId)) {
+                throw new ValidationException("A reminder rule named '" + trimmed + "' already exists for this organization");
+            }
+            rule.setName(trimmed);
         }
-        if (reminderRuleRequest.getDaysOffset() != null) {
-            reminderRule.setDaysOffset(reminderRuleRequest.getDaysOffset());
+        if (request.getDaysOffset() != null) {
+            rule.setDaysOffset(request.getDaysOffset());
         }
-        if(reminderRuleRequest.getTriggerType() != null) {
-            reminderRule.setTriggerType(reminderRuleRequest.getTriggerType());
+        if (request.getTriggerType() != null) {
+            rule.setTriggerType(request.getTriggerType());
         }
-        if(reminderRuleRequest.getChannel() != null) {
-            reminderRule.setChannel(reminderRuleRequest.getChannel());
+        if (request.getChannel() != null) {
+            rule.setChannel(request.getChannel());
         }
-        if(reminderRuleRequest.getTemplateId() == null) {
-            throw new ValidationException( 
-                "Reminder rule template cannot be null");
+        if (request.getTemplateId() != null) {
+            rule.setTemplate(templateService.getTemplateById(request.getTemplateId()));
         }
-        reminderRule.setTemplate(templateService.getTemplateById(reminderRuleRequest.getTemplateId()));
-        
-        if(reminderRuleRequest.isActive() == true) {
-            reminderRule.activate();
+        if (request.isActive() != null) {
+            if (Boolean.TRUE.equals(request.isActive())) {
+                rule.activate();
+            } else {
+                rule.deactivate();
+            }
         }
-        if (reminderRuleRequest.getStartDate() != null) {
-            reminderRule.setStartDate(reminderRuleRequest.getStartDate());
+        if (request.getStartDate() != null) {
+            rule.setStartDate(request.getStartDate());
         }
 
-        // Update cycle fields only when at least one is explicitly provided.
-        Integer newMaxOccurrences = reminderRuleRequest.getMaxOccurrences();
-        Integer newCycleIntervalDays = reminderRuleRequest.getCycleIntervalDays();
-        if (newMaxOccurrences != null || newCycleIntervalDays != null) {
-            int maxOccurrences = newMaxOccurrences != null ? newMaxOccurrences : reminderRule.getMaxOccurrences();
-            int cycleIntervalDays = newCycleIntervalDays != null ? newCycleIntervalDays : reminderRule.getCycleIntervalDays();
-
+        Integer newMax = request.getMaxOccurrences();
+        Integer newInterval = request.getCycleIntervalDays();
+        if (newMax != null || newInterval != null) {
+            int maxOccurrences = newMax != null ? newMax : rule.getMaxOccurrences();
+            int cycleIntervalDays = newInterval != null ? newInterval : rule.getCycleIntervalDays();
             if (maxOccurrences < 1) {
                 throw new ValidationException("maxOccurrences must be at least 1");
             }
@@ -201,52 +180,39 @@ public class ReminderRuleService {
             if (maxOccurrences == 1) {
                 cycleIntervalDays = 0;
             }
-
-            reminderRule.setMaxOccurrences(maxOccurrences);
-            reminderRule.setCycleIntervalDays(cycleIntervalDays);
+            rule.setMaxOccurrences(maxOccurrences);
+            rule.setCycleIntervalDays(cycleIntervalDays);
         }
 
-        return reminderRuleRepository.save(reminderRule);
+        return reminderRuleRepository.save(rule);
     }
 
-    public void deleteReminderRule
-    (
-        UUID organizationId,
-        UUID reminderRuleId
-    ) {
-        // Validate organization
+    @Transactional
+    public void deleteReminderRule(UUID organizationId, UUID reminderRuleId) {
         organizationService.getById(organizationId);
-        ReminderRule reminderRule = ReminderUtil.validateReminderRuleAndOrganization(
+        ReminderRule rule = ReminderUtil.validateReminderRuleAndOrganization(
             reminderRuleId, organizationId, reminderRuleRepository
         );
-        reminderRuleRepository.delete(reminderRule);
+        reminderRuleRepository.delete(rule);
     }
 
-    public void activateReminderRule
-    (
-        UUID organizationId, 
-        UUID reminderRuleId
-    ) {
-        // Validate organization
+    @Transactional
+    public ReminderRule activateReminderRule(UUID organizationId, UUID reminderRuleId) {
         organizationService.getById(organizationId);
-        ReminderRule reminderRule = ReminderUtil.validateReminderRuleAndOrganization(
+        ReminderRule rule = ReminderUtil.validateReminderRuleAndOrganization(
             reminderRuleId, organizationId, reminderRuleRepository
         );
-        reminderRule.activate();
-        reminderRuleRepository.save(reminderRule);
+        rule.activate();
+        return reminderRuleRepository.save(rule);
     }
 
-    public void deactivateReminderRule
-    (
-        UUID organizationId, 
-        UUID reminderRuleId
-    ) {
-        // Validate organization
+    @Transactional
+    public ReminderRule deactivateReminderRule(UUID organizationId, UUID reminderRuleId) {
         organizationService.getById(organizationId);
-        ReminderRule reminderRule = ReminderUtil.validateReminderRuleAndOrganization(
+        ReminderRule rule = ReminderUtil.validateReminderRuleAndOrganization(
             reminderRuleId, organizationId, reminderRuleRepository
         );
-        reminderRule.deactivate();
-        reminderRuleRepository.save(reminderRule);
+        rule.deactivate();
+        return reminderRuleRepository.save(rule);
     }
 }

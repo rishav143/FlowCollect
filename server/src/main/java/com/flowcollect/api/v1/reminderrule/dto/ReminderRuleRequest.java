@@ -5,7 +5,6 @@ import java.util.UUID;
 
 import com.flowcollect.domain.reminder.ReminderChannel;
 import com.flowcollect.domain.reminder.ReminderTriggerType;
-import com.flowcollect.domain.template.Template;
 
 public class ReminderRuleRequest {
     private String name;
@@ -14,7 +13,7 @@ public class ReminderRuleRequest {
     private ReminderTriggerType triggerType;
     private ReminderChannel channel;
     private UUID templateId;
-    private boolean active;
+    private Boolean active;
 
     // Cycle & Recurrence
     // Nullable — null means "not provided" (use existing value on update, default on create).
@@ -46,9 +45,9 @@ public class ReminderRuleRequest {
         return templateId;
     }
 
-    public boolean isActive() {
+    public Boolean isActive() {
         return active;
-    }   
+    }
 
     public void setName(String name) {
         this.name = name;
@@ -74,7 +73,7 @@ public class ReminderRuleRequest {
         this.templateId = templateId;
     }
 
-    public void setActive(boolean active) {
+    public void setActive(Boolean active) {
         this.active = active;
     }
 

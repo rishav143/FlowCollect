@@ -36,13 +36,12 @@ public class ReminderRuleController {
 
     // Create a new reminder rule
     @PostMapping
-    public ResponseEntity<ReminderRuleResponse> createReminderRule
-    (
+    public ResponseEntity<ReminderRuleResponse> createReminderRule(
         @PathVariable UUID organizationId,
-        @RequestBody ReminderRuleRequest reminderRuleRequest
+        @RequestBody ReminderRuleRequest request
     ) {
-        ReminderRule reminderRule = reminderRuleService.createReminderRule(organizationId, reminderRuleRequest);
-        return ResponseEntity.ok(ReminderRuleMapper.toResponse(reminderRule));
+        ReminderRule rule = reminderRuleService.createReminderRule(organizationId, request);
+        return ResponseEntity.status(201).body(ReminderRuleMapper.toResponse(rule));
     }
 
     // Get a reminder rule by ID
@@ -51,32 +50,30 @@ public class ReminderRuleController {
         @PathVariable UUID organizationId,
         @PathVariable UUID reminderRuleId
     ) {
-        ReminderRule reminderRule = reminderRuleService.getReminderRule(organizationId, reminderRuleId);
-        return ResponseEntity.ok(ReminderRuleMapper.toResponse(reminderRule));
+        ReminderRule rule = reminderRuleService.getReminderRule(organizationId, reminderRuleId);
+        return ResponseEntity.ok(ReminderRuleMapper.toResponse(rule));
     }
 
-    // Get all reminder rules
+    // Get all reminder rules with optional name filter
     @GetMapping
-    public ResponseEntity<Page<ReminderRuleResponse>> getAllReminderRules
-    (
+    public ResponseEntity<Page<ReminderRuleResponse>> getAllReminderRules(
         @PathVariable UUID organizationId,
         @RequestParam(required = false) String name,
         Pageable pageable
     ) {
-        Page<ReminderRule> reminderRules = reminderRuleService.getAllReminderRules(organizationId, name, pageable);
-        return ResponseEntity.ok(reminderRules.map(ReminderRuleMapper::toResponse));
+        Page<ReminderRule> rules = reminderRuleService.getAllReminderRules(organizationId, name, pageable);
+        return ResponseEntity.ok(rules.map(ReminderRuleMapper::toResponse));
     }
 
-    // Update a reminder rule
+    // Update a reminder rule (partial)
     @PatchMapping("/{reminderRuleId}")
-    public ResponseEntity<ReminderRuleResponse> updateReminderRule
-    (
+    public ResponseEntity<ReminderRuleResponse> updateReminderRule(
         @PathVariable UUID organizationId,
         @PathVariable UUID reminderRuleId,
-        @RequestBody ReminderRuleRequest reminderRuleRequest
+        @RequestBody ReminderRuleRequest request
     ) {
-        ReminderRule reminderRule = reminderRuleService.updateReminderRule(organizationId, reminderRuleId, reminderRuleRequest);
-        return ResponseEntity.ok(ReminderRuleMapper.toResponse(reminderRule));
+        ReminderRule rule = reminderRuleService.updateReminderRule(organizationId, reminderRuleId, request);
+        return ResponseEntity.ok(ReminderRuleMapper.toResponse(rule));
     }
 
     // Delete a reminder rule
@@ -90,22 +87,22 @@ public class ReminderRuleController {
     }
 
     // Activate a reminder rule
-    @PostMapping("/{reminderRuleId}/activate")
-    public ResponseEntity<Void> activateReminderRule(
+    @PatchMapping("/{reminderRuleId}/activate")
+    public ResponseEntity<ReminderRuleResponse> activateReminderRule(
         @PathVariable UUID organizationId,
         @PathVariable UUID reminderRuleId
     ) {
-        reminderRuleService.activateReminderRule(organizationId, reminderRuleId);
-        return ResponseEntity.noContent().build();
+        ReminderRule rule = reminderRuleService.activateReminderRule(organizationId, reminderRuleId);
+        return ResponseEntity.ok(ReminderRuleMapper.toResponse(rule));
     }
 
     // Deactivate a reminder rule
-    @PostMapping("/{reminderRuleId}/deactivate")
-    public ResponseEntity<Void> deactivateReminderRule(
+    @PatchMapping("/{reminderRuleId}/deactivate")
+    public ResponseEntity<ReminderRuleResponse> deactivateReminderRule(
         @PathVariable UUID organizationId,
         @PathVariable UUID reminderRuleId
     ) {
-        reminderRuleService.deactivateReminderRule(organizationId, reminderRuleId);
-        return ResponseEntity.noContent().build();
+        ReminderRule rule = reminderRuleService.deactivateReminderRule(organizationId, reminderRuleId);
+        return ResponseEntity.ok(ReminderRuleMapper.toResponse(rule));
     }
 }

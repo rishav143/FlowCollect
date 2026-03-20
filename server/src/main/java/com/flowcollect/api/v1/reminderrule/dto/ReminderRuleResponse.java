@@ -6,7 +6,6 @@ import java.util.UUID;
 
 import com.flowcollect.domain.reminder.ReminderChannel;
 import com.flowcollect.domain.reminder.ReminderTriggerType;
-import com.flowcollect.domain.template.Template;
 
 public class ReminderRuleResponse {
     private UUID id;
@@ -14,7 +13,9 @@ public class ReminderRuleResponse {
     private int daysOffset;
     private ReminderTriggerType triggerType;
     private ReminderChannel channel;
-    private Template template;
+    private UUID templateId;
+    private String templateName;
+    private boolean attachPdf;
     private boolean active;
     private int maxOccurrences;
     private int cycleIntervalDays;
@@ -22,99 +23,45 @@ public class ReminderRuleResponse {
     private Instant createdAt;
     private Instant updatedAt;
 
-    public UUID getId() {
-        return id;
-    }
+    public UUID getId() { return id; }
+    public void setId(UUID id) { this.id = id; }
 
-    public String getName() {
-        return name;
-    }
-    
-    public int getDaysOffset() {
-        return daysOffset;
-    }
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
 
-    public ReminderTriggerType getTriggerType() {
-        return triggerType;
-    }
+    public int getDaysOffset() { return daysOffset; }
+    public void setDaysOffset(int daysOffset) { this.daysOffset = daysOffset; }
 
-    public ReminderChannel getChannel() {
-        return channel;
-    }
+    public ReminderTriggerType getTriggerType() { return triggerType; }
+    public void setTriggerType(ReminderTriggerType triggerType) { this.triggerType = triggerType; }
 
-    public Template getTemplate() {
-        return template;
-    }
+    public ReminderChannel getChannel() { return channel; }
+    public void setChannel(ReminderChannel channel) { this.channel = channel; }
 
-    public boolean isActive() {
-        return active;
-    }
-    
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
+    public UUID getTemplateId() { return templateId; }
+    public void setTemplateId(UUID templateId) { this.templateId = templateId; }
 
-    public Instant getUpdatedAt() {
-        return updatedAt;
-    }
-    
-    public void setId(UUID id) {
-        this.id = id;
-    }
+    public String getTemplateName() { return templateName; }
+    public void setTemplateName(String templateName) { this.templateName = templateName; }
 
-    public void setName(String name) {
-        this.name = name;
-    }
-    
-    public void setDaysOffset(int daysOffset) {
-        this.daysOffset = daysOffset;
-    }
+    public boolean isAttachPdf() { return attachPdf; }
+    public void setAttachPdf(boolean attachPdf) { this.attachPdf = attachPdf; }
 
-    public void setTriggerType(ReminderTriggerType triggerType) {
-        this.triggerType = triggerType;
-    }
+    public boolean isActive() { return active; }
+    public void setActive(boolean active) { this.active = active; }
 
-    public void setChannel(ReminderChannel channel) {
-        this.channel = channel;
-    }
-    
-    public void setTemplate(Template template) {
-        this.template = template;
-    }
+    public int getMaxOccurrences() { return maxOccurrences; }
+    public void setMaxOccurrences(int maxOccurrences) { this.maxOccurrences = maxOccurrences; }
 
-    public void setActive(boolean active) {
-        this.active = active;
-    }
+    public int getCycleIntervalDays() { return cycleIntervalDays; }
+    public void setCycleIntervalDays(int cycleIntervalDays) { this.cycleIntervalDays = cycleIntervalDays; }
 
-    public int getMaxOccurrences() {
-        return maxOccurrences;
-    }
+    public LocalDate getStartDate() { return startDate; }
+    public void setStartDate(LocalDate startDate) { this.startDate = startDate; }
 
-    public void setMaxOccurrences(int maxOccurrences) {
-        this.maxOccurrences = maxOccurrences;
-    }
+    public Instant getCreatedAt() { return createdAt; }
+    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
 
-    public int getCycleIntervalDays() {
-        return cycleIntervalDays;
-    }
-
-    public void setCycleIntervalDays(int cycleIntervalDays) {
-        this.cycleIntervalDays = cycleIntervalDays;
-    }
-
-    public LocalDate getStartDate() {
-        return startDate;
-    }
-
-    public void setStartDate(LocalDate startDate) {
-        this.startDate = startDate;
-    }
-
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public void setUpdatedAt(Instant updatedAt) {
-        this.updatedAt = updatedAt;
-    }
+    public Instant getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
 }
