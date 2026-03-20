@@ -54,19 +54,19 @@ public class AuthController {
 
     @PostMapping("/resend-verification-email")
     public ResponseEntity<Void> resendVerificationEmail(@Valid @RequestBody ResendVerificationRequest request) {
-        authService.resendVerificationEmail(request.getOrganizationId());
+        authService.resendVerificationEmail(request.getEmail());
         return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/verify-phone")
     public ResponseEntity<Void> verifyPhone(@Valid @RequestBody VerifyPhoneRequest request) {
-        authService.verifyPhone(request.getOrganizationId(), request.getOtp());
+        authService.verifyPhone(request.getEmail(), request.getOtp());
         return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/resend-phone-otp")
     public ResponseEntity<Void> resendPhoneOtp(@Valid @RequestBody ResendVerificationRequest request) {
-        authService.resendPhoneOtp(request.getOrganizationId());
+        authService.resendPhoneOtp(request.getEmail());
         return ResponseEntity.noContent().build();
     }
 
@@ -75,7 +75,7 @@ public class AuthController {
      */
     @PostMapping("/forgot-password")
     public ResponseEntity<Void> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
-        authService.forgotPassword(request.getOrganizationId(), request.getEmail());
+        authService.forgotPassword(request.getEmail());
         return ResponseEntity.noContent().build();
     }
 

@@ -19,7 +19,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -73,26 +72,21 @@ public class OAuthService {
     /**
      * Builds the authorization URL to redirect the browser to.
      *
-     * @param provider        Google or Microsoft
-     * @param mode            LOGIN (existing user) or REGISTER (new org + user)
-     * @param organizationId  required when mode is LOGIN; null otherwise
-     * @param redirectUri     frontend callback URI registered with the provider
+     * @param provider    Google or Microsoft
+     * @param mode        LOGIN (existing user) or REGISTER (new org + user)
+     * @param redirectUri frontend callback URI registered with the provider
      */
     public String buildAuthorizationUrl(
             OAuthProvider provider,
             OAuthMode mode,
-            UUID organizationId,
             String redirectUri
     ) {
-        if (mode == OAuthMode.LOGIN && organizationId == null) {
-            throw new ValidationException("organizationId is required for LOGIN mode");
-        }
         if (redirectUri == null || redirectUri.isBlank()) {
             throw new ValidationException("redirectUri must not be blank");
         }
 
         String state = (mode == OAuthMode.LOGIN)
-                ? stateService.createLoginState(organizationId)
+                ? stateService.createLoginState()
                 : stateService.createRegisterState();
 
         return resolveClient(provider).buildAuthorizationUrl(redirectUri, state);
@@ -124,7 +118,7 @@ public class OAuthService {
         OAuthUserProfile profile = resolveClient(provider).fetchUserProfile(code, redirectUri);
 
         User user = switch (stateData.mode()) {
-            case LOGIN    -> handleLogin(provider, profile, stateData.organizationId());
+            case LOGIN    -> handleLogin(provider, profile);
             case REGISTER -> handleRegister(provider, profile);
         };
 
@@ -133,11 +127,7 @@ public class OAuthService {
 
     // ── Private helpers ──────────────────────────────────────────────────────
 
-    private User handleLogin(OAuthProvider provider, OAuthUserProfile profile, UUID organizationId) {
-        if (organizationId == null) {
-            throw new UnauthorizedException("Organization context is required for OAuth login");
-        }
-
+    private User handleLogin(OAuthProvider provider, OAuthUserProfile profile) {
         Optional<UserOAuthConnection> existingConnection =
                 oauthConnectionRepository.findByProviderAndProviderUserId(provider, profile.providerUserId());
 
@@ -146,19 +136,15 @@ public class OAuthService {
             user = existingConnection.get().getUser();
         } else {
             // First-time OAuth login: link this provider to the existing email-based account
-            user = userRepository.findByEmailAndOrganizationId(profile.email(), organizationId)
+            user = userRepository.findByEmail(profile.email())
                     .orElseThrow(() -> new UnauthorizedException(
-                            "No account found for " + profile.email() + " in this organization. "
-                            + "Please register first."));
+                            "No account found for " + profile.email() + ". Please register first."));
 
             oauthConnectionRepository.save(new UserOAuthConnection(user, provider, profile.providerUserId()));
         }
 
         if (!user.isActive()) {
             throw new UnauthorizedException("User account is inactive");
-        }
-        if (organizationId != null && !user.getOrganization().getId().equals(organizationId)) {
-            throw new UnauthorizedException("This OAuth account belongs to a different organization");
         }
 
         syncProfileImage(user, profile.profileImageUrl());

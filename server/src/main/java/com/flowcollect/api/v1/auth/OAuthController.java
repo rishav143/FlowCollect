@@ -9,8 +9,6 @@ import com.flowcollect.exception.http.ValidationException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.UUID;
-
 /**
  * OAuth 2.0 login and registration endpoints.
  *
@@ -38,23 +36,21 @@ public class OAuthController {
     /**
      * Returns the provider's authorization URL.
      *
-     * @param provider       {@code google} or {@code microsoft} (case-insensitive)
-     * @param mode           {@code LOGIN} or {@code REGISTER}
-     * @param organizationId required when {@code mode=LOGIN}; omit for REGISTER
-     * @param redirectUri    the URI the provider should redirect back to (must be registered
-     *                       in the provider's OAuth app settings)
+     * @param provider    {@code google} or {@code microsoft} (case-insensitive)
+     * @param mode        {@code LOGIN} or {@code REGISTER}
+     * @param redirectUri the URI the provider should redirect back to (must be registered
+     *                    in the provider's OAuth app settings)
      */
     @GetMapping("/{provider}/authorize-url")
     public ResponseEntity<OAuthAuthorizeUrlResponse> getAuthorizeUrl(
             @PathVariable("provider") String provider,
             @RequestParam("mode") String mode,
-            @RequestParam(value = "organizationId", required = false) UUID organizationId,
             @RequestParam("redirectUri") String redirectUri
     ) {
         OAuthProvider oAuthProvider = parseProvider(provider);
         OAuthMode oAuthMode = parseMode(mode);
 
-        String url = oAuthService.buildAuthorizationUrl(oAuthProvider, oAuthMode, organizationId, redirectUri);
+        String url = oAuthService.buildAuthorizationUrl(oAuthProvider, oAuthMode, redirectUri);
         return ResponseEntity.ok(new OAuthAuthorizeUrlResponse(url));
     }
 

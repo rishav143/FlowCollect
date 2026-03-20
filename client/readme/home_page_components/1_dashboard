@@ -1,0 +1,198 @@
+Perfect. This is exactly how **good products are built** — one screen at a time, with intention.
+We’ll go **deep only on the Dashboard**. No sidebar, no settings, no noise.
+
+---
+
+# 📊 DASHBOARD — THE HEART OF YOUR PRODUCT
+
+![Image](https://static.coupler.io/templates/quickbooks-accounts-receivable-dashboard-spreadsheets.png)
+
+![Image](https://cdn.dribbble.com/userupload/10303434/file/still-aa86fa06de02deff41d94d98b7a11d6b.png?format=webp\&resize=400x300\&vertical=center)
+
+![Image](https://cdn-resources.highradius.com/resources/wp-content/uploads/2023/05/CF-Dashboard-23.png)
+
+![Image](https://www.geckoboard.com/uploads/Cashflow-dashboard-example.png)
+
+## 🧠 DASHBOARD PHILOSOPHY
+
+Your dashboard answers **only 3 questions**:
+
+1. **How much money is stuck?**
+2. **What needs action today?**
+3. **Who is causing the delay?**
+
+If a widget doesn’t answer one of these → delete it.
+
+---
+
+# 🧱 DASHBOARD LAYOUT (DESKTOP)
+
+```
+┌────────── KPI STRIP (Top) ──────────┐
+│ Outstanding | Overdue | Due Soon    │
+└─────────────────────────────────────┘
+
+┌──── Action Table ────┬─ Insights ───┐
+│ Needs Follow-up      │ Top Delayers │
+│ (main focus)         │              │
+└──────────────────────┴──────────────┘
+```
+
+Clean. Calm. Purpose-driven.
+
+---
+
+# 1️⃣ TOP KPI STRIP (MOST IMPORTANT)
+
+### Visual
+
+* Horizontal cards
+* Big numbers
+* Minimal labels
+* Soft background
+
+### Cards to include (ONLY THESE):
+
+#### 💰 Total Outstanding
+
+> “How much money hasn’t arrived yet?”
+
+#### ⏰ Overdue Amount
+
+> “How much is already late?”
+
+#### 📅 Due This Week
+
+> “What’s coming up?”
+
+#### 📊 Avg Delay (days)
+
+> “Is this getting better or worse?”
+
+❌ No charts
+❌ No percentages
+❌ No month selector in MVP
+
+Numbers hit harder.
+
+---
+
+# 2️⃣ “NEEDS FOLLOW-UP TODAY” (CORE SECTION)
+
+This is your **hero table**.
+
+### Table columns:
+
+* Client Name
+* Invoice #
+* Amount
+* Due Date
+* Days Overdue
+* **Action**
+
+### Action button:
+
+* “Follow up now”
+* Opens invoice detail → reminder options
+
+### UX details:
+
+* Rows highlighted:
+
+  * Red → overdue
+  * Yellow → due today
+* Sticky header
+* Max 8–10 rows (avoid overwhelm)
+
+👉 Emotion:
+
+> “I know exactly what to do next.”
+
+---
+
+# 3️⃣ INSIGHTS (RIGHT SIDE – OPTIONAL BUT POWERFUL)
+
+Keep this **small & sharp**.
+
+### Include only:
+
+* 🔴 Top 3 delayed clients
+* 💸 Oldest unpaid invoice
+* ⏳ Amount stuck > 30 days
+
+No graphs.
+Just lists.
+
+---
+
+# 4️⃣ EMPTY STATE (VERY IMPORTANT)
+
+When user has **no invoices yet**:
+
+### Show:
+
+* Friendly illustration
+* Text:
+
+  > “No invoices yet.
+  > Add your first invoice to start tracking payments.”
+
+### Button:
+
+👉 **Add Invoice**
+
+This reduces anxiety.
+
+---
+
+# 🎨 VISUAL STYLE
+
+* White background
+* Subtle card borders
+* Soft shadows (very light)
+* Red used **only** for overdue
+* Green only for “Paid” (rare on dashboard)
+
+---
+
+# 🧠 WHAT NOT TO SHOW ON DASHBOARD ❌
+
+* Paid invoices list
+* Reports
+* Monthly graphs
+* Client directory
+* Reminder rules
+
+Dashboard is **action**, not analysis.
+
+---
+
+# 📱 MOBILE DASHBOARD (SHORT NOTE)
+
+* KPI cards → horizontal scroll
+* Table → stacked cards
+* Follow-up button → full width
+
+Same info. Different layout.
+
+---
+
+# 🔥 WHY THIS DASHBOARD WORKS
+
+* Founder opens → sees pain
+* System tells them what to do
+* No thinking, only action
+* Builds daily habit
+
+This is how **money-focused SaaS** win.
+
+---
+
+## NEXT (pick one):
+
+1️⃣ Drill into **KPI card design**
+2️⃣ Drill into **Follow-up table interactions**
+3️⃣ Dashboard empty + error states
+4️⃣ Convert dashboard into **component list (React)**
+
+Say the number and we continue 👌

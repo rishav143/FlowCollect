@@ -12,7 +12,6 @@ import org.springframework.stereotype.Service;
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
-import java.util.UUID;
 
 /**
  * Issues and validates short-lived CSRF-protection state tokens for the OAuth flow.
@@ -25,7 +24,6 @@ import java.util.UUID;
 public class OAuthStateService {
 
     private static final String MODE_CLAIM = "oauthMode";
-    private static final String ORG_CLAIM = "organizationId";
     private static final String NONCE_CLAIM = "nonce";
     private static final long STATE_TTL_MS = 10 * 60 * 1_000L; // 10 minutes
 
@@ -36,14 +34,14 @@ public class OAuthStateService {
         this.key = Keys.hmacShaKeyFor(keyBytes);
     }
 
-    /** Creates a state token for a LOGIN flow that is scoped to the given organization. */
-    public String createLoginState(UUID organizationId) {
-        return buildState(OAuthMode.LOGIN, organizationId);
+    /** Creates a state token for a LOGIN flow. */
+    public String createLoginState() {
+        return buildState(OAuthMode.LOGIN);
     }
 
-    /** Creates a state token for a REGISTER flow (no existing organization required). */
+    /** Creates a state token for a REGISTER flow. */
     public String createRegisterState() {
-        return buildState(OAuthMode.REGISTER, null);
+        return buildState(OAuthMode.REGISTER);
     }
 
     /**
@@ -68,10 +66,7 @@ public class OAuthStateService {
             }
             OAuthMode mode = OAuthMode.valueOf(modeStr);
 
-            String orgIdStr = claims.get(ORG_CLAIM, String.class);
-            UUID organizationId = orgIdStr != null ? UUID.fromString(orgIdStr) : null;
-
-            return new StateData(mode, organizationId);
+            return new StateData(mode);
 
         } catch (ExpiredJwtException e) {
             throw new UnauthorizedException("OAuth login session has expired. Please try again.");
@@ -82,24 +77,19 @@ public class OAuthStateService {
         }
     }
 
-    private String buildState(OAuthMode mode, UUID organizationId) {
+    private String buildState(OAuthMode mode) {
         Date now = new Date();
         Date expiry = new Date(now.getTime() + STATE_TTL_MS);
 
-        var builder = Jwts.builder()
+        return Jwts.builder()
                 .claim(MODE_CLAIM, mode.name())
-                .claim(NONCE_CLAIM, UUID.randomUUID().toString())
+                .claim(NONCE_CLAIM, java.util.UUID.randomUUID().toString())
                 .issuedAt(now)
                 .expiration(expiry)
-                .signWith(key);
-
-        if (organizationId != null) {
-            builder.claim(ORG_CLAIM, organizationId.toString());
-        }
-
-        return builder.compact();
+                .signWith(key)
+                .compact();
     }
 
     /** Parsed contents of an OAuth state token. */
-    public record StateData(OAuthMode mode, UUID organizationId) {}
+    public record StateData(OAuthMode mode) {}
 }

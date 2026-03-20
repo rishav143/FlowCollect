@@ -121,19 +121,17 @@ class AuthServiceTest {
 
     @Test
     void login_pendingEmailVerification_throwsUnauthorized() {
-        UUID orgId = UUID.randomUUID();
         LoginRequest request = new LoginRequest();
-        request.setOrganizationId(orgId);
         request.setEmail("owner@test.com");
         request.setPassword("password123");
 
         Organization org = mock(Organization.class);
         when(org.isDeleted()).thenReturn(false);
-        when(organizationService.getById(orgId)).thenReturn(org);
 
         User user = mock(User.class);
         when(user.getStatus()).thenReturn(UserStatus.PENDING_EMAIL_VERIFICATION);
-        when(userRepository.findByEmailAndOrganizationId("owner@test.com", orgId)).thenReturn(Optional.of(user));
+        when(user.getOrganization()).thenReturn(org);
+        when(userRepository.findByEmail("owner@test.com")).thenReturn(Optional.of(user));
 
         UnauthorizedException ex = assertThrows(UnauthorizedException.class,
                 () -> authService.login(request));
@@ -142,22 +140,19 @@ class AuthServiceTest {
 
     @Test
     void login_success_returnsToken() {
-        UUID orgId = UUID.randomUUID();
         LoginRequest request = new LoginRequest();
-        request.setOrganizationId(orgId);
         request.setEmail("owner@test.com");
         request.setPassword("password123");
 
         Organization org = mock(Organization.class);
         when(org.isDeleted()).thenReturn(false);
-        when(organizationService.getById(orgId)).thenReturn(org);
 
-        // Need a real password hash for verification
         String hash = com.flowcollect.application.user.UserUtil.hashPassword("password123");
         User user = mock(User.class);
         when(user.getStatus()).thenReturn(UserStatus.ACTIVE);
         when(user.getPasswordHash()).thenReturn(hash);
-        when(userRepository.findByEmailAndOrganizationId("owner@test.com", orgId)).thenReturn(Optional.of(user));
+        when(user.getOrganization()).thenReturn(org);
+        when(userRepository.findByEmail("owner@test.com")).thenReturn(Optional.of(user));
 
         LoginResponse expected = new LoginResponse();
         expected.setToken("jwt-token");
@@ -171,19 +166,17 @@ class AuthServiceTest {
 
     @Test
     void login_inactiveUser_throwsUnauthorized() {
-        UUID orgId = UUID.randomUUID();
         LoginRequest request = new LoginRequest();
-        request.setOrganizationId(orgId);
         request.setEmail("owner@test.com");
         request.setPassword("password123");
 
         Organization org = mock(Organization.class);
         when(org.isDeleted()).thenReturn(false);
-        when(organizationService.getById(orgId)).thenReturn(org);
 
         User user = mock(User.class);
         when(user.getStatus()).thenReturn(UserStatus.INACTIVE);
-        when(userRepository.findByEmailAndOrganizationId("owner@test.com", orgId)).thenReturn(Optional.of(user));
+        when(user.getOrganization()).thenReturn(org);
+        when(userRepository.findByEmail("owner@test.com")).thenReturn(Optional.of(user));
 
         assertThrows(UnauthorizedException.class, () -> authService.login(request));
     }
@@ -195,15 +188,16 @@ class AuthServiceTest {
 
     @Test
     void login_archivedOrg_throwsUnauthorized() {
-        UUID orgId = UUID.randomUUID();
         LoginRequest request = new LoginRequest();
-        request.setOrganizationId(orgId);
         request.setEmail("owner@test.com");
         request.setPassword("password123");
 
         Organization org = mock(Organization.class);
         when(org.isDeleted()).thenReturn(true);
-        when(organizationService.getById(orgId)).thenReturn(org);
+
+        User user = mock(User.class);
+        when(user.getOrganization()).thenReturn(org);
+        when(userRepository.findByEmail("owner@test.com")).thenReturn(Optional.of(user));
 
         assertThrows(UnauthorizedException.class, () -> authService.login(request));
     }
@@ -214,67 +208,59 @@ class AuthServiceTest {
 
     @Test
     void forgotPassword_existingUser_sendsResetEmail() {
-        UUID orgId = UUID.randomUUID();
         Organization org = mock(Organization.class);
         when(org.isDeleted()).thenReturn(false);
-        when(organizationService.getById(orgId)).thenReturn(org);
 
         User user = mock(User.class);
         when(user.getPasswordHash()).thenReturn("some-hash");
-        when(userRepository.findByEmailAndOrganizationId("owner@test.com", orgId))
-                .thenReturn(Optional.of(user));
+        when(user.getOrganization()).thenReturn(org);
+        when(userRepository.findByEmail("owner@test.com")).thenReturn(Optional.of(user));
 
-        authService.forgotPassword(orgId, "owner@test.com");
+        authService.forgotPassword("owner@test.com");
 
         verify(verificationService).sendPasswordResetEmail(user);
     }
 
     @Test
     void forgotPassword_unknownEmail_doesNotThrowAndSendsNothing() {
-        UUID orgId = UUID.randomUUID();
-        Organization org = mock(Organization.class);
-        when(org.isDeleted()).thenReturn(false);
-        when(organizationService.getById(orgId)).thenReturn(org);
-        when(userRepository.findByEmailAndOrganizationId(any(), eq(orgId)))
-                .thenReturn(Optional.empty());
+        when(userRepository.findByEmail(any())).thenReturn(Optional.empty());
 
         // Must never throw — prevents user enumeration
-        assertDoesNotThrow(() -> authService.forgotPassword(orgId, "ghost@test.com"));
+        assertDoesNotThrow(() -> authService.forgotPassword("ghost@test.com"));
         verify(verificationService, never()).sendPasswordResetEmail(any());
     }
 
     @Test
     void forgotPassword_oauthOnlyUser_doesNotSendResetEmail() {
-        UUID orgId = UUID.randomUUID();
         Organization org = mock(Organization.class);
         when(org.isDeleted()).thenReturn(false);
-        when(organizationService.getById(orgId)).thenReturn(org);
 
         User oauthUser = mock(User.class);
         when(oauthUser.getPasswordHash()).thenReturn(null); // OAuth-only — no password
-        when(userRepository.findByEmailAndOrganizationId("oauth@test.com", orgId))
-                .thenReturn(Optional.of(oauthUser));
+        when(oauthUser.getOrganization()).thenReturn(org);
+        when(userRepository.findByEmail("oauth@test.com")).thenReturn(Optional.of(oauthUser));
 
-        assertDoesNotThrow(() -> authService.forgotPassword(orgId, "oauth@test.com"));
+        assertDoesNotThrow(() -> authService.forgotPassword("oauth@test.com"));
         verify(verificationService, never()).sendPasswordResetEmail(any());
     }
 
     @Test
     void forgotPassword_archivedOrg_doesNotThrow() {
-        UUID orgId = UUID.randomUUID();
         Organization org = mock(Organization.class);
         when(org.isDeleted()).thenReturn(true);
-        when(organizationService.getById(orgId)).thenReturn(org);
 
-        assertDoesNotThrow(() -> authService.forgotPassword(orgId, "owner@test.com"));
+        User user = mock(User.class);
+        when(user.getOrganization()).thenReturn(org);
+        when(userRepository.findByEmail("owner@test.com")).thenReturn(Optional.of(user));
+
+        assertDoesNotThrow(() -> authService.forgotPassword("owner@test.com"));
         verify(verificationService, never()).sendPasswordResetEmail(any());
     }
 
     @Test
-    void forgotPassword_nullInputs_doesNotThrow() {
-        assertDoesNotThrow(() -> authService.forgotPassword(null, "owner@test.com"));
-        assertDoesNotThrow(() -> authService.forgotPassword(UUID.randomUUID(), null));
-        assertDoesNotThrow(() -> authService.forgotPassword(UUID.randomUUID(), "  "));
+    void forgotPassword_nullOrBlankEmail_doesNotThrow() {
+        assertDoesNotThrow(() -> authService.forgotPassword(null));
+        assertDoesNotThrow(() -> authService.forgotPassword("  "));
         verify(verificationService, never()).sendPasswordResetEmail(any());
     }
 

@@ -1,0 +1,206 @@
+Excellent. This page is actually your **secret weapon**.
+If Dashboard shows *pain*, **Follow-ups page drives action**.
+
+We’ll design it so a founder can clear follow-ups like a task list.
+
+---
+
+# ⏰ FOLLOW-UPS PAGE — DESIGN & CONTENT
+
+![Image](https://www.slideteam.net/wp/wp-content/uploads/2024/01/Vendor-Payment-Due-Tracking-Dashboard-with-Paid-Invoices.png)
+
+![Image](https://quickbooks.intuit.com/oidam/intuit/sbseg/en_us/Blog/Graphic/past-due-invoice-example-image-us-en.png)
+
+![Image](https://media.geeksforgeeks.org/wp-content/uploads/20251027124748814803/Collection-Interface.webp)
+
+![Image](https://community.sap.com/legacyfs/online/storage/blog_attachments/2014/10/desktop_1_561416.jpg)
+
+## 🧠 FOLLOW-UPS PAGE PHILOSOPHY
+
+This page answers **one brutal question**:
+
+> “Who do I need to follow up with right now?”
+
+Not history.
+Not invoices.
+**Action only.**
+
+---
+
+# 🧱 PAGE LAYOUT (DESKTOP)
+
+```
+┌──── Page Header ─────────────────────┐
+│ Follow-ups        Today | Overdue    │
+│ Subtitle: Invoices needing action   │
+└──────────────────────────────────────┘
+
+┌──── Quick Filters ───────────────────┐
+│ Today ▾  Overdue ▾  Client ▾         │
+└──────────────────────────────────────┘
+
+┌──── Follow-up Action List ───────────┐
+│ Follow-up rows                       │
+└──────────────────────────────────────┘
+```
+
+This should feel like a **to-do list for money**.
+
+---
+
+# 1️⃣ PAGE HEADER
+
+### Title:
+
+**Follow-ups**
+
+### Subtitle:
+
+> “Invoices that need your attention”
+
+No Add Invoice button here.
+This page is about **clearing tasks**, not adding data.
+
+---
+
+# 2️⃣ QUICK FILTER TABS (KEY)
+
+Default filter:
+
+* **Today**
+
+Other tabs:
+
+* Overdue
+* Upcoming (next 7 days)
+* All
+
+### Badges:
+
+* Today (3)
+* Overdue (8)
+
+This creates urgency.
+
+---
+
+# 3️⃣ FOLLOW-UP ACTION LIST (CORE)
+
+This is **not** a normal invoice table.
+
+### Each row contains:
+
+* Client Name (bold)
+* Invoice # (small)
+* Amount
+* Due date + days overdue
+* Last follow-up info
+* **Primary Action Button**
+
+---
+
+### Example row layout:
+
+```
+ABC Pvt Ltd
+Invoice #INV-1023 · ₹45,000
+Due: 7 days ago
+Last follow-up: WhatsApp · 3 days ago
+
+[ Follow up now ]
+```
+
+Card-style rows > dense tables.
+
+---
+
+# 4️⃣ PRIMARY ACTION FLOW
+
+Click **Follow up now** →
+
+* Opens quick action modal:
+
+  * Send email
+  * Send WhatsApp
+  * Mark as paid
+  * Add note (“Client promised Friday”)
+
+Fast. No page reload.
+
+---
+
+# 5️⃣ VISUAL PRIORITY (VERY IMPORTANT)
+
+* Overdue rows → subtle red left border
+* Due today → yellow accent
+* Upcoming → neutral
+
+No bright colors. Just guidance.
+
+---
+
+# 6️⃣ SORTING (AUTOMATIC, NOT USER-CONTROLLED)
+
+Default sort:
+
+1. Oldest overdue first
+2. Highest amount next
+3. Recent follow-ups last
+
+Users shouldn’t think about sorting.
+
+---
+
+# 7️⃣ EMPTY STATES
+
+### No follow-ups today 🎉
+
+Text:
+
+> “All caught up!
+> No invoices need follow-up today.”
+
+Small celebration emoji is okay 😄
+
+---
+
+# ❌ WHAT NOT TO PUT HERE
+
+* Paid invoices
+* Invoice upload
+* Reminder rules
+* Charts
+* Client analytics
+
+This page is a **strike zone**, not a report.
+
+---
+
+# 🧠 WHY THIS PAGE IS GOLD
+
+* Converts data → action
+* Reduces mental load
+* Encourages daily habit
+* Feels productive
+
+Most invoice tools don’t have this page —
+that’s your **differentiator**.
+
+---
+
+# 📱 MOBILE BEHAVIOR (SHORT)
+
+* Card list only
+* Big “Follow up now” button
+* Swipe to mark as paid (later)
+
+---
+
+## NEXT (your move):
+
+1️⃣ Invoice Detail page (timeline + reminders)
+2️⃣ Clients page
+3️⃣ Reminder Rules page
+4️⃣ End-to-end follow-up flow (click by click)
+
+Pick one and we go deeper 🚀

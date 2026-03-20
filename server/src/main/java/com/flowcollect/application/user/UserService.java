@@ -39,9 +39,8 @@ public class UserService {
     @Transactional
     public User createPending(Organization organization, String name, String email, String password) {
         String normalizedEmail = email.trim().toLowerCase();
-        if (userRepository.existsByEmailAndOrganizationId(normalizedEmail, organization.getId())) {
-            throw new ConflictException(
-                "Email " + normalizedEmail + " must be unique within organization with ID: " + organization.getId());
+        if (userRepository.existsByEmail(normalizedEmail)) {
+            throw new ConflictException("Email " + normalizedEmail + " is already registered");
         }
         String passwordHash = UserUtil.hashPassword(password);
         User user = new User(organization, name.trim(), normalizedEmail, passwordHash, UserRole.ADMIN, UserStatus.PENDING_EMAIL_VERIFICATION);
@@ -62,9 +61,8 @@ public class UserService {
         Organization organization = organizationService.getById(organizationId);
 
         String email = request.getEmail().trim().toLowerCase();
-        if (userRepository.existsByEmailAndOrganizationId(email, organizationId)) {
-            throw new ConflictException( 
-                "Email " + email + " must be unique within organization with ID: " + organizationId);
+        if (userRepository.existsByEmail(email)) {
+            throw new ConflictException("Email " + email + " is already registered");
         }
         if(request.getName() == null || request.getName().isBlank()) {
             throw new ValidationException( 
@@ -170,9 +168,8 @@ public class UserService {
                     "Email must not be blank");
             }
             if (!email.equals(user.getEmail())
-                    && userRepository.existsByEmailAndOrganizationIdAndIdNot(email, organizationId, userId)) {
-                throw new ConflictException( 
-                    "Email " + email + " must be unique within organization with ID: " + organizationId);
+                    && userRepository.existsByEmailAndIdNot(email, userId)) {
+                throw new ConflictException("Email " + email + " is already registered");
             }
             if (!email.equals(user.getEmail())) {
                 user.setEmail(email);

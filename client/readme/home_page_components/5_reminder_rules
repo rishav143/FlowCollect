@@ -1,0 +1,294 @@
+Perfect. This is the **“set once, forget forever”** page.
+If you design this wrong, users get scared.
+If you design it right, they feel **relieved** 😌
+
+---
+
+# 🔔 REMINDER RULES PAGE — DESIGN & CONTENT
+
+![Image](https://framerusercontent.com/images/NN3HfJBX6TAx0xqkOnfG81s6lo.png?height=2700\&width=4344)
+
+![Image](https://public-site.marketing.pandadoc-static.com/app/uploads/sites/3/INF_invoice-payment-reminder_1-1024x512.png)
+
+![Image](https://cdn.highradius.com/wp-content/uploads/2025/07/Payment-Gateway-b2-b-payment.png)
+
+![Image](https://miro.medium.com/v2/resize%3Afit%3A1400/0%2A2clKm5acsNmoBpbM)
+
+## 🧠 REMINDER RULES PHILOSOPHY
+
+This page answers **one calming question**:
+
+> “Will the system remind my clients automatically, without embarrassing me?”
+
+So:
+
+* Human tone
+* Predictable timing
+* No complex logic
+
+---
+
+# 🧱 PAGE LAYOUT (DESKTOP)
+
+```
+┌──── Page Header ──────────────────────────┐
+│ Reminder Rules                            │
+│ Subtitle: Automatic follow-ups timeline  │
+└───────────────────────────────────────────┘
+
+┌──── Reminder Timeline (main) ─────────────┐
+│ Before Due → Due Day → After Due          │
+└───────────────────────────────────────────┘
+```
+
+Think **timeline**, not form.
+
+---
+
+# 1️⃣ PAGE HEADER
+
+### Title:
+
+**Reminder Rules**
+
+### Subtitle:
+
+> “Automatically remind clients about pending payments”
+
+No “Save” panic.
+Changes auto-save.
+
+---
+
+# 2️⃣ REMINDER TIMELINE (CORE UI)
+
+Vertical or horizontal timeline with cards.
+
+### Default rules (pre-filled):
+
+#### 🟡 Before Due
+
+* **3 days before due**
+* Channel: Email
+* Tone: Polite
+
+> “Just a gentle reminder that invoice #123 is due on…”
+
+---
+
+#### 🟠 Due Day
+
+* **On due date**
+* Channel: Email / WhatsApp
+* Tone: Neutral
+
+> “Invoice #123 is due today…”
+
+---
+
+#### 🔴 After Due
+
+* **7 days overdue**
+* Channel: WhatsApp
+* Tone: Firm
+
+> “Invoice #123 is overdue. Please confirm payment date.”
+
+---
+
+#### 🔥 Escalation (Optional MVP+)
+
+* **15 days overdue**
+* Channel: Manual reminder
+* Message: “Please call client”
+
+No auto-legal threats.
+
+---
+
+# 3️⃣ EACH RULE CARD CONTAINS
+
+* Timing (editable dropdown)
+* Channel (Email / WhatsApp)
+* Message preview
+* Enable / Disable toggle
+
+No condition builders.
+No AND / OR logic.
+
+---
+
+# 4️⃣ MESSAGE TEMPLATE EDITOR (SIMPLE)
+
+Click “Edit message” →
+
+* Plain text box
+* Variables:
+
+  * {{ClientName}}
+  * {{InvoiceNumber}}
+  * {{Amount}}
+  * {{DueDate}}
+
+Show preview below editor.
+
+---
+
+# 5️⃣ GLOBAL SETTINGS (BOTTOM)
+
+Small section:
+
+* Business signature
+* Default sender email
+* WhatsApp number (later)
+
+---
+
+# 6️⃣ EMPTY / FIRST-TIME STATE
+
+If no rules exist:
+
+> “We’ve added default reminder rules for you.
+> You can customize them anytime.”
+
+This reduces fear.
+
+---
+
+# ❌ WHAT NOT TO ADD
+
+* Cron expressions
+* Workflow builders
+* Legal language templates
+* Multiple branches
+* AI-generated messages (yet)
+
+Keep it human.
+
+---
+
+# 🎨 VISUAL STYLE
+
+* Soft cards
+* Calm colors
+* No red warnings
+* Toggle switches, not checkboxes
+
+This page should feel **safe**.
+
+---
+
+# 🧠 WHY THIS PAGE BUILDS TRUST
+
+* Users fear annoying clients
+* You give control without complexity
+* Automation feels respectful
+
+That’s rare.
+
+---
+
+# 📱 MOBILE BEHAVIOR
+
+* Vertical timeline
+* Expandable cards
+* Inline editing
+
+---
+
+## NEXT OPTIONS:
+
+1️⃣ Invoice Detail page (timeline + actions)
+2️⃣ End-to-end reminder flow (rule → follow-up → paid)
+3️⃣ Error states (failed reminders, bounced email)
+4️⃣ Data schema for reminder rules
+
+Say the number — we’re almost done designing the whole product 🚀
+
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  🔔 Reminder Rules                                                           │
+│  Automatically remind clients about unpaid invoices                          │
+│                                                                              │
+│                                                   [ Enable All  ON ⏻ ]       │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  REMINDER TIMELINE                                                            │
+│                                                                              │
+│  ┌────────────────────────────── RULE CARD ───────────────────────────────┐  │
+│  │  Before Due                                         [ Enabled ⏻ ]      │  │
+│  │                                                                          │  │
+│  │  Timing:  [ 3 days before due ▼ ]                                       │  │
+│  │  Channel: [ Email ☐ ] [ WhatsApp ☐ ] [ Manual ☐ ]                      │  │
+│  │                                                                          │  │
+│  │  Message Preview:                                                       │  │
+│  │  "Hi {{ClientName}}, this is a reminder that Invoice                    │  │
+│  │  {{InvoiceNumber}} of ₹{{Amount}} is due on {{DueDate}}."              │  │
+│  │                                                                          │  │
+│  │                        [ Edit Message ]   [ Delete ]                    │  │
+│  └────────────────────────────────────────────────────────────────────────┘  │
+│                                                                              │
+│  ┌────────────────────────────── RULE CARD ───────────────────────────────┐  │
+│  │  Due Date                                           [ Enabled ⏻ ]      │  │
+│  │                                                                          │  │
+│  │  Timing:  [ On due date ▼ ]                                             │  │
+│  │  Channel: [ Email ☑ ] [ WhatsApp ☑ ] [ Manual ☐ ]                      │  │
+│  │                                                                          │  │
+│  │  Message Preview:                                                       │  │
+│  │  "Invoice {{InvoiceNumber}} is due today. Please arrange payment."     │  │
+│  │                                                                          │  │
+│  │                        [ Edit Message ]   [ Delete ]                    │  │
+│  └────────────────────────────────────────────────────────────────────────┘  │
+│                                                                              │
+│  ┌────────────────────────────── RULE CARD ───────────────────────────────┐  │
+│  │  Overdue                                           [ Enabled ⏻ ]       │  │
+│  │                                                                          │  │
+│  │  Timing:  [ 7 days overdue ▼ ]                                          │  │
+│  │  Channel: [ Email ☐ ] [ WhatsApp ☑ ] [ Manual ☐ ]                      │  │
+│  │                                                                          │  │
+│  │  Message Preview:                                                       │  │
+│  │  "Invoice {{InvoiceNumber}} is overdue. Please confirm payment date."  │  │
+│  │                                                                          │  │
+│  │                        [ Edit Message ]   [ Delete ]                    │  │
+│  └────────────────────────────────────────────────────────────────────────┘  │
+│                                                                              │
+│                        ➕  Add New Reminder Rule                             │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  MESSAGE TEMPLATE EDITOR (MODAL - POPUP)                                     │
+│                                                                              │
+│  Edit Reminder Message                                                       │
+│                                                                              │
+│  ┌──────────────────────────────────────────────────────────────────────┐    │
+│  │ Text Editor                                                           │    │
+│  │                                                                        │    │
+│  │ Hi {{ClientName}}, this is a reminder that Invoice                    │    │
+│  │ {{InvoiceNumber}} of ₹{{Amount}} is due on {{DueDate}}.               │    │
+│  └──────────────────────────────────────────────────────────────────────┘    │
+│                                                                              │
+│  Variables:                                                                  │
+│  [ {{ClientName}} ]  [ {{InvoiceNumber}} ]  [ {{Amount}} ]  [ {{DueDate}} ] │
+│                                                                              │
+│  Live Preview:                                                               │
+│  "Hi ABC Pvt Ltd, Invoice INV-123 of ₹45,000 is due on 12 Mar 2026."        │
+│                                                                              │
+│                                    [ Cancel ]   [ Save Message ]            │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  GLOBAL SETTINGS                                                             │
+│                                                                              │
+│  Sender Name:     [ ABC Consulting Pvt Ltd              ]                  │
+│  Sender Email:    [ billing@abc.com                      ]                  │
+│                                                                              │
+│  WhatsApp Reminders:   [ Enable ⏻ ]                                         │
+│  WhatsApp Number:      [ +91 98765 43210               ]                   │
+│                                                                              │
+│  Signature Preview:                                                          │
+│  — ABC Consulting Pvt Ltd                                                    │
+└──────────────────────────────────────────────────────────────────────────────┘

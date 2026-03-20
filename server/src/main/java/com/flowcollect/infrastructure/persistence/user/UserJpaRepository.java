@@ -17,9 +17,15 @@ public interface UserJpaRepository extends JpaRepository<User, UUID>, JpaSpecifi
 
     Optional<User> findByOrganizationId(UUID id);
 
+    Optional<User> findByEmail(String email);
+
     Optional<User> findByEmailAndOrganizationId(String email, UUID organizationId);
 
     Optional<User> findFirstByOrganizationIdAndRole(UUID organizationId, UserRole role);
+
+    boolean existsByEmail(String email);
+
+    boolean existsByEmailAndIdNot(String email, UUID id);
 
     boolean existsByEmailAndOrganizationId(String email, UUID organizationId);
 

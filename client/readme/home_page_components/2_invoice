@@ -1,0 +1,220 @@
+Perfect — this is the **second most important screen** after Dashboard.
+We’ll treat **Invoices** as a *working list*, not an accounting report.
+
+---
+
+# 📄 INVOICES PAGE — DESIGN & CONTENT
+
+![Image](https://cdn.dribbble.com/userupload/17726605/file/original-e45a61bd4a39708d3ec527dbff4cb7a4.png?crop=6x0-3420x2561\&format=webp\&resize=400x300\&vertical=center)
+
+![Image](https://cdn.dribbble.com/userupload/24895955/file/original-84fbff56720a2a664d792e02148e4552.png?format=webp\&resize=400x300\&vertical=center)
+
+![Image](https://info.eaglebusinesssoftware.com/support/help_modules/84/sales/image453.gif)
+
+![Image](https://connect.protel.net/files/source/pairexthelp/en_US/image1968.gif)
+
+## 🧠 INVOICES PAGE PHILOSOPHY
+
+This page answers **one question only**:
+
+> “What’s the status of every invoice?”
+
+Not history.
+Not analytics.
+Just clarity.
+
+---
+
+# 🧱 PAGE LAYOUT (DESKTOP)
+
+```
+┌──── Page Header ─────────────────────┐
+│ Invoices        [+ Add Invoice]      │
+│ Tabs: All | Due | Overdue | Paid     │
+└──────────────────────────────────────┘
+
+┌──── Filters (lightweight) ───────────┐
+│ Client ▾  Date ▾  Amount ▾           │
+└──────────────────────────────────────┘
+
+┌──── Invoices Table (main) ───────────┐
+│ Invoice rows                         │
+└──────────────────────────────────────┘
+```
+
+Simple. Predictable. Fast.
+
+---
+
+# 1️⃣ PAGE HEADER
+
+### Left:
+
+* **Invoices** (page title)
+* Small subtitle:
+
+  > “Track and follow up on customer payments”
+
+### Right:
+
+* **➕ Add Invoice** (primary button)
+
+Even though Add Invoice exists in top nav,
+**repeat it here** — convenience beats purity.
+
+---
+
+# 2️⃣ STATUS TABS (VERY IMPORTANT)
+
+Tabs:
+
+* **All**
+* **Due**
+* **Overdue**
+* **Paid**
+
+### Behavior:
+
+* Default → **All**
+* Overdue tab shows count badge 🔴
+* Paid tab is lower priority (less visual weight)
+
+These tabs replace complex filters.
+
+---
+
+# 3️⃣ LIGHT FILTER BAR (OPTIONAL MVP+)
+
+Only include **3 filters max**:
+
+* Client
+* Due date range
+* Status
+
+No advanced filtering yet.
+
+---
+
+# 4️⃣ INVOICE TABLE (CORE)
+
+### Columns (don’t add more):
+
+1. Invoice #
+2. Client Name
+3. Amount
+4. Due Date
+5. Status
+6. Last Follow-up
+7. Action
+
+---
+
+### Status design:
+
+* **Paid** → green pill
+* **Due** → neutral
+* **Overdue** → red pill + days count
+
+Example:
+
+> 🔴 Overdue · 7 days
+
+---
+
+### Action column (single action!)
+
+* **View / Follow-up**
+
+Clicking row OR button → Invoice Detail page
+
+❌ No inline edits
+❌ No bulk actions in MVP
+
+---
+
+# 5️⃣ ROW INTERACTION (IMPORTANT DETAIL)
+
+* Whole row clickable
+* Hover → subtle highlight
+* Overdue rows slightly tinted (very light red)
+
+This subconsciously guides attention.
+
+---
+
+# 6️⃣ EMPTY STATES
+
+### Case 1: No invoices at all
+
+Text:
+
+> “No invoices yet.
+> Add your first invoice to start tracking payments.”
+
+Button: **Add Invoice**
+
+---
+
+### Case 2: Filter has no results
+
+Text:
+
+> “No invoices match this filter.”
+
+---
+
+# 🎨 VISUAL STYLE
+
+* Table with lots of white space
+* Zebra rows optional
+* No heavy borders
+* Status pills rounded
+
+Think **finance-grade**, not admin panel.
+
+---
+
+# ❌ WHAT NOT TO PUT HERE
+
+* Payment gateway links
+* PDF preview inline
+* Reminder rules
+* Client notes
+* Analytics
+
+Those belong elsewhere.
+
+---
+
+# 🧠 WHY THIS WORKS
+
+* Easy scanning
+* Minimal cognitive load
+* Clear priority: Overdue > Due > Paid
+* Fast access to follow-up action
+
+This page becomes the **daily working list** for finance teams.
+
+---
+
+# 📱 MOBILE BEHAVIOR (BRIEF)
+
+* Tabs become horizontal scroll
+* Table → card list
+* Each card:
+
+  * Invoice #
+  * Amount
+  * Status
+  * Follow-up button
+
+---
+
+## NEXT (choose):
+
+1️⃣ **Invoice Detail page** (most powerful screen)
+2️⃣ Follow-ups page
+3️⃣ Client page
+4️⃣ Data model behind invoices
+
+Say the number — we keep building 👌

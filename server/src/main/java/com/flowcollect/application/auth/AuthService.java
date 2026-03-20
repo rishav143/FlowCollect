@@ -1,7 +1,5 @@
 package com.flowcollect.application.auth;
 
-import java.util.UUID;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -17,7 +15,6 @@ import com.flowcollect.application.user.UserService;
 import com.flowcollect.application.user.UserUtil;
 import com.flowcollect.domain.organization.Organization;
 import com.flowcollect.domain.user.User;
-import com.flowcollect.domain.user.UserRole;
 import com.flowcollect.domain.user.UserStatus;
 import com.flowcollect.exception.http.NotFoundException;
 import com.flowcollect.exception.http.UnauthorizedException;
@@ -54,13 +51,9 @@ public class AuthService {
         if (request == null) {
             throw new ValidationException("Request must not be null");
         }
-        UUID organizationId = request.getOrganizationId();
         String email = request.getEmail() != null ? request.getEmail().trim().toLowerCase() : "";
         String password = request.getPassword();
 
-        if (organizationId == null) {
-            throw new ValidationException("Organization ID must not be null");
-        }
         if (email.isBlank()) {
             throw new ValidationException("Email must not be blank");
         }
@@ -68,13 +61,12 @@ public class AuthService {
             throw new ValidationException("Password must not be blank");
         }
 
-        Organization organization = organizationService.getById(organizationId);
-        if (organization.isDeleted()) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UnauthorizedException("Invalid email or password"));
+
+        if (user.getOrganization().isDeleted()) {
             throw new UnauthorizedException("Organization is archived");
         }
-
-        User user = userRepository.findByEmailAndOrganizationId(email, organizationId)
-                .orElseThrow(() -> new UnauthorizedException("Invalid email or password"));
 
         if (user.getStatus() == UserStatus.PENDING_EMAIL_VERIFICATION) {
             throw new UnauthorizedException("Please verify your email address before logging in");
@@ -149,60 +141,61 @@ public class AuthService {
     }
 
     @Transactional
-    public void resendVerificationEmail(UUID organizationId) {
-        if (organizationId == null) {
-            throw new ValidationException("Organization ID must not be null");
+    public void resendVerificationEmail(String email) {
+        if (email == null || email.isBlank()) {
+            throw new ValidationException("Email must not be blank");
         }
 
-        User admin = userRepository.findFirstByOrganizationIdAndRole(organizationId, UserRole.ADMIN)
-                .orElseThrow(() -> new NotFoundException("Organization not found"));
+        User user = userRepository.findByEmail(email.trim().toLowerCase())
+                .orElseThrow(() -> new NotFoundException("No account found for this email"));
 
-        if (admin.getStatus() != UserStatus.PENDING_EMAIL_VERIFICATION) {
+        if (user.getStatus() != UserStatus.PENDING_EMAIL_VERIFICATION) {
             throw new ValidationException("Email is already verified");
         }
 
-        verificationService.sendVerificationEmail(admin);
+        verificationService.sendVerificationEmail(user);
     }
 
     @Transactional
-    public void verifyPhone(UUID organizationId, String otp) {
-        if (organizationId == null) {
-            throw new ValidationException("Organization ID must not be null");
+    public void verifyPhone(String email, String otp) {
+        if (email == null || email.isBlank()) {
+            throw new ValidationException("Email must not be blank");
         }
         if (otp == null || otp.isBlank()) {
             throw new ValidationException("OTP must not be blank");
         }
 
-        verificationService.validatePhoneOtp(organizationId, otp);
+        User user = userRepository.findByEmail(email.trim().toLowerCase())
+                .orElseThrow(() -> new NotFoundException("No account found for this email"));
 
-        Organization organization = organizationService.getById(organizationId);
+        Organization organization = user.getOrganization();
+        verificationService.validatePhoneOtp(organization.getId(), otp);
         organization.verifyPhone();
         organizationService.save(organization);
     }
 
     /**
-     * Initiates a password reset for the given email + org.
+     * Initiates a password reset for the given email.
      * Always returns silently — never reveals whether the email exists (prevents user enumeration).
      */
     @Transactional
-    public void forgotPassword(UUID organizationId, String email) {
-        if (organizationId == null || email == null || email.isBlank()) {
+    public void forgotPassword(String email) {
+        if (email == null || email.isBlank()) {
             return;
         }
         try {
-            Organization organization = organizationService.getById(organizationId);
-            if (organization.isDeleted()) {
-                return;
-            }
-            userRepository.findByEmailAndOrganizationId(email.trim().toLowerCase(), organizationId)
+            userRepository.findByEmail(email.trim().toLowerCase())
                     .ifPresent(user -> {
+                        if (user.getOrganization().isDeleted()) {
+                            return;
+                        }
                         // OAuth-only accounts have no password — skip silently
                         if (user.getPasswordHash() != null) {
                             verificationService.sendPasswordResetEmail(user);
                         }
                     });
         } catch (Exception ex) {
-            log.warn("forgotPassword silently failed for org={} email={}: {}", organizationId, email, ex.getMessage());
+            log.warn("forgotPassword silently failed for email={}: {}", email, ex.getMessage());
         }
     }
 
@@ -229,12 +222,15 @@ public class AuthService {
     }
 
     @Transactional
-    public void resendPhoneOtp(UUID organizationId) {
-        if (organizationId == null) {
-            throw new ValidationException("Organization ID must not be null");
+    public void resendPhoneOtp(String email) {
+        if (email == null || email.isBlank()) {
+            throw new ValidationException("Email must not be blank");
         }
 
-        Organization organization = organizationService.getById(organizationId);
+        User user = userRepository.findByEmail(email.trim().toLowerCase())
+                .orElseThrow(() -> new NotFoundException("No account found for this email"));
+
+        Organization organization = user.getOrganization();
         String phone = organization.getPhone();
 
         if (phone == null || phone.isBlank()) {

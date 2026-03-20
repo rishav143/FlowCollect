@@ -1,0 +1,201 @@
+Beautiful. This is the page that quietly turns your tool from
+**“invoice tracker” → “relationship memory system.”**
+
+We’ll design **Clients** to feel smart, calm, and insightful — not like a CRM monster.
+
+---
+
+# 👥 CLIENTS PAGE — DESIGN & CONTENT
+
+![Image](https://cdn.dribbble.com/userupload/16204955/file/original-b7bb57eeda7b1c6210ecb026fdd2d3f2.png?format=webp\&resize=400x300\&vertical=center)
+
+![Image](https://www.trustpayments.com/wp-content/uploads/2022/08/MicrosoftTeams-image-54.png)
+
+![Image](https://connect.protel.net/files/source/pairexthelp/en_US/image1968.gif)
+
+![Image](https://exceldatapro.com/wp-content/uploads/2016/10/Accounts-Receivable-Ledger-1.jpg)
+
+## 🧠 CLIENTS PAGE PHILOSOPHY
+
+This page answers **one powerful question**:
+
+> “Which clients are good for my business — and which are risky?”
+
+Not contact storage.
+Not sales CRM.
+**Payment behavior insight.**
+
+---
+
+# 🧱 PAGE LAYOUT (DESKTOP)
+
+```
+┌──── Page Header ─────────────────────┐
+│ Clients                              │
+│ Subtitle: Payment behavior overview │
+└──────────────────────────────────────┘
+
+┌──── Clients Table (main) ────────────┐
+│ Client rows                          │
+└──────────────────────────────────────┘
+```
+
+Simple. No filters overload.
+
+---
+
+# 1️⃣ PAGE HEADER
+
+### Title:
+
+**Clients**
+
+### Subtitle:
+
+> “View payment behavior and outstanding balances”
+
+❌ No “Add Client” button
+Clients are created automatically when invoices are added.
+
+This removes friction.
+
+---
+
+# 2️⃣ CLIENTS TABLE (CORE)
+
+### Columns (carefully chosen):
+
+1. Client Name
+2. Total Outstanding
+3. Overdue Amount
+4. Avg Payment Delay
+5. Open Invoices
+6. Risk Indicator
+7. Action
+
+---
+
+### Risk Indicator (VERY IMPORTANT)
+
+Use simple signals:
+
+* 🟢 Good (usually pays on time)
+* 🟡 Slow (occasional delays)
+* 🔴 Risky (frequent late payments)
+
+This is insanely valuable to founders.
+
+---
+
+# 3️⃣ ROW INTERACTION
+
+Clicking a row → **Client Detail Page**
+
+Hover → subtle highlight
+
+No inline editing.
+
+---
+
+# 4️⃣ CLIENT DETAIL PAGE (SECOND LEVEL)
+
+This opens when a client row is clicked.
+
+### Top Section:
+
+* Client Name
+* Contact info
+* Total outstanding
+* Avg delay
+
+---
+
+### Middle:
+
+**Invoices for this client**
+
+* Invoice #
+* Amount
+* Status
+* Due date
+
+Clickable rows → Invoice Detail
+
+---
+
+### Bottom:
+
+**Notes / History**
+
+* “Always delays by 15 days”
+* “Prefers WhatsApp follow-ups”
+
+This becomes relationship intelligence.
+
+---
+
+# 5️⃣ VISUAL STYLE
+
+* Table > cards (desktop)
+* Risk color used very sparingly
+* Numbers slightly bolded
+* No charts initially
+
+---
+
+# 6️⃣ EMPTY STATES
+
+### No clients yet
+
+Text:
+
+> “Clients will appear here once you add invoices.”
+
+Simple. Reassuring.
+
+---
+
+# ❌ WHAT NOT TO ADD
+
+* Lead stages
+* Deal pipelines
+* Sales notes
+* Marketing data
+* Contact enrichment
+
+That’s CRM territory — stay focused.
+
+---
+
+# 🧠 WHY THIS PAGE MATTERS
+
+* Helps decide:
+
+  * Advance payments?
+  * Strict follow-ups?
+  * Future business risk?
+* Makes your product **sticky**
+* Builds long-term value
+
+This is where users think:
+
+> “This tool actually understands my business.”
+
+---
+
+# 📱 MOBILE BEHAVIOR
+
+* Card list
+* Risk color bar on left
+* Tap → client detail
+
+---
+
+## NEXT OPTIONS:
+
+1️⃣ Reminder Rules page
+2️⃣ Invoice Detail page (timeline, reminders, notes)
+3️⃣ First-time user flow (from login → first follow-up)
+4️⃣ Data model (clients, invoices, follow-ups)
+
+Say the number — we’re almost at a full product 👌

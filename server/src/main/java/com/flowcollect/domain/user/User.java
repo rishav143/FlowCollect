@@ -15,7 +15,7 @@ import com.flowcollect.domain.organization.Organization;
 @Table(
         name = "users",
         uniqueConstraints = {
-                @UniqueConstraint(name = "uk_users_org_email", columnNames = {"organization_id", "email"})
+                @UniqueConstraint(name = "uk_users_email", columnNames = {"email"})
         }
 )
 public class User {
