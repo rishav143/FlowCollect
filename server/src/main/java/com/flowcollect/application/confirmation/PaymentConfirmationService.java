@@ -35,11 +35,17 @@ import com.flowcollect.infrastructure.persistence.confirmation.PaymentConfirmati
  *   <li>The business owner receives an email notification.</li>
  * </ol>
  *
- * <h2>Business side</h2>
+ * <h2>Business side — three review actions</h2>
  * <ol>
- *   <li>Business owner reviews pending claims via the dashboard.</li>
- *   <li>Approves ({@link #approveByBusiness}) — records payment on invoice, closes link if fully paid.</li>
- *   <li>Or rejects ({@link #rejectByBusiness}) — link stays OPEN; customer may resubmit.</li>
+ *   <li>{@link #approveByBusiness} — records the claimed amount and sends the appropriate
+ *       email: full-payment confirmation when the invoice is now settled, or partial-payment
+ *       acknowledgement when a balance remains.</li>
+ *   <li>{@link #requestRemainingByBusiness} — records the claimed partial amount AND
+ *       sends a system-generated installment request email to the customer asking for the
+ *       outstanding balance. One-click, no user input required. Only valid when the claimed
+ *       amount is less than the invoice remaining balance.</li>
+ *   <li>{@link #rejectByBusiness} — no payment recorded; link stays OPEN; customer may
+ *       resubmit.</li>
  * </ol>
  */
 @Service
@@ -70,15 +76,19 @@ public class PaymentConfirmationService {
         this.businessNotificationService = businessNotificationService;
     }
 
+    // -----------------------------------------------------------------------
+    // Customer-side
+    // -----------------------------------------------------------------------
+
     /**
      * Processes a customer-submitted payment claim.
      *
      * <p>Guards enforced:
      * <ul>
-     *   <li>Confirmation link must be {@link com.flowcollect.domain.confirmation.ConfirmationLinkStatus#OPEN}.</li>
-     *   <li>Invoice must be ISSUED or PARTIALLY_PAID (collectible).</li>
-     *   <li>Only one {@link PaymentConfirmationStatus#PENDING_APPROVAL} submission per link at a time.</li>
-     *   <li>Amount claimed must be > 0 and ≤ the invoice's remaining balance.</li>
+     *   <li>Confirmation link must be OPEN.</li>
+     *   <li>Invoice must be ISSUED or PARTIALLY_PAID.</li>
+     *   <li>Only one PENDING_APPROVAL submission per link at a time.</li>
+     *   <li>Amount claimed must be &gt; 0 and &le; the invoice's remaining balance.</li>
      * </ul>
      *
      * @param token   the public token from the confirmation link URL
@@ -105,7 +115,6 @@ public class PaymentConfirmationService {
                 "Payment confirmations are only accepted for issued or partially paid invoices.");
         }
 
-        // Only one pending submission at a time prevents the business from being flooded
         if (confirmationRepository.existsByConfirmationLinkIdAndStatus(
                 link.getId(), PaymentConfirmationStatus.PENDING_APPROVAL)) {
             throw new ConflictException(
@@ -133,8 +142,7 @@ public class PaymentConfirmationService {
 
         PaymentConfirmation saved = confirmationRepository.save(confirmation);
 
-        // Fire-and-forget: notify business owner. Any failure must not roll back the
-        // customer's submission — the confirmation is already persisted at this point.
+        // Fire-and-forget — failure must never roll back the customer's submission
         try {
             businessNotificationService.notifyPaymentSubmitted(invoice, saved);
         } catch (Exception ex) {
@@ -148,16 +156,26 @@ public class PaymentConfirmationService {
         return saved;
     }
 
+    // -----------------------------------------------------------------------
+    // Business-side review actions
+    // -----------------------------------------------------------------------
+
     /**
      * Business user approves a payment confirmation.
      *
-     * <p>Records the claimed amount as a {@link com.flowcollect.domain.invoice.payment.PaymentMode#BANK_TRANSFER}
-     * payment on the invoice (the natural default for self-reported payments), then closes the
-     * confirmation link if the invoice is now fully paid.
+     * <p>Records the claimed amount as a BANK_TRANSFER payment on the invoice.
+     * Closes the confirmation link when the invoice is now fully paid.
+     *
+     * <p>Email sent to the customer (when {@code request.notifyCustomer = true}):
+     * <ul>
+     *   <li>Invoice becomes PAID → full-payment confirmed email.</li>
+     *   <li>Invoice remains PARTIALLY_PAID → partial-payment approved email
+     *       (balance acknowledged, no explicit installment request).</li>
+     * </ul>
      *
      * @param organizationId the authenticated organization
      * @param confirmationId the confirmation to approve
-     * @param request        optional note from the business user
+     * @param request        optional note; {@code notifyCustomer} defaults to {@code true}
      * @return the approved {@link PaymentConfirmation}
      */
     @Transactional
@@ -173,17 +191,15 @@ public class PaymentConfirmationService {
         confirmationRepository.save(confirmation);
 
         Invoice invoice = confirmation.getConfirmationLink().getInvoice();
-        String paymentNotes = buildApprovalPaymentNotes(note);
-
         paymentService.recordGatewayPayment(
                 invoice.getId(),
                 confirmation.getAmountClaimed(),
                 PaymentMode.BANK_TRANSFER,
                 null,
-                paymentNotes
+                buildApprovalPaymentNotes(note)
         );
 
-        // Reload the invoice to get the updated lifecycle status after payment is recorded
+        // Reload to get the updated lifecycle status after the payment is recorded
         Invoice refreshed = invoiceService.getInvoiceById(invoice.getId());
         if (refreshed.isPaid()) {
             confirmationLinkService.closeForInvoice(invoice.getId());
@@ -191,15 +207,90 @@ public class PaymentConfirmationService {
 
         if (request != null && request.isNotifyCustomer()) {
             try {
-                businessNotificationService.notifyCustomerApproved(refreshed, confirmation);
+                if (refreshed.isPaid()) {
+                    businessNotificationService.notifyCustomerPaymentConfirmedFull(refreshed, confirmation);
+                } else {
+                    businessNotificationService.notifyCustomerPartialPaymentApproved(refreshed, confirmation);
+                }
             } catch (Exception ex) {
                 log.warn("Customer approval notification failed for confirmation [confirmationId={}]: {}",
                         confirmationId, ex.getMessage());
             }
         }
 
-        log.info("Business approved payment confirmation [confirmationId={}, invoiceId={}, amount={}]",
-                confirmationId, invoice.getId(), confirmation.getAmountClaimed());
+        log.info("Business approved payment confirmation [confirmationId={}, invoiceId={}, amount={}, fullyPaid={}]",
+                confirmationId, invoice.getId(), confirmation.getAmountClaimed(), refreshed.isPaid());
+
+        return confirmation;
+    }
+
+    /**
+     * Business user approves a <em>partial</em> payment claim and requests the remaining
+     * balance from the customer in a single one-click action.
+     *
+     * <p>Behaviour:
+     * <ul>
+     *   <li>Validates that the claimed amount is strictly less than the invoice's current
+     *       remaining balance — i.e. this is genuinely a partial payment. Throws
+     *       {@link ConflictException} if the claim covers the full remaining amount
+     *       (use {@link #approveByBusiness} in that case).</li>
+     *   <li>Records the claimed amount as a BANK_TRANSFER payment (same as approve).</li>
+     *   <li>Sends a system-generated installment request email to the customer asking for
+     *       the outstanding balance by the original invoice due date. No user input needed.</li>
+     * </ul>
+     *
+     * @param organizationId the authenticated organization
+     * @param confirmationId the confirmation to approve
+     * @param request        optional note; {@code notifyCustomer} is respected
+     * @return the approved {@link PaymentConfirmation}
+     * @throws ConflictException if the claimed amount equals the remaining balance
+     *         (not a partial payment — use /approve instead)
+     */
+    @Transactional
+    public PaymentConfirmation requestRemainingByBusiness(
+            UUID organizationId,
+            UUID confirmationId,
+            ReviewConfirmationRequest request
+    ) {
+        PaymentConfirmation confirmation = requirePendingConfirmationForOrg(organizationId, confirmationId);
+
+        Invoice invoice = confirmation.getConfirmationLink().getInvoice();
+        BigDecimal remaining = invoice.getRemainingAmount();
+
+        // Guard: must be a genuinely partial claim
+        if (confirmation.getAmountClaimed().compareTo(remaining) >= 0) {
+            throw new ConflictException(
+                "The claimed amount covers the full remaining balance — use /approve to confirm this payment in full.");
+        }
+
+        String note = extractNote(request);
+        confirmation.approve(note);
+        confirmationRepository.save(confirmation);
+
+        paymentService.recordGatewayPayment(
+                invoice.getId(),
+                confirmation.getAmountClaimed(),
+                PaymentMode.BANK_TRANSFER,
+                null,
+                "Partial payment approved; remaining balance requested from customer."
+        );
+
+        // Reload invoice so the remaining amount in the notification reflects the updated balance
+        Invoice refreshed = invoiceService.getInvoiceById(invoice.getId());
+
+        // notifyCustomer defaults true — always send unless caller explicitly opts out
+        if (request == null || request.isNotifyCustomer()) {
+            try {
+                businessNotificationService.notifyInstallmentRequest(refreshed, confirmation);
+            } catch (Exception ex) {
+                log.warn("Installment request notification failed for confirmation [confirmationId={}]: {}",
+                        confirmationId, ex.getMessage());
+            }
+        }
+
+        log.info("Business requested remaining balance after partial approval "
+                + "[confirmationId={}, invoiceId={}, amountApproved={}, remainingAfter={}]",
+                confirmationId, invoice.getId(), confirmation.getAmountClaimed(), refreshed.getRemainingAmount());
 
         return confirmation;
     }
@@ -207,12 +298,12 @@ public class PaymentConfirmationService {
     /**
      * Business user rejects a payment confirmation.
      *
-     * <p>The confirmation link remains {@link com.flowcollect.domain.confirmation.ConfirmationLinkStatus#OPEN}
-     * so the customer may resubmit. No payment is recorded.
+     * <p>No payment is recorded. The confirmation link remains OPEN so the customer
+     * may resubmit with corrected information.
      *
      * @param organizationId the authenticated organization
      * @param confirmationId the confirmation to reject
-     * @param request        optional note from the business user
+     * @param request        optional note; {@code notifyCustomer} defaults to {@code true}
      * @return the rejected {@link PaymentConfirmation}
      */
     @Transactional
@@ -230,7 +321,7 @@ public class PaymentConfirmationService {
         Invoice invoice = confirmation.getConfirmationLink().getInvoice();
         if (request != null && request.isNotifyCustomer()) {
             try {
-                businessNotificationService.notifyCustomerRejected(invoice, saved);
+                businessNotificationService.notifyCustomerPaymentRejected(invoice, saved);
             } catch (Exception ex) {
                 log.warn("Customer rejection notification failed for confirmation [confirmationId={}]: {}",
                         confirmationId, ex.getMessage());
@@ -242,6 +333,10 @@ public class PaymentConfirmationService {
 
         return saved;
     }
+
+    // -----------------------------------------------------------------------
+    // Read operations
+    // -----------------------------------------------------------------------
 
     /**
      * Returns a paginated list of payment confirmations for the given organization,

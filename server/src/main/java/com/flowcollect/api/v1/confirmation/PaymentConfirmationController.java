@@ -86,6 +86,31 @@ public class PaymentConfirmationController {
     }
 
     /**
+     * Approves a partial payment claim and requests the outstanding balance from the
+     * customer in one action — no modal, no user input required.
+     *
+     * <p>Records the claimed amount as a payment (same as {@code /approve}) and
+     * automatically sends a system-generated installment request email to the customer
+     * asking for the remaining balance by the original invoice due date.
+     *
+     * <p>Returns {@code 409 Conflict} when the claimed amount equals the remaining
+     * invoice balance (use {@code /approve} for full-payment claims).
+     *
+     * @param confirmationId the confirmation to approve
+     * @param request        optional note; {@code notifyCustomer} defaults to {@code true}
+     */
+    @PostMapping("/{confirmationId}/request-remaining")
+    public ResponseEntity<PaymentConfirmationResponse> requestRemaining(
+            @PathVariable UUID organizationId,
+            @PathVariable UUID confirmationId,
+            @Valid @RequestBody(required = false) ReviewConfirmationRequest request
+    ) {
+        PaymentConfirmation confirmation = paymentConfirmationService.requestRemainingByBusiness(
+                organizationId, confirmationId, request);
+        return ResponseEntity.ok(PaymentConfirmationMapper.toResponse(confirmation));
+    }
+
+    /**
      * Rejects a pending payment confirmation.
      *
      * <p>No payment is recorded. The confirmation link remains open so the customer

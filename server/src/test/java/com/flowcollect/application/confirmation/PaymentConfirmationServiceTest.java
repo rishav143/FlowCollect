@@ -408,6 +408,213 @@ class PaymentConfirmationServiceTest {
     }
 
     // ===================================================================
+    // approveByBusiness — correct email routing by invoice state
+    // ===================================================================
+
+    @Test
+    void approve_sendsFullConfirmedEmail_whenInvoiceBecomesFullyPaid() {
+        PaymentConfirmation pendingConfirmation = buildPendingConfirmation(new BigDecimal("1000.00"));
+
+        when(organizationService.getById(orgId)).thenReturn(organization);
+        when(confirmationRepository.findById(confirmationId)).thenReturn(Optional.of(pendingConfirmation));
+        when(confirmationRepository.save(pendingConfirmation)).thenReturn(pendingConfirmation);
+
+        Invoice paidInvoice = mock(Invoice.class);
+        when(paidInvoice.isPaid()).thenReturn(true);
+        when(invoiceService.getInvoiceById(invoiceId)).thenReturn(paidInvoice);
+
+        ReviewConfirmationRequest request = new ReviewConfirmationRequest(); // notifyCustomer=true
+
+        service.approveByBusiness(orgId, confirmationId, request);
+
+        verify(businessNotificationService).notifyCustomerPaymentConfirmedFull(paidInvoice, pendingConfirmation);
+        verify(businessNotificationService, never()).notifyCustomerPartialPaymentApproved(any(), any());
+    }
+
+    @Test
+    void approve_sendsPartialApprovedEmail_whenInvoiceRemainsPartiallyPaid() {
+        PaymentConfirmation pendingConfirmation = buildPendingConfirmation(new BigDecimal("300.00"));
+
+        when(organizationService.getById(orgId)).thenReturn(organization);
+        when(confirmationRepository.findById(confirmationId)).thenReturn(Optional.of(pendingConfirmation));
+        when(confirmationRepository.save(pendingConfirmation)).thenReturn(pendingConfirmation);
+
+        Invoice partialInvoice = mock(Invoice.class);
+        when(partialInvoice.isPaid()).thenReturn(false);
+        when(invoiceService.getInvoiceById(invoiceId)).thenReturn(partialInvoice);
+
+        ReviewConfirmationRequest request = new ReviewConfirmationRequest(); // notifyCustomer=true
+
+        service.approveByBusiness(orgId, confirmationId, request);
+
+        verify(businessNotificationService).notifyCustomerPartialPaymentApproved(partialInvoice, pendingConfirmation);
+        verify(businessNotificationService, never()).notifyCustomerPaymentConfirmedFull(any(), any());
+    }
+
+    @Test
+    void approve_skipsNotification_whenNotifyCustomerIsFalse() {
+        PaymentConfirmation pendingConfirmation = buildPendingConfirmation(new BigDecimal("1000.00"));
+
+        when(organizationService.getById(orgId)).thenReturn(organization);
+        when(confirmationRepository.findById(confirmationId)).thenReturn(Optional.of(pendingConfirmation));
+        when(confirmationRepository.save(pendingConfirmation)).thenReturn(pendingConfirmation);
+        when(invoiceService.getInvoiceById(invoiceId)).thenReturn(mock(Invoice.class));
+
+        ReviewConfirmationRequest request = new ReviewConfirmationRequest();
+        request.setNotifyCustomer(false);
+
+        service.approveByBusiness(orgId, confirmationId, request);
+
+        verify(businessNotificationService, never()).notifyCustomerPaymentConfirmedFull(any(), any());
+        verify(businessNotificationService, never()).notifyCustomerPartialPaymentApproved(any(), any());
+    }
+
+    // ===================================================================
+    // requestRemainingByBusiness — happy path
+    // ===================================================================
+
+    @Test
+    void requestRemaining_recordsPartialPayment_andSendsInstallmentEmail() {
+        // Invoice remaining = 1000, customer claims 400 → genuinely partial
+        when(invoice.getRemainingAmount()).thenReturn(new BigDecimal("1000.00"));
+        PaymentConfirmation pendingConfirmation = buildPendingConfirmation(new BigDecimal("400.00"));
+
+        when(organizationService.getById(orgId)).thenReturn(organization);
+        when(confirmationRepository.findById(confirmationId)).thenReturn(Optional.of(pendingConfirmation));
+        when(confirmationRepository.save(pendingConfirmation)).thenReturn(pendingConfirmation);
+
+        Invoice updatedInvoice = mock(Invoice.class);
+        when(updatedInvoice.getRemainingAmount()).thenReturn(new BigDecimal("600.00"));
+        when(invoiceService.getInvoiceById(invoiceId)).thenReturn(updatedInvoice);
+
+        PaymentConfirmation result = service.requestRemainingByBusiness(orgId, confirmationId, null);
+
+        assertEquals(PaymentConfirmationStatus.APPROVED, result.getStatus());
+
+        // Payment must be recorded
+        verify(paymentService).recordGatewayPayment(
+                eq(invoiceId), eq(new BigDecimal("400.00")),
+                eq(PaymentMode.BANK_TRANSFER), any(), any());
+
+        // Installment request email must be sent
+        verify(businessNotificationService).notifyInstallmentRequest(updatedInvoice, pendingConfirmation);
+    }
+
+    @Test
+    void requestRemaining_doesNotCloseLink_becauseInvoiceIsNotFullyPaid() {
+        when(invoice.getRemainingAmount()).thenReturn(new BigDecimal("1000.00"));
+        PaymentConfirmation pendingConfirmation = buildPendingConfirmation(new BigDecimal("400.00"));
+
+        when(organizationService.getById(orgId)).thenReturn(organization);
+        when(confirmationRepository.findById(confirmationId)).thenReturn(Optional.of(pendingConfirmation));
+        when(confirmationRepository.save(pendingConfirmation)).thenReturn(pendingConfirmation);
+        when(invoiceService.getInvoiceById(invoiceId)).thenReturn(mock(Invoice.class));
+
+        service.requestRemainingByBusiness(orgId, confirmationId, null);
+
+        // Link must not be closed — balance still outstanding
+        verify(confirmationLinkService, never()).closeForInvoice(any());
+    }
+
+    @Test
+    void requestRemaining_skipsEmail_whenNotifyCustomerIsFalse() {
+        when(invoice.getRemainingAmount()).thenReturn(new BigDecimal("1000.00"));
+        PaymentConfirmation pendingConfirmation = buildPendingConfirmation(new BigDecimal("400.00"));
+
+        when(organizationService.getById(orgId)).thenReturn(organization);
+        when(confirmationRepository.findById(confirmationId)).thenReturn(Optional.of(pendingConfirmation));
+        when(confirmationRepository.save(pendingConfirmation)).thenReturn(pendingConfirmation);
+        when(invoiceService.getInvoiceById(invoiceId)).thenReturn(mock(Invoice.class));
+
+        ReviewConfirmationRequest request = new ReviewConfirmationRequest();
+        request.setNotifyCustomer(false);
+
+        service.requestRemainingByBusiness(orgId, confirmationId, request);
+
+        verify(businessNotificationService, never()).notifyInstallmentRequest(any(), any());
+    }
+
+    // ===================================================================
+    // requestRemainingByBusiness — guard: not a partial claim
+    // ===================================================================
+
+    @Test
+    void requestRemaining_fails_whenClaimCoversFullRemainingBalance() {
+        // remaining = 1000, claimed = 1000 → not a partial claim
+        when(invoice.getRemainingAmount()).thenReturn(new BigDecimal("1000.00"));
+        PaymentConfirmation pendingConfirmation = buildPendingConfirmation(new BigDecimal("1000.00"));
+
+        when(organizationService.getById(orgId)).thenReturn(organization);
+        when(confirmationRepository.findById(confirmationId)).thenReturn(Optional.of(pendingConfirmation));
+
+        ConflictException ex = assertThrows(ConflictException.class,
+                () -> service.requestRemainingByBusiness(orgId, confirmationId, null));
+        assertTrue(ex.getMessage().contains("covers the full remaining balance"));
+        verify(paymentService, never()).recordGatewayPayment(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void requestRemaining_fails_whenClaimExceedsRemainingBalance() {
+        // This shouldn't happen (submitByCustomer guards it), but belt-and-suspenders
+        when(invoice.getRemainingAmount()).thenReturn(new BigDecimal("500.00"));
+        PaymentConfirmation pendingConfirmation = buildPendingConfirmation(new BigDecimal("600.00"));
+
+        when(organizationService.getById(orgId)).thenReturn(organization);
+        when(confirmationRepository.findById(confirmationId)).thenReturn(Optional.of(pendingConfirmation));
+
+        assertThrows(ConflictException.class,
+                () -> service.requestRemainingByBusiness(orgId, confirmationId, null));
+        verify(paymentService, never()).recordGatewayPayment(any(), any(), any(), any(), any());
+    }
+
+    // ===================================================================
+    // requestRemainingByBusiness — auth/state guards
+    // ===================================================================
+
+    @Test
+    void requestRemaining_fails_whenConfirmationNotFound() {
+        when(organizationService.getById(orgId)).thenReturn(organization);
+        when(confirmationRepository.findById(confirmationId)).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class,
+                () -> service.requestRemainingByBusiness(orgId, confirmationId, null));
+    }
+
+    @Test
+    void requestRemaining_fails_whenConfirmationAlreadyApproved() {
+        when(invoice.getRemainingAmount()).thenReturn(new BigDecimal("1000.00"));
+        PaymentConfirmation alreadyApproved = buildPendingConfirmation(new BigDecimal("400.00"));
+        alreadyApproved.approve(null);
+
+        when(organizationService.getById(orgId)).thenReturn(organization);
+        when(confirmationRepository.findById(confirmationId)).thenReturn(Optional.of(alreadyApproved));
+
+        assertThrows(ConflictException.class,
+                () -> service.requestRemainingByBusiness(orgId, confirmationId, null));
+        verify(paymentService, never()).recordGatewayPayment(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void requestRemaining_fails_whenConfirmationBelongsToDifferentOrg() {
+        UUID differentOrgId = UUID.randomUUID();
+        Organization differentOrg = mock(Organization.class);
+        when(differentOrg.getId()).thenReturn(differentOrgId);
+        Invoice foreignInvoice = mock(Invoice.class);
+        when(foreignInvoice.getOrganization()).thenReturn(differentOrg);
+        ConfirmationLink foreignLink = new ConfirmationLink();
+        foreignLink.setInvoice(foreignInvoice);
+        PaymentConfirmation foreignConfirmation = new PaymentConfirmation();
+        foreignConfirmation.setConfirmationLink(foreignLink);
+        foreignConfirmation.setAmountClaimed(new BigDecimal("400.00"));
+
+        when(organizationService.getById(orgId)).thenReturn(organization);
+        when(confirmationRepository.findById(confirmationId)).thenReturn(Optional.of(foreignConfirmation));
+
+        assertThrows(NotFoundException.class,
+                () -> service.requestRemainingByBusiness(orgId, confirmationId, null));
+    }
+
+    // ===================================================================
     // rejectByBusiness — happy path & failures
     // ===================================================================
 

@@ -67,6 +67,7 @@ FlowCollect
     ├── /invoices
     │   └── /invoices/:id
     ├── /followups
+    ├── /approvals                 (CONFIRMATION_FLOW org mode only)
     ├── /clients
     │   └── /clients/:id
     ├── /reminder-rules
@@ -78,7 +79,8 @@ FlowCollect
 
 > No separate /templates route. Templates are managed inside the Reminder Rules page
 > via the "Edit Message" modal on each rule card.
-> No separate /confirmations route. Payment confirmation review lives inside Follow-ups page.
+> /approvals route exists only when org mode = CONFIRMATION_FLOW. Route-guard redirects
+> to /followups when mode = PAYMENT_LINK.
 
 ---
 
@@ -172,6 +174,9 @@ FlowCollect
 │  📊 Dashboard    │                                                   │
 │  📄 Invoices     │                                                   │
 │  ⏰ Follow-ups 5 │  ← badge count: overdue + due today               │
+│  ✅ Approvals  2 │  ← CONFIRMATION_FLOW mode only. Amber badge pill. │
+│                  │     Count = pending claims. Hidden entirely when  │
+│                  │     org mode = PAYMENT_LINK or count = 0.         │
 │  👥 Clients      │                                                   │
 │  ─────────────   │                                                   │
 │  🔔 Reminders    │                                                   │
@@ -183,6 +188,14 @@ FlowCollect
 │  text: white     │                                                   │
 └──────────────────┴───────────────────────────────────────────────────┘
 ```
+
+**Sidebar — Approvals nav item rule:**
+- Only rendered when org mode = `CONFIRMATION_FLOW`
+- Position: between Follow-ups and Clients
+- Badge: amber `#F59E0B` pill showing count of claims with `status = PENDING_CONFIRMATION`
+- Badge hidden (item still shown) when count = 0
+- Item hidden entirely when org mode = `PAYMENT_LINK`
+- Navigates to `/approvals` (dedicated page — see Section 4b)
 
 ### Topbar — Right Zone Detail
 
@@ -516,8 +529,119 @@ Automatic sort (not user-controlled):
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
-> Also shows payment confirmation claims (CONFIRMATION_FLOW mode) as cards here,
-> inline with the follow-up list. No separate nav item needed for confirmations.
+---
+
+## 4b. Approvals (`/approvals`) — CONFIRMATION_FLOW mode only
+
+> Route-guarded: only accessible when org `paymentCollectionMode = CONFIRMATION_FLOW`.
+> Answers: Which customer payment claims are waiting for my review?
+
+```
+┌──────────────────────────────────────────────────────────────────────┐
+│  ✅ Approvals                                                        │
+│  Review payment claims submitted by your clients                     │
+└──────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────── FILTER TABS ─────────────────────────────┐
+│  [ Pending (3) 🟡 ]   [ Approved ]   [ Rejected ]   [ All ]         │
+│  Default: Pending                                                    │
+└──────────────────────────────────────────────────────────────────────┘
+
+─────────────────── FULL-PAYMENT CLAIM CARD ───────────────────────────
+
+┌──────────────────────────────────────────────────────────────────────┐
+│ 🟡  PAYMENT CLAIM — Nova Tech                                        │
+│     Invoice #INV-1102 · Total: ₹92,000                               │
+│     Customer reported paying: ₹92,000  (full amount)                 │
+│     Reference: "NEFT REF 87654321"                                   │
+│     Claimed: 20 Mar 2026 · 2 days ago                                │
+│                                                                      │
+│              [✅ Approve]                   [❌ Reject]              │
+└──────────────────────────────────────────────────────────────────────┘
+
+─────────────────── PARTIAL-PAYMENT CLAIM CARD ────────────────────────
+
+┌──────────────────────────────────────────────────────────────────────┐
+│ 🟡  PAYMENT CLAIM — ABC Pvt Ltd                              PARTIAL │
+│     Invoice #INV-1023 · Total: ₹45,000 · Remaining: ₹45,000         │
+│     Customer reported paying: ₹20,000  ← less than remaining        │
+│     Reference: "IMPS 20000 paid"                                     │
+│     Claimed: 19 Mar 2026 · 3 days ago                                │
+│                                                                      │
+│  ⚠️  ₹25,000 still outstanding after this payment                   │
+│                                                                      │
+│  [✅ Approve Partial]  [📩 Request Remaining]  [❌ Reject]           │
+└──────────────────────────────────────────────────────────────────────┘
+
+─────────────────── OVER-PAYMENT CLAIM CARD ───────────────────────────
+
+┌──────────────────────────────────────────────────────────────────────┐
+│ 🟡  PAYMENT CLAIM — Orion Systems                          ⚠️ OVER  │
+│     Invoice #INV-1115 · Total: ₹54,000                               │
+│     Customer reported paying: ₹60,000  ← exceeds invoice total      │
+│     Reference: "Ref 001122"                                          │
+│                                                                      │
+│  ⚠️  Claimed amount exceeds invoice. Verify before approving.        │
+│                                                                      │
+│              [✅ Approve]                   [❌ Reject]              │
+└──────────────────────────────────────────────────────────────────────┘
+```
+
+**Button behavior — Approve (full):**
+- Records payment for `invoiceTotal`, marks invoice `PAID`
+- Auto-sends `EMAIL_PAYMENT_CONFIRMED_FULL` to client (no user input)
+- Card moves to "Approved" tab
+
+**Button behavior — Approve Partial:**
+- Records the claimed partial amount; invoice remains open with outstanding balance
+- Auto-sends acknowledgement email: "We received ₹X. Thank you." — no mention of remaining
+- Use when you're okay with what was paid (e.g. informally agreed discount, no follow-up needed)
+- Card moves to "Approved" tab; invoice re-enters follow-up queue
+
+**Button behavior — Request Remaining:**
+- One-click, no input: records partial payment + auto-sends installment request email
+  asking for the remaining balance by the original due date
+- Email says: "Thank you for ₹X. Please send the remaining ₹Y by [due date]."
+- Use when you expect the outstanding balance — creates a formal payment request
+- Card moves to "Approved" tab; invoice re-enters follow-up queue
+
+**Button behavior — Reject:**
+```
+Confirmation dialog (inline, not a modal page):
+┌──────────────────────────────────────────────────────────────────┐
+│  Reject this payment claim?                                      │
+│                                                                  │
+│  Reason (optional)  [_______________________________________]    │
+│                                                                  │
+│  Client will receive a notification email (EMAIL_PAYMENT_REJECTED)│
+│                                                                  │
+│            [ Cancel ]   [ Reject & Notify Client ]               │
+└──────────────────────────────────────────────────────────────────┘
+```
+- Sends `EMAIL_PAYMENT_REJECTED`, claim → `REJECTED`, invoice stays unpaid
+- Card moves to "Rejected" tab
+
+**Decision matrix** (compare `amountClaimed` against `invoiceRemainingAmount` — not `invoiceTotal`):
+
+| claimedAmount vs invoiceRemainingAmount | Buttons shown                                              |
+|-----------------------------------------|------------------------------------------------------------|
+| Equal (`==`)                            | [Approve] [Reject]                                         |
+| Less than (`<`)                         | [Approve Partial] [Request Remaining] [Reject]             |
+| Greater than (`>`)                      | Warning banner + [Approve] [Reject]                        |
+
+> Use `invoiceRemainingAmount` (not `invoiceTotal`) for the comparison.
+> On a partially-paid invoice, a claim equal to the remaining balance is a
+> full settlement — it should show [Approve], not the partial buttons.
+
+> Approve Partial vs Request Remaining:
+> - Approve Partial — you're okay with what was paid, no follow-up expected
+> - Request Remaining — you expect the outstanding balance, sends a formal request
+
+**Empty state (no pending):**
+```
+  ✅ All caught up!
+  No payment claims awaiting review.
+```
 
 ---
 
@@ -659,6 +783,8 @@ Timeline layout: Before Due → Due Date → After Due
 │  │  Timing:   [ 7 days overdue ▼ ]                              │   │
 │  │  Channel:  [ Email ☐ ]  [ WhatsApp ☑ ]  [ Manual ☐ ]        │   │
 │  │                                                              │   │
+│  │  ▸ Advanced Options                          ← expandable   │   │
+│  │                                                              │   │
 │  │  Message Preview:                                            │   │
 │  │  "Invoice {{invoiceNumber}} is overdue. Please confirm       │   │
 │  │  payment date."                                              │   │
@@ -679,6 +805,69 @@ Timeline layout: Before Due → Due Date → After Due
 │  — ABC Consulting Pvt Ltd                                            │
 └──────────────────────────────────────────────────────────────────────┘
 ```
+
+**Advanced Options — Expanded (inside rule card, inline):**
+```
+┌──────────────────────────────────────────────────────────────────┐
+│  ▾ Advanced Options                                              │
+│                                                                  │
+│  Day Offset   [ +7 days ▼ ]  ← days after (+) or before (-)     │
+│                                 the trigger point                │
+│               Options: −7d / −3d / 0 / +3d / +7d / +14d / Custom│
+│                                                                  │
+│  Cycle        [ Every 7 days ▼ ]  ← interval between repeats    │
+│               Options: Every day / 3d / 7d / 14d / 30d / No repeat│
+│                                                                  │
+│  Occurrences  [ 3 times ▼ ]  ← max sends per invoice             │
+│               Options: 1 / 2 / 3 / 5 / Until paid / Custom       │
+│                                                                  │
+│  ┌──────────────────────────────────────────────────────────┐   │
+│  │ 📋 Summary                                               │   │
+│  │ Reminder will be sent every 7 days, 3 times,             │   │
+│  │ starting 7 days after due date.                          │   │
+│  └──────────────────────────────────────────────────────────┘   │
+│                                                                  │
+│  Timeline Preview:                                               │
+│                                                                  │
+│  DAY  ──────────────────────────────────────────────────────    │
+│                                                                  │
+│     0         +7       +14       +21                             │
+│     |          |         |         |                             │
+│  [DUE DATE] [Send 1] [Send 2] [Send 3]                           │
+│     │←──────→│←───────→│←───────→│                              │
+│        7d         7d        7d                                   │
+│        (offset)   (cycle)  (cycle)                               │
+│                                                                  │
+│  ● = send event    | = anchor point                              │
+│  Gray line = days  offset shown from DUE DATE anchor             │
+│                                                                  │
+│  (diagram re-renders live as user changes offset/cycle/occur.)   │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+**Before Due Date example (dayOffset = −3, cycle = no repeat, occur = 1):**
+```
+  DAY  ─────────────────────────────────────
+
+    −3          0
+     |           |
+  [Send 1]  [DUE DATE]
+     │←──────→│
+        3d before
+```
+
+**Timeline diagram visual rules:**
+- X-axis = days, anchored at the trigger point (Due Date or Issue Date)
+- Anchor point (day 0) always pinned and labeled
+- Each send event is a filled circle `●` with a label (Send 1, Send 2 …)
+- Day-offset bracket shown between anchor and first send
+- Cycle brackets shown between consecutive sends
+- Diagram updates live as the user changes any field
+- If Occurrences = "Until paid", show first 5 sends then `...`
+
+**Validation messages shown inline (not blocking):**
+- Cycle = "No repeat" but Occurrences > 1 → "Set a cycle interval to send more than once"
+- Day Offset is negative on an "Overdue" rule → "This offset sends before the overdue trigger fires — check your timing"
 
 **Edit Message — Modal:**
 ```
@@ -804,7 +993,29 @@ Timeline layout: Before Due → Due Date → After Due
 
 ---
 
-## 11. API Gaps (features in UI not yet in REST API)
+## 11. System Email Templates
+
+> All system-generated emails live in one centralized file — not scattered across
+> components. Each email below fires automatically; no user writes or edits these.
+> Reminder message bodies are the exception — they are user-editable via
+> the "Edit Message" modal on the Reminder Rules page.
+> See RestAPI.md for template keys and message defaults.
+
+### When each email fires and what it says
+
+| Trigger                                  | Email sent to client                                                            |
+|------------------------------------------|---------------------------------------------------------------------------------|
+| Org approves full payment claim          | "We received your full payment for INV-XXXX. Thank you."                        |
+| Org clicks Approve Partial               | "We received ₹X toward INV-XXXX. Remaining ₹Y is due by [original date]."      |
+| Org clicks Request Remaining             | "Thank you for ₹X. Please send the remaining ₹Y by [original date]."           |
+| Org rejects a payment claim              | "We could not confirm your payment for INV-XXXX. Please contact us." + reason  |
+| Automated reminder rule fires            | User-editable message (set in Reminder Rules → Edit Message)                    |
+| New user registers                       | Email verification link (auth flow — not invoice-related)                       |
+| User requests password reset             | Password reset link (auth flow)                                                 |
+
+---
+
+## 11b. API Gaps (features in UI not yet in REST API)
 
 | UI Feature                | API Status         | Resolution                                          |
 |---------------------------|--------------------|-----------------------------------------------------|
@@ -819,15 +1030,15 @@ Timeline layout: Before Due → Due Date → After Due
 
 ## 12. Navigation Rules
 
-| Role  | Can access                                             |
-|-------|--------------------------------------------------------|
-| ADMIN | Everything                                             |
-| STAFF | Dashboard, Invoices, Follow-ups, Clients, Reminders — no Gateways, Team |
+| Role  | Can access                                                                        |
+|-------|-----------------------------------------------------------------------------------|
+| ADMIN | Everything                                                                        |
+| STAFF | Dashboard, Invoices, Follow-ups, Approvals, Clients, Reminders — no Gateways, Team |
 
-| Org Mode          | Follow-ups page confirmation cards |
-|-------------------|------------------------------------|
-| `PAYMENT_LINK`    | Not shown                          |
-| `CONFIRMATION_FLOW` | Shown as cards with Approve / Reject |
+| Org Mode            | Approvals sidebar item | /approvals route |
+|---------------------|------------------------|------------------|
+| `PAYMENT_LINK`      | Hidden                 | Redirect → /followups |
+| `CONFIRMATION_FLOW` | Shown with amber badge | Accessible        |
 
 ---
 

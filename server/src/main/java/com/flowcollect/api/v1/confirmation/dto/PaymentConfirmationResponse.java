@@ -8,6 +8,11 @@ import com.flowcollect.domain.confirmation.PaymentConfirmationStatus;
 
 /**
  * Full view of a payment confirmation returned to the authenticated business user.
+ *
+ * <p>{@code invoiceTotalAmount} and {@code invoiceRemainingAmount} are live invoice
+ * values at the time the response is built. Together with {@code amountClaimed} they
+ * let the frontend determine whether a claim is full or partial and drive the
+ * decision matrix (Approve / Approve Partial / Request Remaining / Reject).
  */
 public class PaymentConfirmationResponse {
 
@@ -16,6 +21,10 @@ public class PaymentConfirmationResponse {
     private String invoiceNumber;
     private UUID confirmationLinkId;
     private BigDecimal amountClaimed;
+    /** Invoice total (original amount, never changes). */
+    private BigDecimal invoiceTotalAmount;
+    /** Remaining balance on the invoice at the time this response is built. */
+    private BigDecimal invoiceRemainingAmount;
     private String customerNote;
     private PaymentConfirmationStatus status;
     private String businessNote;
@@ -27,20 +36,24 @@ public class PaymentConfirmationResponse {
     public String getInvoiceNumber()                 { return invoiceNumber; }
     public UUID getConfirmationLinkId()              { return confirmationLinkId; }
     public BigDecimal getAmountClaimed()             { return amountClaimed; }
+    public BigDecimal getInvoiceTotalAmount()        { return invoiceTotalAmount; }
+    public BigDecimal getInvoiceRemainingAmount()    { return invoiceRemainingAmount; }
     public String getCustomerNote()                  { return customerNote; }
     public PaymentConfirmationStatus getStatus()     { return status; }
     public String getBusinessNote()                  { return businessNote; }
     public Instant getReviewedAt()                   { return reviewedAt; }
     public Instant getCreatedAt()                    { return createdAt; }
 
-    public void setId(UUID id)                                         { this.id = id; }
-    public void setInvoiceId(UUID invoiceId)                           { this.invoiceId = invoiceId; }
-    public void setInvoiceNumber(String invoiceNumber)                 { this.invoiceNumber = invoiceNumber; }
-    public void setConfirmationLinkId(UUID confirmationLinkId)         { this.confirmationLinkId = confirmationLinkId; }
-    public void setAmountClaimed(BigDecimal amountClaimed)             { this.amountClaimed = amountClaimed; }
-    public void setCustomerNote(String customerNote)                   { this.customerNote = customerNote; }
-    public void setStatus(PaymentConfirmationStatus status)            { this.status = status; }
-    public void setBusinessNote(String businessNote)                   { this.businessNote = businessNote; }
-    public void setReviewedAt(Instant reviewedAt)                      { this.reviewedAt = reviewedAt; }
-    public void setCreatedAt(Instant createdAt)                        { this.createdAt = createdAt; }
+    public void setId(UUID id)                                                   { this.id = id; }
+    public void setInvoiceId(UUID invoiceId)                                     { this.invoiceId = invoiceId; }
+    public void setInvoiceNumber(String invoiceNumber)                           { this.invoiceNumber = invoiceNumber; }
+    public void setConfirmationLinkId(UUID confirmationLinkId)                   { this.confirmationLinkId = confirmationLinkId; }
+    public void setAmountClaimed(BigDecimal amountClaimed)                       { this.amountClaimed = amountClaimed; }
+    public void setInvoiceTotalAmount(BigDecimal invoiceTotalAmount)             { this.invoiceTotalAmount = invoiceTotalAmount; }
+    public void setInvoiceRemainingAmount(BigDecimal invoiceRemainingAmount)     { this.invoiceRemainingAmount = invoiceRemainingAmount; }
+    public void setCustomerNote(String customerNote)                             { this.customerNote = customerNote; }
+    public void setStatus(PaymentConfirmationStatus status)                      { this.status = status; }
+    public void setBusinessNote(String businessNote)                             { this.businessNote = businessNote; }
+    public void setReviewedAt(Instant reviewedAt)                                { this.reviewedAt = reviewedAt; }
+    public void setCreatedAt(Instant createdAt)                                  { this.createdAt = createdAt; }
 }

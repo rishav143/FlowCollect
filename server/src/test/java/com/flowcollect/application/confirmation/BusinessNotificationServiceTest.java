@@ -17,6 +17,7 @@ import org.mockito.MockitoAnnotations;
 import org.springframework.mail.javamail.JavaMailSender;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.Currency;
 import java.util.Optional;
 
@@ -41,6 +42,7 @@ class BusinessNotificationServiceTest {
         when(invoice.getOrganization()).thenReturn(organization);
         when(invoice.getInvoiceNumber()).thenReturn("INV-001");
         when(invoice.getRemainingAmount()).thenReturn(new BigDecimal("1000.00"));
+        when(invoice.getDueDate()).thenReturn(LocalDate.of(2026, 3, 31));
         when(invoice.getCustomer()).thenReturn(customer);
         when(organization.getEmail()).thenReturn("biz@example.com");
         when(organization.getName()).thenReturn("Acme Corp");
@@ -96,7 +98,6 @@ class BusinessNotificationServiceTest {
         ArgumentCaptor<MimeMessage> captor = ArgumentCaptor.forClass(MimeMessage.class);
         verify(javaMailSender).send(captor.capture());
         String body = captor.getValue().getContent().toString();
-        assertNotNull(body);
         assertTrue(body.contains("1000.00"));
         assertTrue(body.contains("INR"));
         assertTrue(body.contains("INV-001"));
@@ -173,14 +174,14 @@ class BusinessNotificationServiceTest {
     }
 
     // ===================================================================
-    // notifyCustomerApproved
+    // notifyCustomerPaymentConfirmedFull
     // ===================================================================
 
     @Test
-    void notifyCustomerApproved_sendsEmail_toCustomer() throws Exception {
+    void notifyCustomerPaymentConfirmedFull_sendsEmail_toCustomer() throws Exception {
         BusinessNotificationService service = serviceWith(javaMailSender);
 
-        service.notifyCustomerApproved(invoice, confirmation);
+        service.notifyCustomerPaymentConfirmedFull(invoice, confirmation);
 
         ArgumentCaptor<MimeMessage> captor = ArgumentCaptor.forClass(MimeMessage.class);
         verify(javaMailSender).send(captor.capture());
@@ -189,10 +190,10 @@ class BusinessNotificationServiceTest {
     }
 
     @Test
-    void notifyCustomerApproved_from_isPlatformAddress_replyTo_isOrgEmail() throws Exception {
+    void notifyCustomerPaymentConfirmedFull_from_isPlatformAddress_replyTo_isOrgEmail() throws Exception {
         BusinessNotificationService service = serviceWith(javaMailSender);
 
-        service.notifyCustomerApproved(invoice, confirmation);
+        service.notifyCustomerPaymentConfirmedFull(invoice, confirmation);
 
         ArgumentCaptor<MimeMessage> captor = ArgumentCaptor.forClass(MimeMessage.class);
         verify(javaMailSender).send(captor.capture());
@@ -202,10 +203,10 @@ class BusinessNotificationServiceTest {
     }
 
     @Test
-    void notifyCustomerApproved_subject_containsInvoiceNumber() throws Exception {
+    void notifyCustomerPaymentConfirmedFull_subject_containsInvoiceNumber() throws Exception {
         BusinessNotificationService service = serviceWith(javaMailSender);
 
-        service.notifyCustomerApproved(invoice, confirmation);
+        service.notifyCustomerPaymentConfirmedFull(invoice, confirmation);
 
         ArgumentCaptor<MimeMessage> captor = ArgumentCaptor.forClass(MimeMessage.class);
         verify(javaMailSender).send(captor.capture());
@@ -213,10 +214,10 @@ class BusinessNotificationServiceTest {
     }
 
     @Test
-    void notifyCustomerApproved_body_containsAmountAndCurrency() throws Exception {
+    void notifyCustomerPaymentConfirmedFull_body_containsAmountAndCurrency() throws Exception {
         BusinessNotificationService service = serviceWith(javaMailSender);
 
-        service.notifyCustomerApproved(invoice, confirmation);
+        service.notifyCustomerPaymentConfirmedFull(invoice, confirmation);
 
         ArgumentCaptor<MimeMessage> captor = ArgumentCaptor.forClass(MimeMessage.class);
         verify(javaMailSender).send(captor.capture());
@@ -227,11 +228,11 @@ class BusinessNotificationServiceTest {
     }
 
     @Test
-    void notifyCustomerApproved_body_containsBusinessNote_whenPresent() throws Exception {
+    void notifyCustomerPaymentConfirmedFull_body_containsBusinessNote_whenPresent() throws Exception {
         when(confirmation.getBusinessNote()).thenReturn("Verified via bank statement");
         BusinessNotificationService service = serviceWith(javaMailSender);
 
-        service.notifyCustomerApproved(invoice, confirmation);
+        service.notifyCustomerPaymentConfirmedFull(invoice, confirmation);
 
         ArgumentCaptor<MimeMessage> captor = ArgumentCaptor.forClass(MimeMessage.class);
         verify(javaMailSender).send(captor.capture());
@@ -239,31 +240,33 @@ class BusinessNotificationServiceTest {
     }
 
     @Test
-    void notifyCustomerApproved_skips_whenCustomerHasNoEmail() {
+    void notifyCustomerPaymentConfirmedFull_skips_whenCustomerHasNoEmail() {
         when(customer.getEmail()).thenReturn(null);
         BusinessNotificationService service = serviceWith(javaMailSender);
 
-        assertDoesNotThrow(() -> service.notifyCustomerApproved(invoice, confirmation));
+        assertDoesNotThrow(() -> service.notifyCustomerPaymentConfirmedFull(invoice, confirmation));
         verify(javaMailSender, never()).send(any(MimeMessage.class));
     }
 
     @Test
-    void notifyCustomerApproved_skips_whenMailNotConfigured() {
+    void notifyCustomerPaymentConfirmedFull_skips_whenMailNotConfigured() {
         BusinessNotificationService service = serviceWith(null);
 
-        assertDoesNotThrow(() -> service.notifyCustomerApproved(invoice, confirmation));
+        assertDoesNotThrow(() -> service.notifyCustomerPaymentConfirmedFull(invoice, confirmation));
         verify(javaMailSender, never()).send(any(MimeMessage.class));
     }
 
     // ===================================================================
-    // notifyCustomerRejected
+    // notifyCustomerPartialPaymentApproved
     // ===================================================================
 
     @Test
-    void notifyCustomerRejected_sendsEmail_toCustomer() throws Exception {
+    void notifyCustomerPartialPaymentApproved_sendsEmail_toCustomer() throws Exception {
+        when(confirmation.getAmountClaimed()).thenReturn(new BigDecimal("400.00"));
+        when(invoice.getRemainingAmount()).thenReturn(new BigDecimal("600.00")); // after payment recorded
         BusinessNotificationService service = serviceWith(javaMailSender);
 
-        service.notifyCustomerRejected(invoice, confirmation);
+        service.notifyCustomerPartialPaymentApproved(invoice, confirmation);
 
         ArgumentCaptor<MimeMessage> captor = ArgumentCaptor.forClass(MimeMessage.class);
         verify(javaMailSender).send(captor.capture());
@@ -272,10 +275,130 @@ class BusinessNotificationServiceTest {
     }
 
     @Test
-    void notifyCustomerRejected_from_isPlatformAddress_replyTo_isOrgEmail() throws Exception {
+    void notifyCustomerPartialPaymentApproved_subject_indicatesPartial() throws Exception {
+        when(confirmation.getAmountClaimed()).thenReturn(new BigDecimal("400.00"));
+        when(invoice.getRemainingAmount()).thenReturn(new BigDecimal("600.00"));
         BusinessNotificationService service = serviceWith(javaMailSender);
 
-        service.notifyCustomerRejected(invoice, confirmation);
+        service.notifyCustomerPartialPaymentApproved(invoice, confirmation);
+
+        ArgumentCaptor<MimeMessage> captor = ArgumentCaptor.forClass(MimeMessage.class);
+        verify(javaMailSender).send(captor.capture());
+        assertEquals("Partial Payment Received — Invoice #INV-001", captor.getValue().getSubject());
+    }
+
+    @Test
+    void notifyCustomerPartialPaymentApproved_body_showsAmountAndRemainingBalance() throws Exception {
+        when(confirmation.getAmountClaimed()).thenReturn(new BigDecimal("400.00"));
+        when(invoice.getRemainingAmount()).thenReturn(new BigDecimal("600.00"));
+        BusinessNotificationService service = serviceWith(javaMailSender);
+
+        service.notifyCustomerPartialPaymentApproved(invoice, confirmation);
+
+        ArgumentCaptor<MimeMessage> captor = ArgumentCaptor.forClass(MimeMessage.class);
+        verify(javaMailSender).send(captor.capture());
+        String body = captor.getValue().getContent().toString();
+        assertTrue(body.contains("400.00"));
+        assertTrue(body.contains("600.00")); // remaining balance
+        assertTrue(body.contains("INR"));
+    }
+
+    @Test
+    void notifyCustomerPartialPaymentApproved_skips_whenCustomerHasNoEmail() {
+        when(customer.getEmail()).thenReturn(null);
+        BusinessNotificationService service = serviceWith(javaMailSender);
+
+        assertDoesNotThrow(() -> service.notifyCustomerPartialPaymentApproved(invoice, confirmation));
+        verify(javaMailSender, never()).send(any(MimeMessage.class));
+    }
+
+    // ===================================================================
+    // notifyInstallmentRequest
+    // ===================================================================
+
+    @Test
+    void notifyInstallmentRequest_sendsEmail_toCustomer() throws Exception {
+        when(confirmation.getAmountClaimed()).thenReturn(new BigDecimal("300.00"));
+        when(invoice.getRemainingAmount()).thenReturn(new BigDecimal("700.00"));
+        BusinessNotificationService service = serviceWith(javaMailSender);
+
+        service.notifyInstallmentRequest(invoice, confirmation);
+
+        ArgumentCaptor<MimeMessage> captor = ArgumentCaptor.forClass(MimeMessage.class);
+        verify(javaMailSender).send(captor.capture());
+        assertEquals("customer@example.com",
+                captor.getValue().getRecipients(MimeMessage.RecipientType.TO)[0].toString());
+    }
+
+    @Test
+    void notifyInstallmentRequest_subject_indicatesRemainingBalance() throws Exception {
+        when(confirmation.getAmountClaimed()).thenReturn(new BigDecimal("300.00"));
+        when(invoice.getRemainingAmount()).thenReturn(new BigDecimal("700.00"));
+        BusinessNotificationService service = serviceWith(javaMailSender);
+
+        service.notifyInstallmentRequest(invoice, confirmation);
+
+        ArgumentCaptor<MimeMessage> captor = ArgumentCaptor.forClass(MimeMessage.class);
+        verify(javaMailSender).send(captor.capture());
+        assertEquals("Payment Request for Remaining Balance — Invoice #INV-001",
+                captor.getValue().getSubject());
+    }
+
+    @Test
+    void notifyInstallmentRequest_body_showsAmountReceivedRemainingAndDueDate() throws Exception {
+        when(confirmation.getAmountClaimed()).thenReturn(new BigDecimal("300.00"));
+        when(invoice.getRemainingAmount()).thenReturn(new BigDecimal("700.00"));
+        BusinessNotificationService service = serviceWith(javaMailSender);
+
+        service.notifyInstallmentRequest(invoice, confirmation);
+
+        ArgumentCaptor<MimeMessage> captor = ArgumentCaptor.forClass(MimeMessage.class);
+        verify(javaMailSender).send(captor.capture());
+        String body = captor.getValue().getContent().toString();
+        assertTrue(body.contains("300.00"));  // amount received
+        assertTrue(body.contains("700.00"));  // remaining
+        assertTrue(body.contains("31 Mar 2026")); // due date formatted
+        assertTrue(body.contains("INR"));
+    }
+
+    @Test
+    void notifyInstallmentRequest_skips_whenCustomerHasNoEmail() {
+        when(customer.getEmail()).thenReturn(null);
+        BusinessNotificationService service = serviceWith(javaMailSender);
+
+        assertDoesNotThrow(() -> service.notifyInstallmentRequest(invoice, confirmation));
+        verify(javaMailSender, never()).send(any(MimeMessage.class));
+    }
+
+    @Test
+    void notifyInstallmentRequest_skips_whenMailNotConfigured() {
+        BusinessNotificationService service = serviceWith(null);
+
+        assertDoesNotThrow(() -> service.notifyInstallmentRequest(invoice, confirmation));
+        verify(javaMailSender, never()).send(any(MimeMessage.class));
+    }
+
+    // ===================================================================
+    // notifyCustomerPaymentRejected
+    // ===================================================================
+
+    @Test
+    void notifyCustomerPaymentRejected_sendsEmail_toCustomer() throws Exception {
+        BusinessNotificationService service = serviceWith(javaMailSender);
+
+        service.notifyCustomerPaymentRejected(invoice, confirmation);
+
+        ArgumentCaptor<MimeMessage> captor = ArgumentCaptor.forClass(MimeMessage.class);
+        verify(javaMailSender).send(captor.capture());
+        assertEquals("customer@example.com",
+                captor.getValue().getRecipients(MimeMessage.RecipientType.TO)[0].toString());
+    }
+
+    @Test
+    void notifyCustomerPaymentRejected_from_isPlatformAddress_replyTo_isOrgEmail() throws Exception {
+        BusinessNotificationService service = serviceWith(javaMailSender);
+
+        service.notifyCustomerPaymentRejected(invoice, confirmation);
 
         ArgumentCaptor<MimeMessage> captor = ArgumentCaptor.forClass(MimeMessage.class);
         verify(javaMailSender).send(captor.capture());
@@ -285,10 +408,10 @@ class BusinessNotificationServiceTest {
     }
 
     @Test
-    void notifyCustomerRejected_subject_containsInvoiceNumber() throws Exception {
+    void notifyCustomerPaymentRejected_subject_containsInvoiceNumber() throws Exception {
         BusinessNotificationService service = serviceWith(javaMailSender);
 
-        service.notifyCustomerRejected(invoice, confirmation);
+        service.notifyCustomerPaymentRejected(invoice, confirmation);
 
         ArgumentCaptor<MimeMessage> captor = ArgumentCaptor.forClass(MimeMessage.class);
         verify(javaMailSender).send(captor.capture());
@@ -296,11 +419,11 @@ class BusinessNotificationServiceTest {
     }
 
     @Test
-    void notifyCustomerRejected_body_containsReasonAndOrgName() throws Exception {
+    void notifyCustomerPaymentRejected_body_containsReasonAndOrgName() throws Exception {
         when(confirmation.getBusinessNote()).thenReturn("Amount does not match");
         BusinessNotificationService service = serviceWith(javaMailSender);
 
-        service.notifyCustomerRejected(invoice, confirmation);
+        service.notifyCustomerPaymentRejected(invoice, confirmation);
 
         ArgumentCaptor<MimeMessage> captor = ArgumentCaptor.forClass(MimeMessage.class);
         verify(javaMailSender).send(captor.capture());
@@ -310,11 +433,11 @@ class BusinessNotificationServiceTest {
     }
 
     @Test
-    void notifyCustomerRejected_body_omitsReason_whenNoBusinessNote() throws Exception {
+    void notifyCustomerPaymentRejected_body_omitsReason_whenNoBusinessNote() throws Exception {
         when(confirmation.getBusinessNote()).thenReturn(null);
         BusinessNotificationService service = serviceWith(javaMailSender);
 
-        service.notifyCustomerRejected(invoice, confirmation);
+        service.notifyCustomerPaymentRejected(invoice, confirmation);
 
         ArgumentCaptor<MimeMessage> captor = ArgumentCaptor.forClass(MimeMessage.class);
         verify(javaMailSender).send(captor.capture());
@@ -322,19 +445,19 @@ class BusinessNotificationServiceTest {
     }
 
     @Test
-    void notifyCustomerRejected_skips_whenCustomerHasNoEmail() {
+    void notifyCustomerPaymentRejected_skips_whenCustomerHasNoEmail() {
         when(customer.getEmail()).thenReturn(null);
         BusinessNotificationService service = serviceWith(javaMailSender);
 
-        assertDoesNotThrow(() -> service.notifyCustomerRejected(invoice, confirmation));
+        assertDoesNotThrow(() -> service.notifyCustomerPaymentRejected(invoice, confirmation));
         verify(javaMailSender, never()).send(any(MimeMessage.class));
     }
 
     @Test
-    void notifyCustomerRejected_skips_whenMailNotConfigured() {
+    void notifyCustomerPaymentRejected_skips_whenMailNotConfigured() {
         BusinessNotificationService service = serviceWith(null);
 
-        assertDoesNotThrow(() -> service.notifyCustomerRejected(invoice, confirmation));
+        assertDoesNotThrow(() -> service.notifyCustomerPaymentRejected(invoice, confirmation));
         verify(javaMailSender, never()).send(any(MimeMessage.class));
     }
 }

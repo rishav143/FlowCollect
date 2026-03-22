@@ -52,6 +52,8 @@ public final class PaymentConfirmationMapper {
         response.setInvoiceNumber(invoice.getInvoiceNumber());
         response.setConfirmationLinkId(link.getId());
         response.setAmountClaimed(confirmation.getAmountClaimed());
+        response.setInvoiceTotalAmount(invoice.getTotalAmount());
+        response.setInvoiceRemainingAmount(invoice.getRemainingAmount());
         response.setCustomerNote(confirmation.getCustomerNote());
         response.setStatus(confirmation.getStatus());
         response.setBusinessNote(confirmation.getBusinessNote());
