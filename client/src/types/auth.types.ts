@@ -1,0 +1,15 @@
+export interface User {
+  id: string
+  name: string
+  email: string
+  role: 'ADMIN' | 'STAFF'
+}
+
+export interface Org {
+  id: string
+  name: string
+  /** Drives Approvals nav visibility and page access */
+  paymentCollectionMode: 'PAYMENT_LINK' | 'CONFIRMATION_FLOW'
+  currency: string
+  timezone: string
+}
