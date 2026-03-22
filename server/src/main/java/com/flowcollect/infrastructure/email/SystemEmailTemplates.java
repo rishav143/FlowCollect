@@ -148,6 +148,7 @@ public final class SystemEmailTemplates {
      * @param orgName          organization display name
      * @param currency         ISO currency code
      * @param amountApproved   partial amount that was confirmed
+     * @param remainingBalance balance still outstanding after this approval
      * @param businessNote     optional note from business (may be null)
      * @param appName          application brand name shown in footer
      */
@@ -157,6 +158,7 @@ public final class SystemEmailTemplates {
             String orgName,
             String currency,
             BigDecimal amountApproved,
+            BigDecimal remainingBalance,
             String businessNote,
             String appName
     ) {
@@ -174,6 +176,8 @@ public final class SystemEmailTemplates {
                 + esc(invoiceNumber) + "</strong>. Thank you!</p>"
                 + infoBox(
                         row("Amount received", fmt(amountApproved, currency))
+                        + row("Remaining balance", "<span style=\"font-weight:bold;color:#dc2626;\">"
+                                + fmt(remainingBalance, currency) + "</span>")
                   )
                 + "<p style=\"margin:16px 0 0;\">Please contact <strong>" + esc(orgName)
                 + "</strong> if you have any questions.</p>"

@@ -110,6 +110,7 @@ public class BusinessNotificationService {
                 invoice.getOrganization().getName(),
                 invoice.getOrganization().getCurrency().getCurrencyCode(),
                 confirmation.getAmountClaimed(),
+                invoice.getRemainingAmount(),
                 confirmation.getBusinessNote(),
                 emailProperties.getFromName()
         );
