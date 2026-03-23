@@ -1,0 +1,188 @@
+import { useNavigate } from 'react-router-dom'
+import { ChevronRight, Trash2 } from 'lucide-react'
+import {
+  computeAvgDelay,
+  getRisk,
+  RISK_META,
+} from '../ClientMetricsStrip/ClientMetricsStrip'
+import type { CustomerResponse } from '@/types/customer.types'
+import type { InvoiceResponse } from '@/types/invoice.types'
+
+function fmt(n: number, currency: string) {
+  return new Intl.NumberFormat('en-IN', { style: 'currency', currency, maximumFractionDigits: 0 }).format(n)
+}
+
+interface ClientRow {
+  customer:          CustomerResponse
+  invoices:          InvoiceResponse[]
+  currency:          string
+  onDelete:          (c: CustomerResponse) => void
+}
+
+function MobileCard({ customer, invoices, currency, onDelete }: ClientRow) {
+  const navigate = useNavigate()
+  const outstanding = invoices.filter((i) => i.lifeCycleStatus !== 'PAID' && i.lifeCycleStatus !== 'CANCELLED').reduce((s, i) => s + i.remainingAmount, 0)
+  const overdue     = invoices.filter((i) => i.timeStatus === 'OVERDUE' && i.lifeCycleStatus !== 'PAID').reduce((s, i) => s + i.remainingAmount, 0)
+  const openCount   = invoices.filter((i) => i.lifeCycleStatus === 'ISSUED' || i.lifeCycleStatus === 'PARTIALLY_PAID').length
+  const avgDelay    = computeAvgDelay(invoices)
+  const risk        = getRisk(avgDelay, invoices.length > 0)
+  const meta        = RISK_META[risk]
+
+  return (
+    <div
+      onClick={() => navigate(`/clients/${customer.id}`)}
+      className="bg-white dark:bg-[#1B2838] rounded-xl border border-[#F4F7F9] dark:border-white/10 p-4 cursor-pointer hover:border-[#8A9BAE]/30 transition-colors"
+    >
+      <div className="flex items-start justify-between gap-2 mb-3">
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-[#0D1B2A] dark:text-white truncate">{customer.name}</p>
+          {customer.companyName && <p className="text-xs text-[#8A9BAE] truncate mt-0.5">{customer.companyName}</p>}
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${meta.chip}`}>
+            {meta.dot} {meta.label}
+          </span>
+          <button
+            onClick={(e) => { e.stopPropagation(); onDelete(customer) }}
+            className="p-1 text-[#8A9BAE] hover:text-red-500 transition-colors"
+          >
+            <Trash2 size={14} />
+          </button>
+        </div>
+      </div>
+      <div className="grid grid-cols-3 gap-2 text-center">
+        <div>
+          <p className="text-[10px] text-[#8A9BAE] mb-0.5">Outstanding</p>
+          <p className="text-xs font-semibold text-[#0D1B2A] dark:text-white tabular-nums">{fmt(outstanding, currency)}</p>
+        </div>
+        <div>
+          <p className="text-[10px] text-[#8A9BAE] mb-0.5">Overdue</p>
+          <p className={`text-xs font-semibold tabular-nums ${overdue > 0 ? 'text-red-500' : 'text-[#8A9BAE]'}`}>{overdue > 0 ? fmt(overdue, currency) : '—'}</p>
+        </div>
+        <div>
+          <p className="text-[10px] text-[#8A9BAE] mb-0.5">Open</p>
+          <p className="text-xs font-semibold text-[#0D1B2A] dark:text-white tabular-nums">{openCount}</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+interface Props {
+  customers:          CustomerResponse[]
+  invoicesByCustomer: Record<string, InvoiceResponse[]>
+  currency:           string
+  isLoading:          boolean
+  onDelete:           (c: CustomerResponse) => void
+}
+
+export default function ClientTable({ customers, invoicesByCustomer, currency, isLoading, onDelete }: Props) {
+  const navigate = useNavigate()
+
+  if (isLoading) {
+    return (
+      <div className="space-y-3 animate-pulse">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="h-20 rounded-xl bg-[#F4F7F9] dark:bg-white/10 md:h-12" />
+        ))}
+      </div>
+    )
+  }
+
+  if (customers.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[30vh] gap-3 text-center">
+        <p className="text-3xl">👤</p>
+        <div>
+          <p className="text-sm font-medium text-[#0D1B2A] dark:text-white">No clients yet</p>
+          <p className="text-sm text-[#8A9BAE] mt-0.5">Clients appear here once you add invoices or create them manually.</p>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <>
+      {/* Mobile: card grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:hidden">
+        {customers.map((c) => (
+          <MobileCard
+            key={c.id}
+            customer={c}
+            invoices={invoicesByCustomer[c.id] ?? []}
+            currency={currency}
+            onDelete={onDelete}
+          />
+        ))}
+      </div>
+
+      {/* Desktop: table */}
+      <div className="hidden md:block bg-white dark:bg-[#1B2838] rounded-xl border border-[#F4F7F9] dark:border-white/10 overflow-hidden">
+        <table className="w-full">
+          <thead>
+            <tr className="border-b border-[#F4F7F9] dark:border-white/10">
+              {['Client', 'Outstanding', 'Overdue', 'Avg Delay', 'Open', 'Risk', ''].map((h) => (
+                <th
+                  key={h}
+                  className={`py-3 px-4 text-xs font-semibold uppercase tracking-wide text-[#8A9BAE] ${h === '' || h === 'Outstanding' || h === 'Overdue' || h === 'Avg Delay' || h === 'Open' || h === 'Risk' ? 'text-right' : 'text-left'}`}
+                >
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {customers.map((c) => {
+              const invs        = invoicesByCustomer[c.id] ?? []
+              const outstanding = invs.filter((i) => i.lifeCycleStatus !== 'PAID' && i.lifeCycleStatus !== 'CANCELLED').reduce((s, i) => s + i.remainingAmount, 0)
+              const overdue     = invs.filter((i) => i.timeStatus === 'OVERDUE' && i.lifeCycleStatus !== 'PAID').reduce((s, i) => s + i.remainingAmount, 0)
+              const openCount   = invs.filter((i) => i.lifeCycleStatus === 'ISSUED' || i.lifeCycleStatus === 'PARTIALLY_PAID').length
+              const avgDelay    = computeAvgDelay(invs)
+              const risk        = getRisk(avgDelay, invs.length > 0)
+              const meta        = RISK_META[risk]
+
+              return (
+                <tr
+                  key={c.id}
+                  onClick={() => navigate(`/clients/${c.id}`)}
+                  className="border-b border-[#F4F7F9] dark:border-white/10 last:border-0 hover:bg-[#F4F7F9]/50 dark:hover:bg-white/5 transition-colors cursor-pointer"
+                >
+                  <td className="py-3 px-4">
+                    <p className="text-sm font-medium text-[#0D1B2A] dark:text-white">{c.name}</p>
+                    {c.companyName && <p className="text-xs text-[#8A9BAE] mt-0.5">{c.companyName}</p>}
+                  </td>
+                  <td className="py-3 px-4 text-right text-sm tabular-nums text-[#0D1B2A] dark:text-white">{fmt(outstanding, currency)}</td>
+                  <td className="py-3 px-4 text-right">
+                    <span className={`text-sm tabular-nums font-medium ${overdue > 0 ? 'text-red-500' : 'text-[#8A9BAE]'}`}>
+                      {overdue > 0 ? fmt(overdue, currency) : '—'}
+                    </span>
+                  </td>
+                  <td className="py-3 px-4 text-right text-sm tabular-nums text-[#8A9BAE]">
+                    {invs.length > 0 ? `${avgDelay}d` : '—'}
+                  </td>
+                  <td className="py-3 px-4 text-right text-sm tabular-nums text-[#0D1B2A] dark:text-white">{openCount}</td>
+                  <td className="py-3 px-4 text-right">
+                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${meta.chip}`}>
+                      {meta.dot} {meta.label}
+                    </span>
+                  </td>
+                  <td className="py-3 px-4">
+                    <div className="flex items-center justify-end gap-1">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); onDelete(c) }}
+                        className="p-1 text-[#8A9BAE] hover:text-red-500 transition-colors"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                      <ChevronRight size={16} className="text-[#8A9BAE]" />
+                    </div>
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+    </>
+  )
+}

@@ -5,6 +5,8 @@ import InvoiceListPage   from '@/features/invoices/pages/InvoiceListPage'
 import InvoiceDetailPage from '@/features/invoices/pages/InvoiceDetailPage'
 import FollowupsPage     from '@/features/followups/pages/FollowupsPage'
 import ApprovalsPage     from '@/features/approvals/pages/ApprovalsPage'
+import ClientListPage    from '@/features/clients/pages/ClientListPage'
+import ClientDetailPage  from '@/features/clients/pages/ClientDetailPage'
 import TemplatesPage     from '@/features/templates/pages/TemplatesPage'
 
 // ---------------------------------------------------------------------------
@@ -38,8 +40,8 @@ const router = createBrowserRouter([
       { path: '/invoices/:id',       element: <InvoiceDetailPage /> },
       { path: '/followups',          element: <FollowupsPage /> },
       { path: '/approvals',          element: <ApprovalsPage /> },
-      { path: '/clients',            element: <PlaceholderPage title="👥 Clients" /> },
-      { path: '/clients/:id',        element: <PlaceholderPage title="👥 Client Detail" /> },
+      { path: '/clients',            element: <ClientListPage /> },
+      { path: '/clients/:id',        element: <ClientDetailPage /> },
       { path: '/reminder-rules',     element: <PlaceholderPage title="🔔 Reminders" /> },
       { path: '/templates',          element: <TemplatesPage /> },
       { path: '/settings/org',       element: <PlaceholderPage title="⚙️ Settings" /> },

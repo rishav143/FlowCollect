@@ -46,3 +46,23 @@ export async function updateCustomer(
 export async function deleteCustomer(orgId: string, id: string): Promise<void> {
   await api.delete(`${base(orgId)}/${id}`)
 }
+
+export async function activateCustomer(orgId: string, id: string): Promise<CustomerResponse> {
+  const { data } = await api.put<CustomerResponse>(`${base(orgId)}/${id}/activate`)
+  return data
+}
+
+export async function deactivateCustomer(orgId: string, id: string): Promise<CustomerResponse> {
+  const { data } = await api.put<CustomerResponse>(`${base(orgId)}/${id}/deactivate`)
+  return data
+}
+
+export async function enableAutomation(orgId: string, id: string): Promise<CustomerResponse> {
+  const { data } = await api.put<CustomerResponse>(`${base(orgId)}/${id}/automation/enable`)
+  return data
+}
+
+export async function disableAutomation(orgId: string, id: string): Promise<CustomerResponse> {
+  const { data } = await api.put<CustomerResponse>(`${base(orgId)}/${id}/automation/disable`)
+  return data
+}

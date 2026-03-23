@@ -22,10 +22,10 @@ const PAST7 = new Date(Date.now() - 7  * 86400_000).toISOString().slice(0, 10)
 const PAST3 = new Date(Date.now() - 3  * 86400_000).toISOString().slice(0, 10)
 const FUT14 = new Date(Date.now() + 14 * 86400_000).toISOString().slice(0, 10)
 
-const CUSTOMERS = [
-  { id: 'c1', organizationId: 'o1', name: 'Arjun Mehta',  companyName: 'Mehta Designs', email: 'arjun@mehtadesigns.com', phone: '9876543210', status: 'ACTIVE', createdAt: NOW, updatedAt: NOW },
-  { id: 'c2', organizationId: 'o1', name: 'Priya Sharma', companyName: 'SharmaIT',      email: 'priya@sharmait.in',     phone: '9823456780', status: 'ACTIVE', createdAt: NOW, updatedAt: NOW },
-  { id: 'c3', organizationId: 'o1', name: 'Rohan Verma',  companyName: null,             email: 'rohan.verma@gmail.com', phone: '9911223344', status: 'ACTIVE', createdAt: NOW, updatedAt: NOW },
+const CUSTOMERS: Record<string, unknown>[] = [
+  { id: 'c1', organizationId: 'o1', name: 'Arjun Mehta',  companyName: 'Mehta Designs', email: 'arjun@mehtadesigns.com', phone: '9876543210', address: 'Mumbai, Maharashtra', active: true, automationEnabled: true,  createdAt: NOW, updatedAt: NOW },
+  { id: 'c2', organizationId: 'o1', name: 'Priya Sharma', companyName: 'SharmaIT',      email: 'priya@sharmait.in',     phone: '9823456780', address: 'Bengaluru, Karnataka', active: true, automationEnabled: true,  createdAt: NOW, updatedAt: NOW },
+  { id: 'c3', organizationId: 'o1', name: 'Rohan Verma',  companyName: null,             email: 'rohan.verma@gmail.com', phone: '9911223344', address: null,                   active: true, automationEnabled: false, createdAt: NOW, updatedAt: NOW },
 ]
 
 const INVOICES: Record<string, unknown>[] = [
@@ -148,9 +148,32 @@ function route(method: string, pattern: RegExp, handle: Handler) {
 
 const ROUTES = [
   // Customers
-  route('GET',    /\/customers$/,         (_, qs) => paginate(CUSTOMERS, qs)),
+  route('GET', /\/customers$/, (_, qs) => {
+    let list = [...CUSTOMERS]
+    if (qs.name) list = list.filter((c) => (c.name as string).toLowerCase().includes(qs.name.toLowerCase()))
+    if (qs.active !== undefined) list = list.filter((c) => String(c.active) === qs.active)
+    return paginate(list, qs)
+  }),
   route('GET',    /\/customers\/([^/]+)$/, (p) => CUSTOMERS.find((c) => c.id === p.match(/\/customers\/([^/]+)$/)?.[1]) ?? null),
-  route('POST',   /\/customers$/,         (_, __, b) => ({ id: makeId(), organizationId: ORG, status: 'ACTIVE', createdAt: NOW, updatedAt: NOW, ...(b as object) })),
+  route('POST',   /\/customers$/, (_, __, b) => {
+    const c = { id: makeId(), organizationId: ORG, active: true, automationEnabled: true, address: null, createdAt: NOW, updatedAt: NOW, ...(b as object) }
+    CUSTOMERS.push(c)
+    return c
+  }),
+  route('PATCH',  /\/customers\/([^/]+)$/, (p, __, b) => {
+    const c = CUSTOMERS.find((x) => x.id === p.match(/\/customers\/([^/]+)$/)?.[1])
+    if (c) Object.assign(c, b)
+    return c
+  }),
+  route('DELETE', /\/customers\/([^/]+)$/, (p) => {
+    const idx = CUSTOMERS.findIndex((c) => c.id === p.match(/\/customers\/([^/]+)$/)?.[1])
+    if (idx !== -1) CUSTOMERS.splice(idx, 1)
+    return null
+  }),
+  route('PUT', /\/customers\/([^/]+)\/activate$/,          (p) => { const c = CUSTOMERS.find((x) => x.id === p.match(/\/customers\/([^/]+)/)?.[1]); if (c) c.active = true;             return c }),
+  route('PUT', /\/customers\/([^/]+)\/deactivate$/,        (p) => { const c = CUSTOMERS.find((x) => x.id === p.match(/\/customers\/([^/]+)/)?.[1]); if (c) c.active = false;            return c }),
+  route('PUT', /\/customers\/([^/]+)\/automation\/enable$/, (p) => { const c = CUSTOMERS.find((x) => x.id === p.match(/\/customers\/([^/]+)/)?.[1]); if (c) c.automationEnabled = true;  return c }),
+  route('PUT', /\/customers\/([^/]+)\/automation\/disable$/,(p) => { const c = CUSTOMERS.find((x) => x.id === p.match(/\/customers\/([^/]+)/)?.[1]); if (c) c.automationEnabled = false; return c }),
 
   // Invoices list & detail
   route('GET', /\/invoices$/, (_, qs) => {
