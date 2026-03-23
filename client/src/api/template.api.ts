@@ -1,4 +1,4 @@
-import axios from 'axios'
+import api from '@/lib/axios'
 import type {
   TemplateResponse,
   CreateTemplateRequest,
@@ -31,7 +31,7 @@ export async function createTemplate(
   orgId: string,
   body: CreateTemplateRequest,
 ): Promise<TemplateResponse> {
-  const { data } = await axios.post<TemplateResponse>(base(orgId), body)
+  const { data } = await api.post<TemplateResponse>(base(orgId), body)
   return data
 }
 
@@ -39,7 +39,7 @@ export async function listTemplates(
   orgId: string,
   params?: ListTemplatesParams,
 ): Promise<Page<TemplateResponse>> {
-  const { data } = await axios.get<Page<TemplateResponse>>(base(orgId), { params })
+  const { data } = await api.get<Page<TemplateResponse>>(base(orgId), { params })
   return data
 }
 
@@ -47,7 +47,7 @@ export async function getTemplate(
   orgId: string,
   id: string,
 ): Promise<TemplateResponse> {
-  const { data } = await axios.get<TemplateResponse>(`${base(orgId)}/${id}`)
+  const { data } = await api.get<TemplateResponse>(`${base(orgId)}/${id}`)
   return data
 }
 
@@ -56,7 +56,7 @@ export async function updateTemplate(
   id: string,
   body: UpdateTemplateRequest,
 ): Promise<TemplateResponse> {
-  const { data } = await axios.patch<TemplateResponse>(`${base(orgId)}/${id}`, body)
+  const { data } = await api.patch<TemplateResponse>(`${base(orgId)}/${id}`, body)
   return data
 }
 
@@ -68,7 +68,7 @@ export async function activateTemplate(
   orgId: string,
   id: string,
 ): Promise<TemplateResponse> {
-  const { data } = await axios.patch<TemplateResponse>(`${base(orgId)}/${id}/activate`)
+  const { data } = await api.patch<TemplateResponse>(`${base(orgId)}/${id}/activate`)
   return data
 }
 
@@ -76,7 +76,7 @@ export async function deactivateTemplate(
   orgId: string,
   id: string,
 ): Promise<TemplateResponse> {
-  const { data } = await axios.patch<TemplateResponse>(`${base(orgId)}/${id}/deactivate`)
+  const { data } = await api.patch<TemplateResponse>(`${base(orgId)}/${id}/deactivate`)
   return data
 }
 
@@ -85,5 +85,5 @@ export async function deactivateTemplate(
 // ---------------------------------------------------------------------------
 
 export async function deleteTemplate(orgId: string, id: string): Promise<void> {
-  await axios.delete(`${base(orgId)}/${id}`)
+  await api.delete(`${base(orgId)}/${id}`)
 }

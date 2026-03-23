@@ -1,0 +1,58 @@
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useAuthStore } from '@/store/auth.store'
+import {
+  listConfirmations,
+  approveConfirmation,
+  rejectConfirmation,
+  requestRemainingConfirmation,
+} from '@/api/confirmation.api'
+import type { ConfirmationStatus } from '@/types/confirmation.types'
+
+export type ApprovalFilter = 'PENDING_APPROVAL' | 'APPROVED' | 'REJECTED' | 'REMAINING_REQUESTED' | 'ALL'
+
+export function useConfirmations(filter: ApprovalFilter) {
+  const orgId = useAuthStore((s) => s.org?.id ?? '')
+
+  return useQuery({
+    queryKey: ['confirmations', orgId, filter],
+    queryFn:  () =>
+      listConfirmations(orgId, {
+        status: filter === 'ALL' ? undefined : (filter as ConfirmationStatus),
+        size: 100,
+        sort: 'createdAt,desc',
+      }),
+    enabled: !!orgId,
+  })
+}
+
+export function usePendingConfirmationCount() {
+  const orgId = useAuthStore((s) => s.org?.id ?? '')
+
+  return useQuery({
+    queryKey: ['confirmations-count', orgId],
+    queryFn:  () => listConfirmations(orgId, { status: 'PENDING_APPROVAL', size: 1 }),
+    enabled:  !!orgId,
+    staleTime: 60_000,
+    select: (d) => d.totalElements,
+  })
+}
+
+function useReviewMutation(
+  action: (orgId: string, id: string, body?: { businessNote?: string }) => Promise<unknown>,
+) {
+  const orgId       = useAuthStore((s) => s.org?.id ?? '')
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ id, businessNote }: { id: string; businessNote?: string }) =>
+      action(orgId, id, businessNote ? { businessNote } : undefined),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['confirmations', orgId] })
+      queryClient.invalidateQueries({ queryKey: ['confirmations-count', orgId] })
+    },
+  })
+}
+
+export function useApproveConfirmation()          { return useReviewMutation(approveConfirmation) }
+export function useRejectConfirmation()           { return useReviewMutation(rejectConfirmation) }
+export function useRequestRemainingConfirmation() { return useReviewMutation(requestRemainingConfirmation) }

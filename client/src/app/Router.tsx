@@ -1,6 +1,10 @@
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom'
-import AppShell    from '@/ui/layout/AppShell/AppShell'
-import TemplatesPage from '@/features/templates/pages/TemplatesPage'
+import AppShell          from '@/ui/layout/AppShell/AppShell'
+import DashboardPage     from '@/features/dashboard/pages/DashboardPage'
+import InvoiceListPage   from '@/features/invoices/pages/InvoiceListPage'
+import InvoiceDetailPage from '@/features/invoices/pages/InvoiceDetailPage'
+import FollowupsPage     from '@/features/followups/pages/FollowupsPage'
+import TemplatesPage     from '@/features/templates/pages/TemplatesPage'
 
 // ---------------------------------------------------------------------------
 // Placeholder pages — swapped out one-by-one as feature pages are built
@@ -28,10 +32,10 @@ const router = createBrowserRouter([
   {
     element: <AppShell />,
     children: [
-      { path: '/dashboard',          element: <PlaceholderPage title="📊 Dashboard" /> },
-      { path: '/invoices',           element: <PlaceholderPage title="📄 Invoices" /> },
-      { path: '/invoices/:id',       element: <PlaceholderPage title="📄 Invoice Detail" /> },
-      { path: '/followups',          element: <PlaceholderPage title="⏰ Follow-ups" /> },
+      { path: '/dashboard',          element: <DashboardPage /> },
+      { path: '/invoices',           element: <InvoiceListPage /> },
+      { path: '/invoices/:id',       element: <InvoiceDetailPage /> },
+      { path: '/followups',          element: <FollowupsPage /> },
       { path: '/approvals',          element: <PlaceholderPage title="✅ Approvals" /> },
       { path: '/clients',            element: <PlaceholderPage title="👥 Clients" /> },
       { path: '/clients/:id',        element: <PlaceholderPage title="👥 Client Detail" /> },

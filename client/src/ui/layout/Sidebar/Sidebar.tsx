@@ -42,8 +42,10 @@ function NavBadgePill({ count, variant }: { count: number; variant: 'red' | 'amb
   return (
     <span
       className={[
-        'ml-auto min-w-[20px] text-center text-[11px] font-semibold px-1.5 py-0.5 rounded-full text-white',
-        variant === 'amber' ? 'bg-[#F59E0B]' : 'bg-[#EF4444]',
+        'ml-auto min-w-[18px] text-center text-[10px] font-bold tabular-nums px-1.5 py-0.5 rounded-full',
+        variant === 'amber'
+          ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400'
+          : 'bg-red-100 text-red-600 dark:bg-red-500/20 dark:text-red-400',
       ].join(' ')}
     >
       {count > 99 ? '99+' : count}
