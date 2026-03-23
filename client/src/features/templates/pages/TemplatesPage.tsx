@@ -6,6 +6,7 @@ import TemplateCard from '@/features/templates/components/TemplateCard/TemplateC
 import CreateTemplateModal from '@/features/templates/modals/CreateTemplateModal'
 import EditTemplateModal   from '@/features/templates/modals/EditTemplateModal'
 import DeleteTemplateModal from '@/features/templates/modals/DeleteTemplateModal'
+import ViewToggle, { useViewPreference, gridClass } from '@/ui/components/ViewToggle'
 import type { TemplateResponse, TemplateChannel } from '@/types/template.types'
 
 const CHANNEL_TABS: { label: string; value: TemplateChannel | 'ALL' }[] = [
@@ -33,6 +34,7 @@ export default function TemplatesPage() {
   const [showCreate, setShowCreate] = useState(false)
   const [editing,    setEditing]    = useState<TemplateResponse | null>(null)
   const [deleting,   setDeleting]   = useState<TemplateResponse | null>(null)
+  const [view, setView] = useViewPreference('templates', 'grid3')
 
   const { data, isLoading, isError } = useTemplates(
     channelFilter !== 'ALL' ? { channel: channelFilter } : undefined,
@@ -49,14 +51,17 @@ export default function TemplatesPage() {
           <h1 className="text-xl font-bold text-[#0D1B2A] dark:text-white">Templates</h1>
           <p className="text-sm text-[#8A9BAE] mt-0.5">Reusable messages for your follow-ups and reminders</p>
         </div>
-        <button
-          onClick={() => setShowCreate(true)}
-          className="flex items-center gap-1.5 px-3 py-2 text-sm font-semibold text-white rounded-lg hover:opacity-90 transition-opacity shrink-0"
-          style={{ background: 'linear-gradient(90deg, #29B6F6 0%, #4FC3F7 100%)' }}
-        >
-          <Plus size={15} strokeWidth={2.5} />
-          <span className="hidden sm:inline">New Template</span>
-        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          <ViewToggle value={view} onChange={setView} />
+          <button
+            onClick={() => setShowCreate(true)}
+            className="flex items-center gap-1.5 px-3 py-2 text-sm font-semibold text-white rounded-lg hover:opacity-90 transition-opacity"
+            style={{ background: 'linear-gradient(90deg, #29B6F6 0%, #4FC3F7 100%)' }}
+          >
+            <Plus size={15} strokeWidth={2.5} />
+            <span className="hidden sm:inline">New Template</span>
+          </button>
+        </div>
       </div>
 
       {/* Channel filter tabs */}
@@ -79,7 +84,7 @@ export default function TemplatesPage() {
 
       {/* Content */}
       {isLoading && (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className={gridClass(view)}>
           {[1, 2, 3].map((i) => <CardSkeleton key={i} />)}
         </div>
       )}
@@ -110,7 +115,7 @@ export default function TemplatesPage() {
       )}
 
       {!isLoading && !isError && templates.length > 0 && (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className={gridClass(view)}>
           {templates.map((t) => (
             <TemplateCardWithToggle
               key={t.id}

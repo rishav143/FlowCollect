@@ -8,6 +8,8 @@ import { listCustomers } from '@/api/customer.api'
 import InvoiceStatusTabs, { type InvoiceFilter } from '../components/InvoiceStatusTabs/InvoiceStatusTabs'
 import InvoiceTable from '../components/InvoiceTable/InvoiceTable'
 import AddInvoiceModal from '../modals/AddInvoiceModal'
+import ViewToggle, { useViewPreference, gridClass } from '@/ui/components/ViewToggle'
+import InvoiceCard from '../components/InvoiceCard/InvoiceCard'
 import type { InvoiceResponse } from '@/types/invoice.types'
 import type { CustomerResponse } from '@/types/customer.types'
 
@@ -108,6 +110,7 @@ export default function InvoiceListPage() {
   const [page,         setPage]         = useState(0)
   const [showCreate,   setShowCreate]   = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<InvoiceResponse | null>(null)
+  const [view,         setView]         = useViewPreference('invoices', 'list')
 
   const deleteMutation = useDeleteInvoice()
 
@@ -157,21 +160,24 @@ export default function InvoiceListPage() {
       <div className="space-y-5">
 
         {/* ── Header ──────────────────────────────────────────────────── */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-3">
           <div>
             <h1 className="text-xl font-bold text-[#0D1B2A] dark:text-white">Invoices</h1>
             {!invoicesQuery.isLoading && (
               <p className="text-sm text-[#8A9BAE] mt-0.5">{totalItems} invoice{totalItems !== 1 ? 's' : ''}</p>
             )}
           </div>
-          <button
-            onClick={() => setShowCreate(true)}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white hover:opacity-90 transition-opacity"
-            style={{ background: 'linear-gradient(90deg, #29B6F6 0%, #4FC3F7 100%)' }}
-          >
-            <Plus size={15} strokeWidth={2.5} />
-            New Invoice
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            <ViewToggle value={view} onChange={setView} />
+            <button
+              onClick={() => setShowCreate(true)}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white hover:opacity-90 transition-opacity"
+              style={{ background: 'linear-gradient(90deg, #29B6F6 0%, #4FC3F7 100%)' }}
+            >
+              <Plus size={15} strokeWidth={2.5} />
+              New Invoice
+            </button>
+          </div>
         </div>
 
         {/* ── Status tabs ──────────────────────────────────────────────── */}
@@ -189,14 +195,33 @@ export default function InvoiceListPage() {
           />
         </div>
 
-        {/* ── Table ────────────────────────────────────────────────────── */}
-        <InvoiceTable
-          invoices={invoices}
-          customerMap={customerMap}
-          currency={currency}
-          isLoading={invoicesQuery.isLoading}
-          onDelete={setDeleteTarget}
-        />
+        {/* ── Content ──────────────────────────────────────────────────── */}
+        {view === 'list' ? (
+          <InvoiceTable
+            invoices={invoices}
+            customerMap={customerMap}
+            currency={currency}
+            isLoading={invoicesQuery.isLoading}
+            onDelete={setDeleteTarget}
+          />
+        ) : (
+          <div className={gridClass(view)}>
+            {invoicesQuery.isLoading
+              ? [...Array(6)].map((_, i) => (
+                  <div key={i} className="h-32 rounded-xl bg-[#F4F7F9] dark:bg-white/10 animate-pulse" />
+                ))
+              : invoices.map((inv) => (
+                  <InvoiceCard
+                    key={inv.id}
+                    invoice={inv}
+                    customer={inv.customerId ? customerMap[inv.customerId] : undefined}
+                    currency={currency}
+                    onDelete={setDeleteTarget}
+                  />
+                ))
+            }
+          </div>
+        )}
 
         {/* ── Pagination ───────────────────────────────────────────────── */}
         <Pagination page={page} totalPages={totalPages} onChange={setPage} />

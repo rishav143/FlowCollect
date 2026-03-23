@@ -8,6 +8,7 @@ import { useQuery } from '@tanstack/react-query'
 import ClientMetricsStrip from '../components/ClientMetricsStrip/ClientMetricsStrip'
 import ClientTable from '../components/ClientTable/ClientTable'
 import AddClientModal from '../modals/AddClientModal'
+import ViewToggle, { useViewPreference } from '@/ui/components/ViewToggle'
 import type { CustomerResponse } from '@/types/customer.types'
 import type { InvoiceResponse } from '@/types/invoice.types'
 
@@ -62,6 +63,7 @@ export default function ClientListPage() {
   const [search,       setSearch]       = useState('')
   const [showAdd,      setShowAdd]      = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<CustomerResponse | null>(null)
+  const [view,         setView]         = useViewPreference('clients', 'list')
 
   const clientsQuery = useClients({ name: search.trim() || undefined, size: 200 })
   const deleteMut    = useDeleteClient()
@@ -106,14 +108,17 @@ export default function ClientListPage() {
               </p>
             )}
           </div>
-          <button
-            onClick={() => setShowAdd(true)}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white hover:opacity-90 transition-opacity"
-            style={{ background: 'linear-gradient(90deg, #29B6F6 0%, #4FC3F7 100%)' }}
-          >
-            <Plus size={15} strokeWidth={2.5} />
-            Add Client
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            <ViewToggle value={view} onChange={setView} />
+            <button
+              onClick={() => setShowAdd(true)}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white hover:opacity-90 transition-opacity"
+              style={{ background: 'linear-gradient(90deg, #29B6F6 0%, #4FC3F7 100%)' }}
+            >
+              <Plus size={15} strokeWidth={2.5} />
+              Add Client
+            </button>
+          </div>
         </div>
 
         {/* Metrics */}
@@ -135,12 +140,13 @@ export default function ClientListPage() {
           />
         </div>
 
-        {/* Table */}
+        {/* Table / Grid */}
         <ClientTable
           customers={customers}
           invoicesByCustomer={invoicesByCustomer}
           currency={currency}
           isLoading={isLoading}
+          view={view}
           onDelete={setDeleteTarget}
         />
       </div>

@@ -5,6 +5,7 @@ import {
   getRisk,
   RISK_META,
 } from '../ClientMetricsStrip/ClientMetricsStrip'
+import type { ViewMode } from '@/ui/components/ViewToggle'
 import type { CustomerResponse } from '@/types/customer.types'
 import type { InvoiceResponse } from '@/types/invoice.types'
 
@@ -73,10 +74,11 @@ interface Props {
   invoicesByCustomer: Record<string, InvoiceResponse[]>
   currency:           string
   isLoading:          boolean
+  view?:              ViewMode
   onDelete:           (c: CustomerResponse) => void
 }
 
-export default function ClientTable({ customers, invoicesByCustomer, currency, isLoading, onDelete }: Props) {
+export default function ClientTable({ customers, invoicesByCustomer, currency, isLoading, view = 'list', onDelete }: Props) {
   const navigate = useNavigate()
 
   if (isLoading) {
@@ -101,10 +103,15 @@ export default function ClientTable({ customers, invoicesByCustomer, currency, i
     )
   }
 
+  const showCards = view === 'grid2' || view === 'grid3'
+  const cardCols  = view === 'grid3'
+    ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3'
+    : 'grid grid-cols-1 sm:grid-cols-2 gap-3'
+
   return (
     <>
-      {/* Mobile: card grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:hidden">
+      {/* Card grid — shown when view is grid2 or grid3, or on mobile regardless */}
+      <div className={showCards ? cardCols : 'grid grid-cols-1 sm:grid-cols-2 gap-3 md:hidden'}>
         {customers.map((c) => (
           <MobileCard
             key={c.id}
@@ -116,8 +123,8 @@ export default function ClientTable({ customers, invoicesByCustomer, currency, i
         ))}
       </div>
 
-      {/* Desktop: table */}
-      <div className="hidden md:block bg-white dark:bg-[#1B2838] rounded-xl border border-[#F4F7F9] dark:border-white/10 overflow-hidden">
+      {/* Table — shown only in list view, hidden on mobile */}
+      <div className={showCards ? 'hidden' : 'hidden md:block bg-white dark:bg-[#1B2838] rounded-xl border border-[#F4F7F9] dark:border-white/10 overflow-hidden'}>
         <table className="w-full">
           <thead>
             <tr className="border-b border-[#F4F7F9] dark:border-white/10">

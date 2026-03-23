@@ -3,9 +3,10 @@ import { Send, X, Bell } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/store/auth.store'
 import { listCustomers } from '@/api/customer.api'
-import { useFollowupInvoices, useDispatchFollowup, type FollowupFilter } from '../hooks/useFollowups'
+import { useFollowupInvoices, useFollowupsByInvoices, useDispatchFollowup, type FollowupFilter } from '../hooks/useFollowups'
 import FollowupFilterTabs from '../components/FollowupFilterTabs/FollowupFilterTabs'
 import FollowupCard from '../components/FollowupCard/FollowupCard'
+import ViewToggle, { useViewPreference, gridClass } from '@/ui/components/ViewToggle'
 import type { InvoiceResponse } from '@/types/invoice.types'
 import type { FollowUpChannel, PaymentGateway, MultiChannelFollowUpRequest } from '@/types/followup.types'
 import type { CustomerResponse } from '@/types/customer.types'
@@ -16,28 +17,6 @@ import type { CustomerResponse } from '@/types/customer.types'
 
 function fmt(n: number, currency: string) {
   return new Intl.NumberFormat('en-IN', { style: 'currency', currency, maximumFractionDigits: 0 }).format(n)
-}
-
-function fmtDate(d: string | null) {
-  if (!d) return '—'
-  return new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
-}
-
-const TIME_CHIP: Record<string, string> = {
-  OVERDUE:   'bg-red-100 text-red-600 dark:bg-red-500/20 dark:text-red-400',
-  DUE_TODAY: 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400',
-  NOT_DUE:   'bg-[#F4F7F9] text-[#8A9BAE] dark:bg-white/10 dark:text-[#8A9BAE]',
-}
-
-const TIME_LABEL: Record<string, string> = {
-  OVERDUE:   'Overdue',
-  DUE_TODAY: 'Due Today',
-  NOT_DUE:   'Upcoming',
-}
-
-const LIFECYCLE_CHIP: Record<string, string> = {
-  ISSUED:         'bg-blue-50 text-blue-600 dark:bg-blue-500/15 dark:text-blue-400',
-  PARTIALLY_PAID: 'bg-[#29B6F6]/10 text-[#29B6F6]',
 }
 
 // ---------------------------------------------------------------------------
@@ -230,48 +209,62 @@ function DispatchModal({
 // Desktop table row
 // ---------------------------------------------------------------------------
 
+function timeAgo(dateStr: string | null): string {
+  if (!dateStr) return '—'
+  const diffDays = Math.floor((Date.now() - new Date(dateStr).getTime()) / 86_400_000)
+  if (diffDays === 0) return 'today'
+  if (diffDays === 1) return '1 day ago'
+  return `${diffDays} days ago`
+}
+
+const CHANNEL_LABEL: Record<string, string> = {
+  EMAIL: 'Email', SMS: 'SMS', WHATSAPP: 'WhatsApp',
+}
+
 function InvoiceRow({
   invoice,
   currency,
   customerName,
+  lastFollowup,
   onSend,
 }: {
-  invoice:      InvoiceResponse
-  currency:     string
+  invoice:       InvoiceResponse
+  currency:      string
   customerName?: string
-  onSend:       () => void
+  lastFollowup?: import('@/types/followup.types').FollowUpResponse
+  onSend:        () => void
 }) {
   return (
     <tr className="border-b border-[#F4F7F9] dark:border-white/10 last:border-0 hover:bg-[#F4F7F9]/50 dark:hover:bg-white/5 transition-colors">
+      {/* Client + invoice # */}
       <td className="py-3 px-4">
-        <p className="text-sm font-medium text-[#0D1B2A] dark:text-white">
-          {invoice.invoiceNumber}
+        <p className="text-sm font-semibold text-[#0D1B2A] dark:text-white">
+          {customerName ?? '—'}
         </p>
-        {customerName && (
-          <p className="text-xs text-[#8A9BAE] mt-0.5">{customerName}</p>
-        )}
+        <p className="text-xs text-[#8A9BAE] mt-0.5">{invoice.invoiceNumber}</p>
       </td>
-      <td className="py-3 px-4">
-        <div className="flex items-center gap-1.5">
-          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${LIFECYCLE_CHIP[invoice.lifeCycleStatus] ?? ''}`}>
-            {invoice.lifeCycleStatus.replace('_', ' ')}
-          </span>
-          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${TIME_CHIP[invoice.timeStatus] ?? ''}`}>
-            {TIME_LABEL[invoice.timeStatus] ?? invoice.timeStatus}
-          </span>
-        </div>
+      {/* Amount owed */}
+      <td className={`py-3 px-4 text-sm font-bold tabular-nums ${invoice.timeStatus === 'OVERDUE' ? 'text-red-500' : 'text-[#0D1B2A] dark:text-white'}`}>
+        {fmt(invoice.remainingAmount, currency)}
       </td>
-      <td className="py-3 px-4 text-sm text-[#0D1B2A] dark:text-white tabular-nums">
-        {fmtDate(invoice.dueDate)}
+      {/* Due */}
+      <td className="py-3 px-4 text-sm">
+        <span className={
+          invoice.timeStatus === 'OVERDUE'   ? 'text-red-500 font-semibold' :
+          invoice.timeStatus === 'DUE_TODAY' ? 'text-amber-600 dark:text-amber-400 font-semibold' :
+          'text-[#8A9BAE]'
+        }>
+          {invoice.timeStatus === 'DUE_TODAY' ? 'Today' : timeAgo(invoice.dueDate)}
+        </span>
       </td>
-      <td className="py-3 px-4 text-right">
-        <p className="text-sm font-bold text-red-500 tabular-nums">
-          {fmt(invoice.remainingAmount, currency)}
-        </p>
-        <p className="text-xs text-[#8A9BAE] tabular-nums">
-          of {fmt(invoice.totalAmount, currency)}
-        </p>
+      {/* Last contacted */}
+      <td className="py-3 px-4 text-sm text-[#8A9BAE]">
+        {lastFollowup
+          ? `${CHANNEL_LABEL[lastFollowup.channel] ?? lastFollowup.channel} · ${timeAgo(lastFollowup.sentAt ?? lastFollowup.createdAt)}`
+          : <span className="italic">Never</span>
+        }
       </td>
+      {/* Action */}
       <td className="py-3 px-4 text-right">
         <button
           onClick={onSend}
@@ -310,8 +303,10 @@ export default function FollowupsPage() {
 
   const [filter,  setFilter]  = useState<FollowupFilter>('ALL')
   const [target,  setTarget]  = useState<InvoiceResponse | null>(null)
+  const [view,    setView]    = useViewPreference('followups', 'list')
 
   const { data: invoices = [], isLoading } = useFollowupInvoices(filter)
+  const lastFollowupMap = useFollowupsByInvoices(invoices.map((i) => i.id))
 
   const customersQuery = useQuery({
     queryKey: ['customers', orgId, 'all'],
@@ -329,13 +324,16 @@ export default function FollowupsPage() {
       <div className="space-y-5">
 
         {/* Header */}
-        <div>
-          <h1 className="text-xl font-bold text-[#0D1B2A] dark:text-white">Follow-ups</h1>
-          {!isLoading && (
-            <p className="text-sm text-[#8A9BAE] mt-0.5">
-              {invoices.length} active invoice{invoices.length !== 1 ? 's' : ''} need attention
-            </p>
-          )}
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <h1 className="text-xl font-bold text-[#0D1B2A] dark:text-white">Follow-ups</h1>
+            {!isLoading && (
+              <p className="text-sm text-[#8A9BAE] mt-0.5">
+                {invoices.length} active invoice{invoices.length !== 1 ? 's' : ''} need attention
+              </p>
+            )}
+          </div>
+          <ViewToggle value={view} onChange={setView} />
         </div>
 
         {/* Filter tabs */}
@@ -356,29 +354,30 @@ export default function FollowupsPage() {
           </div>
         ) : (
           <>
-            {/* Mobile: card stack */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:hidden">
+            {/* Card grid — shown when view is grid2/grid3, or on mobile in list view */}
+            <div className={view !== 'list' ? gridClass(view) : 'grid grid-cols-1 sm:grid-cols-2 gap-3 md:hidden'}>
               {invoices.map((inv) => (
                 <FollowupCard
                   key={inv.id}
                   invoice={inv}
                   currency={currency}
                   customerName={inv.customerId ? customerMap[inv.customerId]?.name : undefined}
+                  lastFollowup={lastFollowupMap[inv.id]}
                   onSend={() => setTarget(inv)}
                 />
               ))}
             </div>
 
-            {/* Desktop: table */}
-            <div className="hidden md:block bg-white dark:bg-[#1B2838] rounded-xl border border-[#F4F7F9] dark:border-white/10 overflow-hidden">
+            {/* Table — shown only in list view on md+ */}
+            <div className={view !== 'list' ? 'hidden' : 'hidden md:block bg-white dark:bg-[#1B2838] rounded-xl border border-[#F4F7F9] dark:border-white/10 overflow-hidden'}>
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-[#F4F7F9] dark:border-white/10">
-                    <th className="py-3 px-4 text-left text-xs font-semibold uppercase tracking-wide text-[#8A9BAE]">Invoice</th>
-                    <th className="py-3 px-4 text-left text-xs font-semibold uppercase tracking-wide text-[#8A9BAE]">Status</th>
-                    <th className="py-3 px-4 text-left text-xs font-semibold uppercase tracking-wide text-[#8A9BAE]">Due Date</th>
-                    <th className="py-3 px-4 text-right text-xs font-semibold uppercase tracking-wide text-[#8A9BAE]">Amount</th>
-                    <th className="py-3 px-4 text-right text-xs font-semibold uppercase tracking-wide text-[#8A9BAE]">Action</th>
+                    <th className="py-3 px-4 text-left text-xs font-semibold uppercase tracking-wide text-[#8A9BAE]">Client</th>
+                    <th className="py-3 px-4 text-left text-xs font-semibold uppercase tracking-wide text-[#8A9BAE]">Owed</th>
+                    <th className="py-3 px-4 text-left text-xs font-semibold uppercase tracking-wide text-[#8A9BAE]">Due</th>
+                    <th className="py-3 px-4 text-left text-xs font-semibold uppercase tracking-wide text-[#8A9BAE]">Last Contacted</th>
+                    <th className="py-3 px-4 text-right text-xs font-semibold uppercase tracking-wide text-[#8A9BAE]"></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -388,6 +387,7 @@ export default function FollowupsPage() {
                       invoice={inv}
                       currency={currency}
                       customerName={inv.customerId ? customerMap[inv.customerId]?.name : undefined}
+                      lastFollowup={lastFollowupMap[inv.id]}
                       onSend={() => setTarget(inv)}
                     />
                   ))}

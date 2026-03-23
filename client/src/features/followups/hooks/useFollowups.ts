@@ -1,8 +1,8 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueries, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@/store/auth.store'
 import { listInvoices } from '@/api/invoice.api'
 import { listFollowups, dispatchFollowup } from '@/api/followup.api'
-import type { MultiChannelFollowUpRequest } from '@/types/followup.types'
+import type { MultiChannelFollowUpRequest, FollowUpResponse } from '@/types/followup.types'
 import type { TimeStatus } from '@/types/invoice.types'
 
 export type FollowupFilter = 'ALL' | 'OVERDUE' | 'DUE_TODAY' | 'UPCOMING'
@@ -35,6 +35,32 @@ export function useFollowupInvoices(filter: FollowupFilter) {
     },
     enabled: !!orgId,
   })
+}
+
+// Returns a map of invoiceId → last FollowUpResponse (sorted by sentAt desc)
+export function useFollowupsByInvoices(invoiceIds: string[]): Record<string, FollowUpResponse> {
+  const orgId = useAuthStore((s) => s.org?.id ?? '')
+
+  const results = useQueries({
+    queries: invoiceIds.map((id) => ({
+      queryKey: ['followups', orgId, id],
+      queryFn:  () => listFollowups(orgId, id),
+      enabled:  !!orgId,
+      staleTime: 30_000,
+    })),
+  })
+
+  const map: Record<string, FollowUpResponse> = {}
+  invoiceIds.forEach((id, i) => {
+    const list = results[i]?.data
+    if (list && list.length > 0) {
+      const sorted = [...list].sort(
+        (a, b) => new Date(b.sentAt ?? b.createdAt).getTime() - new Date(a.sentAt ?? a.createdAt).getTime(),
+      )
+      map[id] = sorted[0]
+    }
+  })
+  return map
 }
 
 export function useInvoiceFollowups(invoiceId: string) {
