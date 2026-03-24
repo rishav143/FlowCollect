@@ -1,8 +1,5 @@
 package com.flowcollect.api.v1.diagnostics;
 
-import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -11,6 +8,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.flowcollect.infrastructure.config.NotificationEmailProperties;
 import com.flowcollect.infrastructure.config.TwilioProperties;
+import com.flowcollect.infrastructure.email.ResendEmailClient;
 import com.twilio.Twilio;
 import com.twilio.rest.api.v2010.account.Message;
 import com.twilio.type.PhoneNumber;
@@ -20,7 +18,7 @@ import java.util.Map;
 
 /**
  * Lightweight diagnostics endpoint for verifying infrastructure integrations
- * (e.g. Resend SMTP) during local development and staging.
+ * during local development and staging.
  *
  * This controller is excluded from JWT auth via JwtFilter#SKIP_PREFIXES.
  * Remove or guard it before going to production.
@@ -29,38 +27,31 @@ import java.util.Map;
 @RequestMapping("/api/v1/diagnostics")
 public class DiagnosticsController {
 
-    private final JavaMailSender mailSender;
+    private final ResendEmailClient emailClient;
     private final NotificationEmailProperties emailProperties;
     private final TwilioProperties twilioProperties;
 
     public DiagnosticsController(
-            ObjectProvider<JavaMailSender> mailSenderProvider,
+            ResendEmailClient emailClient,
             NotificationEmailProperties emailProperties,
             TwilioProperties twilioProperties
     ) {
-        this.mailSender = mailSenderProvider.getIfAvailable();
+        this.emailClient = emailClient;
         this.emailProperties = emailProperties;
         this.twilioProperties = twilioProperties;
     }
 
     /**
-     * Sends a plain-text probe email via the configured Resend SMTP credentials.
-     *
-     * Usage:
-     *   POST /api/v1/diagnostics/test-email?to=you@example.com
-     *
-     * Returns a JSON object with:
-     *   { "status": "sent"|"error", "to": "...", "from": "...", "message": "..." }
+     * Sends a test email via the Resend HTTP API.
+     * Usage: POST /api/v1/diagnostics/test-email?to=you@example.com
      */
     @PostMapping("/test-email")
-    public ResponseEntity<Map<String, String>> testEmail(
-            @RequestParam String to
-    ) {
+    public ResponseEntity<Map<String, String>> testEmail(@RequestParam String to) {
         Map<String, String> result = new LinkedHashMap<>();
 
-        if (mailSender == null) {
+        if (!emailClient.isConfigured()) {
             result.put("status", "error");
-            result.put("message", "JavaMailSender is not configured – set spring.mail.* properties");
+            result.put("message", "RESEND_API_KEY is not set");
             return ResponseEntity.status(503).body(result);
         }
 
@@ -72,21 +63,18 @@ public class DiagnosticsController {
         }
 
         try {
-            SimpleMailMessage msg = new SimpleMailMessage();
-            msg.setTo(to);
-            msg.setFrom(from);
-            msg.setSubject("FlowCollect – email delivery test");
-            msg.setText(
-                "This is a test email sent by FlowCollect's diagnostics endpoint.\n\n" +
-                "If you received this, Resend SMTP is configured correctly.\n\n" +
-                "From: " + from
+            emailClient.send(
+                emailProperties.getFromName() + " <" + from + ">",
+                to,
+                "FlowCollect – email delivery test",
+                "<p>This is a test email sent by FlowCollect's diagnostics endpoint.</p>" +
+                "<p>If you received this, Resend HTTP API is configured correctly.</p>"
             );
-            mailSender.send(msg);
 
             result.put("status", "sent");
             result.put("to", to);
             result.put("from", from);
-            result.put("message", "Email dispatched successfully via Resend SMTP");
+            result.put("message", "Email dispatched successfully via Resend HTTP API");
             return ResponseEntity.ok(result);
 
         } catch (Exception ex) {
@@ -99,15 +87,11 @@ public class DiagnosticsController {
     }
 
     /**
-     * Sends a probe SMS via the configured Twilio credentials.
-     *
-     * Usage:
-     *   POST /api/v1/diagnostics/test-sms?to=+91XXXXXXXXXX
+     * Sends a probe SMS via Twilio.
+     * Usage: POST /api/v1/diagnostics/test-sms?to=+91XXXXXXXXXX
      */
     @PostMapping("/test-sms")
-    public ResponseEntity<Map<String, String>> testSms(
-            @RequestParam String to
-    ) {
+    public ResponseEntity<Map<String, String>> testSms(@RequestParam String to) {
         Map<String, String> result = new LinkedHashMap<>();
 
         if (!twilioProperties.isEnabled()) {
@@ -124,7 +108,7 @@ public class DiagnosticsController {
             authToken  == null || authToken.isBlank()  ||
             from       == null || from.isBlank()) {
             result.put("status", "error");
-            result.put("message", "Twilio credentials are incomplete – check TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_SMS_FROM");
+            result.put("message", "Twilio credentials incomplete – check TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_SMS_FROM");
             return ResponseEntity.status(503).body(result);
         }
 

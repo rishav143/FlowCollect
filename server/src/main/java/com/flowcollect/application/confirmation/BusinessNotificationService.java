@@ -1,58 +1,39 @@
 package com.flowcollect.application.confirmation;
 
-import java.util.Optional;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
 import com.flowcollect.domain.confirmation.PaymentConfirmation;
 import com.flowcollect.domain.invoice.Invoice;
 import com.flowcollect.infrastructure.config.NotificationEmailProperties;
 import com.flowcollect.infrastructure.email.EmailContent;
+import com.flowcollect.infrastructure.email.ResendEmailClient;
 import com.flowcollect.infrastructure.email.SystemEmailTemplates;
-
-import jakarta.mail.internet.MimeMessage;
 
 /**
  * Sends internal (business-facing) and customer-facing email notifications
  * for payment confirmation events.
  *
- * <p>All email content is sourced from {@link SystemEmailTemplates} — edit that
- * class to change any message text or layout.
- *
- * <p>All methods are fire-and-forget: delivery failures are logged as warnings
- * and never propagate as exceptions, so a broken SMTP connection cannot block
- * the confirmation workflow.
+ * All methods are fire-and-forget: delivery failures are logged as warnings
+ * and never propagate as exceptions.
  */
 @Service
 public class BusinessNotificationService {
 
     private static final Logger log = LoggerFactory.getLogger(BusinessNotificationService.class);
 
-    private final Optional<JavaMailSender> mailSender;
+    private final ResendEmailClient emailClient;
     private final NotificationEmailProperties emailProperties;
 
     public BusinessNotificationService(
-            Optional<JavaMailSender> mailSender,
+            ResendEmailClient emailClient,
             NotificationEmailProperties emailProperties
     ) {
-        this.mailSender = mailSender;
+        this.emailClient = emailClient;
         this.emailProperties = emailProperties;
-        if (mailSender.isEmpty()) {
-            log.warn("JavaMailSender is not configured — business notification emails will be skipped");
-        }
     }
 
-    // -----------------------------------------------------------------------
-    // Business-facing notifications
-    // -----------------------------------------------------------------------
-
-    /**
-     * Notifies the organization that a customer has submitted a new payment claim.
-     */
     public void notifyPaymentSubmitted(Invoice invoice, PaymentConfirmation confirmation) {
         String customerName = invoice.getCustomer() != null ? invoice.getCustomer().getName() : null;
         EmailContent email = SystemEmailTemplates.paymentSubmittedToBusiness(
@@ -68,16 +49,6 @@ public class BusinessNotificationService {
         sendEmail(emailProperties.getFromAddress(), null, invoice.getOrganization().getEmail(), email);
     }
 
-    // -----------------------------------------------------------------------
-    // Customer-facing notifications
-    // -----------------------------------------------------------------------
-
-    /**
-     * Notifies the customer that their full payment was confirmed and the invoice
-     * is now completely settled.
-     *
-     * <p>Call this when {@code isFullyPaid = true} after approval.
-     */
     public void notifyCustomerPaymentConfirmedFull(Invoice invoice, PaymentConfirmation confirmation) {
         String customerEmail = resolveCustomerEmail(invoice);
         if (customerEmail == null) return;
@@ -94,12 +65,6 @@ public class BusinessNotificationService {
         sendEmail(emailProperties.getFromAddress(), invoice.getOrganization().getEmail(), customerEmail, email);
     }
 
-    /**
-     * Notifies the customer that their partial payment was approved but a balance remains.
-     *
-     * <p>Call this when approving a partial claim without explicitly requesting the remainder
-     * (i.e. the standard "Approve" path when {@code isFullyPaid = false}).
-     */
     public void notifyCustomerPartialPaymentApproved(Invoice invoice, PaymentConfirmation confirmation) {
         String customerEmail = resolveCustomerEmail(invoice);
         if (customerEmail == null) return;
@@ -117,13 +82,6 @@ public class BusinessNotificationService {
         sendEmail(emailProperties.getFromAddress(), invoice.getOrganization().getEmail(), customerEmail, email);
     }
 
-    /**
-     * Notifies the customer that their partial payment was acknowledged AND explicitly
-     * requests the remaining balance by the invoice due date.
-     *
-     * <p>This corresponds to the "Request Remaining" one-click action on the Approvals page.
-     * No user input is needed — the message is fully system-generated.
-     */
     public void notifyInstallmentRequest(Invoice invoice, PaymentConfirmation confirmation) {
         String customerEmail = resolveCustomerEmail(invoice);
         if (customerEmail == null) return;
@@ -141,9 +99,6 @@ public class BusinessNotificationService {
         sendEmail(emailProperties.getFromAddress(), invoice.getOrganization().getEmail(), customerEmail, email);
     }
 
-    /**
-     * Notifies the customer that their payment claim was rejected and the balance remains due.
-     */
     public void notifyCustomerPaymentRejected(Invoice invoice, PaymentConfirmation confirmation) {
         String customerEmail = resolveCustomerEmail(invoice);
         if (customerEmail == null) return;
@@ -160,14 +115,6 @@ public class BusinessNotificationService {
         sendEmail(emailProperties.getFromAddress(), invoice.getOrganization().getEmail(), customerEmail, email);
     }
 
-    // -----------------------------------------------------------------------
-    // Private helpers
-    // -----------------------------------------------------------------------
-
-    /**
-     * Returns the customer's email address, or {@code null} with a log warning if absent.
-     * Callers must skip notification when this returns {@code null}.
-     */
     private String resolveCustomerEmail(Invoice invoice) {
         String email = invoice.getCustomer() != null ? invoice.getCustomer().getEmail() : null;
         if (email == null || email.isBlank()) {
@@ -179,21 +126,13 @@ public class BusinessNotificationService {
     }
 
     private void sendEmail(String from, String replyTo, String to, EmailContent content) {
-        if (mailSender.isEmpty()) {
-            log.info("Mail not configured — skipping notification to {} | subject: {}", to, content.subject());
+        if (!emailClient.isConfigured()) {
+            log.info("Resend not configured — skipping notification to {} | subject: {}", to, content.subject());
             return;
         }
         try {
-            MimeMessage message = mailSender.get().createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, false, "UTF-8");
-            helper.setFrom(emailProperties.getFromName() + " <" + from + ">");
-            if (replyTo != null && !replyTo.isBlank()) {
-                helper.setReplyTo(replyTo);
-            }
-            helper.setTo(to);
-            helper.setSubject(content.subject());
-            helper.setText(content.html(), true);
-            mailSender.get().send(message);
+            String fromFormatted = emailProperties.getFromName() + " <" + from + ">";
+            emailClient.send(fromFormatted, to, content.subject(), content.html());
         } catch (Exception ex) {
             log.warn("Failed to send notification email to {}: {}", to, ex.getMessage());
         }

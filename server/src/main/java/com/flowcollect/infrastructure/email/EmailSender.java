@@ -1,8 +1,5 @@
 package com.flowcollect.infrastructure.email;
 
-import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -15,24 +12,21 @@ import com.flowcollect.exception.http.InternalException;
 import com.flowcollect.infrastructure.config.NotificationEmailProperties;
 import com.flowcollect.infrastructure.pdf.InvoicePdfGenerator;
 
-import jakarta.mail.internet.MimeMessage;
-import org.springframework.core.io.ByteArrayResource;
-
 @Component
 public class EmailSender implements NotificationSender {
 
     private static final Logger log = LoggerFactory.getLogger(EmailSender.class);
 
-    private final JavaMailSender mailSender;
+    private final ResendEmailClient emailClient;
     private final NotificationEmailProperties properties;
     private final InvoicePdfGenerator pdfGenerator;
 
     public EmailSender(
-            ObjectProvider<JavaMailSender> mailSenderProvider,
+            ResendEmailClient emailClient,
             NotificationEmailProperties properties,
             InvoicePdfGenerator pdfGenerator
     ) {
-        this.mailSender = mailSenderProvider.getIfAvailable();
+        this.emailClient = emailClient;
         this.properties = properties;
         this.pdfGenerator = pdfGenerator;
     }
@@ -49,59 +43,35 @@ public class EmailSender implements NotificationSender {
 
     @Override
     public void send(Customer customer, String subject, String body, boolean attachPdf, Invoice invoice) {
-        if (mailSender == null) {
-            throw new InternalException("Email delivery is not configured. Set spring.mail.* properties to enable it.");
+        if (!emailClient.isConfigured()) {
+            throw new InternalException("Email delivery is not configured. Set RESEND_API_KEY to enable it.");
         }
 
-        String recipient = requireConfigured(customer.getEmail(), "customer email");
+        String recipient  = requireConfigured(customer.getEmail(), "customer email");
         String fromAddress = requireConfigured(properties.getFromAddress(), "notification.email.from-address");
-        String emailSubject = subject == null || subject.isBlank() ? properties.getFromName()+" reminder" : subject;
-        String emailBody = body == null ? "" : body;
+        String fromFormatted = properties.getFromName() + " <" + fromAddress + ">";
+        String emailSubject = subject == null || subject.isBlank() ? properties.getFromName() + " reminder" : subject;
+        String emailBody    = body == null ? "" : body;
+        String html         = toHtml(emailBody);
 
         try {
-            MimeMessage message = mailSender.createMimeMessage();
-            String html = toHtml(emailBody);
-
             if (attachPdf && invoice != null) {
-                // multipart/mixed so we can attach the PDF alongside the HTML body
-                MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-                helper.setTo(recipient);
-                helper.setFrom(fromAddress);
-                helper.setSubject(emailSubject);
-                helper.setText(toPlainText(emailBody), html);
                 byte[] pdfBytes = pdfGenerator.generate(invoice);
-                helper.addAttachment(pdfGenerator.buildFileName(invoice), new ByteArrayResource(pdfBytes));
+                emailClient.send(fromFormatted, recipient, emailSubject, html,
+                        pdfGenerator.buildFileName(invoice), pdfBytes);
                 log.info("Sent EMAIL reminder with PDF to {} subject '{}'", recipient, emailSubject);
             } else {
-                // text/html only — no plain-text alternative so the client always renders HTML
-                MimeMessageHelper helper = new MimeMessageHelper(message, false, "UTF-8");
-                helper.setTo(recipient);
-                helper.setFrom(fromAddress);
-                helper.setSubject(emailSubject);
-                helper.setText(html, true);
+                emailClient.send(fromFormatted, recipient, emailSubject, html);
                 log.info("Sent EMAIL reminder to {} subject '{}'", recipient, emailSubject);
             }
-
-            mailSender.send(message);
         } catch (Exception ex) {
             throw new InternalException("Failed to send email reminder: " + ex.getMessage());
         }
     }
 
-    /**
-     * Converts a plain-text template body (with simple Markdown-like syntax)
-     * into an HTML email body wrapped in a basic card layout.
-     *
-     * Supported syntax:
-     *   **text**       → bold
-     *   *text*         → italic
-     *   - item         → bullet list item
-     *   blank line     → paragraph break
-     *   regular line   → line break
-     */
     private String toHtml(String plainText) {
         String[] lines = plainText.split("\n", -1);
-        StringBuilder body = new StringBuilder();
+        StringBuilder bodyHtml = new StringBuilder();
         boolean inList = false;
 
         for (String line : lines) {
@@ -109,23 +79,23 @@ public class EmailSender implements NotificationSender {
 
             if (trimmed.startsWith("- ") || trimmed.startsWith("* ")) {
                 if (!inList) {
-                    body.append("<ul style=\"margin:8px 0 8px 0;padding-left:22px;\">");
+                    bodyHtml.append("<ul style=\"margin:8px 0 8px 0;padding-left:22px;\">");
                     inList = true;
                 }
-                body.append("<li>").append(inlineFormat(trimmed.substring(2))).append("</li>");
+                bodyHtml.append("<li>").append(inlineFormat(trimmed.substring(2))).append("</li>");
             } else {
                 if (inList) {
-                    body.append("</ul>");
+                    bodyHtml.append("</ul>");
                     inList = false;
                 }
                 if (trimmed.isEmpty()) {
-                    body.append("<br>");
+                    bodyHtml.append("<br>");
                 } else {
-                    body.append(inlineFormat(line)).append("<br>");
+                    bodyHtml.append(inlineFormat(line)).append("<br>");
                 }
             }
         }
-        if (inList) body.append("</ul>");
+        if (inList) bodyHtml.append("</ul>");
 
         return """
                 <!DOCTYPE html>
@@ -144,17 +114,9 @@ public class EmailSender implements NotificationSender {
                   </table>
                 </body>
                 </html>
-                """.formatted(body);
+                """.formatted(bodyHtml);
     }
 
-    /** Strips **bold** and *italic* markers for the plain-text fallback. */
-    private String toPlainText(String text) {
-        text = text.replaceAll("\\*\\*(.+?)\\*\\*", "$1");
-        text = text.replaceAll("\\*(.+?)\\*", "$1");
-        return text;
-    }
-
-    /** Converts **bold** and *italic* markers to HTML inline elements. */
     private String inlineFormat(String text) {
         text = text.replaceAll("\\*\\*(.+?)\\*\\*", "<strong>$1</strong>");
         text = text.replaceAll("\\*(.+?)\\*", "<em>$1</em>");

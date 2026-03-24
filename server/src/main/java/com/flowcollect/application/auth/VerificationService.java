@@ -7,10 +7,7 @@ import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,14 +20,13 @@ import com.flowcollect.exception.http.InternalException;
 import com.flowcollect.exception.http.ValidationException;
 import com.flowcollect.infrastructure.config.NotificationEmailProperties;
 import com.flowcollect.infrastructure.config.TwilioProperties;
+import com.flowcollect.infrastructure.email.ResendEmailClient;
 import com.flowcollect.infrastructure.persistence.verification.EmailVerificationTokenJpaRepository;
 import com.flowcollect.infrastructure.persistence.verification.PasswordResetTokenJpaRepository;
 import com.flowcollect.infrastructure.persistence.verification.PhoneOtpJpaRepository;
 import com.twilio.Twilio;
 import com.twilio.rest.api.v2010.account.Message;
 import com.twilio.type.PhoneNumber;
-
-import jakarta.mail.internet.MimeMessage;
 
 /**
  * Handles email and phone verification for newly registered organizations.
@@ -53,7 +49,7 @@ public class VerificationService {
     private final EmailVerificationTokenJpaRepository emailTokenRepository;
     private final PasswordResetTokenJpaRepository resetTokenRepository;
     private final PhoneOtpJpaRepository phoneOtpRepository;
-    private final JavaMailSender mailSender;
+    private final ResendEmailClient emailClient;
     private final NotificationEmailProperties emailProperties;
     private final TwilioProperties twilioProperties;
 
@@ -64,14 +60,14 @@ public class VerificationService {
             EmailVerificationTokenJpaRepository emailTokenRepository,
             PasswordResetTokenJpaRepository resetTokenRepository,
             PhoneOtpJpaRepository phoneOtpRepository,
-            ObjectProvider<JavaMailSender> mailSenderProvider,
+            ResendEmailClient emailClient,
             NotificationEmailProperties emailProperties,
             TwilioProperties twilioProperties
     ) {
         this.emailTokenRepository = emailTokenRepository;
         this.resetTokenRepository = resetTokenRepository;
         this.phoneOtpRepository = phoneOtpRepository;
-        this.mailSender = mailSenderProvider.getIfAvailable();
+        this.emailClient = emailClient;
         this.emailProperties = emailProperties;
         this.twilioProperties = twilioProperties;
     }
@@ -82,7 +78,6 @@ public class VerificationService {
 
     @Transactional
     public void sendVerificationEmail(User user) {
-        // Invalidate any previous unused tokens
         emailTokenRepository.deleteByUserId(user.getId());
 
         String token = UUID.randomUUID().toString();
@@ -93,10 +88,6 @@ public class VerificationService {
         log.info("Sent verification email to {}", user.getEmail());
     }
 
-    /**
-     * Validates the token and returns the associated user.
-     * Caller is responsible for activating the user.
-     */
     @Transactional
     public User validateEmailToken(String token) {
         EmailVerificationToken evt = emailTokenRepository.findByToken(token)
@@ -120,7 +111,6 @@ public class VerificationService {
 
     @Transactional
     public void sendPhoneOtp(Organization organization, String phone) {
-        // Invalidate previous OTPs for this org
         phoneOtpRepository.deleteByOrganizationId(organization.getId());
 
         String otp = String.format("%06d", RANDOM.nextInt(1_000_000));
@@ -131,10 +121,6 @@ public class VerificationService {
         log.info("Sent phone OTP to {} for org {}", phone, organization.getId());
     }
 
-    /**
-     * Validates the OTP and returns the phone number that was verified.
-     * Caller is responsible for persisting phoneVerified on the org.
-     */
     @Transactional
     public String validatePhoneOtp(UUID organizationId, String submittedOtp) {
         PhoneOtp phoneOtp = phoneOtpRepository
@@ -159,7 +145,6 @@ public class VerificationService {
 
     @Transactional
     public void sendPasswordResetEmail(User user) {
-        // Invalidate any existing unused reset tokens for this user
         resetTokenRepository.deleteByUserId(user.getId());
 
         String token = UUID.randomUUID().toString();
@@ -170,10 +155,6 @@ public class VerificationService {
         log.info("Sent password reset email to {}", user.getEmail());
     }
 
-    /**
-     * Validates the reset token and returns the associated user.
-     * Caller is responsible for updating the password hash.
-     */
     @Transactional
     public User validatePasswordResetToken(String token) {
         PasswordResetToken prt = resetTokenRepository.findByToken(token)
@@ -196,8 +177,8 @@ public class VerificationService {
     // -------------------------------------------------------------------------
 
     private void sendEmailVerificationMail(String to, String name, String token) {
-        if (mailSender == null) {
-            log.warn("Mail sender not configured — skipping verification email to {}", to);
+        if (!emailClient.isConfigured()) {
+            log.warn("Resend not configured — skipping verification email to {}", to);
             return;
         }
         String fromAddress = emailProperties.getAuthFromAddress();
@@ -211,15 +192,33 @@ public class VerificationService {
         String html = buildVerificationEmailHtml(name, verifyUrl, fromName);
 
         try {
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, false, "UTF-8");
-            helper.setTo(to);
-            helper.setFrom(fromAddress);
-            helper.setSubject("Verify your " + fromName + " account");
-            helper.setText(html, true);
-            mailSender.send(message);
+            emailClient.send(fromName + " <" + fromAddress + ">", to,
+                    "Verify your " + fromName + " account", html);
         } catch (Exception ex) {
             throw new InternalException("Failed to send verification email: " + ex.getMessage());
+        }
+    }
+
+    private void sendPasswordResetMail(String to, String name, String token) {
+        if (!emailClient.isConfigured()) {
+            log.warn("Resend not configured — skipping password reset email to {}", to);
+            return;
+        }
+        String fromAddress = emailProperties.getAuthFromAddress();
+        String fromName    = emailProperties.getFromName();
+        if (fromAddress == null || fromAddress.isBlank()) {
+            log.warn("notification.email.auth-from-address not set — skipping password reset email");
+            return;
+        }
+
+        String resetUrl = appBaseUrl + "/api/v1/auth/reset-password?token=" + token;
+        String html = buildPasswordResetEmailHtml(name, resetUrl, fromName);
+
+        try {
+            emailClient.send(fromName + " <" + fromAddress + ">", to,
+                    "Reset your " + fromName + " password", html);
+        } catch (Exception ex) {
+            throw new InternalException("Failed to send password reset email: " + ex.getMessage());
         }
     }
 
@@ -237,34 +236,6 @@ public class VerificationService {
             ).create();
         } catch (Exception ex) {
             throw new InternalException("Failed to send OTP: " + ex.getMessage());
-        }
-    }
-
-    private void sendPasswordResetMail(String to, String name, String token) {
-        if (mailSender == null) {
-            log.warn("Mail sender not configured — skipping password reset email to {}", to);
-            return;
-        }
-        String fromAddress = emailProperties.getAuthFromAddress();
-        String fromName    = emailProperties.getFromName();
-        if (fromAddress == null || fromAddress.isBlank()) {
-            log.warn("notification.email.auth-from-address not set — skipping password reset email");
-            return;
-        }
-
-        String resetUrl = appBaseUrl + "/api/v1/auth/reset-password?token=" + token;
-        String html = buildPasswordResetEmailHtml(name, resetUrl, fromName);
-
-        try {
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, false, "UTF-8");
-            helper.setTo(to);
-            helper.setFrom(fromAddress);
-            helper.setSubject("Reset your " + fromName + " password");
-            helper.setText(html, true);
-            mailSender.send(message);
-        } catch (Exception ex) {
-            throw new InternalException("Failed to send password reset email: " + ex.getMessage());
         }
     }
 
@@ -290,11 +261,11 @@ public class VerificationService {
                             </a>
                           </p>
                           <p style="color:#6b7280;font-size:13px;">
-                            This link expires in 1 hour. If you did not request a password reset, you can safely ignore this email — your password will not change.
+                            This link expires in 1 hour. If you did not request a password reset, you can safely ignore this email.
                           </p>
                           <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
                           <p style="color:#9ca3af;font-size:12px;">
-                            If the button doesn't work, copy and paste this link into your browser:<br>
+                            If the button doesn't work, copy and paste this link:<br>
                             <span style="color:#2563eb;word-break:break-all;">%s</span>
                           </p>
                         </td></tr>
@@ -332,7 +303,7 @@ public class VerificationService {
                           </p>
                           <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
                           <p style="color:#9ca3af;font-size:12px;">
-                            If the button doesn't work, copy and paste this link into your browser:<br>
+                            If the button doesn't work, copy and paste this link:<br>
                             <span style="color:#2563eb;word-break:break-all;">%s</span>
                           </p>
                         </td></tr>
