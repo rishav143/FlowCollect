@@ -7,24 +7,19 @@ import com.flowcollect.exception.http.InternalException;
 import com.flowcollect.infrastructure.config.NotificationEmailProperties;
 import com.flowcollect.infrastructure.pdf.InvoicePdfGenerator;
 
-import jakarta.mail.Session;
-import jakarta.mail.internet.MimeMessage;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.mail.javamail.JavaMailSender;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 class EmailSenderTest {
 
-    @Mock private JavaMailSender javaMailSender;
-    @Mock private ObjectProvider<JavaMailSender> mailSenderProvider;
+    @Mock private ResendEmailClient emailClient;
     @Mock private NotificationEmailProperties properties;
     @Mock private InvoicePdfGenerator pdfGenerator;
     @Mock private Customer customer;
@@ -35,13 +30,11 @@ class EmailSenderTest {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        when(mailSenderProvider.getIfAvailable()).thenReturn(javaMailSender);
+        when(emailClient.isConfigured()).thenReturn(true);
         when(properties.getFromAddress()).thenReturn("billing@flowcollect.io");
         when(properties.getFromName()).thenReturn("FlowCollect");
         when(customer.getEmail()).thenReturn("customer@example.com");
-        // EmailSender always uses MimeMessage — provide a real instance so MimeMessageHelper can use it
-        when(javaMailSender.createMimeMessage()).thenReturn(new MimeMessage((Session) null));
-        emailSender = new EmailSender(mailSenderProvider, properties, pdfGenerator);
+        emailSender = new EmailSender(emailClient, properties, pdfGenerator);
     }
 
     // ===================================================================
@@ -54,55 +47,49 @@ class EmailSenderTest {
     }
 
     // ===================================================================
-    // send — plain text (no PDF) — always sends MimeMessage now
+    // send — plain text (no PDF)
     // ===================================================================
 
     @Test
-    void send_plainText_sendsMimeMessage_withCorrectSubjectAndRecipient() throws Exception {
+    void send_plainText_sendsEmail_withCorrectSubjectAndRecipient() {
         emailSender.send(customer, "Invoice #001 Due", "Please pay your invoice.");
 
-        // A MimeMessage (not SimpleMailMessage) must be sent
-        verify(javaMailSender).send(any(MimeMessage.class));
-
-        // Capture the actual MimeMessage to inspect headers
-        var captor = org.mockito.ArgumentCaptor.forClass(MimeMessage.class);
-        verify(javaMailSender).send(captor.capture());
-        MimeMessage sent = captor.getValue();
-        assertEquals("Invoice #001 Due", sent.getSubject());
-        assertNotNull(sent.getRecipients(MimeMessage.RecipientType.TO));
-        assertEquals("customer@example.com", sent.getRecipients(MimeMessage.RecipientType.TO)[0].toString());
+        ArgumentCaptor<String> toCaptor      = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<String> subjectCaptor = ArgumentCaptor.forClass(String.class);
+        verify(emailClient).send(anyString(), toCaptor.capture(), subjectCaptor.capture(), anyString());
+        assertEquals("customer@example.com", toCaptor.getValue());
+        assertEquals("Invoice #001 Due", subjectCaptor.getValue());
     }
 
     @Test
-    void send_usesDefaultSubject_whenSubjectIsBlank() throws Exception {
+    void send_usesDefaultSubject_whenSubjectIsBlank() {
         emailSender.send(customer, "   ", "body");
 
-        var captor = org.mockito.ArgumentCaptor.forClass(MimeMessage.class);
-        verify(javaMailSender).send(captor.capture());
-        assertEquals("FlowCollect reminder", captor.getValue().getSubject());
+        ArgumentCaptor<String> subjectCaptor = ArgumentCaptor.forClass(String.class);
+        verify(emailClient).send(anyString(), anyString(), subjectCaptor.capture(), anyString());
+        assertEquals("FlowCollect reminder", subjectCaptor.getValue());
     }
 
     @Test
-    void send_usesDefaultSubject_whenSubjectIsNull() throws Exception {
+    void send_usesDefaultSubject_whenSubjectIsNull() {
         emailSender.send(customer, null, "body");
 
-        var captor = org.mockito.ArgumentCaptor.forClass(MimeMessage.class);
-        verify(javaMailSender).send(captor.capture());
-        assertEquals("FlowCollect reminder", captor.getValue().getSubject());
+        ArgumentCaptor<String> subjectCaptor = ArgumentCaptor.forClass(String.class);
+        verify(emailClient).send(anyString(), anyString(), subjectCaptor.capture(), anyString());
+        assertEquals("FlowCollect reminder", subjectCaptor.getValue());
     }
 
     @Test
     void send_treatsNullBody_asEmptyString() {
-        // Should not throw; empty body is valid
         assertDoesNotThrow(() -> emailSender.send(customer, "Subject", null));
-        verify(javaMailSender).send(any(MimeMessage.class));
+        verify(emailClient).send(anyString(), anyString(), anyString(), anyString());
     }
 
     @Test
     void send_withAttachPdfFalse_doesNotGeneratePdf_evenWhenInvoiceProvided() {
         emailSender.send(customer, "Subject", "Body", false, invoice);
 
-        verify(javaMailSender).send(any(MimeMessage.class));
+        verify(emailClient).send(anyString(), anyString(), anyString(), anyString());
         verify(pdfGenerator, never()).generate(any());
     }
 
@@ -110,22 +97,23 @@ class EmailSenderTest {
     void send_withAttachPdfTrue_butNullInvoice_doesNotGeneratePdf() {
         emailSender.send(customer, "Subject", "Body", true, null);
 
-        verify(javaMailSender).send(any(MimeMessage.class));
+        verify(emailClient).send(anyString(), anyString(), anyString(), anyString());
         verify(pdfGenerator, never()).generate(any());
     }
 
     // ===================================================================
-    // send — with PDF attachment (MIME multipart)
+    // send — with PDF attachment
     // ===================================================================
 
     @Test
-    void send_withPdfAttachment_generatesPdfAndSendsMimeMessage() throws Exception {
+    void send_withPdfAttachment_generatesPdfAndSendsWithAttachment() {
         when(pdfGenerator.generate(invoice)).thenReturn(new byte[]{1, 2, 3});
         when(pdfGenerator.buildFileName(invoice)).thenReturn("INV-001.pdf");
 
         emailSender.send(customer, "Invoice #001", "Please see attached.", true, invoice);
 
-        verify(javaMailSender).send(any(MimeMessage.class));
+        verify(emailClient).send(anyString(), anyString(), anyString(), anyString(),
+                eq("INV-001.pdf"), eq(new byte[]{1, 2, 3}));
         verify(pdfGenerator).generate(invoice);
         verify(pdfGenerator).buildFileName(invoice);
     }
@@ -135,12 +123,11 @@ class EmailSenderTest {
     // ===================================================================
 
     @Test
-    void send_throwsInternalException_whenMailSenderNotConfigured() {
-        when(mailSenderProvider.getIfAvailable()).thenReturn(null);
-        EmailSender unconfigured = new EmailSender(mailSenderProvider, properties, pdfGenerator);
+    void send_throwsInternalException_whenEmailClientNotConfigured() {
+        when(emailClient.isConfigured()).thenReturn(false);
 
         assertThrows(InternalException.class,
-                () -> unconfigured.send(customer, "Subject", "Body"));
+                () -> emailSender.send(customer, "Subject", "Body"));
     }
 
     @Test
@@ -157,7 +144,7 @@ class EmailSenderTest {
 
         assertThrows(InternalException.class,
                 () -> emailSender.send(customer, "Subject", "Body"));
-        verify(javaMailSender, never()).send(any(MimeMessage.class));
+        verify(emailClient, never()).send(anyString(), anyString(), anyString(), anyString());
     }
 
     @Test
@@ -177,9 +164,9 @@ class EmailSenderTest {
     }
 
     @Test
-    void send_wrapsSmtpException_asInternalException() {
+    void send_wrapsClientException_asInternalException() {
         doThrow(new RuntimeException("Connection refused"))
-                .when(javaMailSender).send(any(MimeMessage.class));
+                .when(emailClient).send(anyString(), anyString(), anyString(), anyString());
 
         InternalException ex = assertThrows(InternalException.class,
                 () -> emailSender.send(customer, "Subject", "Body"));
