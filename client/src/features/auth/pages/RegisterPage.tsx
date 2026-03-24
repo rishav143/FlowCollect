@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import type { AxiosError } from 'axios'
 import { Link, useNavigate } from 'react-router-dom'
 import { Eye, EyeOff } from 'lucide-react'
 import { register } from '@/api/auth.api'
@@ -58,8 +59,10 @@ export default function RegisterPage() {
       const { token, user, org } = await register({ name, email, password, orgName, currency })
       setAuth(token, user, org)
       navigate('/dashboard', { replace: true })
-    } catch {
-      setError('Could not create account. Please try again.')
+    } catch (err) {
+      const ax = err as AxiosError<{ message?: string }>
+      const msg = ax.response?.data?.message
+      setError(msg ?? `Error ${ax.response?.status ?? ''}: Could not create account.`)
     } finally {
       setLoading(false)
     }

@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import type { AxiosError } from 'axios'
 import { Link, useNavigate } from 'react-router-dom'
 import { Eye, EyeOff } from 'lucide-react'
 import { login } from '@/api/auth.api'
@@ -42,8 +43,10 @@ export default function LoginPage() {
       const { token, user, org } = await login(email, password)
       setAuth(token, user, org)
       navigate('/dashboard', { replace: true })
-    } catch {
-      setError('Invalid email or password. Please try again.')
+    } catch (err) {
+      const ax = err as AxiosError<{ message?: string }>
+      const msg = ax.response?.data?.message
+      setError(msg ?? `Error ${ax.response?.status ?? ''}: Invalid email or password.`)
     } finally {
       setLoading(false)
     }
