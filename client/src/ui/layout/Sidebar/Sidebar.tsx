@@ -67,7 +67,7 @@ function NavItem({
 
         {/* Label + count — collapse together */}
         <span
-          className="flex items-center flex-1 leading-none overflow-hidden whitespace-nowrap transition-[max-width,opacity,margin] duration-300 ease-in-out"
+          className="flex items-center flex-1 overflow-hidden whitespace-nowrap transition-[max-width,opacity,margin] duration-300 ease-in-out"
           style={{
             maxWidth:   collapsed ? 0 : 160,
             opacity:    collapsed ? 0 : 1,

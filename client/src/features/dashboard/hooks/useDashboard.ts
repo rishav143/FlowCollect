@@ -25,7 +25,7 @@ export function useDashboard() {
   // Pending confirmations — CONFIRMATION_FLOW orgs only
   const confirmationsQuery = useQuery({
     queryKey: ['confirmations', orgId, 'dashboard'],
-    queryFn:  () => listConfirmations(orgId, { size: 10 }),
+    queryFn:  () => listConfirmations(orgId, { status: 'PENDING_APPROVAL', size: 10 }),
     enabled:  !!orgId && isConfirmationFlow,
   })
 
@@ -46,17 +46,6 @@ export function useDashboard() {
     (i) => i.timeStatus === 'OVERDUE' && ['ISSUED', 'PARTIALLY_PAID'].includes(i.lifeCycleStatus),
   )
   const pastDueAmount = pastDueInvoices.reduce((s, i) => s + i.remainingAmount, 0)
-
-  // Due in the next 30 days (not overdue, not paid)
-  const today30 = new Date(now)
-  today30.setDate(today30.getDate() + 30)
-  const dueNext30Invoices = unpaidInvoices.filter((i) => {
-    if (!i.dueDate || i.timeStatus === 'OVERDUE') return false
-    const d = new Date(i.dueDate)
-    return d >= now && d <= today30
-  })
-  const dueNext30Amount = dueNext30Invoices.reduce((s, i) => s + i.remainingAmount, 0)
-  const dueNext30Count  = dueNext30Invoices.length
 
   // Average payment delay: days between issueDate and updatedAt for PAID invoices
   const paidWithDates = invoices.filter(
@@ -90,8 +79,28 @@ export function useDashboard() {
     .sort((a, b) => new Date(a.dueDate!).getTime() - new Date(b.dueDate!).getTime())
     .slice(0, 5)
 
-  const allConfirmations    = confirmationsQuery.data?.content ?? []
-  const pendingConfirmations = allConfirmations.filter((c) => c.status === 'PENDING')
+  // AR Aging buckets — unpaid invoices grouped by days past due date
+  const todayMidnight = new Date(now)
+  todayMidnight.setHours(0, 0, 0, 0)
+
+  type AgingBucket = { label: string; amount: number; count: number }
+  const agingBuckets: { current: AgingBucket; d1_30: AgingBucket; d31_60: AgingBucket; d60plus: AgingBucket } = {
+    current:  { label: 'Current',  amount: 0, count: 0 },
+    d1_30:    { label: '1–30 d',   amount: 0, count: 0 },
+    d31_60:   { label: '31–60 d',  amount: 0, count: 0 },
+    d60plus:  { label: '60+ d',    amount: 0, count: 0 },
+  }
+  for (const inv of unpaidInvoices) {
+    const daysPast = inv.dueDate
+      ? Math.floor((todayMidnight.getTime() - new Date(inv.dueDate).getTime()) / 86_400_000)
+      : -1
+    if (daysPast <= 0)       { agingBuckets.current.amount += inv.remainingAmount; agingBuckets.current.count++ }
+    else if (daysPast <= 30) { agingBuckets.d1_30.amount   += inv.remainingAmount; agingBuckets.d1_30.count++   }
+    else if (daysPast <= 60) { agingBuckets.d31_60.amount  += inv.remainingAmount; agingBuckets.d31_60.count++  }
+    else                     { agingBuckets.d60plus.amount  += inv.remainingAmount; agingBuckets.d60plus.count++ }
+  }
+
+  const pendingConfirmations = confirmationsQuery.data?.content ?? []
 
   return {
     currency,
@@ -108,6 +117,7 @@ export function useDashboard() {
       pendingApprovalsCount: pendingConfirmations.length,
     },
 
+    agingBuckets,
     overdueInvoices:     overdueQuery.data?.content ?? [],
     dueSoonInvoices,
     pendingConfirmations,

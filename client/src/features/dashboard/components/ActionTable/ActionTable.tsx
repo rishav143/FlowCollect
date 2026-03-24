@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { ArrowRight, CheckCircle2, Clock } from 'lucide-react'
+import { ArrowRight, CheckCircle2, Clock, DollarSign, Bell } from 'lucide-react'
 import type { InvoiceResponse } from '@/types/invoice.types'
 import type { PaymentConfirmationResponse } from '@/types/confirmation.types'
 
@@ -88,11 +88,15 @@ function OverdueSection({
   overdueTotal,
   currency,
   isLoading,
+  onPay,
+  onFollowup,
 }: {
   invoices:     InvoiceResponse[]
   overdueTotal: number
   currency:     string
   isLoading:    boolean
+  onPay?:       (inv: InvoiceResponse) => void
+  onFollowup?:  (inv: InvoiceResponse) => void
 }) {
   const navigate = useNavigate()
 
@@ -116,7 +120,7 @@ function OverdueSection({
                 <li
                   key={inv.id}
                   className={[
-                    'flex items-center gap-3 px-5 py-3.5 cursor-pointer',
+                    'group flex items-center gap-3 px-5 py-3 cursor-pointer',
                     'hover:bg-[#F4F7F9] dark:hover:bg-[#243447] transition-colors',
                     idx < invoices.length - 1 ? 'border-b border-c-border' : '',
                   ].join(' ')}
@@ -132,6 +136,33 @@ function OverdueSection({
                   </span>
 
                   <span className="flex-1" />
+
+                  {/* Quick actions — visible on hover */}
+                  <div
+                    className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {onPay && (
+                      <button
+                        onClick={() => onPay(inv)}
+                        title="Record payment"
+                        className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-500/10 transition-colors"
+                      >
+                        <DollarSign size={12} strokeWidth={2.5} />
+                        Pay
+                      </button>
+                    )}
+                    {onFollowup && (
+                      <button
+                        onClick={() => onFollowup(inv)}
+                        title="Send follow-up"
+                        className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium text-[#29B6F6] hover:bg-[#29B6F6]/10 transition-colors"
+                      >
+                        <Bell size={12} strokeWidth={2.5} />
+                        Remind
+                      </button>
+                    )}
+                  </div>
 
                   <span className="text-sm font-semibold text-[#0D1B2A] dark:text-white tabular-nums">
                     {fmt(inv.remainingAmount, currency)}
@@ -231,6 +262,8 @@ interface Props {
   currency:             string
   isConfirmationFlow:   boolean
   isLoading:            boolean
+  onPay?:               (inv: InvoiceResponse) => void
+  onFollowup?:          (inv: InvoiceResponse) => void
 }
 
 export default function ActionTable({
@@ -240,6 +273,8 @@ export default function ActionTable({
   currency,
   isConfirmationFlow,
   isLoading,
+  onPay,
+  onFollowup,
 }: Props) {
   return (
     <div className="space-y-4">
@@ -248,6 +283,8 @@ export default function ActionTable({
         overdueTotal={overdueTotal}
         currency={currency}
         isLoading={isLoading}
+        onPay={onPay}
+        onFollowup={onFollowup}
       />
       {isConfirmationFlow && (
         <ApprovalsSection

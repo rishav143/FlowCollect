@@ -233,7 +233,7 @@ export default function Topbar() {
           {profileOpen && (
             <ProfileDropdown
               orgName={orgName}
-              onAccount={() => { navigate('/settings/account'); setProfileOpen(false) }}
+              onAccount={() => { navigate('/settings/org');     setProfileOpen(false) }}
               onSettings={() => { navigate('/settings/org');    setProfileOpen(false) }}
               onLogout={handleLogout}
             />

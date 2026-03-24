@@ -22,7 +22,7 @@ function fmtDate(d: string | null) {
 const LIFECYCLE_MAP: Record<LifeCycleStatus, { label: string; dot: string; text: string }> = {
   DRAFT:          { label: 'Draft',     dot: 'bg-[#8A9BAE]', text: 'text-c-muted'                          },
   ISSUED:         { label: 'Sent',      dot: 'bg-blue-500',  text: 'text-blue-600 dark:text-blue-400'      },
-  PARTIALLY_PAID: { label: 'Partial',   dot: 'bg-[#29B6F6]', text: 'text-[#29B6F6]'                        },
+  PARTIALLY_PAID: { label: 'Partial',   dot: 'bg-[#29B6F6]', text: 'text-[#29B6F6] dark:text-[#4FC3F7]'   },
   PAID:           { label: 'Paid',      dot: 'bg-green-500', text: 'text-green-600 dark:text-green-400'    },
   CANCELLED:      { label: 'Cancelled', dot: 'bg-[#8A9BAE]', text: 'text-c-muted'                          },
 }

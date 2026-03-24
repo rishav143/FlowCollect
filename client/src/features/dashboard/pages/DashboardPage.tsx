@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowRight } from 'lucide-react'
 import { useAuthStore } from '@/store/auth.store'
@@ -5,6 +6,8 @@ import { useDashboard } from '../hooks/useDashboard'
 import KpiStrip     from '../components/KpiStrip/KpiStrip'
 import ActionTable  from '../components/ActionTable/ActionTable'
 import DueSoonPanel from '../components/DueSoonPanel/DueSoonPanel'
+import RecordPaymentModal from '@/features/invoices/modals/RecordPaymentModal'
+import FollowupModal      from '@/features/invoices/modals/FollowupModal'
 import type { InvoiceResponse, LifeCycleStatus } from '@/types/invoice.types'
 
 // ---------------------------------------------------------------------------
@@ -46,20 +49,16 @@ function timeAgo(iso: string): string {
 
 function HealthPill({
   overdueCount,
-  pastDueAmount,
   pendingApprovalsCount,
   isConfirmationFlow,
-  currency,
   isLoading,
 }: {
   overdueCount:          number
-  pastDueAmount:         number
   pendingApprovalsCount: number
   isConfirmationFlow:    boolean
-  currency:              string
   isLoading:             boolean
 }) {
-  if (isLoading) return <div className="h-7 w-36 rounded-full animate-pulse bg-[#F4F7F9] dark:bg-white/10" />
+  if (isLoading) return <div className="h-5 w-24 rounded-full animate-pulse bg-[#F4F7F9] dark:bg-white/10" />
 
   const hasUrgent = overdueCount > 0 || (isConfirmationFlow && pendingApprovalsCount > 0)
 
@@ -67,19 +66,21 @@ function HealthPill({
     return (
       <span className="inline-flex items-center gap-1.5">
         <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
-        <span className="text-xs font-semibold text-green-600 dark:text-green-400">All caught up</span>
+        <span className="text-xs font-medium text-green-600 dark:text-green-400">All caught up</span>
       </span>
     )
   }
 
   const parts: string[] = []
-  if (overdueCount > 0)                            parts.push(`${overdueCount} overdue · ${fmt(pastDueAmount, currency)}`)
-  if (isConfirmationFlow && pendingApprovalsCount > 0) parts.push(`${pendingApprovalsCount} pending approval${pendingApprovalsCount > 1 ? 's' : ''}`)
+  if (overdueCount > 0)
+    parts.push(`${overdueCount} overdue`)
+  if (isConfirmationFlow && pendingApprovalsCount > 0)
+    parts.push(`${pendingApprovalsCount} pending`)
 
   return (
     <span className="inline-flex items-center gap-1.5">
-      <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
-      <span className="text-xs font-semibold text-red-600 dark:text-red-400">{parts.join(' · ')}</span>
+      <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
+      <span className="text-xs font-medium text-red-600 dark:text-red-400">{parts.join(' · ')}</span>
     </span>
   )
 }
@@ -208,17 +209,80 @@ function RecentActivity({
 }
 
 // ---------------------------------------------------------------------------
+// AR Aging buckets strip
+// ---------------------------------------------------------------------------
+
+type AgingBucket = { label: string; amount: number; count: number }
+
+const AGING_COLORS = [
+  { dot: 'bg-green-500',  text: 'text-green-600 dark:text-green-400'  },
+  { dot: 'bg-amber-500',  text: 'text-amber-600 dark:text-amber-400'  },
+  { dot: 'bg-orange-500', text: 'text-orange-600 dark:text-orange-400' },
+  { dot: 'bg-red-500',    text: 'text-red-600 dark:text-red-400'      },
+]
+
+function AgingBuckets({
+  buckets,
+  currency,
+  isLoading,
+}: {
+  buckets:   { current: AgingBucket; d1_30: AgingBucket; d31_60: AgingBucket; d60plus: AgingBucket }
+  currency:  string
+  isLoading: boolean
+}) {
+  const items = [buckets.current, buckets.d1_30, buckets.d31_60, buckets.d60plus]
+  const hasAny = items.some((b) => b.count > 0)
+
+  if (!isLoading && !hasAny) return null
+
+  return (
+    <div className="bg-white dark:bg-[#1B2838] rounded-xl border border-c-border px-5 py-4">
+      <p className="text-xs font-semibold uppercase tracking-wide text-c-muted mb-3">
+        Receivables Aging
+      </p>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        {items.map((bucket, i) => (
+          <div key={bucket.label} className={isLoading ? 'animate-pulse' : ''}>
+            {isLoading ? (
+              <div className="space-y-1.5">
+                <div className="h-3 w-12 rounded bg-[#F4F7F9] dark:bg-white/10" />
+                <div className="h-5 w-20 rounded bg-[#F4F7F9] dark:bg-white/10" />
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center gap-1.5 mb-0.5">
+                  <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${AGING_COLORS[i].dot}`} />
+                  <span className={`text-xs font-medium ${AGING_COLORS[i].text}`}>{bucket.label}</span>
+                </div>
+                <p className="text-base font-bold text-[#0D1B2A] dark:text-white tabular-nums">
+                  {new Intl.NumberFormat('en-IN', { style: 'currency', currency, maximumFractionDigits: 0 }).format(bucket.amount)}
+                </p>
+                <p className="text-xs text-c-muted">{bucket.count} invoice{bucket.count !== 1 ? 's' : ''}</p>
+              </>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
 // Page
 // ---------------------------------------------------------------------------
 
 export default function DashboardPage() {
   const userName = useAuthStore((s) => s.user?.name?.split(' ')[0] ?? 'there')
 
+  const [payTarget,      setPayTarget]      = useState<InvoiceResponse | null>(null)
+  const [followupTarget, setFollowupTarget] = useState<InvoiceResponse | null>(null)
+
   const {
     currency,
     isConfirmationFlow,
     isLoading,
     kpis,
+    agingBuckets,
     overdueInvoices,
     dueSoonInvoices,
     pendingConfirmations,
@@ -226,6 +290,7 @@ export default function DashboardPage() {
   } = useDashboard()
 
   return (
+    <>
     <div className="space-y-5">
 
       {/* ── Header ──────────────────────────────────────────────────────────
@@ -243,10 +308,8 @@ export default function DashboardPage() {
         <div className="shrink-0 mt-0.5">
           <HealthPill
             overdueCount={kpis.overdueCount}
-            pastDueAmount={kpis.pastDueAmount}
             pendingApprovalsCount={kpis.pendingApprovalsCount}
             isConfirmationFlow={isConfirmationFlow}
-            currency={currency}
             isLoading={isLoading}
           />
         </div>
@@ -263,13 +326,22 @@ export default function DashboardPage() {
         isLoading={isLoading}
       />
 
+      {/* ── AR Aging ────────────────────────────────────────────────────────
+          Breaks unpaid receivables into 4 age buckets so the user can see
+          at a glance how long money has been sitting outstanding.
+      */}
+      <AgingBuckets
+        buckets={agingBuckets}
+        currency={currency}
+        isLoading={isLoading}
+      />
+
       {/* ── Action panels ───────────────────────────────────────────────────
           Left  — "Needs Attention": overdue invoices ranked by how long
-                   they've been outstanding. Approval queue shown below
-                   for confirmation-flow orgs.
+                   they've been outstanding. Quick Pay / Remind buttons on
+                   hover so the user can act without leaving the dashboard.
           Right — "Due Soon": invoices due in the next 14 days, sorted
-                   nearest-first with urgency colour coding. Users can act
-                   proactively and send reminders before invoices go overdue.
+                   nearest-first. Quick Remind on hover for proactive outreach.
       */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
         <ActionTable
@@ -279,12 +351,15 @@ export default function DashboardPage() {
           currency={currency}
           isConfirmationFlow={isConfirmationFlow}
           isLoading={isLoading}
+          onPay={setPayTarget}
+          onFollowup={setFollowupTarget}
         />
 
         <DueSoonPanel
           invoices={dueSoonInvoices}
           currency={currency}
           isLoading={isLoading}
+          onFollowup={setFollowupTarget}
         />
       </div>
 
@@ -299,5 +374,22 @@ export default function DashboardPage() {
       />
 
     </div>
+
+    {/* ── Quick-action modals ─────────────────────────────────────────────── */}
+    {payTarget && (
+      <RecordPaymentModal
+        invoiceId={payTarget.id}
+        remainingAmount={payTarget.remainingAmount}
+        currency={currency}
+        onClose={() => setPayTarget(null)}
+      />
+    )}
+    {followupTarget && (
+      <FollowupModal
+        invoiceNumber={followupTarget.invoiceNumber}
+        onClose={() => setFollowupTarget(null)}
+      />
+    )}
+  </>
   )
 }

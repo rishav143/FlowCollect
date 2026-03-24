@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { ArrowRight, Trash2 } from 'lucide-react'
+import { ArrowRight, Trash2, FileText } from 'lucide-react'
 import type { InvoiceResponse, LifeCycleStatus, TimeStatus } from '@/types/invoice.types'
 import type { CustomerResponse } from '@/types/customer.types'
 
@@ -20,7 +20,7 @@ function getStatus(lc: LifeCycleStatus, ts: TimeStatus): { label: string; dot: s
   const MAP: Record<LifeCycleStatus, { label: string; dot: string; text: string }> = {
     DRAFT:          { label: 'Draft',     dot: 'bg-[#8A9BAE]', text: 'text-c-muted' },
     ISSUED:         { label: 'Sent',      dot: 'bg-blue-500',  text: 'text-blue-600 dark:text-blue-400' },
-    PARTIALLY_PAID: { label: 'Partial',   dot: 'bg-[#29B6F6]', text: 'text-[#29B6F6]' },
+    PARTIALLY_PAID: { label: 'Partial',   dot: 'bg-[#29B6F6]', text: 'text-[#29B6F6] dark:text-[#4FC3F7]' },
     PAID:           { label: 'Paid',      dot: 'bg-green-500', text: 'text-green-600 dark:text-green-400' },
     CANCELLED:      { label: 'Cancelled', dot: 'bg-[#8A9BAE]', text: 'text-c-muted' },
   }
@@ -71,8 +71,16 @@ export default function InvoiceTable({ invoices, customerMap, currency, isLoadin
               [...Array(5)].map((_, i) => <RowSkeleton key={i} />)
             ) : invoices.length === 0 ? (
               <tr>
-                <td colSpan={5} className="py-16 text-center text-sm text-c-muted">
-                  No invoices found
+                <td colSpan={5}>
+                  <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
+                    <div className="w-12 h-12 rounded-full bg-[#F4F7F9] dark:bg-white/10 flex items-center justify-center">
+                      <FileText size={20} className="text-c-muted" strokeWidth={1.5} />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-[#0D1B2A] dark:text-white">No invoices found</p>
+                      <p className="text-xs text-c-muted mt-0.5">Try adjusting your filters.</p>
+                    </div>
+                  </div>
                 </td>
               </tr>
             ) : (

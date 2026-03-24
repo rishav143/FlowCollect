@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, Search } from 'lucide-react'
+import { Plus, Search, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/store/auth.store'
 import { useInvoices } from '../hooks/useInvoices'
@@ -26,9 +26,9 @@ function Pagination({
       <button
         disabled={page === 0}
         onClick={() => onChange(page - 1)}
-        className="px-3 py-1.5 rounded-lg text-sm text-c-muted hover:bg-[#F4F7F9] dark:hover:bg-[#243447] disabled:opacity-30 transition-colors"
+        className="p-1.5 rounded-lg text-c-muted hover:bg-[#F4F7F9] dark:hover:bg-[#243447] disabled:opacity-30 transition-colors"
       >
-        ←
+        <ChevronLeft size={16} />
       </button>
       {[...Array(totalPages)].map((_, i) => (
         <button
@@ -47,9 +47,9 @@ function Pagination({
       <button
         disabled={page === totalPages - 1}
         onClick={() => onChange(page + 1)}
-        className="px-3 py-1.5 rounded-lg text-sm text-c-muted hover:bg-[#F4F7F9] dark:hover:bg-[#243447] disabled:opacity-30 transition-colors"
+        className="p-1.5 rounded-lg text-c-muted hover:bg-[#F4F7F9] dark:hover:bg-[#243447] disabled:opacity-30 transition-colors"
       >
-        →
+        <ChevronRight size={16} />
       </button>
     </div>
   )

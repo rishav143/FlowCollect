@@ -52,15 +52,9 @@ const router = createBrowserRouter([
       { path: '/clients',     lazy: routeLazy(() => import('@/features/clients/pages/ClientListPage')) },
       { path: '/clients/:id', lazy: routeLazy(() => import('@/features/clients/pages/ClientDetailPage')) },
       { path: '/reminder-rules',    lazy: routeLazy(() => import('@/features/reminders/pages/RemindersPage')) },
-      {
-        path: '/settings',
-        element: <SettingsLayout />,
-        children: [
-          { path: 'org',     lazy: routeLazy(() => import('@/features/settings/pages/OrgSettingsPage')) },
-          { path: 'team',    lazy: routeLazy(() => import('@/features/settings/pages/TeamPage'))        },
-          { path: 'billing', lazy: routeLazy(() => import('@/features/settings/pages/BillingPage'))    },
-        ],
-      },
+      // Settings — tabs are rendered eagerly inside SettingsLayout (no sub-routes)
+      { path: '/settings',         element: <SettingsLayout /> },
+      { path: '/settings/:tab',    element: <SettingsLayout /> },
     ],
   },
 

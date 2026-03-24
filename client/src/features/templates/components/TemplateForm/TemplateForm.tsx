@@ -1,3 +1,4 @@
+import { useRef } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { templateSchema, type TemplateFormValues } from '@/features/templates/schemas/template.schema'
@@ -44,11 +45,21 @@ export default function TemplateForm({ defaultValues, onSubmit, isPending, submi
     },
   })
 
-  const channel = watch('channel')
-  const body    = watch('body') ?? ''
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null)
+  const channel     = watch('channel')
+  const body        = watch('body') ?? ''
 
   function insertPlaceholder(ph: string) {
-    setValue('body', body + ph, { shouldValidate: true })
+    const el    = textareaRef.current
+    const start = el?.selectionStart ?? body.length
+    const end   = el?.selectionEnd   ?? body.length
+    const next  = body.slice(0, start) + ph + body.slice(end)
+    setValue('body', next, { shouldValidate: true })
+    // Restore cursor position after the inserted variable
+    requestAnimationFrame(() => {
+      el?.focus()
+      el?.setSelectionRange(start + ph.length, start + ph.length)
+    })
   }
 
   return (
@@ -105,6 +116,10 @@ export default function TemplateForm({ defaultValues, onSubmit, isPending, submi
         <label className={labelClass}>Message body</label>
         <textarea
           {...register('body')}
+          ref={(el) => {
+            register('body').ref(el)
+            textareaRef.current = el
+          }}
           rows={5}
           className={`${inputClass} resize-y`}
           placeholder="Hi {{customerName}}, this is a friendly reminder…"

@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { ArrowRight, CalendarClock } from 'lucide-react'
+import { ArrowRight, CalendarClock, Bell } from 'lucide-react'
 import type { InvoiceResponse } from '@/types/invoice.types'
 
 // ---------------------------------------------------------------------------
@@ -59,10 +59,12 @@ export default function DueSoonPanel({
   invoices,
   currency,
   isLoading,
+  onFollowup,
 }: {
-  invoices:  InvoiceResponse[]
-  currency:  string
-  isLoading: boolean
+  invoices:    InvoiceResponse[]
+  currency:    string
+  isLoading:   boolean
+  onFollowup?: (inv: InvoiceResponse) => void
 }) {
   const navigate = useNavigate()
 
@@ -97,7 +99,7 @@ export default function DueSoonPanel({
               <li
                 key={inv.id}
                 className={[
-                  'flex items-center gap-3 px-5 py-3.5 cursor-pointer',
+                  'group flex items-center gap-3 px-5 py-3 cursor-pointer',
                   'hover:bg-[#F4F7F9] dark:hover:bg-[#243447] transition-colors',
                   idx < invoices.length - 1 ? 'border-b border-c-border' : '',
                 ].join(' ')}
@@ -113,6 +115,18 @@ export default function DueSoonPanel({
                 </span>
 
                 <span className="flex-1" />
+
+                {/* Quick remind — visible on hover */}
+                {onFollowup && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onFollowup(inv) }}
+                    title="Send follow-up"
+                    className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium text-[#29B6F6] opacity-0 group-hover:opacity-100 hover:bg-[#29B6F6]/10 transition-all shrink-0"
+                  >
+                    <Bell size={12} strokeWidth={2.5} />
+                    Remind
+                  </button>
+                )}
 
                 <span className="text-sm font-semibold text-[#0D1B2A] dark:text-white tabular-nums">
                   {fmt(inv.remainingAmount, currency)}
