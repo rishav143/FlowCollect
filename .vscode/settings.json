@@ -8,5 +8,8 @@
             "default": true
         }
     ],
-    "java.configuration.updateBuildConfiguration": "interactive"
+    "java.configuration.updateBuildConfiguration": "interactive",
+    "java.project.sourcePaths": [
+        "client/src"
+    ]
 }

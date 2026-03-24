@@ -377,14 +377,53 @@ const ROUTES = [
 
 export function registerDevMock(axiosInstance: AxiosInstance) {
   if (!import.meta.env.DEV) return
+  if (import.meta.env.VITE_USE_MOCK !== 'true') return
 
   axiosInstance.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
-    const token = config.headers?.Authorization as string | undefined
-    if (!token?.includes('dev-token')) return config
-
     const method   = (config.method ?? 'GET').toUpperCase()
     const fullPath = (config.baseURL ?? '') + (config.url ?? '')
     const pathname = path(fullPath)
+    // ── Auth routes — intercepted regardless of token ─────────────────────
+    if (method === 'POST' && pathname === '/api/v1/auth/login') {
+      const authBody = config.data
+        ? (typeof config.data === 'string' ? JSON.parse(config.data) : config.data) as Record<string, string>
+        : {} as Record<string, string>
+      await new Promise((res) => setTimeout(res, 300))
+      config.adapter = async () => ({
+        data: {
+          token: 'dev-token',
+          user: { id: 'u1', name: 'Rishav Choudhary', email: authBody.email ?? 'rishav@example.com', role: 'ADMIN' },
+          org:  ORG_PROFILE,
+        },
+        status: 200, statusText: 'OK', headers: {}, config,
+      })
+      return config
+    }
+
+    if (method === 'POST' && pathname === '/api/v1/auth/register') {
+      const authBody = config.data
+        ? (typeof config.data === 'string' ? JSON.parse(config.data) : config.data) as Record<string, string>
+        : {} as Record<string, string>
+      await new Promise((res) => setTimeout(res, 300))
+      config.adapter = async () => ({
+        data: {
+          token: 'dev-token',
+          user: { id: 'u1', name: authBody.name ?? 'New User', email: authBody.email ?? 'user@example.com', role: 'ADMIN' },
+          org:  {
+            id: 'o1',
+            name: authBody.orgName ?? 'My Business',
+            paymentCollectionMode: 'PAYMENT_LINK',
+            currency: authBody.currency ?? 'INR',
+            timezone: 'Asia/Kolkata',
+          },
+        },
+        status: 200, statusText: 'OK', headers: {}, config,
+      })
+      return config
+    }
+
+    const token = config.headers?.Authorization as string | undefined
+    if (!token?.includes('dev-token')) return config
 
     // Only mock our org's endpoints
     if (!pathname.startsWith(BASE)) return config

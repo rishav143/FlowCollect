@@ -15,12 +15,13 @@ interface AuthState {
 }
 
 // ---------------------------------------------------------------------------
-// Dev seed — pre-populates store in development so the shell renders with
-// real-looking data without requiring a login flow.
-// Cleared automatically in production (token: null).
+// Dev seed — only active when VITE_USE_MOCK=true (local UI development).
+// Set VITE_USE_MOCK=false (or leave unset) to use a real backend.
 // ---------------------------------------------------------------------------
 
-const devSeed: Pick<AuthState, 'token' | 'user' | 'org'> = import.meta.env.DEV
+const USE_MOCK = import.meta.env.DEV && import.meta.env.VITE_USE_MOCK === 'true'
+
+const devSeed: Pick<AuthState, 'token' | 'user' | 'org'> = USE_MOCK
   ? {
       token: 'dev-token',
       user: {
@@ -32,7 +33,6 @@ const devSeed: Pick<AuthState, 'token' | 'user' | 'org'> = import.meta.env.DEV
       org: {
         id: 'o1',
         name: "Rishav's Agency",
-        // CONFIRMATION_FLOW → Approvals nav item is visible
         paymentCollectionMode: 'CONFIRMATION_FLOW',
         currency: 'INR',
         timezone: 'Asia/Kolkata',
@@ -54,10 +54,9 @@ export const useAuthStore = create<AuthState>()(
     {
       name: 'fc-auth',
       partialize: (state) => ({ token: state.token, user: state.user, org: state.org }),
-      // In dev: if localStorage was cleared by logout, re-apply the seed on next load
-      // so the shell always renders with data without requiring a real login flow.
       onRehydrateStorage: () => (state) => {
-        if (import.meta.env.DEV && state && !state.token) {
+        // Re-apply seed after localStorage clear only in mock mode
+        if (USE_MOCK && state && !state.token) {
           Object.assign(state, devSeed)
         }
       },
