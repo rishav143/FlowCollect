@@ -1,9 +1,8 @@
 import { useState, type FormEvent } from 'react'
 import type { AxiosError } from 'axios'
-import { Link, useNavigate } from 'react-router-dom'
-import { Eye, EyeOff } from 'lucide-react'
-import { register } from '@/api/auth.api'
-import { useAuthStore } from '@/store/auth.store'
+import { Link } from 'react-router-dom'
+import { Eye, EyeOff, MailCheck } from 'lucide-react'
+import { register, type RegisterResult } from '@/api/auth.api'
 import AuthLayout from '../components/AuthLayout'
 
 // ---------------------------------------------------------------------------
@@ -31,21 +30,42 @@ const CURRENCIES = [
 ]
 
 // ---------------------------------------------------------------------------
+// Verification success state
+// ---------------------------------------------------------------------------
+
+function VerificationPending({ result }: { result: RegisterResult }) {
+  return (
+    <div className="text-center">
+      <div className="flex items-center justify-center w-14 h-14 rounded-full bg-[#29B6F6]/10 mx-auto mb-4">
+        <MailCheck size={26} className="text-[#29B6F6]" strokeWidth={1.5} />
+      </div>
+      <h1 className="text-xl font-bold text-[#0D1B2A] dark:text-white mb-2">Check your inbox</h1>
+      <p className="text-sm text-c-muted mb-6 leading-relaxed">{result.message}</p>
+      <Link
+        to="/login"
+        className="inline-block w-full py-2.5 rounded-lg text-sm font-semibold text-white text-center hover:opacity-90 transition-opacity"
+        style={{ background: 'linear-gradient(90deg, #29B6F6 0%, #4FC3F7 100%)' }}
+      >
+        Go to sign in →
+      </Link>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
 // Page
 // ---------------------------------------------------------------------------
 
 export default function RegisterPage() {
-  const navigate = useNavigate()
-  const setAuth  = useAuthStore((s) => s.setAuth)
-
-  const [name,     setName]     = useState('')
-  const [orgName,  setOrgName]  = useState('')
-  const [email,    setEmail]    = useState('')
-  const [password, setPassword] = useState('')
-  const [currency, setCurrency] = useState('INR')
-  const [showPwd,  setShowPwd]  = useState(false)
-  const [loading,  setLoading]  = useState(false)
-  const [error,    setError]    = useState<string | null>(null)
+  const [ownerName,        setOwnerName]        = useState('')
+  const [organizationName, setOrganizationName] = useState('')
+  const [email,            setEmail]            = useState('')
+  const [password,         setPassword]         = useState('')
+  const [currency,         setCurrency]         = useState('INR')
+  const [showPwd,          setShowPwd]          = useState(false)
+  const [loading,          setLoading]          = useState(false)
+  const [error,            setError]            = useState<string | null>(null)
+  const [result,           setResult]           = useState<RegisterResult | null>(null)
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -56,9 +76,9 @@ export default function RegisterPage() {
     }
     setLoading(true)
     try {
-      const { token, user, org } = await register({ name, email, password, orgName, currency })
-      setAuth(token, user, org)
-      navigate('/dashboard', { replace: true })
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+      const res = await register({ ownerName, organizationName, email, password, currency, timezone })
+      setResult(res)
     } catch (err) {
       const ax = err as AxiosError<{ message?: string }>
       const msg = ax.response?.data?.message
@@ -67,6 +87,9 @@ export default function RegisterPage() {
       setLoading(false)
     }
   }
+
+  // Show verification pending screen after successful register
+  if (result) return <AuthLayout><VerificationPending result={result} /></AuthLayout>
 
   return (
     <AuthLayout>
@@ -87,8 +110,8 @@ export default function RegisterPage() {
               placeholder="Rishav"
               required
               autoComplete="given-name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
+              value={ownerName}
+              onChange={(e) => setOwnerName(e.target.value)}
               className={inputCls}
             />
           </div>
@@ -98,8 +121,8 @@ export default function RegisterPage() {
               type="text"
               placeholder="My Agency"
               required
-              value={orgName}
-              onChange={(e) => setOrgName(e.target.value)}
+              value={organizationName}
+              onChange={(e) => setOrganizationName(e.target.value)}
               className={inputCls}
             />
           </div>
