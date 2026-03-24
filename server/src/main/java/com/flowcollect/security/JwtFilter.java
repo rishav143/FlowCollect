@@ -76,6 +76,10 @@ public class JwtFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
+        // Always pass CORS preflight requests through — no token is sent with OPTIONS
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+            return true;
+        }
         String path = request.getRequestURI();
         if (path.startsWith("/actuator")) {
             return true;
