@@ -89,10 +89,7 @@ export default function ClientInvoiceHistory({
             </span>
 
             {/* Status */}
-            <span className="inline-flex items-center gap-1.5 shrink-0">
-              <span className={`w-1.5 h-1.5 rounded-full ${dot}`} />
-              <span className={`text-xs font-medium ${text}`}>{label}</span>
-            </span>
+            <span className={`text-xs font-medium shrink-0 ${text}`}>{label}</span>
 
             <span className="flex-1" />
 

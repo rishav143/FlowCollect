@@ -130,10 +130,7 @@ function OverdueSection({
                     {inv.invoiceNumber}
                   </span>
 
-                  <span className="inline-flex items-center gap-1.5 shrink-0">
-                    <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
-                    <span className="text-xs font-medium text-red-600 dark:text-red-400">{days}d overdue</span>
-                  </span>
+                  <span className="text-xs font-medium text-red-600 dark:text-red-400 shrink-0">{days}d overdue</span>
 
                   <span className="flex-1" />
 

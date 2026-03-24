@@ -126,10 +126,7 @@ export default function ClientDetailPage() {
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <h1 className="text-2xl font-bold text-[#0D1B2A] dark:text-white">{customer.name}</h1>
-                <span className="inline-flex items-center gap-1.5">
-                  <span className={`w-2 h-2 rounded-full shrink-0 ${riskMeta.dot}`} />
-                  <span className={`text-sm font-medium ${riskMeta.text}`}>{riskMeta.label}</span>
-                </span>
+                <span className={`text-sm font-medium ${riskMeta.text}`}>{riskMeta.label}</span>
               </div>
               {customer.companyName && (
                 <p className="flex items-center gap-1.5 text-sm text-c-muted mt-1">

@@ -81,10 +81,7 @@ const ConfirmationCard = memo(function ConfirmationCard({
           {c.invoiceNumber}
         </span>
 
-        <span className="inline-flex items-center gap-1.5">
-          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dot}`} />
-          <span className={`text-xs font-medium ${text}`}>{label}</span>
-        </span>
+        <span className={`text-xs font-medium ${text}`}>{label}</span>
 
         <span className="ml-auto text-xs text-c-muted shrink-0">
           {timeAgo(c.createdAt)}

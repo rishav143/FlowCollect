@@ -29,27 +29,24 @@ function fmtDate(d: string | null) {
 // Status chips
 // ---------------------------------------------------------------------------
 
-const STATUS_MAP: Record<LifeCycleStatus, { dot: string; text: string; label: string }> = {
-  DRAFT:          { dot: 'bg-[#8A9BAE]', text: 'text-c-muted',                    label: 'Draft' },
-  ISSUED:         { dot: 'bg-blue-500',  text: 'text-blue-600 dark:text-blue-400',   label: 'Sent' },
-  PARTIALLY_PAID: { dot: 'bg-[#29B6F6]', text: 'text-[#29B6F6] dark:text-[#4FC3F7]', label: 'Partial' },
-  PAID:           { dot: 'bg-green-500', text: 'text-green-600 dark:text-green-400', label: 'Paid' },
-  CANCELLED:      { dot: 'bg-[#8A9BAE]', text: 'text-c-muted',                    label: 'Cancelled' },
+const STATUS_MAP: Record<LifeCycleStatus, { text: string; label: string }> = {
+  DRAFT:          { text: 'text-c-muted',                            label: 'Draft'     },
+  ISSUED:         { text: 'text-blue-600 dark:text-blue-400',        label: 'Sent'      },
+  PARTIALLY_PAID: { text: 'text-[#29B6F6] dark:text-[#4FC3F7]',     label: 'Partial'   },
+  PAID:           { text: 'text-green-600 dark:text-green-400',      label: 'Paid'      },
+  CANCELLED:      { text: 'text-c-muted',                            label: 'Cancelled' },
 }
 
 function StatusChip({ lifecycle, time }: { lifecycle: LifeCycleStatus; time: TimeStatus }) {
   const overdue  = time === 'OVERDUE'  && lifecycle !== 'PAID' && lifecycle !== 'CANCELLED' && lifecycle !== 'DRAFT'
   const dueToday = time === 'DUE_TODAY' && lifecycle !== 'PAID' && lifecycle !== 'CANCELLED' && lifecycle !== 'PARTIALLY_PAID'
-  const { dot, text, label } = overdue
-    ? { dot: 'bg-red-500',   text: 'text-red-600 dark:text-red-400',     label: 'Overdue' }
+  const { text, label } = overdue
+    ? { text: 'text-red-600 dark:text-red-400',     label: 'Overdue'   }
     : dueToday
-    ? { dot: 'bg-amber-500', text: 'text-amber-600 dark:text-amber-400', label: 'Due Today' }
+    ? { text: 'text-amber-600 dark:text-amber-400', label: 'Due Today' }
     : STATUS_MAP[lifecycle]
   return (
-    <span className="inline-flex items-center gap-1.5">
-      <span className={`w-2 h-2 rounded-full shrink-0 ${dot}`} />
-      <span className={`text-sm font-medium ${text}`}>{label}</span>
-    </span>
+    <span className={`text-sm font-medium ${text}`}>{label}</span>
   )
 }
 

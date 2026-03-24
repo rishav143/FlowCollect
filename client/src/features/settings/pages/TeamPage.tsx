@@ -14,8 +14,8 @@ function getInitials(name: string) {
 }
 
 const ROLE_META = {
-  ADMIN: { dot: 'bg-[#29B6F6]', text: 'text-[#29B6F6]',                    label: 'Admin' },
-  STAFF: { dot: 'bg-[#8A9BAE]', text: 'text-[#0D1B2A] dark:text-white/70', label: 'Staff' },
+  ADMIN: { text: 'text-[#29B6F6]',                    label: 'Admin' },
+  STAFF: { text: 'text-[#0D1B2A] dark:text-white/70', label: 'Staff' },
 }
 
 // ---------------------------------------------------------------------------
@@ -124,10 +124,7 @@ function MemberRow({
         </p>
         <p className="text-xs text-c-muted truncate">{member.email}</p>
       </div>
-      <span className="inline-flex items-center gap-1.5 shrink-0">
-        <span className={`w-1.5 h-1.5 rounded-full ${meta.dot}`} />
-        <span className={`text-xs font-medium ${meta.text}`}>{meta.label}</span>
-      </span>
+      <span className={`text-xs font-medium shrink-0 ${meta.text}`}>{meta.label}</span>
       {!isSelf && (
         <button
           onClick={() => onRemove(member)}

@@ -64,10 +64,7 @@ function HealthPill({
 
   if (!hasUrgent) {
     return (
-      <span className="inline-flex items-center gap-1.5">
-        <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
-        <span className="text-xs font-medium text-green-600 dark:text-green-400">All caught up</span>
-      </span>
+      <span className="text-xs font-medium text-green-600 dark:text-green-400">All caught up</span>
     )
   }
 
@@ -78,10 +75,7 @@ function HealthPill({
     parts.push(`${pendingApprovalsCount} pending`)
 
   return (
-    <span className="inline-flex items-center gap-1.5">
-      <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
-      <span className="text-xs font-medium text-red-600 dark:text-red-400">{parts.join(' · ')}</span>
-    </span>
+    <span className="text-xs font-medium text-red-600 dark:text-red-400">{parts.join(' · ')}</span>
   )
 }
 
@@ -89,12 +83,12 @@ function HealthPill({
 // Status dot for Recent Activity
 // ---------------------------------------------------------------------------
 
-const STATUS_META: Record<LifeCycleStatus, { dot: string; text: string; label: string }> = {
-  DRAFT:          { dot: 'bg-[#8A9BAE]', text: 'text-c-muted',                            label: 'Draft'    },
-  ISSUED:         { dot: 'bg-blue-500',  text: 'text-blue-600 dark:text-blue-400',         label: 'Issued'   },
-  PARTIALLY_PAID: { dot: 'bg-[#29B6F6]', text: 'text-[#0D1B2A] dark:text-white',          label: 'Partial'  },
-  PAID:           { dot: 'bg-green-500', text: 'text-green-600 dark:text-green-400',       label: 'Paid'     },
-  CANCELLED:      { dot: 'bg-red-500',   text: 'text-red-500 dark:text-red-400',           label: 'Cancelled'},
+const STATUS_META: Record<LifeCycleStatus, { text: string; label: string }> = {
+  DRAFT:          { text: 'text-c-muted',                            label: 'Draft'    },
+  ISSUED:         { text: 'text-blue-600 dark:text-blue-400',        label: 'Issued'   },
+  PARTIALLY_PAID: { text: 'text-[#0D1B2A] dark:text-white',         label: 'Partial'  },
+  PAID:           { text: 'text-green-600 dark:text-green-400',      label: 'Paid'     },
+  CANCELLED:      { text: 'text-red-500 dark:text-red-400',          label: 'Cancelled'},
 }
 
 // ---------------------------------------------------------------------------
@@ -109,7 +103,7 @@ function ActivityRow({
   onClick:  () => void
   isLast:   boolean
 }) {
-  const { dot, text, label } = STATUS_META[invoice.lifeCycleStatus]
+  const { text, label } = STATUS_META[invoice.lifeCycleStatus]
   return (
     <li
       className={[
@@ -125,10 +119,7 @@ function ActivityRow({
       </span>
 
       {/* Status */}
-      <span className="inline-flex items-center gap-1.5 shrink-0">
-        <span className={`w-1.5 h-1.5 rounded-full ${dot}`} />
-        <span className={`text-xs font-medium ${text}`}>{label}</span>
-      </span>
+      <span className={`text-xs font-medium shrink-0 ${text}`}>{label}</span>
 
       <span className="flex-1" />
 
@@ -215,10 +206,10 @@ function RecentActivity({
 type AgingBucket = { label: string; amount: number; count: number }
 
 const AGING_COLORS = [
-  { dot: 'bg-green-500',  text: 'text-green-600 dark:text-green-400'  },
-  { dot: 'bg-amber-500',  text: 'text-amber-600 dark:text-amber-400'  },
-  { dot: 'bg-orange-500', text: 'text-orange-600 dark:text-orange-400' },
-  { dot: 'bg-red-500',    text: 'text-red-600 dark:text-red-400'      },
+  { text: 'text-green-600 dark:text-green-400'  },
+  { text: 'text-amber-600 dark:text-amber-400'  },
+  { text: 'text-orange-600 dark:text-orange-400' },
+  { text: 'text-red-600 dark:text-red-400'      },
 ]
 
 function AgingBuckets({
@@ -250,8 +241,7 @@ function AgingBuckets({
               </div>
             ) : (
               <>
-                <div className="flex items-center gap-1.5 mb-0.5">
-                  <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${AGING_COLORS[i].dot}`} />
+                <div className="mb-0.5">
                   <span className={`text-xs font-medium ${AGING_COLORS[i].text}`}>{bucket.label}</span>
                 </div>
                 <p className="text-base font-bold text-[#0D1B2A] dark:text-white tabular-nums">

@@ -47,10 +47,7 @@ const FollowupCard = memo(function FollowupCard({ invoice, currency, customerNam
           </p>
           <p className="text-xs text-c-muted mt-0.5 truncate">{invoice.invoiceNumber}</p>
         </div>
-        <span className="inline-flex items-center gap-1.5 shrink-0">
-          <span className={`w-1.5 h-1.5 rounded-full ${u.dot}`} />
-          <span className={`text-xs font-medium ${u.text}`}>{u.label}</span>
-        </span>
+        <span className={`text-xs font-medium shrink-0 ${u.text}`}>{u.label}</span>
       </div>
 
       {/* Amount owed */}

@@ -90,11 +90,8 @@ export default function FollowupsTab() {
           </div>
 
           {/* Status */}
-          {(() => { const { dot, text, label } = STATUS_DOT[fu.status]; return (
-            <span className="inline-flex items-center gap-1.5 shrink-0">
-              <span className={`w-1.5 h-1.5 rounded-full ${dot}`} />
-              <span className={`text-xs font-medium ${text}`}>{label}</span>
-            </span>
+          {(() => { const { text, label } = STATUS_DOT[fu.status]; return (
+            <span className={`text-xs font-medium shrink-0 ${text}`}>{label}</span>
           )})()}
         </div>
       ))}

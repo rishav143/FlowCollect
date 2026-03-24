@@ -39,10 +39,7 @@ function MobileCard({ customer, invoices, currency, onDelete }: ClientRow) {
           {customer.companyName && <p className="text-xs text-c-muted truncate mt-0.5">{customer.companyName}</p>}
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <span className="inline-flex items-center gap-1.5">
-            <span className={`w-2 h-2 rounded-full shrink-0 ${meta.dot}`} />
-            <span className={`text-sm font-medium ${meta.text}`}>{meta.label}</span>
-          </span>
+          <span className={`text-sm font-medium ${meta.text}`}>{meta.label}</span>
           <button
             onClick={(e) => { e.stopPropagation(); onDelete(customer) }}
             className="p-1 text-c-muted hover:text-red-500 transition-colors"
@@ -62,10 +59,7 @@ function MobileCard({ customer, invoices, currency, onDelete }: ClientRow) {
         </div>
         <div>
           <p className="text-[10px] text-c-muted mb-0.5">Risk</p>
-          <span className="inline-flex items-center gap-1">
-            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${meta.dot}`} />
-            <span className={`text-xs font-medium ${meta.text}`}>{meta.label}</span>
-          </span>
+          <span className={`text-xs font-medium ${meta.text}`}>{meta.label}</span>
         </div>
       </div>
     </div>
@@ -168,10 +162,7 @@ export default function ClientTable({ customers, invoicesByCustomer, currency, i
                     </span>
                   </td>
                   <td className="py-3 px-4 text-right">
-                    <span className="inline-flex items-center justify-end gap-1.5">
-                      <span className={`w-2 h-2 rounded-full shrink-0 ${meta.dot}`} />
-                      <span className={`text-sm font-medium ${meta.text}`}>{meta.label}</span>
-                    </span>
+                    <span className={`text-sm font-medium ${meta.text}`}>{meta.label}</span>
                   </td>
                   <td className="py-3 px-4">
                     <div className="flex items-center justify-end gap-1">

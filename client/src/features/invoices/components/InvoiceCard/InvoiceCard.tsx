@@ -56,10 +56,7 @@ const InvoiceCard = memo(function InvoiceCard({ invoice, customer, currency, onD
           </p>
           <p className="text-xs text-c-muted truncate mt-0.5">{invoice.invoiceNumber}</p>
         </div>
-        <span className="inline-flex items-center gap-1.5 shrink-0">
-          <span className={`w-2 h-2 rounded-full shrink-0 ${dot}`} />
-          <span className={`text-sm font-medium ${text}`}>{label}</span>
-        </span>
+        <span className={`text-sm font-medium shrink-0 ${text}`}>{label}</span>
       </div>
 
       {/* Amount */}

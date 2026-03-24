@@ -107,10 +107,7 @@ export default function InvoiceTable({ invoices, customerMap, currency, isLoadin
 
                     {/* Status */}
                     <td className="px-4 py-3.5">
-                      <span className="inline-flex items-center gap-1.5">
-                        <span className={`w-2 h-2 rounded-full shrink-0 ${dot}`} />
-                        <span className={`text-sm font-medium ${text}`}>{label}</span>
-                      </span>
+                      <span className={`text-sm font-medium ${text}`}>{label}</span>
                     </td>
 
                     {/* Due date */}

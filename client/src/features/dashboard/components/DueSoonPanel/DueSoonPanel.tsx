@@ -109,10 +109,7 @@ export default function DueSoonPanel({
                   {inv.invoiceNumber}
                 </span>
 
-                <span className="inline-flex items-center gap-1.5 shrink-0">
-                  <span className={`w-1.5 h-1.5 rounded-full ${badge.dot}`} />
-                  <span className={`text-xs font-medium ${badge.text}`}>{badge.label}</span>
-                </span>
+                <span className={`text-xs font-medium shrink-0 ${badge.text}`}>{badge.label}</span>
 
                 <span className="flex-1" />
 
