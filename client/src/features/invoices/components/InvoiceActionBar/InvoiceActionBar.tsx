@@ -49,7 +49,7 @@ export default function InvoiceActionBar({
         <button
           onClick={onDownloadPdf}
           disabled={isDownloading}
-          className={`${btnBase} bg-white dark:bg-[#1B2838] border border-[#F4F7F9] dark:border-white/10 text-[#0D1B2A] dark:text-white hover:bg-[#F4F7F9] dark:hover:bg-[#243447] shadow-sm disabled:opacity-50`}
+          className={`${btnBase} bg-white dark:bg-[#1B2838] border border-c-border text-[#0D1B2A] dark:text-white hover:bg-[#F4F7F9] dark:hover:bg-[#243447] shadow-sm disabled:opacity-50`}
         >
           {isDownloading
             ? <Loader2 size={15} className="animate-spin" />
@@ -63,7 +63,7 @@ export default function InvoiceActionBar({
       {!isDraft && !isPaid && !isCancelled && (
         <button
           onClick={onFollowup}
-          className={`${btnBase} bg-white dark:bg-[#1B2838] border border-[#F4F7F9] dark:border-white/10 text-[#0D1B2A] dark:text-white hover:bg-[#F4F7F9] dark:hover:bg-[#243447] shadow-sm`}
+          className={`${btnBase} bg-white dark:bg-[#1B2838] border border-c-border text-[#0D1B2A] dark:text-white hover:bg-[#F4F7F9] dark:hover:bg-[#243447] shadow-sm`}
         >
           <Clock size={15} strokeWidth={2} />
           Send Follow-up

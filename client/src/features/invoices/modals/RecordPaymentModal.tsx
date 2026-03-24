@@ -16,10 +16,10 @@ const MODES: { value: PaymentMode; label: string }[] = [
 const inputCls = [
   'w-full px-3 py-2 text-sm bg-[#F4F7F9] dark:bg-[#243447] rounded-lg',
   'border border-transparent focus:border-[#8A9BAE]/40 focus:outline-none',
-  'text-[#0D1B2A] dark:text-white placeholder:text-[#8A9BAE] transition-colors',
+  'text-[#0D1B2A] dark:text-white placeholder:text-c-muted transition-colors',
 ].join(' ')
 
-const labelCls = 'block text-xs font-semibold text-[#8A9BAE] uppercase tracking-wide mb-1.5'
+const labelCls = 'block text-xs font-semibold text-c-muted uppercase tracking-wide mb-1.5'
 
 interface Props {
   invoiceId:       string
@@ -66,16 +66,16 @@ export default function RecordPaymentModal({ invoiceId, remainingAmount, currenc
         className="relative w-full max-w-md bg-white dark:bg-[#1B2838] rounded-2xl shadow-xl overflow-hidden"
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#F4F7F9] dark:border-white/10">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-c-border">
           <h2 className="text-base font-semibold text-[#0D1B2A] dark:text-white">Record Payment</h2>
-          <button type="button" onClick={onClose} className="p-1.5 rounded-lg text-[#8A9BAE] hover:bg-[#F4F7F9] dark:hover:bg-[#243447] transition-colors">
+          <button type="button" onClick={onClose} className="p-1.5 rounded-lg text-c-muted hover:bg-[#F4F7F9] dark:hover:bg-[#243447] transition-colors">
             <X size={18} />
           </button>
         </div>
 
         {/* Body */}
         <div className="px-6 py-5 space-y-4">
-          <p className="text-sm text-[#8A9BAE]">Remaining: <span className="font-semibold text-[#0D1B2A] dark:text-white">{fmt(remainingAmount)}</span></p>
+          <p className="text-sm text-c-muted">Remaining: <span className="font-semibold text-[#0D1B2A] dark:text-white">{fmt(remainingAmount)}</span></p>
 
           <div>
             <label className={labelCls}>Amount *</label>
@@ -103,8 +103,8 @@ export default function RecordPaymentModal({ invoiceId, remainingAmount, currenc
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end gap-3 px-6 py-4 border-t border-[#F4F7F9] dark:border-white/10">
-          <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg text-sm font-medium text-[#8A9BAE] hover:bg-[#F4F7F9] dark:hover:bg-[#243447] transition-colors">
+        <div className="flex justify-end gap-3 px-6 py-4 border-t border-c-border">
+          <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg text-sm font-medium text-c-muted hover:bg-[#F4F7F9] dark:hover:bg-[#243447] transition-colors">
             Cancel
           </button>
           <button

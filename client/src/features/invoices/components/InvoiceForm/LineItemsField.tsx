@@ -21,7 +21,7 @@ function fmt(n: number, currency: string) {
 const inputCls = [
   'w-full px-3 py-2 text-sm bg-[#F4F7F9] dark:bg-[#243447] rounded-lg',
   'border border-transparent focus:border-[#8A9BAE]/40 focus:outline-none',
-  'text-[#0D1B2A] dark:text-white placeholder:text-[#8A9BAE] transition-colors',
+  'text-[#0D1B2A] dark:text-white placeholder:text-c-muted transition-colors',
 ].join(' ')
 
 export default function LineItemsField({ items, onChange, currency }: Props) {
@@ -47,7 +47,7 @@ export default function LineItemsField({ items, onChange, currency }: Props) {
       {/* Header */}
       <div className="grid grid-cols-[1fr_60px_100px_80px_28px] gap-2 px-1">
         {['Description', 'Qty', 'Unit Price', 'Amount', ''].map((h) => (
-          <span key={h} className="text-[11px] font-semibold uppercase tracking-wide text-[#8A9BAE]">
+          <span key={h} className="text-[11px] font-semibold uppercase tracking-wide text-c-muted">
             {h}
           </span>
         ))}
@@ -86,7 +86,7 @@ export default function LineItemsField({ items, onChange, currency }: Props) {
             type="button"
             onClick={() => remove(idx)}
             disabled={items.length === 1}
-            className="p-1 rounded text-[#8A9BAE] hover:text-red-500 disabled:opacity-30 transition-colors"
+            className="p-1 rounded text-c-muted hover:text-red-500 disabled:opacity-30 transition-colors"
           >
             <Trash2 size={14} strokeWidth={2} />
           </button>
@@ -104,8 +104,8 @@ export default function LineItemsField({ items, onChange, currency }: Props) {
       </button>
 
       {/* Subtotal */}
-      <div className="flex justify-end pt-2 border-t border-[#F4F7F9] dark:border-white/10">
-        <span className="text-sm text-[#8A9BAE]">
+      <div className="flex justify-end pt-2 border-t border-c-border">
+        <span className="text-sm text-c-muted">
           Subtotal: <span className="font-semibold text-[#0D1B2A] dark:text-white">{fmt(subtotal, currency)}</span>
         </span>
       </div>

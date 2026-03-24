@@ -79,7 +79,7 @@ export default function PaymentsTab({ invoiceId, remainingAmount, currency, life
         )}
 
         {payments.length === 0 ? (
-          <div className="py-10 text-center text-sm text-[#8A9BAE]">No payments recorded</div>
+          <div className="py-10 text-center text-sm text-c-muted">No payments recorded</div>
         ) : (
           <div className="space-y-2">
             {payments.map((p) => (
@@ -89,16 +89,16 @@ export default function PaymentsTab({ invoiceId, remainingAmount, currency, life
               >
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-[#0D1B2A] dark:text-white">{fmt(p.amount, currency)}</p>
-                  <p className="text-xs text-[#8A9BAE]">
+                  <p className="text-xs text-c-muted">
                     {p.mode ? MODE_LABEL[p.mode] : 'Unknown'} · {fmtDate(p.paidAt ?? p.createdAt)}
                     {p.referenceId && ` · Ref: ${p.referenceId}`}
                   </p>
                 </div>
-                {p.notes && <p className="text-xs text-[#8A9BAE] hidden sm:block">{p.notes}</p>}
+                {p.notes && <p className="text-xs text-c-muted hidden sm:block">{p.notes}</p>}
                 <button
                   onClick={() => deleteMut.mutate(p.id)}
                   disabled={deleteMut.isPending}
-                  className="p-1.5 rounded text-[#8A9BAE] hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors disabled:opacity-30"
+                  className="p-1.5 rounded text-c-muted hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors disabled:opacity-30"
                 >
                   <Trash2 size={13} strokeWidth={2} />
                 </button>

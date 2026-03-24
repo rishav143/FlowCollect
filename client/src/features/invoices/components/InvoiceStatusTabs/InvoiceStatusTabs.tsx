@@ -42,7 +42,7 @@ export default function InvoiceStatusTabs({ active, onChange }: Props) {
               'shrink-0 px-3.5 py-1.5 rounded-lg text-sm font-medium transition-colors',
               isActive
                 ? 'bg-[#2E7A8E] text-white'
-                : 'text-[#8A9BAE] hover:text-[#0D1B2A] dark:hover:text-white hover:bg-[#8A9BAE]/10 dark:hover:bg-[#243447]',
+                : 'text-c-muted hover:text-[#0D1B2A] dark:hover:text-white hover:bg-[#8A9BAE]/10 dark:hover:bg-[#243447]',
             ].join(' ')}
           >
             {tab.label}

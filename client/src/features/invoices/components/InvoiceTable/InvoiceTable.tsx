@@ -12,24 +12,24 @@ function fmtDate(d: string | null) {
   return new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
-function getStatus(lc: LifeCycleStatus, ts: TimeStatus): { label: string; chip: string } {
+function getStatus(lc: LifeCycleStatus, ts: TimeStatus): { label: string; dot: string; text: string } {
   if (ts === 'OVERDUE'   && lc !== 'PAID' && lc !== 'CANCELLED' && lc !== 'DRAFT')
-    return { label: 'Overdue',   chip: 'bg-red-100 text-red-600 dark:bg-red-500/20 dark:text-red-400' }
-  if (ts === 'DUE_TODAY' && lc !== 'PAID' && lc !== 'CANCELLED')
-    return { label: 'Due Today', chip: 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400' }
-  const MAP: Record<LifeCycleStatus, { label: string; chip: string }> = {
-    DRAFT:          { label: 'Draft',     chip: 'bg-[#8A9BAE]/10 text-[#8A9BAE]' },
-    ISSUED:         { label: 'Sent',      chip: 'bg-blue-50 text-blue-600 dark:bg-blue-500/15 dark:text-blue-400' },
-    PARTIALLY_PAID: { label: 'Partial',   chip: 'bg-[#29B6F6]/10 text-[#29B6F6]' },
-    PAID:           { label: 'Paid',      chip: 'bg-green-50 text-green-600 dark:bg-green-500/15 dark:text-green-400' },
-    CANCELLED:      { label: 'Cancelled', chip: 'bg-red-50 text-red-500 dark:bg-red-500/10 dark:text-red-400' },
+    return { label: 'Overdue',   dot: 'bg-red-500',   text: 'text-red-600 dark:text-red-400' }
+  if (ts === 'DUE_TODAY' && lc !== 'PAID' && lc !== 'CANCELLED' && lc !== 'PARTIALLY_PAID')
+    return { label: 'Due Today', dot: 'bg-amber-500', text: 'text-amber-600 dark:text-amber-400' }
+  const MAP: Record<LifeCycleStatus, { label: string; dot: string; text: string }> = {
+    DRAFT:          { label: 'Draft',     dot: 'bg-[#8A9BAE]', text: 'text-c-muted' },
+    ISSUED:         { label: 'Sent',      dot: 'bg-blue-500',  text: 'text-blue-600 dark:text-blue-400' },
+    PARTIALLY_PAID: { label: 'Partial',   dot: 'bg-[#29B6F6]', text: 'text-[#29B6F6]' },
+    PAID:           { label: 'Paid',      dot: 'bg-green-500', text: 'text-green-600 dark:text-green-400' },
+    CANCELLED:      { label: 'Cancelled', dot: 'bg-[#8A9BAE]', text: 'text-c-muted' },
   }
   return MAP[lc]
 }
 
 function RowSkeleton() {
   return (
-    <tr className="animate-pulse border-b border-[#F4F7F9] dark:border-white/10">
+    <tr className="animate-pulse border-b border-c-border">
       {[160, 80, 100, 100, 40].map((w, i) => (
         <td key={i} className="px-4 py-3.5">
           <div className="h-4 rounded bg-[#F4F7F9] dark:bg-white/10" style={{ width: w }} />
@@ -51,15 +51,15 @@ export default function InvoiceTable({ invoices, customerMap, currency, isLoadin
   const navigate = useNavigate()
 
   return (
-    <div className="bg-white dark:bg-[#1B2838] rounded-xl border border-[#F4F7F9] dark:border-white/10 overflow-hidden">
+    <div className="bg-white dark:bg-[#1B2838] rounded-xl border border-c-border overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-[#F4F7F9] dark:border-white/10">
+            <tr className="border-b border-c-border">
               {['Client', 'Status', 'Due Date', 'Amount', ''].map((h) => (
                 <th
                   key={h}
-                  className={`px-4 py-3 text-[11px] font-semibold uppercase tracking-wide text-[#8A9BAE] ${h === 'Amount' ? 'text-right' : 'text-left'}`}
+                  className={`px-4 py-3 text-[11px] font-semibold uppercase tracking-wide text-c-muted ${h === 'Amount' ? 'text-right' : 'text-left'}`}
                 >
                   {h}
                 </th>
@@ -71,7 +71,7 @@ export default function InvoiceTable({ invoices, customerMap, currency, isLoadin
               [...Array(5)].map((_, i) => <RowSkeleton key={i} />)
             ) : invoices.length === 0 ? (
               <tr>
-                <td colSpan={5} className="py-16 text-center text-sm text-[#8A9BAE]">
+                <td colSpan={5} className="py-16 text-center text-sm text-c-muted">
                   No invoices found
                 </td>
               </tr>
@@ -80,43 +80,44 @@ export default function InvoiceTable({ invoices, customerMap, currency, isLoadin
                 const customer  = inv.customerId ? customerMap[inv.customerId] : null
                 const isDraft   = inv.lifeCycleStatus === 'DRAFT'
                 const isPaid    = inv.lifeCycleStatus === 'PAID'
-                const isPartial = inv.lifeCycleStatus === 'PARTIALLY_PAID'
-                const { label, chip } = getStatus(inv.lifeCycleStatus, inv.timeStatus)
+                const isPartial = inv.lifeCycleStatus === 'PARTIALLY_PAID' // show remaining hint
+                const { label, dot, text } = getStatus(inv.lifeCycleStatus, inv.timeStatus)
 
                 return (
                   <tr
                     key={inv.id}
-                    className="border-b border-[#F4F7F9] dark:border-white/10 last:border-0 hover:bg-[#F4F7F9] dark:hover:bg-[#243447] cursor-pointer transition-colors"
+                    className="border-b border-c-border last:border-0 hover:bg-[#F4F7F9] dark:hover:bg-[#243447] cursor-pointer transition-colors"
                     onClick={() => navigate(`/invoices/${inv.id}`)}
                   >
                     {/* Client + invoice # */}
                     <td className="px-4 py-3.5">
                       <p className="font-semibold text-[#0D1B2A] dark:text-white">
-                        {customer?.name ?? customer?.companyName ?? <span className="text-[#8A9BAE]">No client</span>}
+                        {customer?.name ?? customer?.companyName ?? <span className="text-c-muted">No client</span>}
                       </p>
-                      <p className="text-xs text-[#8A9BAE] mt-0.5">{inv.invoiceNumber}</p>
+                      <p className="text-xs text-c-muted mt-0.5">{inv.invoiceNumber}</p>
                     </td>
 
                     {/* Status */}
                     <td className="px-4 py-3.5">
-                      <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${chip}`}>
-                        {label}
+                      <span className="inline-flex items-center gap-1.5">
+                        <span className={`w-2 h-2 rounded-full shrink-0 ${dot}`} />
+                        <span className={`text-sm font-medium ${text}`}>{label}</span>
                       </span>
                     </td>
 
                     {/* Due date */}
-                    <td className={`px-4 py-3.5 tabular-nums text-sm ${inv.timeStatus === 'OVERDUE' && !isPaid ? 'text-red-500 font-medium' : 'text-[#8A9BAE]'}`}>
+                    <td className="px-4 py-3.5 tabular-nums text-sm text-c-muted">
                       {isPaid ? '—' : fmtDate(inv.dueDate)}
                     </td>
 
-                    {/* Amount — total + remaining hint */}
+                    {/* Amount */}
                     <td className="px-4 py-3.5 text-right">
                       <p className={`font-bold tabular-nums ${isPaid ? 'text-green-600 dark:text-green-400' : 'text-[#0D1B2A] dark:text-white'}`}>
                         {fmt(inv.totalAmount, currency)}
                       </p>
                       {isPartial && (
-                        <p className={`text-xs tabular-nums mt-0.5 ${inv.timeStatus === 'OVERDUE' ? 'text-red-500' : 'text-[#8A9BAE]'}`}>
-                          {fmt(inv.remainingAmount, currency)} owed
+                        <p className="text-xs tabular-nums mt-0.5 text-c-muted">
+                          {fmt(inv.remainingAmount, currency)} remaining
                         </p>
                       )}
                     </td>
@@ -129,12 +130,12 @@ export default function InvoiceTable({ invoices, customerMap, currency, isLoadin
                       {isDraft && onDelete ? (
                         <button
                           onClick={() => onDelete(inv)}
-                          className="p-1.5 rounded-lg text-[#8A9BAE] hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+                          className="p-1.5 rounded-lg text-c-muted hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
                         >
                           <Trash2 size={14} strokeWidth={2} />
                         </button>
                       ) : (
-                        <ArrowRight size={14} className="text-[#8A9BAE]" />
+                        <ArrowRight size={14} className="text-c-muted" />
                       )}
                     </td>
                   </tr>

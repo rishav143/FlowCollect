@@ -32,11 +32,11 @@ function DeleteConfirm({
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onCancel} />
       <div className="relative w-full max-w-sm bg-white dark:bg-[#1B2838] rounded-2xl shadow-xl p-6">
         <h2 className="text-base font-semibold text-[#0D1B2A] dark:text-white mb-2">Delete Client</h2>
-        <p className="text-sm text-[#8A9BAE] mb-5">
+        <p className="text-sm text-c-muted mb-5">
           Delete <span className="font-semibold text-[#0D1B2A] dark:text-white">{client.name}</span>? This cannot be undone.
         </p>
         <div className="flex gap-3 justify-end">
-          <button onClick={onCancel} className="px-4 py-2 rounded-lg text-sm font-medium text-[#8A9BAE] hover:bg-[#F4F7F9] dark:hover:bg-[#243447] transition-colors">
+          <button onClick={onCancel} className="px-4 py-2 rounded-lg text-sm font-medium text-c-muted hover:bg-[#F4F7F9] dark:hover:bg-[#243447] transition-colors">
             Cancel
           </button>
           <button
@@ -103,7 +103,7 @@ export default function ClientListPage() {
           <div>
             <h1 className="text-xl font-bold text-[#0D1B2A] dark:text-white">Clients</h1>
             {!isLoading && (
-              <p className="text-sm text-[#8A9BAE] mt-0.5">
+              <p className="text-sm text-c-muted mt-0.5">
                 {customers.length} client{customers.length !== 1 ? 's' : ''}
               </p>
             )}
@@ -125,18 +125,19 @@ export default function ClientListPage() {
         <ClientMetricsStrip
           customers={customers}
           invoicesByCustomer={invoicesByCustomer}
+          currency={currency}
           isLoading={isLoading}
         />
 
         {/* Search */}
         <div className="relative max-w-xs">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8A9BAE] pointer-events-none" />
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-c-muted pointer-events-none" />
           <input
             type="text"
             placeholder="Search by name…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-8 pr-4 py-2 text-sm bg-white dark:bg-[#1B2838] border border-[#F4F7F9] dark:border-white/10 rounded-lg focus:outline-none focus:border-[#8A9BAE]/40 text-[#0D1B2A] dark:text-white placeholder:text-[#8A9BAE] transition-colors"
+            className="w-full pl-8 pr-4 py-2 text-sm bg-white dark:bg-[#1B2838] border border-c-border rounded-lg focus:outline-none focus:border-[#8A9BAE]/40 text-[#0D1B2A] dark:text-white placeholder:text-c-muted transition-colors"
           />
         </div>
 

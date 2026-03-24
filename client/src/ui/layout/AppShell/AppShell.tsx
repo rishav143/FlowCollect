@@ -1,6 +1,9 @@
 import { Outlet } from 'react-router-dom'
-import Topbar  from '@/ui/layout/Topbar/Topbar'
-import Sidebar from '@/ui/layout/Sidebar/Sidebar'
+import Topbar           from '@/ui/layout/Topbar/Topbar'
+import Sidebar          from '@/ui/layout/Sidebar/Sidebar'
+import PageTransition   from '@/ui/components/PageTransition'
+import TopLoadingBar    from '@/ui/loading/TopLoadingBar'
+import { useNavProgress } from '@/ui/loading/useNavProgress'
 import { useUIStore } from '@/store/ui.store'
 
 // Both values must appear as complete literals so Tailwind includes them in the build:
@@ -38,9 +41,13 @@ const MAIN_ML_COLLAPSED = 'lg:ml-14'
  */
 export default function AppShell() {
   const { sidebarOpen, closeSidebar, sidebarCollapsed } = useUIStore()
+  const navActive = useNavProgress()
 
   return (
     <div className="min-h-screen bg-white dark:bg-[#0D1B2A]">
+
+      {/* Route navigation progress bar — above everything */}
+      <TopLoadingBar active={navActive} />
 
       {/* Sidebar */}
       <Sidebar />
@@ -63,9 +70,11 @@ export default function AppShell() {
 
       {/* Main content */}
       <main className={`pt-14 bg-white dark:bg-[#0D1B2A] min-h-[calc(100vh-3.5rem)] transition-[margin] duration-300 ease-in-out ${sidebarCollapsed ? MAIN_ML_COLLAPSED : MAIN_ML_EXPANDED}`}>
-        <div className="p-4 sm:p-5 lg:p-6">
-          <Outlet />
-        </div>
+        <PageTransition>
+          <div className="p-4 sm:p-5 lg:p-6">
+            <Outlet />
+          </div>
+        </PageTransition>
       </main>
 
     </div>

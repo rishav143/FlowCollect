@@ -1,0 +1,173 @@
+import { useState, useEffect } from 'react'
+import { useOrgProfile, useUpdateOrgProfile } from '../hooks/useOrgSettings'
+
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+const CURRENCIES = ['INR', 'USD', 'EUR', 'GBP', 'AED', 'SGD']
+
+const TIMEZONES = [
+  { value: 'Asia/Kolkata',    label: 'India (IST, UTC+5:30)'         },
+  { value: 'UTC',             label: 'UTC'                            },
+  { value: 'Asia/Dubai',      label: 'Dubai (GST, UTC+4)'            },
+  { value: 'Asia/Singapore',  label: 'Singapore (SGT, UTC+8)'        },
+  { value: 'Europe/London',   label: 'London (GMT/BST)'              },
+  { value: 'America/New_York',label: 'New York (EST/EDT)'            },
+]
+
+// ---------------------------------------------------------------------------
+// Shared field wrapper
+// ---------------------------------------------------------------------------
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <label className="block text-xs font-semibold uppercase tracking-wide text-c-muted mb-1.5">
+        {label}
+      </label>
+      {children}
+    </div>
+  )
+}
+
+const inputCls = 'w-full text-sm rounded-lg border border-c-border bg-transparent text-[#0D1B2A] dark:text-white placeholder:text-c-muted px-3 py-2.5 focus:outline-none focus:border-[#8A9BAE]/40 transition-colors'
+
+// ---------------------------------------------------------------------------
+// Page
+// ---------------------------------------------------------------------------
+
+export default function OrgSettingsPage() {
+  const { data, isLoading } = useOrgProfile()
+  const update = useUpdateOrgProfile()
+
+  const [name,     setName]     = useState('')
+  const [email,    setEmail]    = useState('')
+  const [currency, setCurrency] = useState('INR')
+  const [timezone, setTimezone] = useState('Asia/Kolkata')
+  const [mode,     setMode]     = useState<'PAYMENT_LINK' | 'CONFIRMATION_FLOW'>('CONFIRMATION_FLOW')
+  const [saved,    setSaved]    = useState(false)
+
+  useEffect(() => {
+    if (data) {
+      setName(data.name)
+      setEmail(data.email)
+      setCurrency(data.currency)
+      setTimezone(data.timezone)
+      setMode(data.paymentCollectionMode)
+    }
+  }, [data])
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    await update.mutateAsync({ name, email, currency, timezone, paymentCollectionMode: mode })
+    setSaved(true)
+    setTimeout(() => setSaved(false), 2500)
+  }
+
+  if (isLoading) {
+    return (
+      <div className="bg-white dark:bg-[#1B2838] rounded-xl border border-c-border p-5 space-y-4 animate-pulse">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="h-10 rounded-lg bg-[#F4F7F9] dark:bg-white/10" />
+        ))}
+      </div>
+    )
+  }
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <div className="bg-white dark:bg-[#1B2838] rounded-xl border border-c-border overflow-hidden">
+        <div className="px-5 py-4 border-b border-c-border">
+          <h2 className="text-sm font-semibold text-[#0D1B2A] dark:text-white">Organisation Profile</h2>
+        </div>
+        <div className="p-5 space-y-4">
+
+          <Field label="Organisation Name">
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Your business name"
+              className={inputCls}
+              required
+            />
+          </Field>
+
+          <Field label="Billing Email">
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="billing@yourcompany.com"
+              className={inputCls}
+            />
+          </Field>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Field label="Currency">
+              <select
+                value={currency}
+                onChange={(e) => setCurrency(e.target.value)}
+                className={inputCls}
+              >
+                {CURRENCIES.map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+            </Field>
+
+            <Field label="Timezone">
+              <select
+                value={timezone}
+                onChange={(e) => setTimezone(e.target.value)}
+                className={inputCls}
+              >
+                {TIMEZONES.map((tz) => (
+                  <option key={tz.value} value={tz.value}>{tz.label}</option>
+                ))}
+              </select>
+            </Field>
+          </div>
+
+          <Field label="Payment Collection Mode">
+            <div className="flex gap-2">
+              {(['CONFIRMATION_FLOW', 'PAYMENT_LINK'] as const).map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => setMode(m)}
+                  className={[
+                    'flex-1 py-2.5 text-sm font-medium rounded-lg border transition-colors',
+                    mode === m
+                      ? 'border-[#29B6F6] text-[#29B6F6] bg-[#29B6F6]/5'
+                      : 'border-c-border text-c-muted hover:text-[#0D1B2A] dark:hover:text-white',
+                  ].join(' ')}
+                >
+                  {m === 'CONFIRMATION_FLOW' ? 'Confirmation Flow' : 'Payment Link'}
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-c-muted mt-1.5">
+              {mode === 'CONFIRMATION_FLOW'
+                ? 'Clients submit payment proof and you approve it manually.'
+                : 'Clients pay directly via a payment link you send.'}
+            </p>
+          </Field>
+
+        </div>
+        <div className="flex items-center justify-end gap-3 px-5 py-4 border-t border-c-border">
+          {saved && <span className="text-sm text-green-600 dark:text-green-400">Saved</span>}
+          <button
+            type="submit"
+            disabled={update.isPending}
+            className="px-5 py-2 text-sm font-semibold text-white rounded-lg disabled:opacity-50 hover:opacity-90 transition-opacity"
+            style={{ background: 'linear-gradient(90deg, #29B6F6 0%, #4FC3F7 100%)' }}
+          >
+            {update.isPending ? 'Saving…' : 'Save Changes'}
+          </button>
+        </div>
+      </div>
+    </form>
+  )
+}

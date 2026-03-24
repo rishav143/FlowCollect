@@ -26,43 +26,10 @@ import { useIsDesktop } from '@/hooks/useIsDesktop'
 // ---------------------------------------------------------------------------
 
 interface NavItemDef {
-  to:            string
-  icon:          LucideIcon
-  label:         string
-  badge?:        number
-  badgeVariant?: 'red' | 'amber'
-}
-
-// ---------------------------------------------------------------------------
-// Badge pill (expanded) / dot (collapsed)
-// ---------------------------------------------------------------------------
-
-function NavBadgePill({ count, variant }: { count: number; variant: 'red' | 'amber' }) {
-  if (count === 0) return null
-  return (
-    <span
-      className={[
-        'ml-auto min-w-[18px] text-center text-[10px] font-bold tabular-nums px-1.5 py-0.5 rounded-full',
-        variant === 'amber'
-          ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400'
-          : 'bg-red-100 text-red-600 dark:bg-red-500/20 dark:text-red-400',
-      ].join(' ')}
-    >
-      {count > 99 ? '99+' : count}
-    </span>
-  )
-}
-
-function NavBadgeDot({ count, variant }: { count: number; variant: 'red' | 'amber' }) {
-  if (count === 0) return null
-  return (
-    <span
-      className={[
-        'absolute top-0.5 right-0.5 w-2 h-2 rounded-full border-2 border-[#F4F7F9] dark:border-[#1B2838]',
-        variant === 'amber' ? 'bg-[#F59E0B]' : 'bg-[#EF4444]',
-      ].join(' ')}
-    />
-  )
+  to:     string
+  icon:   LucideIcon
+  label:  string
+  count?: number
 }
 
 // ---------------------------------------------------------------------------
@@ -73,8 +40,7 @@ function NavItem({
   to,
   icon: Icon,
   label,
-  badge = 0,
-  badgeVariant = 'red',
+  count,
   collapsed,
   onNavigate,
 }: NavItemDef & { collapsed: boolean; onNavigate: () => void }) {
@@ -99,23 +65,22 @@ function NavItem({
         {/* Icon — always same size, never moves */}
         <Icon size={18} strokeWidth={1.8} className="shrink-0" />
 
-        {/* Badge dot — only in collapsed mode, positioned on the icon */}
-        {collapsed && <NavBadgeDot count={badge} variant={badgeVariant} />}
-
-        {/* Label — gap is part of the span's own margin so it collapses with the text */}
+        {/* Label + count — collapse together */}
         <span
-          className="leading-none overflow-hidden whitespace-nowrap transition-[max-width,opacity,margin] duration-300 ease-in-out"
+          className="flex items-center flex-1 leading-none overflow-hidden whitespace-nowrap transition-[max-width,opacity,margin] duration-300 ease-in-out"
           style={{
             maxWidth:   collapsed ? 0 : 160,
             opacity:    collapsed ? 0 : 1,
             marginLeft: collapsed ? 0 : 12,
           }}
         >
-          {label}
+          <span className="flex-1">{label}</span>
+          {count != null && count > 0 && (
+            <span className="text-[11px] font-semibold tabular-nums opacity-70">
+              {count > 99 ? '99+' : count}
+            </span>
+          )}
         </span>
-
-        {/* Badge pill — only in expanded mode */}
-        {!collapsed && <NavBadgePill count={badge} variant={badgeVariant} />}
       </NavLink>
 
       {/* Tooltip — only visible in collapsed mode on hover */}
@@ -130,11 +95,6 @@ function NavItem({
           role="tooltip"
         >
           {label}
-          {badge > 0 && (
-            <span className={`ml-1.5 text-[10px] font-bold ${badgeVariant === 'amber' ? 'text-[#F59E0B]' : 'text-[#EF4444]'}`}>
-              {badge}
-            </span>
-          )}
           <span className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-[#0D1B2A]" />
         </div>
       )}
@@ -211,7 +171,7 @@ export default function Sidebar() {
               <button
                 onClick={toggleCollapsed}
                 aria-label="Expand sidebar"
-                className="absolute inset-0 flex items-center justify-center rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-150 text-[#8A9BAE] hover:text-[#0D1B2A] dark:hover:text-white hover:bg-[#8A9BAE]/10 dark:hover:bg-[#243447]"
+                className="absolute inset-0 flex items-center justify-center rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-150 text-c-muted hover:text-[#0D1B2A] dark:hover:text-white hover:bg-[#8A9BAE]/10 dark:hover:bg-[#243447]"
               >
                 <ChevronRight size={16} strokeWidth={2} />
               </button>
@@ -224,7 +184,7 @@ export default function Sidebar() {
           <button
             onClick={toggleCollapsed}
             aria-label="Collapse sidebar"
-            className="shrink-0 flex items-center justify-center w-7 h-7 rounded-lg text-[#8A9BAE] hover:text-[#0D1B2A] dark:hover:text-white hover:bg-[#8A9BAE]/10 dark:hover:bg-[#243447] hover:shadow-sm transition-all duration-150"
+            className="shrink-0 flex items-center justify-center w-7 h-7 rounded-lg text-c-muted hover:text-[#0D1B2A] dark:hover:text-white hover:bg-[#8A9BAE]/10 dark:hover:bg-[#243447] hover:shadow-sm transition-all duration-150"
           >
             <ChevronLeft size={16} strokeWidth={2} />
           </button>
@@ -233,13 +193,13 @@ export default function Sidebar() {
 
       {/* ── Mobile drawer header (close button) ─────────────────────────── */}
       <div className="flex lg:hidden items-center justify-between px-4 py-3 border-b border-[#8A9BAE]/20 dark:border-white/10 shrink-0">
-        <span className="text-xs font-semibold uppercase tracking-widest text-[#8A9BAE]">
+        <span className="text-xs font-semibold uppercase tracking-widest text-c-muted">
           Menu
         </span>
         <button
           onClick={closeSidebar}
           aria-label="Close menu"
-          className="p-1 rounded-lg text-[#8A9BAE] hover:text-[#0D1B2A] dark:hover:text-white hover:bg-[#8A9BAE]/10 dark:hover:bg-[#243447] transition-colors"
+          className="p-1 rounded-lg text-c-muted hover:text-[#0D1B2A] dark:hover:text-white hover:bg-[#8A9BAE]/10 dark:hover:bg-[#243447] transition-colors"
         >
           <X size={18} />
         </button>
@@ -254,25 +214,9 @@ export default function Sidebar() {
       >
         <NavItem to="/dashboard" icon={LayoutDashboard} label="Dashboard"  collapsed={c} onNavigate={closeSidebar} />
         <NavItem to="/invoices"  icon={FileText}         label="Invoices"   collapsed={c} onNavigate={closeSidebar} />
-        <NavItem
-          to="/followups"
-          icon={Clock}
-          label="Follow-ups"
-          badge={badges.followups}
-          badgeVariant="red"
-          collapsed={c}
-          onNavigate={closeSidebar}
-        />
+        <NavItem to="/followups" icon={Clock}        label="Follow-ups" count={badges.followups} collapsed={c} onNavigate={closeSidebar} />
         {showApprovals && (
-          <NavItem
-            to="/approvals"
-            icon={CheckCircle2}
-            label="Approvals"
-            badge={badges.approvals}
-            badgeVariant="amber"
-            collapsed={c}
-            onNavigate={closeSidebar}
-          />
+          <NavItem to="/approvals" icon={CheckCircle2} label="Approvals" count={badges.approvals} collapsed={c} onNavigate={closeSidebar} />
         )}
         <NavItem to="/clients"   icon={Users}          label="Clients"   collapsed={c} onNavigate={closeSidebar} />
         <NavItem to="/templates" icon={LayoutTemplate} label="Templates" collapsed={c} onNavigate={closeSidebar} />

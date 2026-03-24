@@ -16,7 +16,7 @@ const inputClass =
   'w-full px-3 py-2 text-sm rounded-lg border border-transparent ' +
   'bg-[#F4F7F9] dark:bg-[#243447] ' +
   'text-[#0D1B2A] dark:text-white ' +
-  'placeholder:text-[#8A9BAE] ' +
+  'placeholder:text-c-muted ' +
   'focus:border-[#8A9BAE]/40 focus:outline-none transition-colors'
 
 const labelClass = 'block text-xs font-medium text-[#0D1B2A] dark:text-white/80 mb-1'
@@ -89,7 +89,7 @@ export default function TemplateForm({ defaultValues, onSubmit, isPending, submi
       {channel === 'EMAIL' && (
         <div>
           <label className={labelClass}>
-            Subject line <span className="text-[#8A9BAE] font-normal">(optional)</span>
+            Subject line <span className="text-c-muted font-normal">(optional)</span>
           </label>
           <input
             {...register('subject')}
@@ -113,7 +113,7 @@ export default function TemplateForm({ defaultValues, onSubmit, isPending, submi
 
         {/* Placeholder chips */}
         <div className="mt-2">
-          <p className="text-[10px] font-medium text-[#8A9BAE] uppercase tracking-wide mb-1.5">
+          <p className="text-[10px] font-medium text-c-muted uppercase tracking-wide mb-1.5">
             Insert variable
           </p>
           <div className="flex flex-wrap gap-1.5">

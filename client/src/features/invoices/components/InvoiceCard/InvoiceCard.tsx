@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Trash2 } from 'lucide-react'
 import type { InvoiceResponse, LifeCycleStatus, TimeStatus } from '@/types/invoice.types'
@@ -12,17 +13,19 @@ function fmtDate(d: string | null) {
   return new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
-function getStatus(lc: LifeCycleStatus, ts: TimeStatus): { label: string; dot: string; text: string } {
+type StatusInfo = { label: string; dot: string; text: string }
+
+function getStatus(lc: LifeCycleStatus, ts: TimeStatus): StatusInfo {
   if (ts === 'OVERDUE'   && lc !== 'PAID' && lc !== 'CANCELLED' && lc !== 'DRAFT')
     return { label: 'Overdue',   dot: 'bg-red-500',   text: 'text-red-600 dark:text-red-400' }
-  if (ts === 'DUE_TODAY' && lc !== 'PAID' && lc !== 'CANCELLED')
+  if (ts === 'DUE_TODAY' && lc !== 'PAID' && lc !== 'CANCELLED' && lc !== 'PARTIALLY_PAID')
     return { label: 'Due Today', dot: 'bg-amber-500', text: 'text-amber-600 dark:text-amber-400' }
-  const MAP: Record<LifeCycleStatus, { label: string; dot: string; text: string }> = {
-    DRAFT:          { label: 'Draft',     dot: 'bg-[#8A9BAE]', text: 'text-[#8A9BAE]' },
+  const MAP: Record<LifeCycleStatus, StatusInfo> = {
+    DRAFT:          { label: 'Draft',     dot: 'bg-[#8A9BAE]', text: 'text-c-muted' },
     ISSUED:         { label: 'Sent',      dot: 'bg-blue-500',  text: 'text-blue-600 dark:text-blue-400' },
     PARTIALLY_PAID: { label: 'Partial',   dot: 'bg-[#29B6F6]', text: 'text-[#29B6F6]' },
     PAID:           { label: 'Paid',      dot: 'bg-green-500', text: 'text-green-600 dark:text-green-400' },
-    CANCELLED:      { label: 'Cancelled', dot: 'bg-[#8A9BAE]', text: 'text-[#8A9BAE]' },
+    CANCELLED:      { label: 'Cancelled', dot: 'bg-[#8A9BAE]', text: 'text-c-muted' },
   }
   return MAP[lc]
 }
@@ -34,17 +37,16 @@ interface Props {
   onDelete: (inv: InvoiceResponse) => void
 }
 
-export default function InvoiceCard({ invoice, customer, currency, onDelete }: Props) {
+const InvoiceCard = memo(function InvoiceCard({ invoice, customer, currency, onDelete }: Props) {
   const navigate = useNavigate()
-  const { label, chip } = getStatus(invoice.lifeCycleStatus, invoice.timeStatus)
-  const isPaid      = invoice.lifeCycleStatus === 'PAID'
-  const isPartial   = invoice.lifeCycleStatus === 'PARTIALLY_PAID'
-  const isDraft     = invoice.lifeCycleStatus === 'DRAFT'
+  const { label, dot, text } = getStatus(invoice.lifeCycleStatus, invoice.timeStatus)
+  const isPaid  = invoice.lifeCycleStatus === 'PAID'
+  const isDraft = invoice.lifeCycleStatus === 'DRAFT'
 
   return (
     <div
       onClick={() => navigate(`/invoices/${invoice.id}`)}
-      className="bg-white dark:bg-[#1B2838] rounded-xl border border-[#F4F7F9] dark:border-white/10 p-4 cursor-pointer hover:border-[#8A9BAE]/30 dark:hover:border-white/20 transition-colors space-y-3"
+      className="bg-white dark:bg-[#1B2838] rounded-xl border border-c-border p-4 cursor-pointer hover:border-[#8A9BAE]/30 dark:hover:border-white/20 transition-colors space-y-3"
     >
       {/* Client + status */}
       <div className="flex items-start justify-between gap-2">
@@ -52,34 +54,28 @@ export default function InvoiceCard({ invoice, customer, currency, onDelete }: P
           <p className="text-sm font-bold text-[#0D1B2A] dark:text-white truncate">
             {customer?.name ?? customer?.companyName ?? 'No client'}
           </p>
-          <p className="text-xs text-[#8A9BAE] truncate mt-0.5">{invoice.invoiceNumber}</p>
+          <p className="text-xs text-c-muted truncate mt-0.5">{invoice.invoiceNumber}</p>
         </div>
-        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0 ${chip}`}>
-          {label}
+        <span className="inline-flex items-center gap-1.5 shrink-0">
+          <span className={`w-2 h-2 rounded-full shrink-0 ${dot}`} />
+          <span className={`text-sm font-medium ${text}`}>{label}</span>
         </span>
       </div>
 
       {/* Amount */}
-      <div>
-        <p className={`text-xl font-bold tabular-nums ${isPaid ? 'text-green-600 dark:text-green-400' : 'text-[#0D1B2A] dark:text-white'}`}>
-          {fmt(invoice.totalAmount, currency)}
-        </p>
-        {isPartial && (
-          <p className={`text-xs tabular-nums mt-0.5 ${invoice.timeStatus === 'OVERDUE' ? 'text-red-500' : 'text-[#8A9BAE]'}`}>
-            {fmt(invoice.remainingAmount, currency)} still owed
-          </p>
-        )}
-      </div>
+      <p className={`text-xl font-bold tabular-nums ${isPaid ? 'text-green-600 dark:text-green-400' : 'text-[#0D1B2A] dark:text-white'}`}>
+        {fmt(invoice.totalAmount, currency)}
+      </p>
 
       {/* Due date + delete */}
-      <div className="flex items-center justify-between pt-1 border-t border-[#F4F7F9] dark:border-white/10">
-        <p className={`text-xs ${invoice.timeStatus === 'OVERDUE' && !isPaid ? 'text-red-500 font-medium' : 'text-[#8A9BAE]'}`}>
+      <div className="flex items-center justify-between pt-1 border-t border-c-border">
+        <p className="text-xs text-c-muted">
           {isPaid ? 'Paid' : `Due ${fmtDate(invoice.dueDate)}`}
         </p>
         {isDraft && (
           <button
             onClick={(e) => { e.stopPropagation(); onDelete(invoice) }}
-            className="p-1 text-[#8A9BAE] hover:text-red-500 transition-colors"
+            className="p-1 text-c-muted hover:text-red-500 transition-colors"
           >
             <Trash2 size={13} />
           </button>
@@ -87,4 +83,6 @@ export default function InvoiceCard({ invoice, customer, currency, onDelete }: P
       </div>
     </div>
   )
-}
+})
+
+export default InvoiceCard

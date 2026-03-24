@@ -9,6 +9,6 @@ export function useInvoices(params?: ListInvoicesParams) {
   return useQuery({
     queryKey: ['invoices', orgId, params],
     queryFn:  () => listInvoices(orgId, params),
-    enabled:  !!orgId,
+    enabled: !!orgId,
   })
 }

@@ -26,7 +26,7 @@ function Pagination({
       <button
         disabled={page === 0}
         onClick={() => onChange(page - 1)}
-        className="px-3 py-1.5 rounded-lg text-sm text-[#8A9BAE] hover:bg-[#F4F7F9] dark:hover:bg-[#243447] disabled:opacity-30 transition-colors"
+        className="px-3 py-1.5 rounded-lg text-sm text-c-muted hover:bg-[#F4F7F9] dark:hover:bg-[#243447] disabled:opacity-30 transition-colors"
       >
         ←
       </button>
@@ -38,7 +38,7 @@ function Pagination({
             'w-8 h-8 rounded-lg text-sm font-medium transition-colors',
             i === page
               ? 'bg-[#2E7A8E] text-white'
-              : 'text-[#8A9BAE] hover:bg-[#F4F7F9] dark:hover:bg-[#243447]',
+              : 'text-c-muted hover:bg-[#F4F7F9] dark:hover:bg-[#243447]',
           ].join(' ')}
         >
           {i + 1}
@@ -47,7 +47,7 @@ function Pagination({
       <button
         disabled={page === totalPages - 1}
         onClick={() => onChange(page + 1)}
-        className="px-3 py-1.5 rounded-lg text-sm text-[#8A9BAE] hover:bg-[#F4F7F9] dark:hover:bg-[#243447] disabled:opacity-30 transition-colors"
+        className="px-3 py-1.5 rounded-lg text-sm text-c-muted hover:bg-[#F4F7F9] dark:hover:bg-[#243447] disabled:opacity-30 transition-colors"
       >
         →
       </button>
@@ -75,11 +75,11 @@ function DeleteConfirm({
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onCancel} />
       <div className="relative w-full max-w-sm bg-white dark:bg-[#1B2838] rounded-2xl shadow-xl p-6">
         <h2 className="text-base font-semibold text-[#0D1B2A] dark:text-white mb-2">Delete Invoice</h2>
-        <p className="text-sm text-[#8A9BAE] mb-5">
+        <p className="text-sm text-c-muted mb-5">
           Delete <span className="font-semibold text-[#0D1B2A] dark:text-white">{invoice.invoiceNumber}</span>? This cannot be undone.
         </p>
         <div className="flex gap-3 justify-end">
-          <button onClick={onCancel} className="px-4 py-2 rounded-lg text-sm font-medium text-[#8A9BAE] hover:bg-[#F4F7F9] dark:hover:bg-[#243447] transition-colors">
+          <button onClick={onCancel} className="px-4 py-2 rounded-lg text-sm font-medium text-c-muted hover:bg-[#F4F7F9] dark:hover:bg-[#243447] transition-colors">
             Cancel
           </button>
           <button
@@ -164,7 +164,7 @@ export default function InvoiceListPage() {
           <div>
             <h1 className="text-xl font-bold text-[#0D1B2A] dark:text-white">Invoices</h1>
             {!invoicesQuery.isLoading && (
-              <p className="text-sm text-[#8A9BAE] mt-0.5">{totalItems} invoice{totalItems !== 1 ? 's' : ''}</p>
+              <p className="text-sm text-c-muted mt-0.5">{totalItems} invoice{totalItems !== 1 ? 's' : ''}</p>
             )}
           </div>
           <div className="flex items-center gap-2 shrink-0">
@@ -185,13 +185,13 @@ export default function InvoiceListPage() {
 
         {/* ── Search ───────────────────────────────────────────────────── */}
         <div className="relative max-w-xs">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8A9BAE] pointer-events-none" />
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-c-muted pointer-events-none" />
           <input
             type="text"
             placeholder="Search invoice number…"
             value={search}
             onChange={(e) => handleSearch(e.target.value)}
-            className="w-full pl-8 pr-4 py-2 text-sm bg-white dark:bg-[#1B2838] border border-[#F4F7F9] dark:border-white/10 rounded-lg focus:outline-none focus:border-[#8A9BAE]/40 text-[#0D1B2A] dark:text-white placeholder:text-[#8A9BAE] transition-colors"
+            className="w-full pl-8 pr-4 py-2 text-sm bg-white dark:bg-[#1B2838] border border-c-border rounded-lg focus:outline-none focus:border-[#8A9BAE]/40 text-[#0D1B2A] dark:text-white placeholder:text-c-muted transition-colors"
           />
         </div>
 

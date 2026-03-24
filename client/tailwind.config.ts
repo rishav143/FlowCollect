@@ -6,6 +6,12 @@ export default {
   theme: {
     extend: {
       colors: {
+        // Semantic tokens — resolved from CSS vars in index.css
+        // Change light/dark values there; components use these names.
+        c: {
+          muted:  'var(--c-muted)',
+          border: 'var(--c-border)',
+        },
         brand: {
           navy:       '#1B2838',
           teal:       '#2E7A8E',

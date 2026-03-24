@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { ChevronRight, Trash2 } from 'lucide-react'
+import { ChevronRight, Trash2, Users } from 'lucide-react'
 import {
   computeAvgDelay,
   getRisk,
@@ -24,7 +24,6 @@ function MobileCard({ customer, invoices, currency, onDelete }: ClientRow) {
   const navigate = useNavigate()
   const outstanding = invoices.filter((i) => i.lifeCycleStatus !== 'PAID' && i.lifeCycleStatus !== 'CANCELLED').reduce((s, i) => s + i.remainingAmount, 0)
   const overdue     = invoices.filter((i) => i.timeStatus === 'OVERDUE' && i.lifeCycleStatus !== 'PAID').reduce((s, i) => s + i.remainingAmount, 0)
-  const openCount   = invoices.filter((i) => i.lifeCycleStatus === 'ISSUED' || i.lifeCycleStatus === 'PARTIALLY_PAID').length
   const avgDelay    = computeAvgDelay(invoices)
   const risk        = getRisk(avgDelay, invoices.length > 0)
   const meta        = RISK_META[risk]
@@ -32,20 +31,21 @@ function MobileCard({ customer, invoices, currency, onDelete }: ClientRow) {
   return (
     <div
       onClick={() => navigate(`/clients/${customer.id}`)}
-      className="bg-white dark:bg-[#1B2838] rounded-xl border border-[#F4F7F9] dark:border-white/10 p-4 cursor-pointer hover:border-[#8A9BAE]/30 transition-colors"
+      className="bg-white dark:bg-[#1B2838] rounded-xl border border-c-border p-4 cursor-pointer hover:border-[#8A9BAE]/30 transition-colors"
     >
       <div className="flex items-start justify-between gap-2 mb-3">
         <div className="min-w-0">
           <p className="text-sm font-semibold text-[#0D1B2A] dark:text-white truncate">{customer.name}</p>
-          {customer.companyName && <p className="text-xs text-[#8A9BAE] truncate mt-0.5">{customer.companyName}</p>}
+          {customer.companyName && <p className="text-xs text-c-muted truncate mt-0.5">{customer.companyName}</p>}
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${meta.chip}`}>
-            {meta.dot} {meta.label}
+          <span className="inline-flex items-center gap-1.5">
+            <span className={`w-2 h-2 rounded-full shrink-0 ${meta.dot}`} />
+            <span className={`text-sm font-medium ${meta.text}`}>{meta.label}</span>
           </span>
           <button
             onClick={(e) => { e.stopPropagation(); onDelete(customer) }}
-            className="p-1 text-[#8A9BAE] hover:text-red-500 transition-colors"
+            className="p-1 text-c-muted hover:text-red-500 transition-colors"
           >
             <Trash2 size={14} />
           </button>
@@ -53,16 +53,19 @@ function MobileCard({ customer, invoices, currency, onDelete }: ClientRow) {
       </div>
       <div className="grid grid-cols-3 gap-2 text-center">
         <div>
-          <p className="text-[10px] text-[#8A9BAE] mb-0.5">Outstanding</p>
+          <p className="text-[10px] text-c-muted mb-0.5">Outstanding</p>
           <p className="text-xs font-semibold text-[#0D1B2A] dark:text-white tabular-nums">{fmt(outstanding, currency)}</p>
         </div>
         <div>
-          <p className="text-[10px] text-[#8A9BAE] mb-0.5">Overdue</p>
-          <p className={`text-xs font-semibold tabular-nums ${overdue > 0 ? 'text-red-500' : 'text-[#8A9BAE]'}`}>{overdue > 0 ? fmt(overdue, currency) : '—'}</p>
+          <p className="text-[10px] text-c-muted mb-0.5">Overdue</p>
+          <p className={`text-xs font-semibold tabular-nums ${overdue > 0 ? 'text-red-500' : 'text-c-muted'}`}>{overdue > 0 ? fmt(overdue, currency) : '—'}</p>
         </div>
         <div>
-          <p className="text-[10px] text-[#8A9BAE] mb-0.5">Open</p>
-          <p className="text-xs font-semibold text-[#0D1B2A] dark:text-white tabular-nums">{openCount}</p>
+          <p className="text-[10px] text-c-muted mb-0.5">Risk</p>
+          <span className="inline-flex items-center gap-1">
+            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${meta.dot}`} />
+            <span className={`text-xs font-medium ${meta.text}`}>{meta.label}</span>
+          </span>
         </div>
       </div>
     </div>
@@ -94,10 +97,12 @@ export default function ClientTable({ customers, invoicesByCustomer, currency, i
   if (customers.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[30vh] gap-3 text-center">
-        <p className="text-3xl">👤</p>
+        <div className="w-12 h-12 rounded-full bg-[#29B6F6]/10 flex items-center justify-center">
+          <Users size={20} className="text-[#29B6F6]" />
+        </div>
         <div>
           <p className="text-sm font-medium text-[#0D1B2A] dark:text-white">No clients yet</p>
-          <p className="text-sm text-[#8A9BAE] mt-0.5">Clients appear here once you add invoices or create them manually.</p>
+          <p className="text-sm text-c-muted mt-0.5">Add your first client to get started.</p>
         </div>
       </div>
     )
@@ -124,18 +129,15 @@ export default function ClientTable({ customers, invoicesByCustomer, currency, i
       </div>
 
       {/* Table — shown only in list view, hidden on mobile */}
-      <div className={showCards ? 'hidden' : 'hidden md:block bg-white dark:bg-[#1B2838] rounded-xl border border-[#F4F7F9] dark:border-white/10 overflow-hidden'}>
+      <div className={showCards ? 'hidden' : 'hidden md:block bg-white dark:bg-[#1B2838] rounded-xl border border-c-border overflow-hidden'}>
         <table className="w-full">
           <thead>
-            <tr className="border-b border-[#F4F7F9] dark:border-white/10">
-              {['Client', 'Outstanding', 'Overdue', 'Avg Delay', 'Open', 'Risk', ''].map((h) => (
-                <th
-                  key={h}
-                  className={`py-3 px-4 text-xs font-semibold uppercase tracking-wide text-[#8A9BAE] ${h === '' || h === 'Outstanding' || h === 'Overdue' || h === 'Avg Delay' || h === 'Open' || h === 'Risk' ? 'text-right' : 'text-left'}`}
-                >
-                  {h}
-                </th>
-              ))}
+            <tr className="border-b border-c-border">
+              <th className="py-3 px-4 text-xs font-semibold uppercase tracking-wide text-c-muted text-left">Client</th>
+              <th className="py-3 px-4 text-xs font-semibold uppercase tracking-wide text-c-muted text-right">Outstanding</th>
+              <th className="py-3 px-4 text-xs font-semibold uppercase tracking-wide text-c-muted text-right">Overdue</th>
+              <th className="py-3 px-4 text-xs font-semibold uppercase tracking-wide text-c-muted text-right">Risk</th>
+              <th className="py-3 px-4" />
             </tr>
           </thead>
           <tbody>
@@ -143,7 +145,6 @@ export default function ClientTable({ customers, invoicesByCustomer, currency, i
               const invs        = invoicesByCustomer[c.id] ?? []
               const outstanding = invs.filter((i) => i.lifeCycleStatus !== 'PAID' && i.lifeCycleStatus !== 'CANCELLED').reduce((s, i) => s + i.remainingAmount, 0)
               const overdue     = invs.filter((i) => i.timeStatus === 'OVERDUE' && i.lifeCycleStatus !== 'PAID').reduce((s, i) => s + i.remainingAmount, 0)
-              const openCount   = invs.filter((i) => i.lifeCycleStatus === 'ISSUED' || i.lifeCycleStatus === 'PARTIALLY_PAID').length
               const avgDelay    = computeAvgDelay(invs)
               const risk        = getRisk(avgDelay, invs.length > 0)
               const meta        = RISK_META[risk]
@@ -152,36 +153,35 @@ export default function ClientTable({ customers, invoicesByCustomer, currency, i
                 <tr
                   key={c.id}
                   onClick={() => navigate(`/clients/${c.id}`)}
-                  className="border-b border-[#F4F7F9] dark:border-white/10 last:border-0 hover:bg-[#F4F7F9]/50 dark:hover:bg-white/5 transition-colors cursor-pointer"
+                  className="group border-b border-c-border last:border-0 hover:bg-[#F4F7F9]/50 dark:hover:bg-white/5 transition-colors cursor-pointer"
                 >
                   <td className="py-3 px-4">
                     <p className="text-sm font-medium text-[#0D1B2A] dark:text-white">{c.name}</p>
-                    {c.companyName && <p className="text-xs text-[#8A9BAE] mt-0.5">{c.companyName}</p>}
+                    {c.companyName && <p className="text-xs text-c-muted mt-0.5">{c.companyName}</p>}
                   </td>
-                  <td className="py-3 px-4 text-right text-sm tabular-nums text-[#0D1B2A] dark:text-white">{fmt(outstanding, currency)}</td>
+                  <td className="py-3 px-4 text-right text-sm tabular-nums text-[#0D1B2A] dark:text-white">
+                    {fmt(outstanding, currency)}
+                  </td>
                   <td className="py-3 px-4 text-right">
-                    <span className={`text-sm tabular-nums font-medium ${overdue > 0 ? 'text-red-500' : 'text-[#8A9BAE]'}`}>
+                    <span className={`text-sm tabular-nums font-medium ${overdue > 0 ? 'text-red-500' : 'text-c-muted'}`}>
                       {overdue > 0 ? fmt(overdue, currency) : '—'}
                     </span>
                   </td>
-                  <td className="py-3 px-4 text-right text-sm tabular-nums text-[#8A9BAE]">
-                    {invs.length > 0 ? `${avgDelay}d` : '—'}
-                  </td>
-                  <td className="py-3 px-4 text-right text-sm tabular-nums text-[#0D1B2A] dark:text-white">{openCount}</td>
                   <td className="py-3 px-4 text-right">
-                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${meta.chip}`}>
-                      {meta.dot} {meta.label}
+                    <span className="inline-flex items-center justify-end gap-1.5">
+                      <span className={`w-2 h-2 rounded-full shrink-0 ${meta.dot}`} />
+                      <span className={`text-sm font-medium ${meta.text}`}>{meta.label}</span>
                     </span>
                   </td>
                   <td className="py-3 px-4">
                     <div className="flex items-center justify-end gap-1">
                       <button
                         onClick={(e) => { e.stopPropagation(); onDelete(c) }}
-                        className="p-1 text-[#8A9BAE] hover:text-red-500 transition-colors"
+                        className="p-1 text-c-muted opacity-0 group-hover:opacity-100 hover:text-red-500 transition-all"
                       >
                         <Trash2 size={14} />
                       </button>
-                      <ChevronRight size={16} className="text-[#8A9BAE]" />
+                      <ChevronRight size={16} className="text-c-muted" />
                     </div>
                   </td>
                 </tr>

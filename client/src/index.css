@@ -2,6 +2,20 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ─── Semantic design tokens ─────────────────────────────────────────────────
+ * Change these two blocks to retheme light/dark mode globally.
+ * Components reference var(--c-muted) and var(--c-border) via Tailwind tokens
+ * text-c-muted / border-c-border — no component files need touching.
+ * ─────────────────────────────────────────────────────────────────────────── */
+:root {
+  --c-muted:  #4E6478;   /* secondary text — readable on white */
+  --c-border: #CBD5DF;   /* card / section borders — visible on white */
+}
+.dark {
+  --c-muted:  #8A9BAE;   /* secondary text — clearly readable on dark bg */
+  --c-border: rgba(255, 255, 255, 0.12); /* visible card/section borders on dark bg */
+}
+
 @layer base {
   body {
     @apply font-sans text-[#0D1B2A] dark:text-white bg-white dark:bg-[#0D1B2A] antialiased;
@@ -10,4 +24,14 @@
   * {
     box-sizing: border-box;
   }
+}
+
+/* Page navigation transition */
+@keyframes page-in {
+  from { opacity: 0; transform: translateY(3px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.page-enter {
+  animation: page-in 0.15s ease-out;
 }

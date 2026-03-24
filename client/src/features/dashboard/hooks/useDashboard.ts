@@ -29,28 +29,66 @@ export function useDashboard() {
     enabled:  !!orgId && isConfirmationFlow,
   })
 
-  const invoices  = allQuery.data?.content ?? []
-  const now       = new Date()
-  const thisMonth = now.getMonth()
-  const thisYear  = now.getFullYear()
+  const invoices = allQuery.data?.content ?? []
+  const now      = new Date()
 
   // ── KPI computations ───────────────────────────────────────────────────────
 
-  const outstanding = invoices
-    .filter((i) => ['ISSUED', 'PARTIALLY_PAID'].includes(i.lifeCycleStatus))
-    .reduce((sum, i) => sum + i.remainingAmount, 0)
+  const unpaidInvoices = invoices.filter((i) =>
+    ['ISSUED', 'PARTIALLY_PAID'].includes(i.lifeCycleStatus),
+  )
 
-  const overdueCount = overdueQuery.data?.totalElements ?? 0
+  const totalUnpaid      = unpaidInvoices.reduce((s, i) => s + i.remainingAmount, 0)
+  const totalUnpaidCount = unpaidInvoices.length
 
+  const overdueCount  = overdueQuery.data?.totalElements ?? 0
+  const pastDueInvoices = invoices.filter(
+    (i) => i.timeStatus === 'OVERDUE' && ['ISSUED', 'PARTIALLY_PAID'].includes(i.lifeCycleStatus),
+  )
+  const pastDueAmount = pastDueInvoices.reduce((s, i) => s + i.remainingAmount, 0)
+
+  // Due in the next 30 days (not overdue, not paid)
+  const today30 = new Date(now)
+  today30.setDate(today30.getDate() + 30)
+  const dueNext30Invoices = unpaidInvoices.filter((i) => {
+    if (!i.dueDate || i.timeStatus === 'OVERDUE') return false
+    const d = new Date(i.dueDate)
+    return d >= now && d <= today30
+  })
+  const dueNext30Amount = dueNext30Invoices.reduce((s, i) => s + i.remainingAmount, 0)
+  const dueNext30Count  = dueNext30Invoices.length
+
+  // Average payment delay: days between issueDate and updatedAt for PAID invoices
+  const paidWithDates = invoices.filter(
+    (i) => i.lifeCycleStatus === 'PAID' && i.issueDate,
+  )
+  const avgPaymentDelayDays = paidWithDates.length > 0
+    ? Math.round(
+        paidWithDates.reduce((sum, i) => {
+          const issued = new Date(i.issueDate!).getTime()
+          const paid   = new Date(i.updatedAt).getTime()
+          return sum + Math.max(0, (paid - issued) / 86_400_000)
+        }, 0) / paidWithDates.length,
+      )
+    : null
+
+  // Collected this month: invoices fully paid (updatedAt within current month)
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
   const collectedThisMonth = invoices
-    .filter((i) => {
-      if (i.lifeCycleStatus !== 'PAID') return false
-      const d = new Date(i.updatedAt)
-      return d.getMonth() === thisMonth && d.getFullYear() === thisYear
-    })
-    .reduce((sum, i) => sum + i.totalPaid, 0)
+    .filter((i) => i.lifeCycleStatus === 'PAID' && new Date(i.updatedAt) >= startOfMonth)
+    .reduce((s, i) => s + i.totalAmount, 0)
 
-  const draftCount = invoices.filter((i) => i.lifeCycleStatus === 'DRAFT').length
+  // Due soon: unpaid invoices with dueDate in next 14 days, sorted nearest-first
+  const in14Days = new Date(now)
+  in14Days.setDate(in14Days.getDate() + 14)
+  const dueSoonInvoices = unpaidInvoices
+    .filter((i) => {
+      if (!i.dueDate || i.timeStatus === 'OVERDUE') return false
+      const d = new Date(i.dueDate)
+      return d >= now && d <= in14Days
+    })
+    .sort((a, b) => new Date(a.dueDate!).getTime() - new Date(b.dueDate!).getTime())
+    .slice(0, 5)
 
   const allConfirmations    = confirmationsQuery.data?.content ?? []
   const pendingConfirmations = allConfirmations.filter((c) => c.status === 'PENDING')
@@ -61,15 +99,18 @@ export function useDashboard() {
     isLoading: allQuery.isLoading,
 
     kpis: {
-      outstanding,
+      totalUnpaid,
+      totalUnpaidCount,
       overdueCount,
+      pastDueAmount,
       collectedThisMonth,
-      draftCount,
+      avgPaymentDelayDays,
       pendingApprovalsCount: pendingConfirmations.length,
     },
 
     overdueInvoices:     overdueQuery.data?.content ?? [],
+    dueSoonInvoices,
     pendingConfirmations,
-    recentInvoices:      invoices.slice(0, 8),
+    recentInvoices:      invoices.slice(0, 5),
   }
 }

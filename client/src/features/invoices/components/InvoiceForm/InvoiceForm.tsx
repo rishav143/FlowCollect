@@ -7,10 +7,10 @@ import LineItemsField, { type LineItem } from './LineItemsField'
 const inputCls = [
   'w-full px-3 py-2 text-sm bg-[#F4F7F9] dark:bg-[#243447] rounded-lg',
   'border border-transparent focus:border-[#8A9BAE]/40 focus:outline-none',
-  'text-[#0D1B2A] dark:text-white placeholder:text-[#8A9BAE] transition-colors',
+  'text-[#0D1B2A] dark:text-white placeholder:text-c-muted transition-colors',
 ].join(' ')
 
-const labelCls = 'block text-xs font-semibold text-[#8A9BAE] uppercase tracking-wide mb-1.5'
+const labelCls = 'block text-xs font-semibold text-c-muted uppercase tracking-wide mb-1.5'
 
 export interface InvoiceFormValues {
   invoiceNumber: string
@@ -121,10 +121,10 @@ export default function InvoiceForm({ initial, onChange, currency }: Props) {
         const fmt      = (n: number) => new Intl.NumberFormat('en-IN', { style: 'currency', currency, maximumFractionDigits: 0 }).format(n)
         return (
           <div className="bg-[#F4F7F9] dark:bg-[#243447] rounded-lg p-3 space-y-1 text-sm">
-            <div className="flex justify-between text-[#8A9BAE]">
+            <div className="flex justify-between text-c-muted">
               <span>Subtotal</span><span>{fmt(subtotal)}</span>
             </div>
-            <div className="flex justify-between text-[#8A9BAE]">
+            <div className="flex justify-between text-c-muted">
               <span>Tax ({taxPercentage}%)</span><span>{fmt(taxAmt)}</span>
             </div>
             <div className="flex justify-between font-semibold text-[#0D1B2A] dark:text-white border-t border-[#8A9BAE]/20 pt-1 mt-1">

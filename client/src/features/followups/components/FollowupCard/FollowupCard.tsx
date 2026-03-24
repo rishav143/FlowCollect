@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { Send } from 'lucide-react'
 import type { InvoiceResponse } from '@/types/invoice.types'
 import type { FollowUpResponse } from '@/types/followup.types'
@@ -19,9 +20,9 @@ const CHANNEL_LABEL: Record<string, string> = {
 }
 
 const URGENCY = {
-  OVERDUE:   { border: 'border-l-red-400',   badge: 'bg-red-50 text-red-600 dark:bg-red-500/15 dark:text-red-400',     label: 'Overdue'   },
-  DUE_TODAY: { border: 'border-l-amber-400', badge: 'bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400', label: 'Due Today' },
-  NOT_DUE:   { border: 'border-l-transparent', badge: 'bg-[#F4F7F9] text-[#8A9BAE] dark:bg-white/10',                   label: 'Upcoming'  },
+  OVERDUE:   { border: 'border-l-red-400',     dot: 'bg-red-500',   text: 'text-red-600 dark:text-red-400',     label: 'Overdue'   },
+  DUE_TODAY: { border: 'border-l-amber-400',   dot: 'bg-amber-500', text: 'text-amber-600 dark:text-amber-400', label: 'Due Today' },
+  NOT_DUE:   { border: 'border-l-transparent', dot: 'bg-[#8A9BAE]', text: 'text-c-muted',                      label: 'Upcoming'  },
 }
 
 interface Props {
@@ -32,11 +33,11 @@ interface Props {
   onSend:        () => void
 }
 
-export default function FollowupCard({ invoice, currency, customerName, lastFollowup, onSend }: Props) {
+const FollowupCard = memo(function FollowupCard({ invoice, currency, customerName, lastFollowup, onSend }: Props) {
   const u = URGENCY[invoice.timeStatus] ?? URGENCY.NOT_DUE
 
   return (
-    <div className={`bg-white dark:bg-[#1B2838] rounded-xl border border-[#F4F7F9] dark:border-white/10 border-l-4 ${u.border} p-4 space-y-3`}>
+    <div className={`bg-white dark:bg-[#1B2838] rounded-xl border border-c-border border-l-4 ${u.border} p-4 space-y-3`}>
 
       {/* Client + urgency badge */}
       <div className="flex items-start justify-between gap-2">
@@ -44,23 +45,24 @@ export default function FollowupCard({ invoice, currency, customerName, lastFoll
           <p className="text-sm font-bold text-[#0D1B2A] dark:text-white truncate">
             {customerName ?? 'Unknown client'}
           </p>
-          <p className="text-xs text-[#8A9BAE] mt-0.5 truncate">{invoice.invoiceNumber}</p>
+          <p className="text-xs text-c-muted mt-0.5 truncate">{invoice.invoiceNumber}</p>
         </div>
-        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0 ${u.badge}`}>
-          {u.label}
+        <span className="inline-flex items-center gap-1.5 shrink-0">
+          <span className={`w-1.5 h-1.5 rounded-full ${u.dot}`} />
+          <span className={`text-xs font-medium ${u.text}`}>{u.label}</span>
         </span>
       </div>
 
       {/* Amount owed */}
       <div>
-        <p className="text-[10px] text-[#8A9BAE] uppercase tracking-wide mb-0.5">Amount owed</p>
-        <p className={`text-lg font-bold tabular-nums ${invoice.timeStatus === 'OVERDUE' ? 'text-red-500' : 'text-[#0D1B2A] dark:text-white'}`}>
+        <p className="text-[10px] text-c-muted uppercase tracking-wide mb-0.5">Remaining</p>
+        <p className="text-lg font-bold tabular-nums text-[#0D1B2A] dark:text-white">
           {fmt(invoice.remainingAmount, currency)}
         </p>
       </div>
 
       {/* Due + last contacted */}
-      <div className="space-y-1 text-xs text-[#8A9BAE]">
+      <div className="space-y-1 text-xs text-c-muted">
         <p>
           Due{' '}
           <span className={
@@ -93,4 +95,6 @@ export default function FollowupCard({ invoice, currency, customerName, lastFoll
       </button>
     </div>
   )
-}
+})
+
+export default FollowupCard

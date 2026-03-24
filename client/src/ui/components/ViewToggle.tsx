@@ -85,7 +85,7 @@ export default function ViewToggle({ value, onChange, options = ['list', 'grid2'
               'w-7 h-7 flex items-center justify-center rounded-md transition-colors',
               active
                 ? 'bg-white dark:bg-[#1B2838] text-[#0D1B2A] dark:text-white shadow-sm'
-                : 'text-[#8A9BAE] hover:text-[#0D1B2A] dark:hover:text-white',
+                : 'text-c-muted hover:text-[#0D1B2A] dark:hover:text-white',
             ].join(' ')}
           >
             {icon}

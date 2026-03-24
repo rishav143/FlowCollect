@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, memo, useCallback } from 'react'
 import { Plus, FileText } from 'lucide-react'
 import { useTemplates } from '@/features/templates/hooks/useTemplates'
 import { useToggleTemplate } from '@/features/templates/hooks/useTemplateMutations'
@@ -49,7 +49,7 @@ export default function TemplatesPage() {
       <div className="flex items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-bold text-[#0D1B2A] dark:text-white">Templates</h1>
-          <p className="text-sm text-[#8A9BAE] mt-0.5">Reusable messages for your follow-ups and reminders</p>
+          <p className="text-sm text-c-muted mt-0.5">Reusable messages for your follow-ups and reminders</p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <ViewToggle value={view} onChange={setView} />
@@ -74,7 +74,7 @@ export default function TemplatesPage() {
               'px-4 py-1.5 text-sm font-medium rounded-md transition-colors',
               channelFilter === tab.value
                 ? 'bg-white dark:bg-[#243447] text-[#0D1B2A] dark:text-white shadow-sm'
-                : 'text-[#8A9BAE] hover:text-[#0D1B2A] dark:hover:text-white',
+                : 'text-c-muted hover:text-[#0D1B2A] dark:hover:text-white',
             ].join(' ')}
           >
             {tab.label}
@@ -98,11 +98,11 @@ export default function TemplatesPage() {
       {!isLoading && !isError && templates.length === 0 && (
         <div className="py-16 flex flex-col items-center gap-3 text-center">
           <div className="w-12 h-12 rounded-full bg-[#F4F7F9] dark:bg-white/10 flex items-center justify-center">
-            <FileText size={22} className="text-[#8A9BAE]" strokeWidth={1.5} />
+            <FileText size={22} className="text-c-muted" strokeWidth={1.5} />
           </div>
           <div>
             <p className="text-sm font-semibold text-[#0D1B2A] dark:text-white">No templates yet</p>
-            <p className="text-xs text-[#8A9BAE] mt-1">Create a template and reuse it across reminder rules and follow-ups.</p>
+            <p className="text-xs text-c-muted mt-1">Create a template and reuse it across reminder rules and follow-ups.</p>
           </div>
           <button
             onClick={() => setShowCreate(true)}
@@ -134,7 +134,7 @@ export default function TemplatesPage() {
   )
 }
 
-function TemplateCardWithToggle({
+const TemplateCardWithToggle = memo(function TemplateCardWithToggle({
   template,
   onEdit,
   onDelete,
@@ -144,12 +144,13 @@ function TemplateCardWithToggle({
   onDelete: (t: TemplateResponse) => void
 }) {
   const { mutate } = useToggleTemplate(template.id, template.active)
+  const onToggle = useCallback(() => mutate(), [mutate])
   return (
     <TemplateCard
       template={template}
       onEdit={onEdit}
       onDelete={onDelete}
-      onToggle={() => mutate()}
+      onToggle={onToggle}
     />
   )
-}
+})

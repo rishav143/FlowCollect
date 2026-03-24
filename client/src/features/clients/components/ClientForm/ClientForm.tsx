@@ -49,7 +49,7 @@ export default function ClientForm({ initial, onSubmit, isLoading }: Props) {
     const err = touched[id] ? errors[id] : undefined
     return (
       <div>
-        <label className="block text-xs font-semibold uppercase tracking-wide text-[#8A9BAE] mb-1.5">
+        <label className="block text-xs font-semibold uppercase tracking-wide text-c-muted mb-1.5">
           {label}
         </label>
         <input
@@ -58,10 +58,10 @@ export default function ClientForm({ initial, onSubmit, isLoading }: Props) {
           onChange={(e) => set(id, e.target.value)}
           placeholder={placeholder}
           className={[
-            'w-full text-sm rounded-lg border bg-transparent text-[#0D1B2A] dark:text-white placeholder:text-[#8A9BAE] px-3 py-2.5 focus:outline-none transition-colors',
+            'w-full text-sm rounded-lg border bg-transparent text-[#0D1B2A] dark:text-white placeholder:text-c-muted px-3 py-2.5 focus:outline-none transition-colors',
             err
               ? 'border-red-400 focus:border-red-500'
-              : 'border-[#F4F7F9] dark:border-white/10 focus:border-[#8A9BAE]/40',
+              : 'border-c-border focus:border-[#8A9BAE]/40',
           ].join(' ')}
         />
         {err && <p className="text-xs text-red-500 mt-1">{err}</p>}

@@ -76,11 +76,11 @@ function DispatchModal({
             <h2 className="text-base font-semibold text-[#0D1B2A] dark:text-white">
               Send Follow-up
             </h2>
-            <p className="text-xs text-[#8A9BAE] mt-0.5">{invoice.invoiceNumber}</p>
+            <p className="text-xs text-c-muted mt-0.5">{invoice.invoiceNumber}</p>
           </div>
           <button
             onClick={onClose}
-            className="text-[#8A9BAE] hover:text-[#0D1B2A] dark:hover:text-white transition-colors"
+            className="text-c-muted hover:text-[#0D1B2A] dark:hover:text-white transition-colors"
           >
             <X size={18} />
           </button>
@@ -88,7 +88,7 @@ function DispatchModal({
 
         {/* Channels */}
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-[#8A9BAE] mb-2">
+          <p className="text-xs font-semibold uppercase tracking-wide text-c-muted mb-2">
             Send via
           </p>
           <div className="flex flex-wrap gap-2">
@@ -102,7 +102,7 @@ function DispatchModal({
                     'px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors',
                     active
                       ? 'border-[#2E7A8E] bg-[#2E7A8E]/10 text-[#2E7A8E] dark:border-[#29B6F6] dark:bg-[#29B6F6]/10 dark:text-[#29B6F6]'
-                      : 'border-[#F4F7F9] dark:border-white/10 text-[#8A9BAE] hover:border-[#8A9BAE]/40',
+                      : 'border-c-border text-c-muted hover:border-[#8A9BAE]/40',
                   ].join(' ')}
                 >
                   {ch.label}
@@ -159,7 +159,7 @@ function DispatchModal({
 
           {includeLink && (
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-[#8A9BAE] mb-2">
+              <p className="text-xs font-semibold uppercase tracking-wide text-c-muted mb-2">
                 Payment gateway
               </p>
               <div className="flex gap-2">
@@ -171,7 +171,7 @@ function DispatchModal({
                       'flex-1 py-1.5 rounded-lg text-sm font-medium border transition-colors',
                       gateway === g.id
                         ? 'border-[#2E7A8E] bg-[#2E7A8E]/10 text-[#2E7A8E] dark:border-[#29B6F6] dark:bg-[#29B6F6]/10 dark:text-[#29B6F6]'
-                        : 'border-[#F4F7F9] dark:border-white/10 text-[#8A9BAE] hover:border-[#8A9BAE]/40',
+                        : 'border-c-border text-c-muted hover:border-[#8A9BAE]/40',
                     ].join(' ')}
                   >
                     {g.label}
@@ -186,7 +186,7 @@ function DispatchModal({
         <div className="flex gap-3 pt-1">
           <button
             onClick={onClose}
-            className="flex-1 py-2 rounded-lg text-sm font-medium text-[#8A9BAE] hover:bg-[#F4F7F9] dark:hover:bg-[#243447] transition-colors"
+            className="flex-1 py-2 rounded-lg text-sm font-medium text-c-muted hover:bg-[#F4F7F9] dark:hover:bg-[#243447] transition-colors"
           >
             Cancel
           </button>
@@ -235,16 +235,16 @@ function InvoiceRow({
   onSend:        () => void
 }) {
   return (
-    <tr className="border-b border-[#F4F7F9] dark:border-white/10 last:border-0 hover:bg-[#F4F7F9]/50 dark:hover:bg-white/5 transition-colors">
+    <tr className="border-b border-c-border last:border-0 hover:bg-[#F4F7F9]/50 dark:hover:bg-white/5 transition-colors">
       {/* Client + invoice # */}
       <td className="py-3 px-4">
         <p className="text-sm font-semibold text-[#0D1B2A] dark:text-white">
           {customerName ?? '—'}
         </p>
-        <p className="text-xs text-[#8A9BAE] mt-0.5">{invoice.invoiceNumber}</p>
+        <p className="text-xs text-c-muted mt-0.5">{invoice.invoiceNumber}</p>
       </td>
       {/* Amount owed */}
-      <td className={`py-3 px-4 text-sm font-bold tabular-nums ${invoice.timeStatus === 'OVERDUE' ? 'text-red-500' : 'text-[#0D1B2A] dark:text-white'}`}>
+      <td className="py-3 px-4 text-sm font-bold tabular-nums text-[#0D1B2A] dark:text-white">
         {fmt(invoice.remainingAmount, currency)}
       </td>
       {/* Due */}
@@ -252,13 +252,13 @@ function InvoiceRow({
         <span className={
           invoice.timeStatus === 'OVERDUE'   ? 'text-red-500 font-semibold' :
           invoice.timeStatus === 'DUE_TODAY' ? 'text-amber-600 dark:text-amber-400 font-semibold' :
-          'text-[#8A9BAE]'
+          'text-c-muted'
         }>
           {invoice.timeStatus === 'DUE_TODAY' ? 'Today' : timeAgo(invoice.dueDate)}
         </span>
       </td>
       {/* Last contacted */}
-      <td className="py-3 px-4 text-sm text-[#8A9BAE]">
+      <td className="py-3 px-4 text-sm text-c-muted">
         {lastFollowup
           ? `${CHANNEL_LABEL[lastFollowup.channel] ?? lastFollowup.channel} · ${timeAgo(lastFollowup.sentAt ?? lastFollowup.createdAt)}`
           : <span className="italic">Never</span>
@@ -305,7 +305,7 @@ export default function FollowupsPage() {
   const [target,  setTarget]  = useState<InvoiceResponse | null>(null)
   const [view,    setView]    = useViewPreference('followups', 'list')
 
-  const { data: invoices = [], isLoading } = useFollowupInvoices(filter)
+  const { data: invoices = [], isLoading, isFetching } = useFollowupInvoices(filter)
   const lastFollowupMap = useFollowupsByInvoices(invoices.map((i) => i.id))
 
   const customersQuery = useQuery({
@@ -328,7 +328,7 @@ export default function FollowupsPage() {
           <div>
             <h1 className="text-xl font-bold text-[#0D1B2A] dark:text-white">Follow-ups</h1>
             {!isLoading && (
-              <p className="text-sm text-[#8A9BAE] mt-0.5">
+              <p className="text-sm text-c-muted mt-0.5">
                 {invoices.length} active invoice{invoices.length !== 1 ? 's' : ''} need attention
               </p>
             )}
@@ -340,6 +340,7 @@ export default function FollowupsPage() {
         <FollowupFilterTabs active={filter} onChange={setFilter} />
 
         {/* Content */}
+        <div className={`transition-opacity duration-200 ${isFetching && !isLoading ? 'opacity-60' : 'opacity-100'}`}>
         {isLoading ? (
           <Skeleton />
         ) : invoices.length === 0 ? (
@@ -349,7 +350,7 @@ export default function FollowupsPage() {
             </div>
             <div>
               <p className="text-sm font-medium text-[#0D1B2A] dark:text-white">All caught up!</p>
-              <p className="text-sm text-[#8A9BAE] mt-0.5">No active invoices need a follow-up right now.</p>
+              <p className="text-sm text-c-muted mt-0.5">No active invoices need a follow-up right now.</p>
             </div>
           </div>
         ) : (
@@ -369,15 +370,15 @@ export default function FollowupsPage() {
             </div>
 
             {/* Table — shown only in list view on md+ */}
-            <div className={view !== 'list' ? 'hidden' : 'hidden md:block bg-white dark:bg-[#1B2838] rounded-xl border border-[#F4F7F9] dark:border-white/10 overflow-hidden'}>
+            <div className={view !== 'list' ? 'hidden' : 'hidden md:block bg-white dark:bg-[#1B2838] rounded-xl border border-c-border overflow-hidden'}>
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-[#F4F7F9] dark:border-white/10">
-                    <th className="py-3 px-4 text-left text-xs font-semibold uppercase tracking-wide text-[#8A9BAE]">Client</th>
-                    <th className="py-3 px-4 text-left text-xs font-semibold uppercase tracking-wide text-[#8A9BAE]">Owed</th>
-                    <th className="py-3 px-4 text-left text-xs font-semibold uppercase tracking-wide text-[#8A9BAE]">Due</th>
-                    <th className="py-3 px-4 text-left text-xs font-semibold uppercase tracking-wide text-[#8A9BAE]">Last Contacted</th>
-                    <th className="py-3 px-4 text-right text-xs font-semibold uppercase tracking-wide text-[#8A9BAE]"></th>
+                  <tr className="border-b border-c-border">
+                    <th className="py-3 px-4 text-left text-xs font-semibold uppercase tracking-wide text-c-muted">Client</th>
+                    <th className="py-3 px-4 text-left text-xs font-semibold uppercase tracking-wide text-c-muted">Remaining</th>
+                    <th className="py-3 px-4 text-left text-xs font-semibold uppercase tracking-wide text-c-muted">Due</th>
+                    <th className="py-3 px-4 text-left text-xs font-semibold uppercase tracking-wide text-c-muted">Last Contacted</th>
+                    <th className="py-3 px-4 text-right text-xs font-semibold uppercase tracking-wide text-c-muted"></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -396,6 +397,7 @@ export default function FollowupsPage() {
             </div>
           </>
         )}
+        </div>
       </div>
 
       {/* Dispatch modal */}

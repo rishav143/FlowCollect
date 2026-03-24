@@ -9,6 +9,6 @@ export function useTemplates(params?: ListTemplatesParams) {
   return useQuery({
     queryKey: ['templates', orgId, params],
     queryFn:  () => listTemplates(orgId, params),
-    enabled:  !!orgId,
+    enabled: !!orgId,
   })
 }

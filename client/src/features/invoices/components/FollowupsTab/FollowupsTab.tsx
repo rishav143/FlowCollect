@@ -13,11 +13,11 @@ const CHANNEL_ICON: Record<FollowUpChannel, React.ReactNode> = {
   WHATSAPP: <MessageSquare size={14} />,
 }
 
-const STATUS_CHIP: Record<FollowUpStatus, string> = {
-  PENDING:   'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400',
-  SENT:      'bg-green-50 text-green-600 dark:bg-green-500/15 dark:text-green-400',
-  FAILED:    'bg-red-100 text-red-600 dark:bg-red-500/20 dark:text-red-400',
-  CANCELLED: 'bg-[#F4F7F9] text-[#8A9BAE] dark:bg-white/10 dark:text-[#8A9BAE]',
+const STATUS_DOT: Record<FollowUpStatus, { dot: string; text: string; label: string }> = {
+  PENDING:   { dot: 'bg-amber-400', text: 'text-amber-600 dark:text-amber-400', label: 'Pending'   },
+  SENT:      { dot: 'bg-green-500', text: 'text-green-600 dark:text-green-400', label: 'Sent'      },
+  FAILED:    { dot: 'bg-red-500',   text: 'text-red-600 dark:text-red-400',     label: 'Failed'    },
+  CANCELLED: { dot: 'bg-[#8A9BAE]', text: 'text-c-muted',                      label: 'Cancelled' },
 }
 
 function fmtDate(d: string | null) {
@@ -54,7 +54,7 @@ export default function FollowupsTab() {
         </div>
         <div>
           <p className="text-sm font-medium text-[#0D1B2A] dark:text-white">No follow-ups sent yet</p>
-          <p className="text-sm text-[#8A9BAE] mt-0.5">
+          <p className="text-sm text-c-muted mt-0.5">
             Use the "Send Follow-up" button above to notify your customer.
           </p>
         </div>
@@ -67,7 +67,7 @@ export default function FollowupsTab() {
       {followups.map((fu) => (
         <div
           key={fu.id}
-          className="flex items-center gap-3 py-3 border-b border-[#F4F7F9] dark:border-white/10 last:border-0"
+          className="flex items-center gap-3 py-3 border-b border-c-border last:border-0"
         >
           {/* Channel icon */}
           <div className="w-8 h-8 rounded-full bg-[#29B6F6]/10 flex items-center justify-center text-[#29B6F6] shrink-0">
@@ -79,20 +79,23 @@ export default function FollowupsTab() {
             <p className="text-sm font-medium text-[#0D1B2A] dark:text-white capitalize">
               {fu.channel.charAt(0) + fu.channel.slice(1).toLowerCase()}
               {fu.triggerType === 'AUTOMATED' && (
-                <span className="ml-1.5 text-[10px] font-semibold text-[#8A9BAE] uppercase tracking-wide">
+                <span className="ml-1.5 text-[10px] font-semibold text-c-muted uppercase tracking-wide">
                   Auto
                 </span>
               )}
             </p>
-            <p className="text-xs text-[#8A9BAE] mt-0.5">
+            <p className="text-xs text-c-muted mt-0.5">
               {fu.sentAt ? `Sent ${fmtDate(fu.sentAt)}` : fu.scheduledForDate ? `Scheduled ${fmtDate(fu.scheduledForDate)}` : `Created ${fmtDate(fu.createdAt)}`}
             </p>
           </div>
 
           {/* Status */}
-          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0 ${STATUS_CHIP[fu.status]}`}>
-            {fu.status}
-          </span>
+          {(() => { const { dot, text, label } = STATUS_DOT[fu.status]; return (
+            <span className="inline-flex items-center gap-1.5 shrink-0">
+              <span className={`w-1.5 h-1.5 rounded-full ${dot}`} />
+              <span className={`text-xs font-medium ${text}`}>{label}</span>
+            </span>
+          )})()}
         </div>
       ))}
     </div>

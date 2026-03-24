@@ -1,4 +1,5 @@
-import { AlertTriangle, CheckCircle, XCircle, Clock, RefreshCw } from 'lucide-react'
+import { memo } from 'react'
+import { AlertTriangle } from 'lucide-react'
 import type { PaymentConfirmationResponse, ConfirmationStatus } from '@/types/confirmation.types'
 
 // ---------------------------------------------------------------------------
@@ -9,16 +10,22 @@ function fmt(n: number, currency: string) {
   return new Intl.NumberFormat('en-IN', { style: 'currency', currency, maximumFractionDigits: 0 }).format(n)
 }
 
-function fmtDateTime(d: string | null) {
+function timeAgo(iso: string): string {
+  const mins = Math.floor((Date.now() - new Date(iso).getTime()) / 60_000)
+  if (mins < 60)  return `${mins}m ago`
+  const hrs = Math.floor(mins / 60)
+  if (hrs < 24)   return `${hrs}h ago`
+  const days = Math.floor(hrs / 24)
+  return days === 1 ? 'Yesterday' : `${days}d ago`
+}
+
+function fmtDate(d: string | null) {
   if (!d) return '—'
-  return new Date(d).toLocaleString('en-IN', {
-    day: 'numeric', month: 'short', year: 'numeric',
-    hour: '2-digit', minute: '2-digit',
-  })
+  return new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
 // ---------------------------------------------------------------------------
-// Claim type logic
+// Claim type
 // ---------------------------------------------------------------------------
 
 type ClaimType = 'FULL' | 'PARTIAL' | 'OVER'
@@ -30,46 +37,30 @@ function getClaimType(c: PaymentConfirmationResponse): ClaimType {
 }
 
 // ---------------------------------------------------------------------------
-// Status badge
+// Status — dot + text, no background shading
 // ---------------------------------------------------------------------------
 
-const STATUS_META: Record<ConfirmationStatus, { label: string; icon: React.ReactNode; chip: string }> = {
-  PENDING_APPROVAL: {
-    label: 'Pending',
-    icon: <Clock size={12} />,
-    chip: 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400',
-  },
-  APPROVED: {
-    label: 'Approved',
-    icon: <CheckCircle size={12} />,
-    chip: 'bg-green-50 text-green-600 dark:bg-green-500/15 dark:text-green-400',
-  },
-  REMAINING_REQUESTED: {
-    label: 'Remaining Requested',
-    icon: <RefreshCw size={12} />,
-    chip: 'bg-blue-50 text-blue-600 dark:bg-blue-500/15 dark:text-blue-400',
-  },
-  REJECTED: {
-    label: 'Rejected',
-    icon: <XCircle size={12} />,
-    chip: 'bg-red-100 text-red-600 dark:bg-red-500/20 dark:text-red-400',
-  },
+const STATUS_META: Record<ConfirmationStatus, { dot: string; text: string; label: string }> = {
+  PENDING_APPROVAL:    { dot: 'bg-amber-400',  text: 'text-amber-600 dark:text-amber-400',       label: 'Pending'             },
+  APPROVED:            { dot: 'bg-green-500',  text: 'text-green-600 dark:text-green-400',        label: 'Approved'            },
+  REMAINING_REQUESTED: { dot: 'bg-blue-500',   text: 'text-blue-600 dark:text-blue-400',          label: 'Remaining Requested' },
+  REJECTED:            { dot: 'bg-red-500',    text: 'text-red-500 dark:text-red-400',            label: 'Rejected'            },
 }
 
 // ---------------------------------------------------------------------------
-// Component
+// ConfirmationCard
 // ---------------------------------------------------------------------------
 
 interface Props {
-  confirmation: PaymentConfirmationResponse
-  currency:     string
+  confirmation:       PaymentConfirmationResponse
+  currency:           string
   onApprove:          () => void
   onRequestRemaining: () => void
   onReject:           () => void
-  isActing:     boolean
+  isActing:           boolean
 }
 
-export default function ConfirmationCard({
+const ConfirmationCard = memo(function ConfirmationCard({
   confirmation: c,
   currency,
   onApprove,
@@ -79,124 +70,122 @@ export default function ConfirmationCard({
 }: Props) {
   const claimType = getClaimType(c)
   const isPending = c.status === 'PENDING_APPROVAL'
-  const meta      = STATUS_META[c.status]
+  const { dot, text, label } = STATUS_META[c.status]
 
   return (
-    <div className="bg-white dark:bg-[#1B2838] rounded-xl border border-[#F4F7F9] dark:border-white/10 p-5 space-y-4">
+    <div className="bg-white dark:bg-[#1B2838] rounded-xl border border-c-border p-4 sm:p-5">
 
-      {/* Header row */}
-      <div className="flex items-start justify-between gap-3 flex-wrap">
-        <div>
-          <p className="text-sm font-semibold text-[#0D1B2A] dark:text-white">
-            {c.invoiceNumber}
-          </p>
-          <p className="text-xs text-[#8A9BAE] mt-0.5">
-            Submitted {fmtDateTime(c.createdAt)}
-          </p>
-        </div>
-        <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2.5 py-1 rounded-full ${meta.chip}`}>
-          {meta.icon}
-          {meta.label}
+      {/* ── Top row: invoice # · status · time ── */}
+      <div className="flex items-center gap-3 flex-wrap">
+        <span className="text-sm font-semibold text-[#0D1B2A] dark:text-white">
+          {c.invoiceNumber}
+        </span>
+
+        <span className="inline-flex items-center gap-1.5">
+          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dot}`} />
+          <span className={`text-xs font-medium ${text}`}>{label}</span>
+        </span>
+
+        <span className="ml-auto text-xs text-c-muted shrink-0">
+          {timeAgo(c.createdAt)}
         </span>
       </div>
 
-      {/* Overpayment warning */}
+      {/* ── Claimed amount + context ── */}
+      <div className="mt-3 flex items-baseline gap-2 flex-wrap">
+        <span className="text-xl font-bold text-[#0D1B2A] dark:text-white tabular-nums">
+          {fmt(c.amountClaimed, currency)}
+        </span>
+        <span className="text-xs text-c-muted">
+          claimed
+          {claimType === 'FULL'    && ' · full payment'}
+          {claimType === 'PARTIAL' && ` · ${fmt(c.invoiceRemainingAmount - c.amountClaimed, currency)} still remaining`}
+          {claimType === 'OVER'    && ' · exceeds balance'}
+        </span>
+      </div>
+
+      {/* Invoice total context */}
+      <p className="mt-1 text-xs text-c-muted">
+        Invoice total{' '}
+        <span className="font-medium text-[#0D1B2A] dark:text-white">{fmt(c.invoiceTotalAmount, currency)}</span>
+        {' · '}remaining{' '}
+        <span className="font-medium text-[#0D1B2A] dark:text-white">{fmt(c.invoiceRemainingAmount, currency)}</span>
+      </p>
+
+      {/* ── Overpayment warning ── */}
       {claimType === 'OVER' && isPending && (
-        <div className="flex items-start gap-2.5 p-3 rounded-lg bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20">
-          <AlertTriangle size={15} className="text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+        <div className="mt-3 flex items-start gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20">
+          <AlertTriangle size={14} className="text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
           <p className="text-xs text-amber-700 dark:text-amber-400">
-            Amount claimed (<span className="font-semibold">{fmt(c.amountClaimed, currency)}</span>) exceeds the remaining balance (<span className="font-semibold">{fmt(c.invoiceRemainingAmount, currency)}</span>). Verify before approving.
+            Claimed amount exceeds the remaining balance. Verify with the customer before approving.
           </p>
         </div>
       )}
 
-      {/* Amount breakdown */}
-      <div className="grid grid-cols-3 gap-3">
-        <div className="bg-[#F4F7F9] dark:bg-[#243447] rounded-lg p-3 text-center">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-[#8A9BAE] mb-1">Claimed</p>
-          <p className={`text-sm font-bold tabular-nums ${
-            claimType === 'OVER'
-              ? 'text-amber-600 dark:text-amber-400'
-              : 'text-[#0D1B2A] dark:text-white'
-          }`}>
-            {fmt(c.amountClaimed, currency)}
-          </p>
-        </div>
-        <div className="bg-[#F4F7F9] dark:bg-[#243447] rounded-lg p-3 text-center">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-[#8A9BAE] mb-1">Remaining</p>
-          <p className="text-sm font-bold tabular-nums text-red-500">{fmt(c.invoiceRemainingAmount, currency)}</p>
-        </div>
-        <div className="bg-[#F4F7F9] dark:bg-[#243447] rounded-lg p-3 text-center">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-[#8A9BAE] mb-1">Total</p>
-          <p className="text-sm font-bold tabular-nums text-[#0D1B2A] dark:text-white">{fmt(c.invoiceTotalAmount, currency)}</p>
-        </div>
-      </div>
-
-      {/* Customer note */}
+      {/* ── Customer note ── */}
       {c.customerNote && (
-        <div className="rounded-lg bg-[#F4F7F9] dark:bg-[#243447] p-3">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-[#8A9BAE] mb-1">Customer Note</p>
+        <div className="mt-3 p-3 rounded-lg bg-[#F4F7F9] dark:bg-[#243447]">
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-c-muted mb-1">Customer Note</p>
           <p className="text-xs text-[#0D1B2A] dark:text-white leading-relaxed">{c.customerNote}</p>
         </div>
       )}
 
-      {/* Business note (post-review) */}
+      {/* ── Business note (post-review) ── */}
       {c.businessNote && !isPending && (
-        <div className="rounded-lg border border-[#F4F7F9] dark:border-white/10 p-3">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-[#8A9BAE] mb-1">Your Note</p>
+        <div className="mt-3 p-3 rounded-lg border border-c-border">
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-c-muted mb-1">
+            Your Note · {fmtDate(c.reviewedAt)}
+          </p>
           <p className="text-xs text-[#0D1B2A] dark:text-white leading-relaxed">{c.businessNote}</p>
-          {c.reviewedAt && (
-            <p className="text-[10px] text-[#8A9BAE] mt-1.5">Reviewed {fmtDateTime(c.reviewedAt)}</p>
-          )}
         </div>
       )}
 
-      {/* Action buttons — only for PENDING_APPROVAL */}
+      {/* ── Action buttons ── */}
       {isPending && (
-        <div className="flex flex-wrap gap-2 pt-1">
-          {/* Full-payment or overpayment: Approve + Reject */}
+        <div className="mt-4 flex gap-2 flex-wrap">
+          {/* Full / overpayment: Approve + Reject */}
           {(claimType === 'FULL' || claimType === 'OVER') && (
             <>
               <button
                 onClick={onApprove}
                 disabled={isActing}
-                className="flex-1 min-w-[100px] py-2 rounded-lg text-sm font-semibold text-white disabled:opacity-50 transition-opacity hover:opacity-90"
-                style={{ background: 'linear-gradient(90deg, #2E7A8E 0%, #29B6F6 100%)' }}
+                className="flex-1 min-w-[90px] py-2 rounded-lg text-sm font-semibold text-white disabled:opacity-50 hover:opacity-90 transition-opacity"
+                style={{ background: 'linear-gradient(90deg, #29B6F6 0%, #4FC3F7 100%)' }}
               >
                 {isActing ? '…' : 'Approve'}
               </button>
               <button
                 onClick={onReject}
                 disabled={isActing}
-                className="flex-1 min-w-[100px] py-2 rounded-lg text-sm font-semibold text-red-500 border border-red-200 dark:border-red-500/30 hover:bg-red-50 dark:hover:bg-red-500/10 disabled:opacity-50 transition-colors"
+                className="flex-1 min-w-[90px] py-2 rounded-lg text-sm font-semibold text-red-500 border border-red-200 dark:border-red-500/30 hover:bg-red-50 dark:hover:bg-red-500/10 disabled:opacity-50 transition-colors"
               >
                 Reject
               </button>
             </>
           )}
 
-          {/* Partial: Approve Partial + Request Remaining + Reject */}
+          {/* Partial: Request Remaining → Approve as Final → Reject */}
           {claimType === 'PARTIAL' && (
             <>
               <button
-                onClick={onApprove}
-                disabled={isActing}
-                className="flex-1 min-w-[120px] py-2 rounded-lg text-sm font-semibold text-white disabled:opacity-50 transition-opacity hover:opacity-90"
-                style={{ background: 'linear-gradient(90deg, #2E7A8E 0%, #29B6F6 100%)' }}
-              >
-                {isActing ? '…' : 'Approve Partial'}
-              </button>
-              <button
                 onClick={onRequestRemaining}
                 disabled={isActing}
-                className="flex-1 min-w-[120px] py-2 rounded-lg text-sm font-semibold text-[#29B6F6] border border-[#29B6F6]/40 hover:bg-[#29B6F6]/10 disabled:opacity-50 transition-colors"
+                className="flex-1 min-w-[110px] py-2 rounded-lg text-sm font-semibold text-white disabled:opacity-50 hover:opacity-90 transition-opacity"
+                style={{ background: 'linear-gradient(90deg, #29B6F6 0%, #4FC3F7 100%)' }}
               >
                 Request Remaining
               </button>
               <button
+                onClick={onApprove}
+                disabled={isActing}
+                className="flex-1 min-w-[110px] py-2 rounded-lg text-sm font-semibold text-[#29B6F6] border border-[#29B6F6]/40 hover:bg-[#29B6F6]/10 disabled:opacity-50 transition-colors"
+              >
+                {isActing ? '…' : 'Approve as Final'}
+              </button>
+              <button
                 onClick={onReject}
                 disabled={isActing}
-                className="w-full py-2 rounded-lg text-sm font-medium text-[#8A9BAE] hover:bg-[#F4F7F9] dark:hover:bg-[#243447] disabled:opacity-50 transition-colors"
+                className="w-full py-2 rounded-lg text-sm font-semibold text-red-500 border border-red-200 dark:border-red-500/30 hover:bg-red-50 dark:hover:bg-red-500/10 disabled:opacity-50 transition-colors"
               >
                 Reject
               </button>
@@ -206,4 +195,6 @@ export default function ConfirmationCard({
       )}
     </div>
   )
-}
+})
+
+export default ConfirmationCard

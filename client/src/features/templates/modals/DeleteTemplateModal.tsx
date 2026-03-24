@@ -28,11 +28,11 @@ export default function DeleteTemplateModal({ template, onClose }: Props) {
           className="pointer-events-auto w-full max-w-sm bg-white dark:bg-[#1B2838] rounded-2xl shadow-2xl"
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-[#F4F7F9] dark:border-white/10">
+          <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-c-border">
             <h2 className="text-base font-semibold text-[#0D1B2A] dark:text-white">Delete template?</h2>
             <button
               onClick={onClose}
-              className="p-1.5 text-[#8A9BAE] hover:text-[#0D1B2A] dark:hover:text-white hover:bg-[#F4F7F9] dark:hover:bg-[#243447] rounded-lg transition-colors"
+              className="p-1.5 text-c-muted hover:text-[#0D1B2A] dark:hover:text-white hover:bg-[#F4F7F9] dark:hover:bg-[#243447] rounded-lg transition-colors"
             >
               <X size={18} />
             </button>

@@ -22,6 +22,19 @@ const PAST7 = new Date(Date.now() - 7  * 86400_000).toISOString().slice(0, 10)
 const PAST3 = new Date(Date.now() - 3  * 86400_000).toISOString().slice(0, 10)
 const FUT14 = new Date(Date.now() + 14 * 86400_000).toISOString().slice(0, 10)
 
+let ORG_PROFILE: Record<string, unknown> = {
+  id: 'o1', name: "Rishav's Agency", email: 'rishav@example.com',
+  currency: 'INR', timezone: 'Asia/Kolkata',
+  paymentCollectionMode: 'CONFIRMATION_FLOW',
+}
+
+const MEMBERS: Record<string, unknown>[] = [
+  { id: 'u1', name: 'Rishav Choudhary', email: 'rishav@example.com',  role: 'ADMIN', joinedAt: NOW },
+  { id: 'u2', name: 'Priya Sharma',     email: 'priya@example.com',   role: 'STAFF', joinedAt: NOW },
+]
+
+let BILLING: Record<string, unknown> = { plan: 'STARTER', smsCredits: 8, waCredits: 6 }
+
 const CUSTOMERS: Record<string, unknown>[] = [
   { id: 'c1', organizationId: 'o1', name: 'Arjun Mehta',  companyName: 'Mehta Designs', email: 'arjun@mehtadesigns.com', phone: '9876543210', address: 'Mumbai, Maharashtra', active: true, automationEnabled: true,  createdAt: NOW, updatedAt: NOW },
   { id: 'c2', organizationId: 'o1', name: 'Priya Sharma', companyName: 'SharmaIT',      email: 'priya@sharmait.in',     phone: '9823456780', address: 'Bengaluru, Karnataka', active: true, automationEnabled: true,  createdAt: NOW, updatedAt: NOW },
@@ -93,6 +106,13 @@ const TEMPLATES: Record<string, unknown>[] = [
   { id: 't3', name: 'WhatsApp Quick Nudge', channel: 'WHATSAPP', subject: null,                                                   body: 'Hi {{customerName}}! Reminder — Invoice {{invoiceNumber}} (₹{{amount}}) is due {{dueDate}}. Pay here: {{paymentLink}}',                                                                                         tone: 'NEUTRAL', active: false, createdAt: NOW, updatedAt: NOW },
 ]
 
+const REMINDER_RULES: Record<string, unknown>[] = [
+  { id: 'rr1', name: 'Early nudge',    triggerOffset: -3,  channel: 'EMAIL',    templateId: 't1', templateName: 'Friendly Reminder', active: true,  createdAt: NOW, updatedAt: NOW },
+  { id: 'rr2', name: null,             triggerOffset:  0,  channel: 'WHATSAPP', templateId: null, templateName: null,                active: true,  createdAt: NOW, updatedAt: NOW },
+  { id: 'rr3', name: 'Final warning',  triggerOffset:  5,  channel: 'EMAIL',    templateId: 't2', templateName: 'Overdue Notice',    active: true,  createdAt: NOW, updatedAt: NOW },
+  { id: 'rr4', name: 'SMS escalation', triggerOffset:  10, channel: 'SMS',      templateId: null, templateName: null,                active: false, createdAt: NOW, updatedAt: NOW },
+]
+
 const CONFIRMATIONS: Record<string, unknown>[] = [
   // Full-payment claim on INV-2025-002 (amountClaimed == invoiceRemainingAmount → Approve / Reject)
   {
@@ -147,6 +167,32 @@ function route(method: string, pattern: RegExp, handle: Handler) {
 }
 
 const ROUTES = [
+  // Org profile
+  route('GET',   /^$/, () => ORG_PROFILE),
+  route('PATCH', /^$/, (_, __, b) => { ORG_PROFILE = { ...ORG_PROFILE, ...(b as object) }; return ORG_PROFILE }),
+
+  // Team members
+  route('GET', /\/members$/, () => MEMBERS),
+  route('POST', /\/members\/invite$/, (_, __, b) => {
+    const m = { id: makeId(), joinedAt: NOW, ...(b as object) }
+    MEMBERS.push(m)
+    return m
+  }),
+  route('DELETE', /\/members\/([^/]+)$/, (p) => {
+    const idx = MEMBERS.findIndex((m) => m.id === p.match(/\/members\/([^/]+)$/)?.[1])
+    if (idx !== -1) MEMBERS.splice(idx, 1)
+    return null
+  }),
+
+  // Billing
+  route('GET',  /\/billing$/, () => BILLING),
+  route('POST', /\/billing\/credits\/purchase$/, (_, __, b) => {
+    const { channel, pack } = b as { channel: string; pack: number }
+    if (channel === 'SMS')      BILLING = { ...BILLING, smsCredits: (BILLING.smsCredits as number) + pack }
+    if (channel === 'WHATSAPP') BILLING = { ...BILLING, waCredits:  (BILLING.waCredits  as number) + pack }
+    return BILLING
+  }),
+
   // Customers
   route('GET', /\/customers$/, (_, qs) => {
     let list = [...CUSTOMERS]
@@ -170,10 +216,10 @@ const ROUTES = [
     if (idx !== -1) CUSTOMERS.splice(idx, 1)
     return null
   }),
-  route('PUT', /\/customers\/([^/]+)\/activate$/,          (p) => { const c = CUSTOMERS.find((x) => x.id === p.match(/\/customers\/([^/]+)/)?.[1]); if (c) c.active = true;             return c }),
-  route('PUT', /\/customers\/([^/]+)\/deactivate$/,        (p) => { const c = CUSTOMERS.find((x) => x.id === p.match(/\/customers\/([^/]+)/)?.[1]); if (c) c.active = false;            return c }),
-  route('PUT', /\/customers\/([^/]+)\/automation\/enable$/, (p) => { const c = CUSTOMERS.find((x) => x.id === p.match(/\/customers\/([^/]+)/)?.[1]); if (c) c.automationEnabled = true;  return c }),
-  route('PUT', /\/customers\/([^/]+)\/automation\/disable$/,(p) => { const c = CUSTOMERS.find((x) => x.id === p.match(/\/customers\/([^/]+)/)?.[1]); if (c) c.automationEnabled = false; return c }),
+  route('PUT', /\/customers\/([^/]+)\/activate$/,           (p) => { const idx = CUSTOMERS.findIndex((x) => x.id === p.match(/\/customers\/([^/]+)/)?.[1]); if (idx !== -1) CUSTOMERS[idx] = { ...CUSTOMERS[idx], active: true };             return CUSTOMERS[idx] ?? null }),
+  route('PUT', /\/customers\/([^/]+)\/deactivate$/,         (p) => { const idx = CUSTOMERS.findIndex((x) => x.id === p.match(/\/customers\/([^/]+)/)?.[1]); if (idx !== -1) CUSTOMERS[idx] = { ...CUSTOMERS[idx], active: false };            return CUSTOMERS[idx] ?? null }),
+  route('PUT', /\/customers\/([^/]+)\/automation\/enable$/, (p) => { const idx = CUSTOMERS.findIndex((x) => x.id === p.match(/\/customers\/([^/]+)/)?.[1]); if (idx !== -1) CUSTOMERS[idx] = { ...CUSTOMERS[idx], automationEnabled: true };  return CUSTOMERS[idx] ?? null }),
+  route('PUT', /\/customers\/([^/]+)\/automation\/disable$/,(p) => { const idx = CUSTOMERS.findIndex((x) => x.id === p.match(/\/customers\/([^/]+)/)?.[1]); if (idx !== -1) CUSTOMERS[idx] = { ...CUSTOMERS[idx], automationEnabled: false }; return CUSTOMERS[idx] ?? null }),
 
   // Invoices list & detail
   route('GET', /\/invoices$/, (_, qs) => {
@@ -251,16 +297,52 @@ const ROUTES = [
     return t
   }),
   route('PATCH',  /\/templates\/([^/]+)$/, (p, __, b) => {
-    const t = TEMPLATES.find((x) => x.id === p.match(/\/templates\/([^/]+)$/)?.[1])
-    if (t) Object.assign(t, b)
-    return t
+    const idx = TEMPLATES.findIndex((x) => x.id === p.match(/\/templates\/([^/]+)$/)?.[1])
+    if (idx !== -1) TEMPLATES[idx] = { ...TEMPLATES[idx], ...(b as object) }
+    return TEMPLATES[idx] ?? null
   }),
-  route('PATCH',  /\/templates\/([^/]+)\/activate$/,   (p) => { const t = TEMPLATES.find((x) => x.id === p.match(/\/templates\/([^/]+)/)?.[1]); if (t) t.active = true;  return t }),
-  route('PATCH',  /\/templates\/([^/]+)\/deactivate$/, (p) => { const t = TEMPLATES.find((x) => x.id === p.match(/\/templates\/([^/]+)/)?.[1]); if (t) t.active = false; return t }),
+  route('PATCH',  /\/templates\/([^/]+)\/activate$/,   (p) => {
+    const idx = TEMPLATES.findIndex((x) => x.id === p.match(/\/templates\/([^/]+)/)?.[1])
+    if (idx !== -1) TEMPLATES[idx] = { ...TEMPLATES[idx], active: true }
+    return TEMPLATES[idx] ?? null
+  }),
+  route('PATCH',  /\/templates\/([^/]+)\/deactivate$/, (p) => {
+    const idx = TEMPLATES.findIndex((x) => x.id === p.match(/\/templates\/([^/]+)/)?.[1])
+    if (idx !== -1) TEMPLATES[idx] = { ...TEMPLATES[idx], active: false }
+    return TEMPLATES[idx] ?? null
+  }),
   route('DELETE', /\/templates\/([^/]+)$/, (p) => {
     const idx = TEMPLATES.findIndex((t) => t.id === p.match(/\/templates\/([^/]+)$/)?.[1])
     if (idx !== -1) TEMPLATES.splice(idx, 1)
     return null
+  }),
+
+  // Reminder Rules
+  route('GET', /\/reminder-rules$/, (_, qs) => paginate([...REMINDER_RULES], qs)),
+  route('POST', /\/reminder-rules$/, (_, __, b) => {
+    const r = { id: makeId(), templateName: null, active: true, createdAt: NOW, updatedAt: NOW, ...(b as object) }
+    REMINDER_RULES.push(r)
+    return r
+  }),
+  route('PATCH', /\/reminder-rules\/([^/]+)$/, (p, __, b) => {
+    const idx = REMINDER_RULES.findIndex((x) => x.id === p.match(/\/reminder-rules\/([^/]+)$/)?.[1])
+    if (idx !== -1) REMINDER_RULES[idx] = { ...REMINDER_RULES[idx], ...(b as object), updatedAt: NOW }
+    return REMINDER_RULES[idx] ?? null
+  }),
+  route('DELETE', /\/reminder-rules\/([^/]+)$/, (p) => {
+    const idx = REMINDER_RULES.findIndex((x) => x.id === p.match(/\/reminder-rules\/([^/]+)$/)?.[1])
+    if (idx !== -1) REMINDER_RULES.splice(idx, 1)
+    return null
+  }),
+  route('PUT', /\/reminder-rules\/([^/]+)\/activate$/, (p) => {
+    const idx = REMINDER_RULES.findIndex((x) => x.id === p.match(/\/reminder-rules\/([^/]+)/)?.[1])
+    if (idx !== -1) REMINDER_RULES[idx] = { ...REMINDER_RULES[idx], active: true }
+    return REMINDER_RULES[idx] ?? null
+  }),
+  route('PUT', /\/reminder-rules\/([^/]+)\/deactivate$/, (p) => {
+    const idx = REMINDER_RULES.findIndex((x) => x.id === p.match(/\/reminder-rules\/([^/]+)/)?.[1])
+    if (idx !== -1) REMINDER_RULES[idx] = { ...REMINDER_RULES[idx], active: false }
+    return REMINDER_RULES[idx] ?? null
   }),
 
   // Payment Confirmations
@@ -273,19 +355,19 @@ const ROUTES = [
     CONFIRMATIONS.find((c) => c.id === p.match(/\/payment-confirmations\/([^/]+)$/)?.[1]) ?? null,
   ),
   route('POST', /\/payment-confirmations\/([^/]+)\/approve$/, (p, _, b) => {
-    const c = CONFIRMATIONS.find((x) => x.id === p.match(/\/payment-confirmations\/([^/]+)/)?.[1])
-    if (c) { c.status = 'APPROVED'; c.reviewedAt = NOW; c.businessNote = (b as Record<string,unknown>)?.businessNote ?? null }
-    return c
+    const idx = CONFIRMATIONS.findIndex((x) => x.id === p.match(/\/payment-confirmations\/([^/]+)/)?.[1])
+    if (idx !== -1) CONFIRMATIONS[idx] = { ...CONFIRMATIONS[idx], status: 'APPROVED', reviewedAt: NOW, businessNote: (b as Record<string,unknown>)?.businessNote ?? null }
+    return CONFIRMATIONS[idx] ?? null
   }),
   route('POST', /\/payment-confirmations\/([^/]+)\/request-remaining$/, (p, _, b) => {
-    const c = CONFIRMATIONS.find((x) => x.id === p.match(/\/payment-confirmations\/([^/]+)/)?.[1])
-    if (c) { c.status = 'REMAINING_REQUESTED'; c.reviewedAt = NOW; c.businessNote = (b as Record<string,unknown>)?.businessNote ?? null }
-    return c
+    const idx = CONFIRMATIONS.findIndex((x) => x.id === p.match(/\/payment-confirmations\/([^/]+)/)?.[1])
+    if (idx !== -1) CONFIRMATIONS[idx] = { ...CONFIRMATIONS[idx], status: 'REMAINING_REQUESTED', reviewedAt: NOW, businessNote: (b as Record<string,unknown>)?.businessNote ?? null }
+    return CONFIRMATIONS[idx] ?? null
   }),
   route('POST', /\/payment-confirmations\/([^/]+)\/reject$/, (p, _, b) => {
-    const c = CONFIRMATIONS.find((x) => x.id === p.match(/\/payment-confirmations\/([^/]+)/)?.[1])
-    if (c) { c.status = 'REJECTED'; c.reviewedAt = NOW; c.businessNote = (b as Record<string,unknown>)?.businessNote ?? null }
-    return c
+    const idx = CONFIRMATIONS.findIndex((x) => x.id === p.match(/\/payment-confirmations\/([^/]+)/)?.[1])
+    if (idx !== -1) CONFIRMATIONS[idx] = { ...CONFIRMATIONS[idx], status: 'REJECTED', reviewedAt: NOW, businessNote: (b as Record<string,unknown>)?.businessNote ?? null }
+    return CONFIRMATIONS[idx] ?? null
   }),
 ]
 

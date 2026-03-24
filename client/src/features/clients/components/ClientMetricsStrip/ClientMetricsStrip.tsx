@@ -34,11 +34,11 @@ export function getRisk(avgDelay: number, hasInvoices: boolean): RiskLabel {
   return 'RISK'
 }
 
-export const RISK_META: Record<RiskLabel, { label: string; dot: string; chip: string }> = {
-  GOOD: { label: 'Good',      dot: '🟢', chip: 'bg-green-50 text-green-600 dark:bg-green-500/15 dark:text-green-400' },
-  SLOW: { label: 'Slow',      dot: '🟡', chip: 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400' },
-  RISK: { label: 'High Risk', dot: '🔴', chip: 'bg-red-100 text-red-600 dark:bg-red-500/20 dark:text-red-400' },
-  NONE: { label: 'No Data',   dot: '⚪', chip: 'bg-[#F4F7F9] text-[#8A9BAE] dark:bg-white/10 dark:text-[#8A9BAE]' },
+export const RISK_META: Record<RiskLabel, { label: string; dot: string; text: string }> = {
+  GOOD: { label: 'Good',      dot: 'bg-green-500', text: 'text-green-600 dark:text-green-400' },
+  SLOW: { label: 'Slow',      dot: 'bg-amber-500', text: 'text-amber-600 dark:text-amber-400' },
+  RISK: { label: 'High Risk', dot: 'bg-red-500',   text: 'text-red-600 dark:text-red-400' },
+  NONE: { label: 'No Data',   dot: 'bg-[#8A9BAE]', text: 'text-c-muted' },
 }
 
 // ---------------------------------------------------------------------------
@@ -48,10 +48,11 @@ export const RISK_META: Record<RiskLabel, { label: string; dot: string; chip: st
 interface Props {
   customers: CustomerResponse[]
   invoicesByCustomer: Record<string, InvoiceResponse[]>
+  currency: string
   isLoading: boolean
 }
 
-export default function ClientMetricsStrip({ customers, invoicesByCustomer, isLoading }: Props) {
+export default function ClientMetricsStrip({ customers, invoicesByCustomer, currency, isLoading }: Props) {
   if (isLoading) {
     return (
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 animate-pulse">
@@ -62,8 +63,7 @@ export default function ClientMetricsStrip({ customers, invoicesByCustomer, isLo
     )
   }
 
-  const total = customers.length
-
+  let totalOutstanding = 0
   let highRisk = 0
   let goodPayers = 0
   let totalDelay = 0
@@ -76,27 +76,33 @@ export default function ClientMetricsStrip({ customers, invoicesByCustomer, isLo
     if (risk === 'RISK') highRisk++
     if (risk === 'GOOD') goodPayers++
     if (invs.length > 0) { totalDelay += delay; clientsWithInvoices++ }
+    for (const inv of invs) {
+      if (inv.lifeCycleStatus !== 'PAID' && inv.lifeCycleStatus !== 'CANCELLED') {
+        totalOutstanding += inv.remainingAmount
+      }
+    }
   }
 
   const avgDelay = clientsWithInvoices > 0 ? Math.round(totalDelay / clientsWithInvoices) : 0
 
+  function fmt(n: number) {
+    return new Intl.NumberFormat('en-IN', { style: 'currency', currency, maximumFractionDigits: 0 }).format(n)
+  }
+
   const cards = [
-    { label: 'Total Clients',     value: String(total),             sub: 'active',           color: 'text-[#29B6F6]' },
-    { label: 'High Risk',         value: String(highRisk),          sub: 'avg delay > 14d',  color: 'text-red-500'   },
-    { label: 'Good Payers',       value: String(goodPayers),        sub: 'avg delay < 5d',   color: 'text-green-500' },
-    { label: 'Avg Payment Delay', value: `${avgDelay}d`,            sub: 'across all clients',color: 'text-[#8A9BAE]' },
+    { label: 'Outstanding',       value: fmt(totalOutstanding), sub: 'total unpaid',       color: totalOutstanding > 0 ? 'text-[#0D1B2A] dark:text-white' : 'text-green-600 dark:text-green-400' },
+    { label: 'High Risk',         value: String(highRisk),      sub: 'avg delay > 14d',    color: highRisk > 0 ? 'text-red-500' : 'text-[#0D1B2A] dark:text-white' },
+    { label: 'Good Payers',       value: String(goodPayers),    sub: 'avg delay < 5d',     color: goodPayers > 0 ? 'text-green-600 dark:text-green-400' : 'text-[#0D1B2A] dark:text-white' },
+    { label: 'Avg Payment Delay', value: `${avgDelay}d`,        sub: 'across all clients', color: 'text-[#0D1B2A] dark:text-white' },
   ]
 
   return (
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
       {cards.map((c) => (
-        <div
-          key={c.label}
-          className="bg-white dark:bg-[#1B2838] rounded-xl border border-[#F4F7F9] dark:border-white/10 p-4"
-        >
-          <p className="text-xs font-semibold uppercase tracking-wide text-[#8A9BAE] mb-1">{c.label}</p>
+        <div key={c.label} className="bg-white dark:bg-[#1B2838] rounded-xl border border-c-border p-4">
           <p className={`text-2xl font-bold tabular-nums ${c.color}`}>{c.value}</p>
-          <p className="text-xs text-[#8A9BAE] mt-0.5">{c.sub}</p>
+          <p className="text-sm text-c-muted mt-0.5">{c.label}</p>
+          <p className="text-xs text-c-muted/70 mt-0.5">{c.sub}</p>
         </div>
       ))}
     </div>

@@ -42,12 +42,12 @@ function Toggle({ enabled, onChange, isLoading }: { enabled: boolean; onChange: 
 // Stat card
 // ---------------------------------------------------------------------------
 
-function StatCard({ label, value, sub }: { label: string; value: string; sub?: string }) {
+function Stat({ label, value, sub, valueColor }: { label: string; value: string; sub?: string; valueColor?: string }) {
   return (
-    <div className="bg-[#F4F7F9] dark:bg-[#243447] rounded-lg p-4">
-      <p className="text-xs font-semibold uppercase tracking-wide text-[#8A9BAE] mb-1">{label}</p>
-      <p className="text-xl font-bold text-[#0D1B2A] dark:text-white tabular-nums">{value}</p>
-      {sub && <p className="text-xs text-[#8A9BAE] mt-0.5">{sub}</p>}
+    <div>
+      <p className={`text-xl font-bold tabular-nums ${valueColor ?? 'text-[#0D1B2A] dark:text-white'}`}>{value}</p>
+      <p className="text-sm text-c-muted mt-0.5">{label}</p>
+      {sub && <p className="text-xs text-c-muted/70 mt-0.5">{sub}</p>}
     </div>
   )
 }
@@ -81,7 +81,7 @@ export default function ClientDetailPage() {
   if (!customer) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[40vh] gap-3">
-        <p className="text-sm text-[#8A9BAE]">Client not found.</p>
+        <p className="text-sm text-c-muted">Client not found.</p>
         <button onClick={() => navigate('/clients')} className="text-sm text-[#29B6F6] hover:underline">
           ← Back to Clients
         </button>
@@ -113,32 +113,33 @@ export default function ClientDetailPage() {
         {/* Back */}
         <button
           onClick={() => navigate('/clients')}
-          className="flex items-center gap-1.5 text-sm text-[#8A9BAE] hover:text-[#0D1B2A] dark:hover:text-white transition-colors"
+          className="flex items-center gap-1.5 text-sm text-c-muted hover:text-[#0D1B2A] dark:hover:text-white transition-colors"
         >
           <ArrowLeft size={15} strokeWidth={2} />
           Clients
         </button>
 
         {/* Header card */}
-        <div className="bg-white dark:bg-[#1B2838] rounded-xl border border-[#F4F7F9] dark:border-white/10 p-5 space-y-4">
+        <div className="bg-white dark:bg-[#1B2838] rounded-xl border border-c-border p-5 space-y-4">
           {/* Name + risk + edit */}
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <h1 className="text-2xl font-bold text-[#0D1B2A] dark:text-white">{customer.name}</h1>
-                <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${riskMeta.chip}`}>
-                  {riskMeta.dot} {riskMeta.label}
+                <span className="inline-flex items-center gap-1.5">
+                  <span className={`w-2 h-2 rounded-full shrink-0 ${riskMeta.dot}`} />
+                  <span className={`text-sm font-medium ${riskMeta.text}`}>{riskMeta.label}</span>
                 </span>
               </div>
               {customer.companyName && (
-                <p className="flex items-center gap-1.5 text-sm text-[#8A9BAE] mt-1">
+                <p className="flex items-center gap-1.5 text-sm text-c-muted mt-1">
                   <Building2 size={13} /> {customer.companyName}
                 </p>
               )}
             </div>
             <button
               onClick={() => setShowEdit(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-[#8A9BAE] border border-[#F4F7F9] dark:border-white/10 hover:bg-[#F4F7F9] dark:hover:bg-[#243447] transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-c-muted border border-c-border hover:bg-[#F4F7F9] dark:hover:bg-[#243447] transition-colors"
             >
               <Pencil size={13} />
               Edit
@@ -148,34 +149,41 @@ export default function ClientDetailPage() {
           {/* Contact info */}
           <div className="flex flex-wrap gap-x-5 gap-y-1.5">
             {customer.email && (
-              <a href={`mailto:${customer.email}`} className="flex items-center gap-1.5 text-sm text-[#8A9BAE] hover:text-[#0D1B2A] dark:hover:text-white transition-colors">
+              <a href={`mailto:${customer.email}`} className="flex items-center gap-1.5 text-sm text-c-muted hover:text-[#0D1B2A] dark:hover:text-white transition-colors">
                 <Mail size={13} /> {customer.email}
               </a>
             )}
             {customer.phone && (
-              <a href={`tel:${customer.phone}`} className="flex items-center gap-1.5 text-sm text-[#8A9BAE] hover:text-[#0D1B2A] dark:hover:text-white transition-colors">
+              <a href={`tel:${customer.phone}`} className="flex items-center gap-1.5 text-sm text-c-muted hover:text-[#0D1B2A] dark:hover:text-white transition-colors">
                 <Phone size={13} /> {customer.phone}
               </a>
             )}
             {customer.address && (
-              <span className="flex items-center gap-1.5 text-sm text-[#8A9BAE]">
+              <span className="flex items-center gap-1.5 text-sm text-c-muted">
                 <MapPin size={13} /> {customer.address}
               </span>
             )}
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            <StatCard label="Outstanding"      value={fmt(outstanding)}  sub="remaining balance" />
-            <StatCard label="Open Invoices"    value={String(openCount)} sub="issued / partial"  />
-            <StatCard label="Avg Payment Delay" value={invoices.length > 0 ? `${avgDelay}d` : '—'} sub="days past due" />
+          <div className="flex gap-6 pt-3 border-t border-c-border flex-wrap">
+            <Stat
+              label="Outstanding"
+              value={fmt(outstanding)}
+              sub="remaining balance"
+              valueColor={outstanding > 0 ? undefined : 'text-green-600 dark:text-green-400'}
+            />
+            <div className="w-px bg-c-border self-stretch hidden sm:block" />
+            <Stat label="Open Invoices"    value={String(openCount)} sub="issued or partial" />
+            <div className="w-px bg-c-border self-stretch hidden sm:block" />
+            <Stat label="Avg Payment Delay" value={invoices.length > 0 ? `${avgDelay}d` : '—'} sub="days to pay" />
           </div>
 
           {/* Automation toggle */}
-          <div className="flex items-center justify-between pt-2 border-t border-[#F4F7F9] dark:border-white/10">
+          <div className="flex items-center justify-between pt-2 border-t border-c-border">
             <div>
               <p className="text-sm font-medium text-[#0D1B2A] dark:text-white">Auto-reminders</p>
-              <p className="text-xs text-[#8A9BAE] mt-0.5">
+              <p className="text-xs text-c-muted mt-0.5">
                 {customer.automationEnabled
                   ? 'Automated follow-ups are active for this client'
                   : 'Automated follow-ups are paused for this client'}
@@ -190,15 +198,18 @@ export default function ClientDetailPage() {
         </div>
 
         {/* Invoice history */}
-        <div className="bg-white dark:bg-[#1B2838] rounded-xl border border-[#F4F7F9] dark:border-white/10 p-5">
-          <p className="text-xs font-semibold uppercase tracking-wide text-[#8A9BAE] mb-4">
-            Invoices ({invoices.length})
-          </p>
+        <div className="bg-white dark:bg-[#1B2838] rounded-xl border border-c-border overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-c-border">
+            <h2 className="text-sm font-semibold text-[#0D1B2A] dark:text-white">Invoice History</h2>
+            <span className="text-xs text-c-muted">{invoices.length} invoice{invoices.length !== 1 ? 's' : ''}</span>
+          </div>
+          <div className="p-5">
           <ClientInvoiceHistory
             invoices={invoices}
             currency={currency}
             isLoading={loadingInvoices}
           />
+          </div>
         </div>
       </div>
 

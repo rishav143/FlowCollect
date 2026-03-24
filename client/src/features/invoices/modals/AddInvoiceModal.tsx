@@ -64,12 +64,12 @@ export default function AddInvoiceModal({ onClose }: Props) {
         className="relative w-full max-w-2xl bg-white dark:bg-[#1B2838] rounded-2xl shadow-xl overflow-hidden max-h-[90vh] flex flex-col"
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#F4F7F9] dark:border-white/10 shrink-0">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-c-border shrink-0">
           <h2 className="text-base font-semibold text-[#0D1B2A] dark:text-white">New Invoice</h2>
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-lg text-[#8A9BAE] hover:text-[#0D1B2A] dark:hover:text-white hover:bg-[#F4F7F9] dark:hover:bg-[#243447] transition-colors"
+            className="p-1.5 rounded-lg text-c-muted hover:text-[#0D1B2A] dark:hover:text-white hover:bg-[#F4F7F9] dark:hover:bg-[#243447] transition-colors"
           >
             <X size={18} />
           </button>
@@ -84,11 +84,11 @@ export default function AddInvoiceModal({ onClose }: Props) {
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end gap-3 px-6 py-4 border-t border-[#F4F7F9] dark:border-white/10 shrink-0">
+        <div className="flex justify-end gap-3 px-6 py-4 border-t border-c-border shrink-0">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 rounded-lg text-sm font-medium text-[#8A9BAE] hover:text-[#0D1B2A] dark:hover:text-white hover:bg-[#F4F7F9] dark:hover:bg-[#243447] transition-colors"
+            className="px-4 py-2 rounded-lg text-sm font-medium text-c-muted hover:text-[#0D1B2A] dark:hover:text-white hover:bg-[#F4F7F9] dark:hover:bg-[#243447] transition-colors"
           >
             Cancel
           </button>

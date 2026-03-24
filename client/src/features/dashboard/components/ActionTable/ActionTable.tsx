@@ -48,12 +48,12 @@ function Section({
   children:  React.ReactNode
 }) {
   return (
-    <div className="bg-white dark:bg-[#1B2838] rounded-xl border border-[#F4F7F9] dark:border-white/10 overflow-hidden">
-      <div className="flex items-center gap-2 px-5 py-4 border-b border-[#F4F7F9] dark:border-white/10">
+    <div className="bg-white dark:bg-[#1B2838] rounded-xl border border-c-border overflow-hidden">
+      <div className="flex items-center gap-2 px-5 py-4 border-b border-c-border">
         <span className={iconColor}>{icon}</span>
         <h2 className="text-sm font-semibold text-[#0D1B2A] dark:text-white">{title}</h2>
         {count > 0 && (
-          <span className="ml-auto text-xs font-medium text-[#8A9BAE]">{count} item{count !== 1 ? 's' : ''}</span>
+          <span className="ml-auto text-xs font-medium text-c-muted">{count} item{count !== 1 ? 's' : ''}</span>
         )}
       </div>
       {children}
@@ -64,7 +64,7 @@ function Section({
 function EmptyState({ message }: { message: string }) {
   return (
     <div className="flex items-center justify-center py-10">
-      <p className="text-sm text-[#8A9BAE]">{message}</p>
+      <p className="text-sm text-c-muted">{message}</p>
     </div>
   )
 }
@@ -85,12 +85,14 @@ function RowSkeleton() {
 
 function OverdueSection({
   invoices,
+  overdueTotal,
   currency,
   isLoading,
 }: {
-  invoices:  InvoiceResponse[]
-  currency:  string
-  isLoading: boolean
+  invoices:     InvoiceResponse[]
+  overdueTotal: number
+  currency:     string
+  isLoading:    boolean
 }) {
   const navigate = useNavigate()
 
@@ -106,42 +108,51 @@ function OverdueSection({
       ) : invoices.length === 0 ? (
         <EmptyState message="No overdue invoices — you're all caught up!" />
       ) : (
-        <ul>
-          {invoices.map((inv, idx) => {
-            const days = inv.dueDate ? daysOverdue(inv.dueDate) : 0
-            return (
-              <li
-                key={inv.id}
-                className={[
-                  'flex items-center gap-3 px-5 py-3.5 cursor-pointer',
-                  'hover:bg-[#F4F7F9] dark:hover:bg-[#243447] transition-colors',
-                  idx < invoices.length - 1 ? 'border-b border-[#F4F7F9] dark:border-white/10' : '',
-                ].join(' ')}
-                onClick={() => navigate(`/invoices/${inv.id}`)}
+        <>
+          <ul>
+            {invoices.map((inv, idx) => {
+              const days = inv.dueDate ? daysOverdue(inv.dueDate) : 0
+              return (
+                <li
+                  key={inv.id}
+                  className={[
+                    'flex items-center gap-3 px-5 py-3.5 cursor-pointer',
+                    'hover:bg-[#F4F7F9] dark:hover:bg-[#243447] transition-colors',
+                    idx < invoices.length - 1 ? 'border-b border-c-border' : '',
+                  ].join(' ')}
+                  onClick={() => navigate(`/invoices/${inv.id}`)}
+                >
+                  <span className="text-sm font-semibold text-[#0D1B2A] dark:text-white w-24 shrink-0">
+                    {inv.invoiceNumber}
+                  </span>
+
+                  <span className="inline-flex items-center gap-1.5 shrink-0">
+                    <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                    <span className="text-xs font-medium text-red-600 dark:text-red-400">{days}d overdue</span>
+                  </span>
+
+                  <span className="flex-1" />
+
+                  <span className="text-sm font-semibold text-[#0D1B2A] dark:text-white tabular-nums">
+                    {fmt(inv.remainingAmount, currency)}
+                  </span>
+
+                  <ArrowRight size={14} className="text-c-muted shrink-0" />
+                </li>
+              )
+            })}
+          </ul>
+          {overdueTotal > invoices.length && (
+            <div className="border-t border-c-border px-5 py-3">
+              <button
+                onClick={() => navigate('/invoices')}
+                className="text-xs font-medium text-[#29B6F6] hover:underline"
               >
-                {/* Invoice number */}
-                <span className="text-sm font-semibold text-[#0D1B2A] dark:text-white w-24 shrink-0">
-                  {inv.invoiceNumber}
-                </span>
-
-                {/* Days overdue badge */}
-                <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-red-100 text-red-600 dark:bg-red-500/20 dark:text-red-400 shrink-0">
-                  {days}d overdue
-                </span>
-
-                {/* Spacer */}
-                <span className="flex-1" />
-
-                {/* Amount */}
-                <span className="text-sm font-semibold text-[#0D1B2A] dark:text-white tabular-nums">
-                  {fmt(inv.remainingAmount, currency)}
-                </span>
-
-                <ArrowRight size={14} className="text-[#8A9BAE] shrink-0" />
-              </li>
-            )
-          })}
-        </ul>
+                View all {overdueTotal} overdue invoices →
+              </button>
+            </div>
+          )}
+        </>
       )}
     </Section>
   )
@@ -181,7 +192,7 @@ function ApprovalsSection({
               className={[
                 'flex items-center gap-3 px-5 py-3.5 cursor-pointer',
                 'hover:bg-[#F4F7F9] dark:hover:bg-[#243447] transition-colors',
-                idx < confirmations.length - 1 ? 'border-b border-[#F4F7F9] dark:border-white/10' : '',
+                idx < confirmations.length - 1 ? 'border-b border-c-border' : '',
               ].join(' ')}
               onClick={() => navigate('/approvals')}
             >
@@ -191,7 +202,7 @@ function ApprovalsSection({
               </span>
 
               {/* Time ago */}
-              <span className="text-xs text-[#8A9BAE]">{timeAgo(conf.createdAt)}</span>
+              <span className="text-xs text-c-muted">{timeAgo(conf.createdAt)}</span>
 
               <span className="flex-1" />
 
@@ -200,7 +211,7 @@ function ApprovalsSection({
                 {fmt(conf.amountClaimed, currency)}
               </span>
 
-              <ArrowRight size={14} className="text-[#8A9BAE] shrink-0" />
+              <ArrowRight size={14} className="text-c-muted shrink-0" />
             </li>
           ))}
         </ul>
@@ -214,30 +225,37 @@ function ApprovalsSection({
 // ---------------------------------------------------------------------------
 
 interface Props {
-  overdueInvoices:     InvoiceResponse[]
+  overdueInvoices:      InvoiceResponse[]
+  overdueTotal:         number
   pendingConfirmations: PaymentConfirmationResponse[]
-  currency:            string
-  isConfirmationFlow:  boolean
-  isLoading:           boolean
+  currency:             string
+  isConfirmationFlow:   boolean
+  isLoading:            boolean
 }
 
 export default function ActionTable({
   overdueInvoices,
+  overdueTotal,
   pendingConfirmations,
   currency,
   isConfirmationFlow,
   isLoading,
 }: Props) {
-  if (isConfirmationFlow) {
-    return (
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <OverdueSection    invoices={overdueInvoices} currency={currency} isLoading={isLoading} />
-        <ApprovalsSection  confirmations={pendingConfirmations} currency={currency} isLoading={isLoading} />
-      </div>
-    )
-  }
-
   return (
-    <OverdueSection invoices={overdueInvoices} currency={currency} isLoading={isLoading} />
+    <div className="space-y-4">
+      <OverdueSection
+        invoices={overdueInvoices}
+        overdueTotal={overdueTotal}
+        currency={currency}
+        isLoading={isLoading}
+      />
+      {isConfirmationFlow && (
+        <ApprovalsSection
+          confirmations={pendingConfirmations}
+          currency={currency}
+          isLoading={isLoading}
+        />
+      )}
+    </div>
   )
 }

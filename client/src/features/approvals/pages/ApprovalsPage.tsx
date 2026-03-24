@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { CheckSquare, X } from 'lucide-react'
 import { useAuthStore } from '@/store/auth.store'
+import ViewToggle, { useViewPreference, gridClass } from '@/ui/components/ViewToggle'
 import {
   useConfirmations,
   usePendingConfirmationCount,
@@ -43,30 +44,30 @@ function NoteModal({
         <div className="flex items-start justify-between">
           <div className="flex-1 min-w-0 pr-3">
             <h2 className="text-base font-semibold text-[#0D1B2A] dark:text-white">{title}</h2>
-            <p className="text-xs text-[#8A9BAE] mt-0.5 leading-relaxed">{subtitle}</p>
+            <p className="text-xs text-c-muted mt-0.5 leading-relaxed">{subtitle}</p>
           </div>
-          <button onClick={onCancel} className="text-[#8A9BAE] hover:text-[#0D1B2A] dark:hover:text-white transition-colors shrink-0">
+          <button onClick={onCancel} className="text-c-muted hover:text-[#0D1B2A] dark:hover:text-white transition-colors shrink-0">
             <X size={18} />
           </button>
         </div>
 
         <div>
-          <label className="text-xs font-semibold uppercase tracking-wide text-[#8A9BAE]">
-            Note <span className="normal-case font-normal text-[#8A9BAE]">(optional)</span>
+          <label className="text-xs font-semibold uppercase tracking-wide text-c-muted">
+            Note <span className="normal-case font-normal text-c-muted">(optional)</span>
           </label>
           <textarea
             value={note}
             onChange={(e) => setNote(e.target.value)}
             rows={3}
             placeholder="Add a note for the customer..."
-            className="mt-1.5 w-full text-sm rounded-lg border border-[#F4F7F9] dark:border-white/10 bg-transparent text-[#0D1B2A] dark:text-white placeholder:text-[#8A9BAE] p-2.5 focus:outline-none focus:border-[#8A9BAE]/40 resize-none"
+            className="mt-1.5 w-full text-sm rounded-lg border border-c-border bg-transparent text-[#0D1B2A] dark:text-white placeholder:text-c-muted p-2.5 focus:outline-none focus:border-[#8A9BAE]/40 resize-none"
           />
         </div>
 
         <div className="flex gap-3">
           <button
             onClick={onCancel}
-            className="flex-1 py-2 rounded-lg text-sm font-medium text-[#8A9BAE] hover:bg-[#F4F7F9] dark:hover:bg-[#243447] transition-colors"
+            className="flex-1 py-2 rounded-lg text-sm font-medium text-c-muted hover:bg-[#F4F7F9] dark:hover:bg-[#243447] transition-colors"
           >
             Cancel
           </button>
@@ -77,7 +78,7 @@ function NoteModal({
               'flex-1 py-2 rounded-lg text-sm font-semibold text-white disabled:opacity-50 transition-opacity hover:opacity-90',
               confirmStyle === 'danger' ? 'bg-red-500' : '',
             ].join(' ')}
-            style={confirmStyle === 'primary' ? { background: 'linear-gradient(90deg, #2E7A8E 0%, #29B6F6 100%)' } : undefined}
+            style={confirmStyle === 'primary' ? { background: 'linear-gradient(90deg, #29B6F6 0%, #4FC3F7 100%)' } : undefined}
           >
             {isLoading ? 'Processing…' : confirmLabel}
           </button>
@@ -91,11 +92,11 @@ function NoteModal({
 // Skeleton
 // ---------------------------------------------------------------------------
 
-function Skeleton() {
+function Skeleton({ view }: { view: string }) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 animate-pulse">
-      {[...Array(3)].map((_, i) => (
-        <div key={i} className="h-56 rounded-xl bg-[#F4F7F9] dark:bg-white/10" />
+    <div className={`${view === 'list' ? 'space-y-3' : `grid gap-4 ${view === 'grid3' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1 sm:grid-cols-2'}`} animate-pulse`}>
+      {[...Array(view === 'list' ? 3 : 6)].map((_, i) => (
+        <div key={i} className="h-28 rounded-xl bg-[#F4F7F9] dark:bg-white/10" />
       ))}
     </div>
   )
@@ -114,8 +115,9 @@ export default function ApprovalsPage() {
 
   const [filter,        setFilter]        = useState<ApprovalFilter>('PENDING_APPROVAL')
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null)
+  const [view,          setView]          = useViewPreference('approvals', 'list')
 
-  const { data, isLoading }    = useConfirmations(filter)
+  const { data, isLoading, isFetching } = useConfirmations(filter)
   const { data: pendingCount } = usePendingConfirmationCount()
 
   const approveMut          = useApproveConfirmation()
@@ -158,13 +160,16 @@ export default function ApprovalsPage() {
       <div className="space-y-5">
 
         {/* Header */}
-        <div>
-          <h1 className="text-xl font-bold text-[#0D1B2A] dark:text-white">Approvals</h1>
-          {!isLoading && (
-            <p className="text-sm text-[#8A9BAE] mt-0.5">
-              {pendingCount ?? 0} payment claim{(pendingCount ?? 0) !== 1 ? 's' : ''} awaiting review
-            </p>
-          )}
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-xl font-bold text-[#0D1B2A] dark:text-white">Approvals</h1>
+            {!isLoading && (
+              <p className="text-sm text-c-muted mt-0.5">
+                {pendingCount ?? 0} payment claim{(pendingCount ?? 0) !== 1 ? 's' : ''} awaiting review
+              </p>
+            )}
+          </div>
+          <ViewToggle value={view} onChange={setView} options={['list', 'grid2', 'grid3']} />
         </div>
 
         {/* Filter tabs */}
@@ -175,8 +180,9 @@ export default function ApprovalsPage() {
         />
 
         {/* Content */}
+        <div className={`transition-opacity duration-200 ${isFetching && !isLoading ? 'opacity-60' : 'opacity-100'}`}>
         {isLoading ? (
-          <Skeleton />
+          <Skeleton view={view} />
         ) : confirmations.length === 0 ? (
           <div className="flex flex-col items-center justify-center min-h-[40vh] gap-3 text-center">
             <div className="w-12 h-12 rounded-full bg-green-50 dark:bg-green-500/10 flex items-center justify-center">
@@ -186,7 +192,7 @@ export default function ApprovalsPage() {
               <p className="text-sm font-medium text-[#0D1B2A] dark:text-white">
                 {filter === 'PENDING_APPROVAL' ? 'All caught up!' : 'Nothing here'}
               </p>
-              <p className="text-sm text-[#8A9BAE] mt-0.5">
+              <p className="text-sm text-c-muted mt-0.5">
                 {filter === 'PENDING_APPROVAL'
                   ? 'No payment claims are waiting for your review.'
                   : 'No confirmations match this filter.'}
@@ -194,7 +200,7 @@ export default function ApprovalsPage() {
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+          <div className={gridClass(view)}>
             {confirmations.map((c) => (
               <ConfirmationCard
                 key={c.id}
@@ -208,6 +214,7 @@ export default function ApprovalsPage() {
             ))}
           </div>
         )}
+        </div>
       </div>
 
       {/* Reject modal */}

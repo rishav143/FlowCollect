@@ -33,6 +33,7 @@ export function useAllClients() {
 
 function invalidateAll(qc: ReturnType<typeof useQueryClient>, orgId: string) {
   qc.invalidateQueries({ queryKey: ['customers', orgId] })
+  qc.invalidateQueries({ queryKey: ['customer',  orgId] })
 }
 
 export function useCreateClient() {

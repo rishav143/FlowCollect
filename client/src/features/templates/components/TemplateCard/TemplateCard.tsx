@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { Mail, MessageSquare, MessageCircle, Pencil, Trash2 } from 'lucide-react'
 import type { TemplateResponse } from '@/types/template.types'
 
@@ -7,7 +8,7 @@ import type { TemplateResponse } from '@/types/template.types'
 
 const TONE_STYLES: Record<string, string> = {
   POLITE:  'bg-[#22C55E]/10 text-[#22C55E]',
-  NEUTRAL: 'bg-[#8A9BAE]/15 text-[#0D1B2A] dark:text-[#8A9BAE]',
+  NEUTRAL: 'bg-[#8A9BAE]/15 text-[#0D1B2A] dark:text-c-muted',
   FIRM:    'bg-[#EF4444]/10 text-[#EF4444]',
 }
 
@@ -40,7 +41,7 @@ interface Props {
   onToggle: (t: TemplateResponse) => void
 }
 
-export default function TemplateCard({ template, onEdit, onDelete, onToggle }: Props) {
+const TemplateCard = memo(function TemplateCard({ template, onEdit, onDelete, onToggle }: Props) {
   return (
     <div className={[
       'rounded-xl border transition-colors',
@@ -54,7 +55,7 @@ export default function TemplateCard({ template, onEdit, onDelete, onToggle }: P
         {/* Header row */}
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-2 min-w-0">
-            <span className="text-[#8A9BAE] shrink-0">
+            <span className="text-c-muted shrink-0">
               {CHANNEL_ICON[template.channel] ?? <MessageSquare size={15} strokeWidth={1.8} />}
             </span>
             <p className="text-sm font-semibold text-[#0D1B2A] dark:text-white truncate">
@@ -88,7 +89,7 @@ export default function TemplateCard({ template, onEdit, onDelete, onToggle }: P
 
         {/* Subject — email only */}
         {template.channel === 'EMAIL' && template.subject && (
-          <p className="mt-1.5 text-xs text-[#8A9BAE]">
+          <p className="mt-1.5 text-xs text-c-muted">
             Subject: <span className="text-[#0D1B2A] dark:text-white/80">{template.subject}</span>
           </p>
         )}
@@ -100,7 +101,7 @@ export default function TemplateCard({ template, onEdit, onDelete, onToggle }: P
       </div>
 
       {/* Footer actions */}
-      <div className="flex items-center justify-end gap-1 px-4 py-2 border-t border-[#F4F7F9] dark:border-white/10">
+      <div className="flex items-center justify-end gap-1 px-4 py-2 border-t border-c-border">
         <button
           onClick={() => onEdit(template)}
           className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-[#0D1B2A] dark:text-white hover:bg-[#F4F7F9] dark:hover:bg-white/10 rounded-lg transition-colors"
@@ -118,4 +119,6 @@ export default function TemplateCard({ template, onEdit, onDelete, onToggle }: P
       </div>
     </div>
   )
-}
+})
+
+export default TemplateCard
