@@ -80,9 +80,14 @@ export default function RegisterPage() {
       const res = await register({ ownerName, organizationName, email, password, currency, timezone })
       setResult(res)
     } catch (err) {
-      const ax = err as AxiosError<{ message?: string }>
-      const msg = ax.response?.data?.message
-      setError(msg ?? `Error ${ax.response?.status ?? ''}: Could not create account.`)
+      const ax = err as AxiosError<{ message?: string; errors?: { field: string; message: string }[] }>
+      const fieldErrors = ax.response?.data?.errors
+      if (fieldErrors?.length) {
+        setError(fieldErrors.map((e) => `${e.field}: ${e.message}`).join('\n'))
+      } else {
+        const msg = ax.response?.data?.message
+        setError(msg ?? `Error ${ax.response?.status ?? ''}: Could not create account.`)
+      }
     } finally {
       setLoading(false)
     }
@@ -179,7 +184,7 @@ export default function RegisterPage() {
         </div>
 
         {error && (
-          <p className="text-sm text-red-500 bg-red-50 dark:bg-red-500/10 px-3 py-2 rounded-lg">
+          <p className="text-sm text-red-500 bg-red-50 dark:bg-red-500/10 px-3 py-2 rounded-lg whitespace-pre-line">
             {error}
           </p>
         )}
