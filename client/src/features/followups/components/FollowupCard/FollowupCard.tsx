@@ -2,17 +2,10 @@ import { memo } from 'react'
 import { Send } from 'lucide-react'
 import type { InvoiceResponse } from '@/types/invoice.types'
 import type { FollowUpResponse } from '@/types/followup.types'
+import { timeAgo, dueDateLabel } from '@/utils/date'
 
 function fmt(n: number, currency: string) {
   return new Intl.NumberFormat('en-IN', { style: 'currency', currency, maximumFractionDigits: 0 }).format(n)
-}
-
-function timeAgo(dateStr: string | null): string {
-  if (!dateStr) return '—'
-  const diffDays = Math.floor((Date.now() - new Date(dateStr).getTime()) / 86_400_000)
-  if (diffDays === 0) return 'today'
-  if (diffDays === 1) return '1 day ago'
-  return `${diffDays} days ago`
 }
 
 const CHANNEL_LABEL: Record<string, string> = {
@@ -67,7 +60,7 @@ const FollowupCard = memo(function FollowupCard({ invoice, currency, customerNam
             invoice.timeStatus === 'DUE_TODAY' ? 'font-semibold text-amber-600 dark:text-amber-400' :
             'text-[#0D1B2A] dark:text-white'
           }>
-            {invoice.timeStatus === 'DUE_TODAY' ? 'today' : timeAgo(invoice.dueDate)}
+            {dueDateLabel(invoice.dueDate)}
           </span>
         </p>
         <p>

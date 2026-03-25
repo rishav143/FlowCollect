@@ -276,13 +276,7 @@ function DispatchModal({
 // Desktop table row
 // ---------------------------------------------------------------------------
 
-function timeAgo(dateStr: string | null): string {
-  if (!dateStr) return '—'
-  const diffDays = Math.floor((Date.now() - new Date(dateStr).getTime()) / 86_400_000)
-  if (diffDays === 0) return 'today'
-  if (diffDays === 1) return '1 day ago'
-  return `${diffDays} days ago`
-}
+import { timeAgo, dueDateLabel } from '@/utils/date'
 
 const CHANNEL_LABEL: Record<string, string> = {
   EMAIL: 'Email', SMS: 'SMS', WHATSAPP: 'WhatsApp',
@@ -321,7 +315,7 @@ function InvoiceRow({
           invoice.timeStatus === 'DUE_TODAY' ? 'text-amber-600 dark:text-amber-400 font-semibold' :
           'text-c-muted'
         }>
-          {invoice.timeStatus === 'DUE_TODAY' ? 'Today' : timeAgo(invoice.dueDate)}
+          {dueDateLabel(invoice.dueDate)}
         </span>
       </td>
       {/* Last contacted */}

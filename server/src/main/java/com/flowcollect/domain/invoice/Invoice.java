@@ -48,7 +48,6 @@ public class Invoice {
     private User createdBy;
 
     // Core Attributes
-
     @NotNull
     @Column(name = "invoice_number", nullable = false)
     private String invoiceNumber;

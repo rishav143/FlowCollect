@@ -33,15 +33,7 @@ function fmt(amount: number, currency: string) {
   }).format(amount)
 }
 
-function timeAgo(iso: string): string {
-  const mins = Math.floor((Date.now() - new Date(iso).getTime()) / 60_000)
-  if (mins < 60)  return `${mins}m ago`
-  const hrs = Math.floor(mins / 60)
-  if (hrs < 24)   return `${hrs}h ago`
-  const days = Math.floor(hrs / 24)
-  if (days === 1) return 'Yesterday'
-  return `${days}d ago`
-}
+import { timeAgoFine as timeAgo } from '@/utils/date'
 
 // ---------------------------------------------------------------------------
 // Health pill — at-a-glance status shown in the header
