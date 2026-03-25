@@ -36,13 +36,24 @@ function ChannelTemplateSelect({
   label,
   templates,
   value,
+  loading,
   onChange,
 }: {
   label:     string
   templates: TemplateResponse[]
   value:     string
+  loading:   boolean
   onChange:  (id: string) => void
 }) {
+  if (loading) {
+    return (
+      <div className="space-y-1">
+        <p className="text-xs text-c-muted">{label} template</p>
+        <div className="h-9 rounded-lg bg-[#F4F7F9] dark:bg-white/10 animate-pulse" />
+      </div>
+    )
+  }
+
   const active = templates.filter((t) => t.active)
 
   if (active.length === 0) {
@@ -89,7 +100,7 @@ function DispatchModal({
   const dispatch = useDispatchFollowup(invoice.id)
 
   // Load all active templates once — filter by channel in the selector
-  const { data: templatesData } = useTemplates({ size: 200 })
+  const { data: templatesData, isLoading: templatesLoading } = useTemplates({ size: 200 })
   const allTemplates = templatesData?.content ?? []
 
   function templatesFor(ch: FollowUpChannel) {
@@ -200,6 +211,7 @@ function DispatchModal({
                   label={meta.label}
                   templates={templatesFor(ch)}
                   value={channelTemplates[ch] ?? ''}
+                  loading={templatesLoading}
                   onChange={(id) => setTemplate(ch, id)}
                 />
               )
