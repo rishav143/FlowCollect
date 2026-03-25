@@ -99,8 +99,11 @@ function DispatchModal({
 
   const dispatch = useDispatchFollowup(invoice.id)
 
-  // Load all active templates once — filter by channel in the selector
-  const { data: templatesData, isLoading: templatesLoading } = useTemplates({ size: 200 })
+  // Load all active templates once — filter by channel in the selector.
+  // Use isFetching (not just isLoading) so skeleton shows during background
+  // refetches triggered by useDefaultTemplates seeding.
+  const { data: templatesData, isLoading, isFetching } = useTemplates({ size: 100 })
+  const templatesLoading = isLoading || isFetching
   const allTemplates = templatesData?.content ?? []
 
   function templatesFor(ch: FollowUpChannel) {

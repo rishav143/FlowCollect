@@ -63,7 +63,7 @@ export function useDefaultTemplates() {
 
     async function seed() {
       try {
-        const page = await listTemplates(orgId, { size: 200 })
+        const page = await listTemplates(orgId, { size: 100 })
         const existingChannels = new Set<TemplateChannel>(
           page.content.map((t) => t.channel),
         )
@@ -74,7 +74,23 @@ export function useDefaultTemplates() {
 
         if (toCreate.length === 0) return
 
-        await Promise.all(toCreate.map((t) => createTemplate(orgId, t)))
+        const created = await Promise.all(toCreate.map((t) => createTemplate(orgId, t)))
+
+        // Immediately update the query cache so any open subscribers (e.g. the
+        // dispatch modal) receive the new templates without waiting for a
+        // separate refetch round-trip.
+        const allTemplates = [...page.content, ...created]
+        queryClient.setQueryData(
+          ['templates', orgId, { size: 100 }],
+          {
+            content:       allTemplates,
+            totalElements: allTemplates.length,
+            totalPages:    1,
+            number:        0,
+            size:          200,
+          },
+        )
+        // Invalidate all other template queries (channel-filtered views, etc.)
         queryClient.invalidateQueries({ queryKey: ['templates', orgId] })
       } catch {
         // Silently swallow — seeding is best-effort and non-blocking
