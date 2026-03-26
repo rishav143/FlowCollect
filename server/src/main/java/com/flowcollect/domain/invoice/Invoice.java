@@ -89,6 +89,11 @@ public class Invoice {
     )
     private List<InvoiceItem> items = new ArrayList<>();
 
+    // Archive
+
+    @Column(nullable = false)
+    private boolean archived = false;
+
     // Audit
 
     @Column(nullable = false, updatable = false)
@@ -223,6 +228,10 @@ public class Invoice {
         return timeStatus == TimeStatus.OVERDUE;
     }
 
+    public boolean isArchived() {
+        return archived;
+    }
+
     // Setters
 
     public void setOrganization(Organization organization) {
@@ -268,6 +277,17 @@ public class Invoice {
 
     public void markAsCancelled() {
         this.lifeCycleStatus = LifeCycleStatus.CANCELLED;
+    }
+
+    public void archive() {
+        if (lifeCycleStatus != LifeCycleStatus.PAID && lifeCycleStatus != LifeCycleStatus.CANCELLED) {
+            throw new IllegalStateException("Only PAID or CANCELLED invoices can be archived. Current status: " + lifeCycleStatus);
+        }
+        this.archived = true;
+    }
+
+    public void unarchive() {
+        this.archived = false;
     }
 
     public void updateLifeCycleStatus(BigDecimal totalPaid) {

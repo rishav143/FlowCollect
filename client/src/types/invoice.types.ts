@@ -25,6 +25,7 @@ export interface InvoiceResponse {
   totalPaid:        number
   remainingAmount:  number
   items:            InvoiceItem[]
+  archived:         boolean
   createdAt:        string         // ISO instant
   updatedAt:        string
 }
@@ -33,6 +34,7 @@ export interface ListInvoicesParams {
   timeStatus?:      TimeStatus
   lifeCycleStatus?: LifeCycleStatus
   invoiceNumber?:   string
+  archived?:        boolean
   page?:            number
   size?:            number
   sort?:            string

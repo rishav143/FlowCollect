@@ -6,6 +6,10 @@ import {
   deleteInvoice,
   issueInvoice,
   downloadInvoicePdf,
+  archiveInvoice,
+  unarchiveInvoice,
+  archivePaidInvoices,
+  bulkArchiveInvoices,
   type CreateInvoiceBody,
   type UpdateInvoiceBody,
 } from '@/api/invoice.api'
@@ -46,6 +50,46 @@ export function useIssueInvoice(invoiceId: string) {
 
   return useMutation({
     mutationFn: (issueDate?: string) => issueInvoice(orgId, invoiceId, issueDate),
+    onSuccess:  () => qc.invalidateQueries({ queryKey: ['invoices', orgId] }),
+  })
+}
+
+export function useArchiveInvoice() {
+  const orgId = useAuthStore((s) => s.org?.id ?? '')
+  const qc    = useQueryClient()
+
+  return useMutation({
+    mutationFn: (id: string) => archiveInvoice(orgId, id),
+    onSuccess:  () => qc.invalidateQueries({ queryKey: ['invoices', orgId] }),
+  })
+}
+
+export function useUnarchiveInvoice() {
+  const orgId = useAuthStore((s) => s.org?.id ?? '')
+  const qc    = useQueryClient()
+
+  return useMutation({
+    mutationFn: (id: string) => unarchiveInvoice(orgId, id),
+    onSuccess:  () => qc.invalidateQueries({ queryKey: ['invoices', orgId] }),
+  })
+}
+
+export function useArchivePaidInvoices() {
+  const orgId = useAuthStore((s) => s.org?.id ?? '')
+  const qc    = useQueryClient()
+
+  return useMutation({
+    mutationFn: () => archivePaidInvoices(orgId),
+    onSuccess:  () => qc.invalidateQueries({ queryKey: ['invoices', orgId] }),
+  })
+}
+
+export function useBulkArchiveInvoices() {
+  const orgId = useAuthStore((s) => s.org?.id ?? '')
+  const qc    = useQueryClient()
+
+  return useMutation({
+    mutationFn: (ids: string[]) => bulkArchiveInvoices(orgId, ids),
     onSuccess:  () => qc.invalidateQueries({ queryKey: ['invoices', orgId] }),
   })
 }

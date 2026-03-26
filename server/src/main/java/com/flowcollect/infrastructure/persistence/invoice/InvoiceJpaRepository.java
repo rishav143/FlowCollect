@@ -22,4 +22,8 @@ public interface InvoiceJpaRepository extends JpaRepository<Invoice, UUID>, JpaS
     List<Invoice> findAllByOrganizationIdAndLifeCycleStatusInAndDueDateIsNotNull(UUID organizationId, List<LifeCycleStatus> statuses);
 
     Optional<Invoice> findByIdAndOrganizationId(UUID invoiceId, UUID orgId);
+
+    List<Invoice> findAllByOrganizationIdAndLifeCycleStatusAndArchivedFalse(UUID organizationId, LifeCycleStatus lifeCycleStatus);
+
+    List<Invoice> findAllByIdInAndOrganizationId(List<UUID> ids, UUID organizationId);
 }
