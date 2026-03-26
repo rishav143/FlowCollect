@@ -76,9 +76,14 @@ export function useDashboard() {
       )
     : null
 
-  // Collected this month: real sum from the server using paidAt on each Payment row.
-  // Includes partial payments recorded this month, not just fully-paid invoices.
-  const collectedThisMonth = statsQuery.data?.collectedThisMonth ?? 0
+  // Collected this month — prefer server value (real paidAt, includes partials).
+  // Falls back to frontend estimate (PAID invoices updated this month) until
+  // the /stats endpoint is deployed.
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+  const collectedFallback = invoices
+    .filter((i) => i.lifeCycleStatus === 'PAID' && new Date(i.updatedAt) >= startOfMonth)
+    .reduce((s, i) => s + i.totalAmount, 0)
+  const collectedThisMonth = statsQuery.data?.collectedThisMonth ?? collectedFallback
 
   // Due soon: unpaid invoices with dueDate in next 14 days, sorted nearest-first
   const in14Days = new Date(now)
