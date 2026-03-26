@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { ArrowRight, Trash2, FileText, ArchiveRestore } from 'lucide-react'
+import { ArrowRight, Trash2, FileText } from 'lucide-react'
 import type { InvoiceResponse, LifeCycleStatus, TimeStatus } from '@/types/invoice.types'
 import type { CustomerResponse } from '@/types/customer.types'
 
@@ -19,7 +19,7 @@ function getStatus(lc: LifeCycleStatus, ts: TimeStatus): { label: string; dot: s
     return { label: 'Due Today', dot: 'bg-amber-500', text: 'text-amber-600 dark:text-amber-400' }
   const MAP: Record<LifeCycleStatus, { label: string; dot: string; text: string }> = {
     DRAFT:          { label: 'Draft',     dot: 'bg-[#8A9BAE]', text: 'text-c-muted' },
-    ISSUED:         { label: 'Issued',    dot: 'bg-blue-500',  text: 'text-blue-600 dark:text-blue-400' },
+    ISSUED:         { label: 'Issued',     dot: 'bg-blue-500',  text: 'text-blue-600 dark:text-blue-400' },
     PARTIALLY_PAID: { label: 'Partial',   dot: 'bg-[#29B6F6]', text: 'text-[#29B6F6] dark:text-[#4FC3F7]' },
     PAID:           { label: 'Paid',      dot: 'bg-green-500', text: 'text-green-600 dark:text-green-400' },
     CANCELLED:      { label: 'Cancelled', dot: 'bg-[#8A9BAE]', text: 'text-c-muted' },
@@ -30,7 +30,7 @@ function getStatus(lc: LifeCycleStatus, ts: TimeStatus): { label: string; dot: s
 function RowSkeleton() {
   return (
     <tr className="animate-pulse border-b border-c-border">
-      {[24, 160, 80, 100, 100, 40].map((w, i) => (
+      {[160, 80, 100, 100, 40].map((w, i) => (
         <td key={i} className="px-4 py-3.5">
           <div className="h-4 rounded bg-[#F4F7F9] dark:bg-white/10" style={{ width: w }} />
         </td>
@@ -40,26 +40,15 @@ function RowSkeleton() {
 }
 
 interface Props {
-  invoices:     InvoiceResponse[]
-  customerMap:  Record<string, CustomerResponse>
-  currency:     string
-  isLoading:    boolean
-  selectedIds:  Set<string>
-  onSelect:     (id: string, checked: boolean) => void
-  onSelectAll:  (checked: boolean) => void
-  onDelete?:    (invoice: InvoiceResponse) => void
-  onUnarchive?: (invoice: InvoiceResponse) => void
-  showArchived: boolean
+  invoices:    InvoiceResponse[]
+  customerMap: Record<string, CustomerResponse>
+  currency:    string
+  isLoading:   boolean
+  onDelete?:   (invoice: InvoiceResponse) => void
 }
 
-export default function InvoiceTable({
-  invoices, customerMap, currency, isLoading,
-  selectedIds, onSelect, onSelectAll,
-  onDelete, onUnarchive, showArchived,
-}: Props) {
-  const navigate   = useNavigate()
-  const allChecked = invoices.length > 0 && invoices.every((i) => selectedIds.has(i.id))
-  const someChecked = invoices.some((i) => selectedIds.has(i.id))
+export default function InvoiceTable({ invoices, customerMap, currency, isLoading, onDelete }: Props) {
+  const navigate = useNavigate()
 
   return (
     <div className="bg-white dark:bg-[#1B2838] rounded-xl border border-c-border overflow-hidden">
@@ -67,15 +56,6 @@ export default function InvoiceTable({
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-c-border">
-              <th className="px-4 py-3 w-10">
-                <input
-                  type="checkbox"
-                  checked={allChecked}
-                  ref={(el) => { if (el) el.indeterminate = someChecked && !allChecked }}
-                  onChange={(e) => onSelectAll(e.target.checked)}
-                  className="w-4 h-4 rounded accent-[#2E7A8E] cursor-pointer"
-                />
-              </th>
               {['Client', 'Status', 'Due Date', 'Amount', ''].map((h) => (
                 <th
                   key={h}
@@ -91,7 +71,7 @@ export default function InvoiceTable({
               [...Array(5)].map((_, i) => <RowSkeleton key={i} />)
             ) : invoices.length === 0 ? (
               <tr>
-                <td colSpan={6}>
+                <td colSpan={5}>
                   <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
                     <div className="w-12 h-12 rounded-full bg-[#F4F7F9] dark:bg-white/10 flex items-center justify-center">
                       <FileText size={20} className="text-c-muted" strokeWidth={1.5} />
@@ -108,29 +88,15 @@ export default function InvoiceTable({
                 const customer  = inv.customerId ? customerMap[inv.customerId] : null
                 const isDraft   = inv.lifeCycleStatus === 'DRAFT'
                 const isPaid    = inv.lifeCycleStatus === 'PAID'
-                const isPartial = inv.lifeCycleStatus === 'PARTIALLY_PAID'
-                const { label, text } = getStatus(inv.lifeCycleStatus, inv.timeStatus)
-                const isChecked = selectedIds.has(inv.id)
+                const isPartial = inv.lifeCycleStatus === 'PARTIALLY_PAID' // show remaining hint
+                const { label, dot, text } = getStatus(inv.lifeCycleStatus, inv.timeStatus)
 
                 return (
                   <tr
                     key={inv.id}
-                    className={[
-                      'border-b border-c-border last:border-0 hover:bg-[#F4F7F9] dark:hover:bg-[#243447] cursor-pointer transition-colors',
-                      isChecked ? 'bg-[#F4F7F9] dark:bg-[#243447]' : '',
-                    ].join(' ')}
+                    className="border-b border-c-border last:border-0 hover:bg-[#F4F7F9] dark:hover:bg-[#243447] cursor-pointer transition-colors"
                     onClick={() => navigate(`/invoices/${inv.id}`)}
                   >
-                    {/* Checkbox */}
-                    <td className="px-4 py-3.5" onClick={(e) => e.stopPropagation()}>
-                      <input
-                        type="checkbox"
-                        checked={isChecked}
-                        onChange={(e) => onSelect(inv.id, e.target.checked)}
-                        className="w-4 h-4 rounded accent-[#2E7A8E] cursor-pointer"
-                      />
-                    </td>
-
                     {/* Client + invoice # */}
                     <td className="px-4 py-3.5">
                       <p className="font-semibold text-[#0D1B2A] dark:text-white">
@@ -162,16 +128,11 @@ export default function InvoiceTable({
                     </td>
 
                     {/* Action */}
-                    <td className="px-4 py-3.5" onClick={(e) => e.stopPropagation()}>
-                      {showArchived && onUnarchive ? (
-                        <button
-                          onClick={() => onUnarchive(inv)}
-                          className="p-1.5 rounded-lg text-c-muted hover:text-[#2E7A8E] hover:bg-[#2E7A8E]/10 transition-colors"
-                          title="Restore"
-                        >
-                          <ArchiveRestore size={14} strokeWidth={2} />
-                        </button>
-                      ) : isDraft && onDelete ? (
+                    <td
+                      className="px-4 py-3.5"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {isDraft && onDelete ? (
                         <button
                           onClick={() => onDelete(inv)}
                           className="p-1.5 rounded-lg text-c-muted hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"

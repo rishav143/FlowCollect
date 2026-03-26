@@ -19,7 +19,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
-import com.flowcollect.api.v1.invoice.dto.BulkArchiveRequest;
 import com.flowcollect.api.v1.invoice.dto.InvoiceRequest;
 import com.flowcollect.api.v1.invoice.dto.InvoiceResponse;
 import com.flowcollect.api.v1.invoice.dto.InvoiceUpdateRequest;
@@ -118,68 +117,19 @@ public class InvoiceController {
         @RequestParam(required = false) LocalDate createdAt,
         @RequestParam(required = false) LocalDate updatedAt,
         @RequestParam(required = false) LocalDate dueDate,
-        @RequestParam(required = false) Boolean archived,
         Pageable pageable
     ){
         Page<Invoice> invoices = invoiceService.list(
-            organizationId,
+            organizationId, 
             timeStatus,
             lifeCycleStatus,
             invoiceNumber,
             createdAt,
             updatedAt,
             dueDate,
-            archived,
             pageable
         );
         return ResponseEntity.ok(invoices.map(InvoiceMapper::toResponse));
-    }
-
-    /**
-     * Archives a single invoice (PAID or CANCELLED only).
-     */
-    @PatchMapping("/{invoiceId}/archive")
-    public ResponseEntity<InvoiceResponse> archiveInvoice(
-            @PathVariable UUID organizationId,
-            @PathVariable UUID invoiceId
-    ) {
-        Invoice invoice = invoiceService.archiveInvoice(organizationId, invoiceId);
-        return ResponseEntity.ok(InvoiceMapper.toResponse(invoice));
-    }
-
-    /**
-     * Restores a single archived invoice.
-     */
-    @PatchMapping("/{invoiceId}/unarchive")
-    public ResponseEntity<InvoiceResponse> unarchiveInvoice(
-            @PathVariable UUID organizationId,
-            @PathVariable UUID invoiceId
-    ) {
-        Invoice invoice = invoiceService.unarchiveInvoice(organizationId, invoiceId);
-        return ResponseEntity.ok(InvoiceMapper.toResponse(invoice));
-    }
-
-    /**
-     * Archives all PAID invoices for the organization in one shot.
-     */
-    @PostMapping("/archive-paid")
-    public ResponseEntity<Void> archivePaidInvoices(
-            @PathVariable UUID organizationId
-    ) {
-        invoiceService.archivePaidInvoices(organizationId);
-        return ResponseEntity.noContent().build();
-    }
-
-    /**
-     * Archives a specific list of invoices by ID (PAID or CANCELLED only).
-     */
-    @PostMapping("/bulk-archive")
-    public ResponseEntity<Void> bulkArchiveInvoices(
-            @PathVariable UUID organizationId,
-            @RequestBody BulkArchiveRequest request
-    ) {
-        invoiceService.bulkArchiveInvoices(organizationId, request.getInvoiceIds());
-        return ResponseEntity.noContent().build();
     }
 
     /**

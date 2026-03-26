@@ -29,7 +29,6 @@ public final class InvoiceMapper {
         response.setTotalPaid(invoice.getTotalPaid());
         response.setRemainingAmount(invoice.getRemainingAmount());
         response.setItems(toItemResponses(invoice.getItems()));
-        response.setArchived(invoice.isArchived());
         response.setCreatedAt(invoice.getCreatedAt());
         response.setUpdatedAt(invoice.getUpdatedAt());
         return response;

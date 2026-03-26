@@ -27,7 +27,6 @@ public class InvoiceResponse {
     private BigDecimal totalPaid;
     private BigDecimal remainingAmount;
     private List<InvoiceItemResponse> items = new ArrayList<>();
-    private boolean archived;
     private Instant createdAt;
     private Instant updatedAt;
 
@@ -145,14 +144,6 @@ public class InvoiceResponse {
 
     public void setItems(List<InvoiceItemResponse> items) {
         this.items = items;
-    }
-
-    public boolean isArchived() {
-        return archived;
-    }
-
-    public void setArchived(boolean archived) {
-        this.archived = archived;
     }
 
     public Instant getCreatedAt() {

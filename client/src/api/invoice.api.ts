@@ -75,24 +75,6 @@ export async function issueInvoice(
   return data
 }
 
-export async function archiveInvoice(orgId: string, id: string): Promise<InvoiceResponse> {
-  const { data } = await api.patch<InvoiceResponse>(`${base(orgId)}/${id}/archive`)
-  return data
-}
-
-export async function unarchiveInvoice(orgId: string, id: string): Promise<InvoiceResponse> {
-  const { data } = await api.patch<InvoiceResponse>(`${base(orgId)}/${id}/unarchive`)
-  return data
-}
-
-export async function archivePaidInvoices(orgId: string): Promise<void> {
-  await api.post(`${base(orgId)}/archive-paid`)
-}
-
-export async function bulkArchiveInvoices(orgId: string, invoiceIds: string[]): Promise<void> {
-  await api.post(`${base(orgId)}/bulk-archive`, { invoiceIds })
-}
-
 export async function downloadInvoicePdf(orgId: string, id: string): Promise<Blob> {
   const { data } = await api.get<Blob>(`${base(orgId)}/${id}/pdf`, {
     responseType: 'blob',

@@ -228,47 +228,6 @@ public class InvoiceService {
         return invoiceRepository.save(invoice);
     }
 
-    // Archive a single invoice (PAID or CANCELLED only).
-    @Transactional
-    public Invoice archiveInvoice(UUID organizationId, UUID invoiceId) {
-        organizationService.getById(organizationId);
-        Invoice invoice = InvoiceUtil.validateInvoiceWithOrganization(invoiceId, organizationId, invoiceRepository);
-        invoice.archive();
-        return invoiceRepository.save(invoice);
-    }
-
-    // Unarchive a single invoice.
-    @Transactional
-    public Invoice unarchiveInvoice(UUID organizationId, UUID invoiceId) {
-        organizationService.getById(organizationId);
-        Invoice invoice = InvoiceUtil.validateInvoiceWithOrganization(invoiceId, organizationId, invoiceRepository);
-        invoice.unarchive();
-        return invoiceRepository.save(invoice);
-    }
-
-    // Archive all PAID invoices for an organization at once.
-    @Transactional
-    public int archivePaidInvoices(UUID organizationId) {
-        organizationService.getById(organizationId);
-        List<Invoice> paid = invoiceRepository.findAllByOrganizationIdAndLifeCycleStatusAndArchivedFalse(
-            organizationId, LifeCycleStatus.PAID);
-        paid.forEach(Invoice::archive);
-        invoiceRepository.saveAll(paid);
-        return paid.size();
-    }
-
-    // Archive a specific list of invoice IDs — silently skips invoices that cannot be archived.
-    @Transactional
-    public void bulkArchiveInvoices(UUID organizationId, List<UUID> invoiceIds) {
-        organizationService.getById(organizationId);
-        List<Invoice> invoices = invoiceRepository.findAllByIdInAndOrganizationId(invoiceIds, organizationId);
-        invoices.stream()
-            .filter(inv -> inv.getLifeCycleStatus() == LifeCycleStatus.PAID
-                        || inv.getLifeCycleStatus() == LifeCycleStatus.CANCELLED)
-            .forEach(Invoice::archive);
-        invoiceRepository.saveAll(invoices);
-    }
-
     // Hard delete an invoice if and only if it is in DRAFT state and belongs to the organization.
     @Transactional
     public void deleteInvoice(
@@ -298,20 +257,12 @@ public class InvoiceService {
         LocalDate createdAt,
         LocalDate updatedAt,
         LocalDate dueDate,
-        Boolean archived,
         Pageable pageable
     ) {
         Organization organization = organizationService.getById(organizationId);
-        boolean showArchived = Boolean.TRUE.equals(archived);
 
         Specification<Invoice> spec = (root, query, cb) -> {
             Predicate p = cb.equal(root.get("organization").get("id"), organizationId);
-            // Treat NULL archived as false (existing rows before column was added)
-            if (showArchived) {
-                p = cb.and(p, cb.isTrue(root.get("archived")));
-            } else {
-                p = cb.and(p, cb.or(cb.isFalse(root.get("archived")), root.get("archived").isNull()));
-            }
             if (timeStatus != null) {
                 p = cb.and(p, cb.equal(root.get("timeStatus"), timeStatus));
             }

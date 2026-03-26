@@ -3,7 +3,6 @@ import type { LifeCycleStatus, TimeStatus } from '@/types/invoice.types'
 export interface InvoiceFilter {
   lifeCycleStatus?: LifeCycleStatus
   timeStatus?:      TimeStatus
-  archived?:        boolean
 }
 
 interface Tab {
@@ -20,7 +19,6 @@ const TABS: Tab[] = [
   { label: 'Partial',    filter: { lifeCycleStatus: 'PARTIALLY_PAID' } },
   { label: 'Paid',       filter: { lifeCycleStatus: 'PAID' } },
   { label: 'Cancelled',  filter: { lifeCycleStatus: 'CANCELLED' } },
-  { label: 'Archived',   filter: { archived: true } },
 ]
 
 interface Props {
@@ -29,11 +27,7 @@ interface Props {
 }
 
 function filtersEqual(a: InvoiceFilter, b: InvoiceFilter) {
-  return (
-    a.lifeCycleStatus === b.lifeCycleStatus &&
-    a.timeStatus      === b.timeStatus &&
-    !!a.archived      === !!b.archived
-  )
+  return a.lifeCycleStatus === b.lifeCycleStatus && a.timeStatus === b.timeStatus
 }
 
 export default function InvoiceStatusTabs({ active, onChange }: Props) {
