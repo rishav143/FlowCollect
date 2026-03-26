@@ -5,6 +5,7 @@ import {
   updateInvoice,
   deleteInvoice,
   issueInvoice,
+  cancelInvoice,
   downloadInvoicePdf,
   type CreateInvoiceBody,
   type UpdateInvoiceBody,
@@ -46,6 +47,16 @@ export function useIssueInvoice(invoiceId: string) {
 
   return useMutation({
     mutationFn: (issueDate?: string) => issueInvoice(orgId, invoiceId, issueDate),
+    onSuccess:  () => qc.invalidateQueries({ queryKey: ['invoices', orgId] }),
+  })
+}
+
+export function useCancelInvoice(invoiceId: string) {
+  const orgId = useAuthStore((s) => s.org?.id ?? '')
+  const qc    = useQueryClient()
+
+  return useMutation({
+    mutationFn: () => cancelInvoice(orgId, invoiceId),
     onSuccess:  () => qc.invalidateQueries({ queryKey: ['invoices', orgId] }),
   })
 }

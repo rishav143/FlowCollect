@@ -75,6 +75,11 @@ export async function issueInvoice(
   return data
 }
 
+export async function cancelInvoice(orgId: string, id: string): Promise<InvoiceResponse> {
+  const { data } = await api.post<InvoiceResponse>(`${base(orgId)}/${id}/cancel`)
+  return data
+}
+
 export async function downloadInvoicePdf(orgId: string, id: string): Promise<Blob> {
   const { data } = await api.get<Blob>(`${base(orgId)}/${id}/pdf`, {
     responseType: 'blob',

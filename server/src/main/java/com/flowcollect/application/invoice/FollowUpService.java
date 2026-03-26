@@ -102,6 +102,19 @@ public class FollowUpService {
     }
 
     /**
+     * Cancels all PENDING follow-ups for the given invoice. Called when an invoice is cancelled.
+     */
+    @Transactional
+    public void cancelPendingFollowUpsForInvoice(UUID invoiceId) {
+        if (invoiceId == null) return;
+        List<FollowUp> pending = followUpRepository.findByInvoiceIdAndStatus(invoiceId, FollowUpStatus.PENDING);
+        for (FollowUp followUp : pending) {
+            followUp.cancel();
+            followUpRepository.save(followUp);
+        }
+    }
+
+    /**
      * Marks a follow-up as CANCELLED and commits the change in an isolated transaction.
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)

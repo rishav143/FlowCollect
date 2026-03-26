@@ -228,6 +228,28 @@ public class InvoiceService {
         return invoiceRepository.save(invoice);
     }
 
+    /**
+     * Cancels an invoice. Only ISSUED or PARTIALLY_PAID invoices may be cancelled.
+     * The caller is responsible for cancelling associated follow-ups and confirmation links.
+     */
+    @Transactional
+    public Invoice cancelInvoice(UUID organizationId, UUID invoiceId) {
+        if (invoiceId == null) {
+            throw new ValidationException("Invoice ID must not be null");
+        }
+        organizationService.getById(organizationId);
+        Invoice invoice = InvoiceUtil.validateInvoiceWithOrganization(invoiceId, organizationId, invoiceRepository);
+
+        LifeCycleStatus status = invoice.getLifeCycleStatus();
+        if (status != LifeCycleStatus.ISSUED && status != LifeCycleStatus.PARTIALLY_PAID) {
+            throw new ValidationException(
+                "Only ISSUED or PARTIALLY_PAID invoices can be cancelled. Current status: " + status);
+        }
+
+        invoice.markAsCancelled();
+        return invoiceRepository.save(invoice);
+    }
+
     // Hard delete an invoice if and only if it is in DRAFT state and belongs to the organization.
     @Transactional
     public void deleteInvoice(

@@ -1,4 +1,4 @@
-import { Send, Trash2, Download, Clock, Loader2 } from 'lucide-react'
+import { Send, Trash2, Download, Clock, Loader2, Ban } from 'lucide-react'
 import type { LifeCycleStatus } from '@/types/invoice.types'
 
 interface Props {
@@ -7,6 +7,7 @@ interface Props {
   onDelete:        () => void
   onDownloadPdf:   () => void
   onFollowup:      () => void
+  onCancel:        () => void
   isIssuing:       boolean
   isDownloading:   boolean
 }
@@ -19,12 +20,14 @@ export default function InvoiceActionBar({
   onDelete,
   onDownloadPdf,
   onFollowup,
+  onCancel,
   isIssuing,
   isDownloading,
 }: Props) {
-  const isDraft     = lifeCycleStatus === 'DRAFT'
-  const isCancelled = lifeCycleStatus === 'CANCELLED'
-  const isPaid      = lifeCycleStatus === 'PAID'
+  const isDraft        = lifeCycleStatus === 'DRAFT'
+  const isCancelled    = lifeCycleStatus === 'CANCELLED'
+  const isPaid         = lifeCycleStatus === 'PAID'
+  const isCancellable  = lifeCycleStatus === 'ISSUED' || lifeCycleStatus === 'PARTIALLY_PAID'
 
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -67,6 +70,17 @@ export default function InvoiceActionBar({
         >
           <Clock size={15} strokeWidth={2} />
           Send Follow-up
+        </button>
+      )}
+
+      {/* Cancel — issued or partially paid only */}
+      {isCancellable && (
+        <button
+          onClick={onCancel}
+          className={`${btnBase} border border-red-200 dark:border-red-500/20 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10`}
+        >
+          <Ban size={15} strokeWidth={2} />
+          Cancel Invoice
         </button>
       )}
 

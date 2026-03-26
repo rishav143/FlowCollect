@@ -23,5 +23,7 @@ public interface FollowUpJpaRepository extends JpaRepository<FollowUp, UUID>, Jp
             FollowUpTriggerType triggerType,
             UUID organizationId
     );
+
+    List<FollowUp> findByInvoiceIdAndStatus(UUID invoiceId, FollowUpStatus status);
 }
 

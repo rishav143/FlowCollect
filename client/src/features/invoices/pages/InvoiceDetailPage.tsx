@@ -4,7 +4,7 @@ import { ArrowLeft } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/store/auth.store'
 import { useInvoiceDetail } from '../hooks/useInvoiceDetail'
-import { useDeleteInvoice, useIssueInvoice, useDownloadPdf } from '../hooks/useInvoiceMutations'
+import { useDeleteInvoice, useIssueInvoice, useDownloadPdf, useCancelInvoice } from '../hooks/useInvoiceMutations'
 import { getCustomer } from '@/api/customer.api'
 import InvoiceActionBar from '../components/InvoiceActionBar/InvoiceActionBar'
 import PaymentsTab from '../components/PaymentsTab/PaymentsTab'
@@ -108,10 +108,12 @@ export default function InvoiceDetailPage() {
   const [activeTab,     setActiveTab]     = useState<Tab>('details')
   const [showFollowup,  setShowFollowup]  = useState(false)
   const [showDeleteDlg, setShowDeleteDlg] = useState(false)
+  const [showCancelDlg, setShowCancelDlg] = useState(false)
 
   const { data: invoice, isLoading } = useInvoiceDetail(id!)
   const issueMut   = useIssueInvoice(id!)
   const deleteMut  = useDeleteInvoice()
+  const cancelMut  = useCancelInvoice(id!)
   const downloadMut = useDownloadPdf()
 
   const customerQuery = useQuery({
@@ -124,6 +126,11 @@ export default function InvoiceDetailPage() {
   async function handleDelete() {
     await deleteMut.mutateAsync(id!)
     navigate('/invoices')
+  }
+
+  async function handleCancel() {
+    await cancelMut.mutateAsync()
+    setShowCancelDlg(false)
   }
 
   // ── Loading ────────────────────────────────────────────────────────────────
@@ -180,6 +187,7 @@ export default function InvoiceDetailPage() {
             onDelete={() => setShowDeleteDlg(true)}
             onDownloadPdf={() => downloadMut.mutate({ id: id!, invoiceNumber: invoice.invoiceNumber })}
             onFollowup={() => setShowFollowup(true)}
+            onCancel={() => setShowCancelDlg(true)}
             isIssuing={issueMut.isPending}
             isDownloading={downloadMut.isPending}
           />
@@ -269,6 +277,34 @@ export default function InvoiceDetailPage() {
       {/* Follow-up modal */}
       {showFollowup && (
         <FollowupModal invoiceNumber={invoice.invoiceNumber} onClose={() => setShowFollowup(false)} />
+      )}
+
+      {/* Cancel confirm */}
+      {showCancelDlg && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowCancelDlg(false)} />
+          <div className="relative w-full max-w-sm bg-white dark:bg-[#1B2838] rounded-2xl shadow-xl p-6">
+            <h2 className="text-base font-semibold text-[#0D1B2A] dark:text-white mb-2">Cancel Invoice</h2>
+            <p className="text-sm text-c-muted mb-1">
+              Cancel <span className="font-semibold text-[#0D1B2A] dark:text-white">{invoice.invoiceNumber}</span>?
+            </p>
+            <p className="text-sm text-c-muted mb-5">
+              This will stop all pending follow-ups and close any active payment links. This action cannot be undone.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button onClick={() => setShowCancelDlg(false)} className="px-4 py-2 rounded-lg text-sm font-medium text-c-muted hover:bg-[#F4F7F9] dark:hover:bg-[#243447] transition-colors">
+                Go Back
+              </button>
+              <button
+                onClick={handleCancel}
+                disabled={cancelMut.isPending}
+                className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-red-500 hover:bg-red-600 disabled:opacity-50 transition-colors"
+              >
+                {cancelMut.isPending ? 'Cancelling…' : 'Cancel Invoice'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Delete confirm */}

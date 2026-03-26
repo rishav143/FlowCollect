@@ -23,6 +23,8 @@ import com.flowcollect.api.v1.invoice.dto.InvoiceRequest;
 import com.flowcollect.api.v1.invoice.dto.InvoiceResponse;
 import com.flowcollect.api.v1.invoice.dto.InvoiceUpdateRequest;
 import com.flowcollect.api.v1.invoice.dto.IssueInvoiceRequest;
+import com.flowcollect.application.confirmation.ConfirmationLinkService;
+import com.flowcollect.application.invoice.FollowUpService;
 import com.flowcollect.application.invoice.InvoicePdfFile;
 import com.flowcollect.application.invoice.InvoiceService;
 import com.flowcollect.domain.invoice.Invoice;
@@ -42,9 +44,17 @@ import java.util.UUID;
 public class InvoiceController {
 
     private final InvoiceService invoiceService;
+    private final FollowUpService followUpService;
+    private final ConfirmationLinkService confirmationLinkService;
 
-    public InvoiceController(InvoiceService invoiceService) {
+    public InvoiceController(
+            InvoiceService invoiceService,
+            FollowUpService followUpService,
+            ConfirmationLinkService confirmationLinkService
+    ) {
         this.invoiceService = invoiceService;
+        this.followUpService = followUpService;
+        this.confirmationLinkService = confirmationLinkService;
     }
 
     /**
@@ -144,6 +154,21 @@ public class InvoiceController {
     ) {
         Invoice issued = invoiceService.issueInvoice(organizationId, invoiceId, request);
         return ResponseEntity.ok(InvoiceMapper.toResponse(issued));
+    }
+
+    /**
+     * Cancels an ISSUED or PARTIALLY_PAID invoice.
+     * Also cancels all pending follow-ups and closes any open confirmation link.
+     */
+    @PostMapping("/{invoiceId}/cancel")
+    public ResponseEntity<InvoiceResponse> cancelInvoice(
+            @PathVariable UUID organizationId,
+            @PathVariable UUID invoiceId
+    ) {
+        Invoice cancelled = invoiceService.cancelInvoice(organizationId, invoiceId);
+        followUpService.cancelPendingFollowUpsForInvoice(invoiceId);
+        confirmationLinkService.closeForInvoice(invoiceId);
+        return ResponseEntity.ok(InvoiceMapper.toResponse(cancelled));
     }
 
     /**
