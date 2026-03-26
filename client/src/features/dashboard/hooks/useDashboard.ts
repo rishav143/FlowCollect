@@ -16,10 +16,10 @@ export function useDashboard() {
     enabled:  !!orgId,
   })
 
-  // Overdue invoices for action table — top 3, most overdue first
+  // Overdue invoices for action table — fetch extra to cover zero-remaining edge cases
   const overdueQuery = useQuery({
     queryKey: ['invoices', orgId, 'dashboard-overdue'],
-    queryFn:  () => listInvoices(orgId, { timeStatus: 'OVERDUE', size: 3, sort: 'dueDate,asc' }),
+    queryFn:  () => listInvoices(orgId, { timeStatus: 'OVERDUE', size: 10, sort: 'dueDate,asc' }),
     enabled:  !!orgId,
   })
 
@@ -132,7 +132,7 @@ export function useDashboard() {
 
     agingBuckets,
     customerMap,
-    overdueInvoices:     overdueQuery.data?.content ?? [],
+    overdueInvoices:     (overdueQuery.data?.content ?? []).filter(i => i.remainingAmount > 0).slice(0, 3),
     dueSoonInvoices,
     pendingConfirmations,
     recentInvoices:      invoices.slice(0, 5),

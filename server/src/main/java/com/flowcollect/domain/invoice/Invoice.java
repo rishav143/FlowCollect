@@ -303,11 +303,6 @@ public class Invoice {
         if (referenceDate == null) {
             throw new IllegalArgumentException("Reference date cannot be null");
         }
-        // Paid and cancelled invoices have no meaningful time status
-        if (lifeCycleStatus == LifeCycleStatus.PAID || lifeCycleStatus == LifeCycleStatus.CANCELLED) {
-            this.timeStatus = TimeStatus.NOT_DUE;
-            return;
-        }
         if (this.dueDate == null) {
             this.timeStatus = TimeStatus.NOT_DUE;
             return;
