@@ -33,6 +33,10 @@ export interface ListInvoicesParams {
   timeStatus?:      TimeStatus
   lifeCycleStatus?: LifeCycleStatus
   invoiceNumber?:   string
+  createdAtFrom?:   string   // YYYY-MM-DD
+  createdAtTo?:     string   // YYYY-MM-DD
+  dueDateFrom?:     string   // YYYY-MM-DD
+  dueDateTo?:       string   // YYYY-MM-DD
   page?:            number
   size?:            number
   sort?:            string

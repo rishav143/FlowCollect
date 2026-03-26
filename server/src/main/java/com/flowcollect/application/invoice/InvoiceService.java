@@ -276,9 +276,10 @@ public class InvoiceService {
         TimeStatus timeStatus,
         LifeCycleStatus lifeCycleStatus,
         String invoiceNumber,
-        LocalDate createdAt,
-        LocalDate updatedAt,
-        LocalDate dueDate,
+        LocalDate createdAtFrom,
+        LocalDate createdAtTo,
+        LocalDate dueDateFrom,
+        LocalDate dueDateTo,
         Pageable pageable
     ) {
         Organization organization = organizationService.getById(organizationId);
@@ -294,18 +295,19 @@ public class InvoiceService {
             if (invoiceNumber != null && !invoiceNumber.isBlank()) {
                 p = cb.and(p, cb.like(cb.lower(root.get("invoiceNumber")), "%" + invoiceNumber.toLowerCase() + "%"));
             }
-            if (createdAt != null) {
-                Instant start = createdAt.atStartOfDay(organization.getTimezone()).toInstant();
-                Instant end = createdAt.atTime(LocalTime.MAX).atZone(organization.getTimezone()).toInstant();
-                p = cb.and(p, cb.between(root.get("createdAt"), start, end));
+            if (createdAtFrom != null) {
+                Instant start = createdAtFrom.atStartOfDay(organization.getTimezone()).toInstant();
+                p = cb.and(p, cb.greaterThanOrEqualTo(root.get("createdAt"), start));
             }
-            if (updatedAt != null) {
-                Instant start = updatedAt.atStartOfDay(organization.getTimezone()).toInstant();
-                Instant end = updatedAt.atTime(LocalTime.MAX).atZone(organization.getTimezone()).toInstant();
-                p = cb.and(p, cb.between(root.get("updatedAt"), start, end));
+            if (createdAtTo != null) {
+                Instant end = createdAtTo.atTime(LocalTime.MAX).atZone(organization.getTimezone()).toInstant();
+                p = cb.and(p, cb.lessThanOrEqualTo(root.get("createdAt"), end));
             }
-            if (dueDate != null) {
-                p = cb.and(p, cb.equal(root.get("dueDate"), dueDate));
+            if (dueDateFrom != null) {
+                p = cb.and(p, cb.greaterThanOrEqualTo(root.get("dueDate"), dueDateFrom));
+            }
+            if (dueDateTo != null) {
+                p = cb.and(p, cb.lessThanOrEqualTo(root.get("dueDate"), dueDateTo));
             }
             return p;
         };

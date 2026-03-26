@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Plus, Search, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Plus, Search, ChevronLeft, ChevronRight, X } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
 import { useAuthStore } from '@/store/auth.store'
@@ -13,6 +13,38 @@ import ViewToggle, { useViewPreference, gridClass } from '@/ui/components/ViewTo
 import InvoiceCard from '../components/InvoiceCard/InvoiceCard'
 import type { InvoiceResponse } from '@/types/invoice.types'
 import type { CustomerResponse } from '@/types/customer.types'
+
+// ---------------------------------------------------------------------------
+// Date helpers
+// ---------------------------------------------------------------------------
+
+function toDateStr(d: Date) {
+  return d.toISOString().split('T')[0]
+}
+
+function defaultCreatedFrom() {
+  const d = new Date()
+  d.setDate(d.getDate() - 30)
+  return toDateStr(d)
+}
+
+function defaultCreatedTo() {
+  return toDateStr(new Date())
+}
+
+interface DateFilter {
+  createdAtFrom: string
+  createdAtTo:   string
+  dueDateFrom:   string
+  dueDateTo:     string
+}
+
+const DEFAULT_DATE_FILTER: DateFilter = {
+  createdAtFrom: defaultCreatedFrom(),
+  createdAtTo:   defaultCreatedTo(),
+  dueDateFrom:   '',
+  dueDateTo:     '',
+}
 
 // ---------------------------------------------------------------------------
 // Pagination
@@ -113,6 +145,7 @@ export default function InvoiceListPage() {
   const [showCreate,   setShowCreate]   = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<InvoiceResponse | null>(null)
   const [view,         setView]         = useViewPreference('invoices', 'list')
+  const [dateFilter,   setDateFilter]   = useState<DateFilter>(DEFAULT_DATE_FILTER)
 
   useEffect(() => {
     if (searchParams.get('create') === 'true') {
@@ -127,6 +160,10 @@ export default function InvoiceListPage() {
   const invoicesQuery = useInvoices({
     ...filter,
     invoiceNumber: search.trim() || undefined,
+    createdAtFrom: dateFilter.createdAtFrom || undefined,
+    createdAtTo:   dateFilter.createdAtTo   || undefined,
+    dueDateFrom:   dateFilter.dueDateFrom   || undefined,
+    dueDateTo:     dateFilter.dueDateTo     || undefined,
     page,
     size: PAGE_SIZE,
     sort: 'createdAt,desc',
@@ -157,6 +194,22 @@ export default function InvoiceListPage() {
     setSearch(v)
     setPage(0)
   }
+
+  function handleDateChange(field: keyof DateFilter, value: string) {
+    setDateFilter((prev) => ({ ...prev, [field]: value }))
+    setPage(0)
+  }
+
+  function clearDateFilter() {
+    setDateFilter(DEFAULT_DATE_FILTER)
+    setPage(0)
+  }
+
+  const isCustomDateFilter =
+    dateFilter.createdAtFrom !== DEFAULT_DATE_FILTER.createdAtFrom ||
+    dateFilter.createdAtTo   !== DEFAULT_DATE_FILTER.createdAtTo   ||
+    !!dateFilter.dueDateFrom ||
+    !!dateFilter.dueDateTo
 
   async function confirmDelete() {
     if (!deleteTarget) return
@@ -192,16 +245,66 @@ export default function InvoiceListPage() {
         {/* ── Status tabs ──────────────────────────────────────────────── */}
         <InvoiceStatusTabs active={filter} onChange={handleFilterChange} />
 
-        {/* ── Search ───────────────────────────────────────────────────── */}
-        <div className="relative max-w-xs">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-c-muted pointer-events-none" />
-          <input
-            type="text"
-            placeholder="Search invoice number…"
-            value={search}
-            onChange={(e) => handleSearch(e.target.value)}
-            className="w-full pl-8 pr-4 py-2 text-sm bg-white dark:bg-[#1B2838] border border-c-border rounded-lg focus:outline-none focus:border-[#8A9BAE]/40 text-[#0D1B2A] dark:text-white placeholder:text-c-muted transition-colors"
-          />
+        {/* ── Search + Date filters ────────────────────────────────────── */}
+        <div className="flex flex-wrap items-end gap-3">
+          {/* Search */}
+          <div className="relative">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-c-muted pointer-events-none" />
+            <input
+              type="text"
+              placeholder="Search invoice number…"
+              value={search}
+              onChange={(e) => handleSearch(e.target.value)}
+              className="w-56 pl-8 pr-4 py-2 text-sm bg-white dark:bg-[#1B2838] border border-c-border rounded-lg focus:outline-none focus:border-[#8A9BAE]/40 text-[#0D1B2A] dark:text-white placeholder:text-c-muted transition-colors"
+            />
+          </div>
+
+          {/* Created date range */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs text-c-muted whitespace-nowrap">Created</span>
+            <input
+              type="date"
+              value={dateFilter.createdAtFrom}
+              onChange={(e) => handleDateChange('createdAtFrom', e.target.value)}
+              className="px-2 py-2 text-xs bg-white dark:bg-[#1B2838] border border-c-border rounded-lg focus:outline-none focus:border-[#8A9BAE]/40 text-[#0D1B2A] dark:text-white transition-colors"
+            />
+            <span className="text-xs text-c-muted">–</span>
+            <input
+              type="date"
+              value={dateFilter.createdAtTo}
+              onChange={(e) => handleDateChange('createdAtTo', e.target.value)}
+              className="px-2 py-2 text-xs bg-white dark:bg-[#1B2838] border border-c-border rounded-lg focus:outline-none focus:border-[#8A9BAE]/40 text-[#0D1B2A] dark:text-white transition-colors"
+            />
+          </div>
+
+          {/* Due date range */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs text-c-muted whitespace-nowrap">Due</span>
+            <input
+              type="date"
+              value={dateFilter.dueDateFrom}
+              onChange={(e) => handleDateChange('dueDateFrom', e.target.value)}
+              className="px-2 py-2 text-xs bg-white dark:bg-[#1B2838] border border-c-border rounded-lg focus:outline-none focus:border-[#8A9BAE]/40 text-[#0D1B2A] dark:text-white transition-colors"
+            />
+            <span className="text-xs text-c-muted">–</span>
+            <input
+              type="date"
+              value={dateFilter.dueDateTo}
+              onChange={(e) => handleDateChange('dueDateTo', e.target.value)}
+              className="px-2 py-2 text-xs bg-white dark:bg-[#1B2838] border border-c-border rounded-lg focus:outline-none focus:border-[#8A9BAE]/40 text-[#0D1B2A] dark:text-white transition-colors"
+            />
+          </div>
+
+          {/* Clear — only shown when filters differ from default */}
+          {isCustomDateFilter && (
+            <button
+              onClick={clearDateFilter}
+              className="flex items-center gap-1 px-2.5 py-2 text-xs font-medium text-c-muted hover:text-red-500 border border-c-border rounded-lg hover:border-red-300 transition-colors"
+            >
+              <X size={12} />
+              Reset
+            </button>
+          )}
         </div>
 
         {/* ── Content ──────────────────────────────────────────────────── */}

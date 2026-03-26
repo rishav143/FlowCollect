@@ -124,19 +124,21 @@ public class InvoiceController {
         @RequestParam(required = false) TimeStatus timeStatus,
         @RequestParam(required = false) LifeCycleStatus lifeCycleStatus,
         @RequestParam(required = false) String invoiceNumber,
-        @RequestParam(required = false) LocalDate createdAt,
-        @RequestParam(required = false) LocalDate updatedAt,
-        @RequestParam(required = false) LocalDate dueDate,
+        @RequestParam(required = false) LocalDate createdAtFrom,
+        @RequestParam(required = false) LocalDate createdAtTo,
+        @RequestParam(required = false) LocalDate dueDateFrom,
+        @RequestParam(required = false) LocalDate dueDateTo,
         Pageable pageable
     ){
         Page<Invoice> invoices = invoiceService.list(
-            organizationId, 
+            organizationId,
             timeStatus,
             lifeCycleStatus,
             invoiceNumber,
-            createdAt,
-            updatedAt,
-            dueDate,
+            createdAtFrom,
+            createdAtTo,
+            dueDateFrom,
+            dueDateTo,
             pageable
         );
         return ResponseEntity.ok(invoices.map(InvoiceMapper::toResponse));
