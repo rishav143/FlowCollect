@@ -176,7 +176,7 @@ export default function Topbar() {
 
         {/* Add Invoice */}
         <button
-          onClick={() => navigate('/invoices')}
+          onClick={() => navigate('/invoices?create=true')}
           aria-label="Add invoice"
           className={[
             'flex items-center justify-center text-white font-semibold',

@@ -15,7 +15,7 @@ const CHANNEL_LABEL: Record<string, string> = {
 const URGENCY = {
   OVERDUE:   { border: 'border-l-red-400',     dot: 'bg-red-500',   text: 'text-red-600 dark:text-red-400',     label: 'Overdue'   },
   DUE_TODAY: { border: 'border-l-amber-400',   dot: 'bg-amber-500', text: 'text-amber-600 dark:text-amber-400', label: 'Due Today' },
-  NOT_DUE:   { border: 'border-l-transparent', dot: 'bg-[#8A9BAE]', text: 'text-c-muted',                      label: 'Upcoming'  },
+  NOT_DUE:   { border: 'border-l-blue-400',    dot: 'bg-blue-500',  text: 'text-blue-600 dark:text-blue-400',  label: 'Upcoming'  },
 }
 
 interface Props {

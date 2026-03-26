@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Plus, Search, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
+import { useSearchParams } from 'react-router-dom'
 import { useAuthStore } from '@/store/auth.store'
 import { useInvoices } from '../hooks/useInvoices'
 import { useDeleteInvoice } from '../hooks/useInvoiceMutations'
@@ -105,12 +106,20 @@ export default function InvoiceListPage() {
   const orgId    = useAuthStore((s) => s.org?.id ?? '')
   const currency = useAuthStore((s) => s.org?.currency ?? 'INR')
 
+  const [searchParams, setSearchParams] = useSearchParams()
   const [filter,       setFilter]       = useState<InvoiceFilter>({})
   const [search,       setSearch]       = useState('')
   const [page,         setPage]         = useState(0)
   const [showCreate,   setShowCreate]   = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<InvoiceResponse | null>(null)
   const [view,         setView]         = useViewPreference('invoices', 'list')
+
+  useEffect(() => {
+    if (searchParams.get('create') === 'true') {
+      setShowCreate(true)
+      setSearchParams({}, { replace: true })
+    }
+  }, [])
 
   const deleteMutation = useDeleteInvoice()
 
