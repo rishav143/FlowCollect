@@ -52,15 +52,18 @@ interface Props {
 export default function InvoiceStatusBadge({ lifecycle, time, className = '' }: Props) {
   const { timeMeta, lcLabel, lcCls } = getInvoiceStatusDisplay(lifecycle, time)
 
+  if (timeMeta) {
+    return (
+      <span className={`inline-flex flex-col gap-0.5 ${className}`}>
+        <span className={`font-semibold leading-tight ${timeMeta.cls}`}>{timeMeta.label}</span>
+        <span className={`text-xs leading-tight ${lcCls}`}>{lcLabel}</span>
+      </span>
+    )
+  }
+
   return (
-    <span className={`inline-flex items-center gap-1 ${className}`}>
-      {timeMeta && (
-        <>
-          <span className={`font-medium ${timeMeta.cls}`}>{timeMeta.label}</span>
-          <span className="text-c-muted/60">·</span>
-        </>
-      )}
-      <span className={`font-medium ${lcCls}`}>{lcLabel}</span>
+    <span className={`inline-flex font-medium ${lcCls} ${className}`}>
+      {lcLabel}
     </span>
   )
 }
