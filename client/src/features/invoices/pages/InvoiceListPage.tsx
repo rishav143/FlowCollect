@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Plus, Search, ChevronLeft, ChevronRight, X } from 'lucide-react'
+import { Plus, Search, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
 import { useAuthStore } from '@/store/auth.store'
@@ -11,39 +11,22 @@ import InvoiceTable from '../components/InvoiceTable/InvoiceTable'
 import AddInvoiceModal from '../modals/AddInvoiceModal'
 import ViewToggle, { useViewPreference, gridClass } from '@/ui/components/ViewToggle'
 import InvoiceCard from '../components/InvoiceCard/InvoiceCard'
+import DateRangePicker, { type DateRangeValue } from '@/ui/components/DateRangePicker/DateRangePicker'
 import type { InvoiceResponse } from '@/types/invoice.types'
 import type { CustomerResponse } from '@/types/customer.types'
 
 // ---------------------------------------------------------------------------
-// Date helpers
+// Default date filters — created: last 30 days, due: open
 // ---------------------------------------------------------------------------
 
-function toDateStr(d: Date) {
-  return d.toISOString().split('T')[0]
-}
-
-function defaultCreatedFrom() {
-  const d = new Date()
-  d.setDate(d.getDate() - 30)
-  return toDateStr(d)
-}
-
-function defaultCreatedTo() {
-  return toDateStr(new Date())
-}
-
-interface DateFilter {
-  createdAtFrom: string
-  createdAtTo:   string
-  dueDateFrom:   string
-  dueDateTo:     string
-}
-
-const DEFAULT_DATE_FILTER: DateFilter = {
-  createdAtFrom: defaultCreatedFrom(),
-  createdAtTo:   defaultCreatedTo(),
-  dueDateFrom:   '',
-  dueDateTo:     '',
+function initialCreated(): DateRangeValue {
+  const to   = new Date()
+  const from = new Date()
+  from.setDate(from.getDate() - 30)
+  return {
+    from: from.toISOString().split('T')[0],
+    to:   to.toISOString().split('T')[0],
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -98,9 +81,9 @@ function DeleteConfirm({
   onCancel,
   isDeleting,
 }: {
-  invoice:   InvoiceResponse
-  onConfirm: () => void
-  onCancel:  () => void
+  invoice:    InvoiceResponse
+  onConfirm:  () => void
+  onCancel:   () => void
   isDeleting: boolean
 }) {
   return (
@@ -145,7 +128,8 @@ export default function InvoiceListPage() {
   const [showCreate,   setShowCreate]   = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<InvoiceResponse | null>(null)
   const [view,         setView]         = useViewPreference('invoices', 'list')
-  const [dateFilter,   setDateFilter]   = useState<DateFilter>(DEFAULT_DATE_FILTER)
+  const [created,      setCreated]      = useState<DateRangeValue>(initialCreated)
+  const [due,          setDue]          = useState<DateRangeValue>({})
 
   useEffect(() => {
     if (searchParams.get('create') === 'true') {
@@ -156,20 +140,18 @@ export default function InvoiceListPage() {
 
   const deleteMutation = useDeleteInvoice()
 
-  // Invoices
   const invoicesQuery = useInvoices({
     ...filter,
     invoiceNumber: search.trim() || undefined,
-    createdAtFrom: dateFilter.createdAtFrom || undefined,
-    createdAtTo:   dateFilter.createdAtTo   || undefined,
-    dueDateFrom:   dateFilter.dueDateFrom   || undefined,
-    dueDateTo:     dateFilter.dueDateTo     || undefined,
+    createdAtFrom: created.from,
+    createdAtTo:   created.to,
+    dueDateFrom:   due.from,
+    dueDateTo:     due.to,
     page,
     size: PAGE_SIZE,
     sort: 'createdAt,desc',
   })
 
-  // Customers (for name lookup)
   const customersQuery = useQuery({
     queryKey: ['customers', orgId, 'all'],
     queryFn:  () => listCustomers(orgId, { size: 500 }),
@@ -181,9 +163,9 @@ export default function InvoiceListPage() {
     customerMap[c.id] = c
   }
 
-  const invoices    = invoicesQuery.data?.content   ?? []
-  const totalPages  = invoicesQuery.data?.totalPages ?? 0
-  const totalItems  = invoicesQuery.data?.totalElements ?? 0
+  const invoices   = invoicesQuery.data?.content      ?? []
+  const totalPages = invoicesQuery.data?.totalPages    ?? 0
+  const totalItems = invoicesQuery.data?.totalElements ?? 0
 
   function handleFilterChange(f: InvoiceFilter) {
     setFilter(f)
@@ -195,21 +177,15 @@ export default function InvoiceListPage() {
     setPage(0)
   }
 
-  function handleDateChange(field: keyof DateFilter, value: string) {
-    setDateFilter((prev) => ({ ...prev, [field]: value }))
+  function handleCreatedChange(v: DateRangeValue) {
+    setCreated(v)
     setPage(0)
   }
 
-  function clearDateFilter() {
-    setDateFilter(DEFAULT_DATE_FILTER)
+  function handleDueChange(v: DateRangeValue) {
+    setDue(v)
     setPage(0)
   }
-
-  const isCustomDateFilter =
-    dateFilter.createdAtFrom !== DEFAULT_DATE_FILTER.createdAtFrom ||
-    dateFilter.createdAtTo   !== DEFAULT_DATE_FILTER.createdAtTo   ||
-    !!dateFilter.dueDateFrom ||
-    !!dateFilter.dueDateTo
 
   async function confirmDelete() {
     if (!deleteTarget) return
@@ -246,7 +222,7 @@ export default function InvoiceListPage() {
         <InvoiceStatusTabs active={filter} onChange={handleFilterChange} />
 
         {/* ── Search + Date filters ────────────────────────────────────── */}
-        <div className="flex flex-wrap items-end gap-3">
+        <div className="flex flex-wrap items-center gap-2">
           {/* Search */}
           <div className="relative">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-c-muted pointer-events-none" />
@@ -255,56 +231,12 @@ export default function InvoiceListPage() {
               placeholder="Search invoice number…"
               value={search}
               onChange={(e) => handleSearch(e.target.value)}
-              className="w-56 pl-8 pr-4 py-2 text-sm bg-white dark:bg-[#1B2838] border border-c-border rounded-lg focus:outline-none focus:border-[#8A9BAE]/40 text-[#0D1B2A] dark:text-white placeholder:text-c-muted transition-colors"
+              className="w-52 pl-8 pr-4 py-2 text-sm bg-white dark:bg-[#1B2838] border border-c-border rounded-lg focus:outline-none focus:border-[#8A9BAE]/40 text-[#0D1B2A] dark:text-white placeholder:text-c-muted transition-colors"
             />
           </div>
 
-          {/* Created date range */}
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs text-c-muted whitespace-nowrap">Created</span>
-            <input
-              type="date"
-              value={dateFilter.createdAtFrom}
-              onChange={(e) => handleDateChange('createdAtFrom', e.target.value)}
-              className="px-2 py-2 text-xs bg-white dark:bg-[#1B2838] border border-c-border rounded-lg focus:outline-none focus:border-[#8A9BAE]/40 text-[#0D1B2A] dark:text-white transition-colors"
-            />
-            <span className="text-xs text-c-muted">–</span>
-            <input
-              type="date"
-              value={dateFilter.createdAtTo}
-              onChange={(e) => handleDateChange('createdAtTo', e.target.value)}
-              className="px-2 py-2 text-xs bg-white dark:bg-[#1B2838] border border-c-border rounded-lg focus:outline-none focus:border-[#8A9BAE]/40 text-[#0D1B2A] dark:text-white transition-colors"
-            />
-          </div>
-
-          {/* Due date range */}
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs text-c-muted whitespace-nowrap">Due</span>
-            <input
-              type="date"
-              value={dateFilter.dueDateFrom}
-              onChange={(e) => handleDateChange('dueDateFrom', e.target.value)}
-              className="px-2 py-2 text-xs bg-white dark:bg-[#1B2838] border border-c-border rounded-lg focus:outline-none focus:border-[#8A9BAE]/40 text-[#0D1B2A] dark:text-white transition-colors"
-            />
-            <span className="text-xs text-c-muted">–</span>
-            <input
-              type="date"
-              value={dateFilter.dueDateTo}
-              onChange={(e) => handleDateChange('dueDateTo', e.target.value)}
-              className="px-2 py-2 text-xs bg-white dark:bg-[#1B2838] border border-c-border rounded-lg focus:outline-none focus:border-[#8A9BAE]/40 text-[#0D1B2A] dark:text-white transition-colors"
-            />
-          </div>
-
-          {/* Clear — only shown when filters differ from default */}
-          {isCustomDateFilter && (
-            <button
-              onClick={clearDateFilter}
-              className="flex items-center gap-1 px-2.5 py-2 text-xs font-medium text-c-muted hover:text-red-500 border border-c-border rounded-lg hover:border-red-300 transition-colors"
-            >
-              <X size={12} />
-              Reset
-            </button>
-          )}
+          <DateRangePicker label="Created" value={created} onChange={handleCreatedChange} />
+          <DateRangePicker label="Due date" value={due}     onChange={handleDueChange}     />
         </div>
 
         {/* ── Content ──────────────────────────────────────────────────── */}
