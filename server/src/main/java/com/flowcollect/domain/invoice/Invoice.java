@@ -91,7 +91,7 @@ public class Invoice {
 
     // Archive
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "BOOLEAN DEFAULT false")
     private boolean archived = false;
 
     // Audit
