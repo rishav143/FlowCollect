@@ -48,18 +48,18 @@ function MobileCard({ customer, invoices, currency, onDelete }: ClientRow) {
           </button>
         </div>
       </div>
-      <div className="grid grid-cols-3 gap-2 text-center pt-1 border-t border-c-border">
+      <div className="grid grid-cols-3 gap-2 text-center">
         <div>
-          <p className="text-[10px] text-c-muted mb-1">Outstanding</p>
+          <p className="text-[10px] text-c-muted mb-0.5">Outstanding</p>
           <p className="text-xs font-semibold text-[#0D1B2A] dark:text-white tabular-nums">{fmt(outstanding, currency)}</p>
         </div>
         <div>
-          <p className="text-[10px] text-c-muted mb-1">Overdue</p>
+          <p className="text-[10px] text-c-muted mb-0.5">Overdue</p>
           <p className={`text-xs font-semibold tabular-nums ${overdue > 0 ? 'text-red-500' : 'text-c-muted'}`}>{overdue > 0 ? fmt(overdue, currency) : '—'}</p>
         </div>
         <div>
-          <p className="text-[10px] text-c-muted mb-1">Risk</p>
-          <p className={`text-xs font-semibold ${meta.text}`}>{meta.label}</p>
+          <p className="text-[10px] text-c-muted mb-0.5">Risk</p>
+          <span className={`text-xs font-medium ${meta.text}`}>{meta.label}</span>
         </div>
       </div>
     </div>
