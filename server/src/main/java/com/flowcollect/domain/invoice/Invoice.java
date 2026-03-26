@@ -268,6 +268,7 @@ public class Invoice {
 
     public void markAsCancelled() {
         this.lifeCycleStatus = LifeCycleStatus.CANCELLED;
+        this.timeStatus = TimeStatus.NOT_DUE;
     }
 
     public void updateLifeCycleStatus(BigDecimal totalPaid) {

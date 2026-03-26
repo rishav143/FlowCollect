@@ -1,7 +1,8 @@
 import { memo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Trash2 } from 'lucide-react'
-import type { InvoiceResponse, LifeCycleStatus, TimeStatus } from '@/types/invoice.types'
+import InvoiceStatusBadge from '../InvoiceStatusBadge/InvoiceStatusBadge'
+import type { InvoiceResponse } from '@/types/invoice.types'
 import type { CustomerResponse } from '@/types/customer.types'
 
 function fmt(n: number, currency: string) {
@@ -13,23 +14,6 @@ function fmtDate(d: string | null) {
   return new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
-type StatusInfo = { label: string; dot: string; text: string }
-
-function getStatus(lc: LifeCycleStatus, ts: TimeStatus): StatusInfo {
-  if (ts === 'OVERDUE'   && lc !== 'PAID' && lc !== 'CANCELLED' && lc !== 'DRAFT' && lc !== 'PARTIALLY_PAID')
-    return { label: 'Overdue',   dot: 'bg-red-500',   text: 'text-red-600 dark:text-red-400' }
-  if (ts === 'DUE_TODAY' && lc !== 'PAID' && lc !== 'CANCELLED' && lc !== 'PARTIALLY_PAID')
-    return { label: 'Due Today', dot: 'bg-amber-500', text: 'text-amber-600 dark:text-amber-400' }
-  const MAP: Record<LifeCycleStatus, StatusInfo> = {
-    DRAFT:          { label: 'Draft',     dot: 'bg-[#8A9BAE]', text: 'text-c-muted' },
-    ISSUED:         { label: 'Issued',     dot: 'bg-blue-500',  text: 'text-blue-600 dark:text-blue-400' },
-    PARTIALLY_PAID: { label: 'Partial',   dot: 'bg-[#29B6F6]', text: 'text-[#29B6F6]' },
-    PAID:           { label: 'Paid',      dot: 'bg-green-500', text: 'text-green-600 dark:text-green-400' },
-    CANCELLED:      { label: 'Cancelled', dot: 'bg-[#8A9BAE]', text: 'text-c-muted' },
-  }
-  return MAP[lc]
-}
-
 interface Props {
   invoice:  InvoiceResponse
   customer: CustomerResponse | undefined
@@ -39,7 +23,6 @@ interface Props {
 
 const InvoiceCard = memo(function InvoiceCard({ invoice, customer, currency, onDelete }: Props) {
   const navigate = useNavigate()
-  const { label, dot, text } = getStatus(invoice.lifeCycleStatus, invoice.timeStatus)
   const isPaid  = invoice.lifeCycleStatus === 'PAID'
   const isDraft = invoice.lifeCycleStatus === 'DRAFT'
 
@@ -56,7 +39,7 @@ const InvoiceCard = memo(function InvoiceCard({ invoice, customer, currency, onD
           </p>
           <p className="text-xs text-c-muted truncate mt-0.5">{invoice.invoiceNumber}</p>
         </div>
-        <span className={`text-sm font-medium shrink-0 ${text}`}>{label}</span>
+        <InvoiceStatusBadge lifecycle={invoice.lifeCycleStatus} time={invoice.timeStatus} className="text-sm shrink-0" />
       </div>
 
       {/* Amount */}

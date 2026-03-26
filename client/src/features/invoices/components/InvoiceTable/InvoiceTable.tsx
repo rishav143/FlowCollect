@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { ArrowRight, Trash2, FileText } from 'lucide-react'
-import type { InvoiceResponse, LifeCycleStatus, TimeStatus } from '@/types/invoice.types'
+import InvoiceStatusBadge from '../InvoiceStatusBadge/InvoiceStatusBadge'
+import type { InvoiceResponse } from '@/types/invoice.types'
 import type { CustomerResponse } from '@/types/customer.types'
 
 function fmt(amount: number, currency: string) {
@@ -10,21 +11,6 @@ function fmt(amount: number, currency: string) {
 function fmtDate(d: string | null) {
   if (!d) return '—'
   return new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
-}
-
-function getStatus(lc: LifeCycleStatus, ts: TimeStatus): { label: string; dot: string; text: string } {
-  if (ts === 'OVERDUE'   && lc !== 'PAID' && lc !== 'CANCELLED' && lc !== 'DRAFT' && lc !== 'PARTIALLY_PAID')
-    return { label: 'Overdue',   dot: 'bg-red-500',   text: 'text-red-600 dark:text-red-400' }
-  if (ts === 'DUE_TODAY' && lc !== 'PAID' && lc !== 'CANCELLED' && lc !== 'PARTIALLY_PAID')
-    return { label: 'Due Today', dot: 'bg-amber-500', text: 'text-amber-600 dark:text-amber-400' }
-  const MAP: Record<LifeCycleStatus, { label: string; dot: string; text: string }> = {
-    DRAFT:          { label: 'Draft',     dot: 'bg-[#8A9BAE]', text: 'text-c-muted' },
-    ISSUED:         { label: 'Issued',     dot: 'bg-blue-500',  text: 'text-blue-600 dark:text-blue-400' },
-    PARTIALLY_PAID: { label: 'Partial',   dot: 'bg-[#29B6F6]', text: 'text-[#29B6F6] dark:text-[#4FC3F7]' },
-    PAID:           { label: 'Paid',      dot: 'bg-green-500', text: 'text-green-600 dark:text-green-400' },
-    CANCELLED:      { label: 'Cancelled', dot: 'bg-[#8A9BAE]', text: 'text-c-muted' },
-  }
-  return MAP[lc]
 }
 
 function RowSkeleton() {
@@ -88,8 +74,7 @@ export default function InvoiceTable({ invoices, customerMap, currency, isLoadin
                 const customer  = inv.customerId ? customerMap[inv.customerId] : null
                 const isDraft   = inv.lifeCycleStatus === 'DRAFT'
                 const isPaid    = inv.lifeCycleStatus === 'PAID'
-                const isPartial = inv.lifeCycleStatus === 'PARTIALLY_PAID' // show remaining hint
-                const { label, dot, text } = getStatus(inv.lifeCycleStatus, inv.timeStatus)
+                const isPartial = inv.lifeCycleStatus === 'PARTIALLY_PAID'
 
                 return (
                   <tr
@@ -107,7 +92,7 @@ export default function InvoiceTable({ invoices, customerMap, currency, isLoadin
 
                     {/* Status */}
                     <td className="px-4 py-3.5">
-                      <span className={`text-sm font-medium ${text}`}>{label}</span>
+                      <InvoiceStatusBadge lifecycle={inv.lifeCycleStatus} time={inv.timeStatus} className="text-sm" />
                     </td>
 
                     {/* Due date */}

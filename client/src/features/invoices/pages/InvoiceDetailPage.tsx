@@ -7,10 +7,10 @@ import { useInvoiceDetail } from '../hooks/useInvoiceDetail'
 import { useDeleteInvoice, useIssueInvoice, useDownloadPdf, useCancelInvoice } from '../hooks/useInvoiceMutations'
 import { getCustomer } from '@/api/customer.api'
 import InvoiceActionBar from '../components/InvoiceActionBar/InvoiceActionBar'
+import InvoiceStatusBadge from '../components/InvoiceStatusBadge/InvoiceStatusBadge'
 import PaymentsTab from '../components/PaymentsTab/PaymentsTab'
 import FollowupsTab from '../components/FollowupsTab/FollowupsTab'
 import FollowupModal from '../modals/FollowupModal'
-import type { LifeCycleStatus, TimeStatus } from '@/types/invoice.types'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -23,31 +23,6 @@ function fmt(n: number, currency: string) {
 function fmtDate(d: string | null) {
   if (!d) return '—'
   return new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })
-}
-
-// ---------------------------------------------------------------------------
-// Status chips
-// ---------------------------------------------------------------------------
-
-const STATUS_MAP: Record<LifeCycleStatus, { text: string; label: string }> = {
-  DRAFT:          { text: 'text-c-muted',                            label: 'Draft'     },
-  ISSUED:         { text: 'text-blue-600 dark:text-blue-400',        label: 'Issued'    },
-  PARTIALLY_PAID: { text: 'text-[#29B6F6] dark:text-[#4FC3F7]',     label: 'Partial'   },
-  PAID:           { text: 'text-green-600 dark:text-green-400',      label: 'Paid'      },
-  CANCELLED:      { text: 'text-c-muted',                            label: 'Cancelled' },
-}
-
-function StatusChip({ lifecycle, time }: { lifecycle: LifeCycleStatus; time: TimeStatus }) {
-  const overdue  = time === 'OVERDUE'  && lifecycle !== 'PAID' && lifecycle !== 'CANCELLED' && lifecycle !== 'DRAFT'
-  const dueToday = time === 'DUE_TODAY' && lifecycle !== 'PAID' && lifecycle !== 'CANCELLED' && lifecycle !== 'PARTIALLY_PAID'
-  const { text, label } = overdue
-    ? { text: 'text-red-600 dark:text-red-400',     label: 'Overdue'   }
-    : dueToday
-    ? { text: 'text-amber-600 dark:text-amber-400', label: 'Due Today' }
-    : STATUS_MAP[lifecycle]
-  return (
-    <span className={`text-sm font-medium ${text}`}>{label}</span>
-  )
 }
 
 // ---------------------------------------------------------------------------
@@ -177,7 +152,7 @@ export default function InvoiceDetailPage() {
                 Created {fmtDate(invoice.createdAt)}
               </p>
             </div>
-            <StatusChip lifecycle={invoice.lifeCycleStatus} time={invoice.timeStatus} />
+            <InvoiceStatusBadge lifecycle={invoice.lifeCycleStatus} time={invoice.timeStatus} className="text-sm" />
           </div>
 
           {/* Action bar */}
