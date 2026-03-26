@@ -49,7 +49,6 @@ export function useDashboard() {
   const totalUnpaid      = unpaidInvoices.reduce((s, i) => s + i.remainingAmount, 0)
   const totalUnpaidCount = unpaidInvoices.length
 
-  const overdueCount  = overdueQuery.data?.totalElements ?? 0
   const pastDueInvoices = invoices.filter(
     (i) => i.timeStatus === 'OVERDUE' && ['ISSUED', 'PARTIALLY_PAID'].includes(i.lifeCycleStatus),
   )
@@ -123,7 +122,7 @@ export function useDashboard() {
     kpis: {
       totalUnpaid,
       totalUnpaidCount,
-      overdueCount,
+      overdueCount: pastDueInvoices.length,
       pastDueAmount,
       collectedThisMonth,
       avgPaymentDelayDays,
@@ -132,7 +131,9 @@ export function useDashboard() {
 
     agingBuckets,
     customerMap,
-    overdueInvoices:     (overdueQuery.data?.content ?? []).filter(i => i.remainingAmount > 0).slice(0, 3),
+    overdueInvoices:     (overdueQuery.data?.content ?? [])
+      .filter(i => i.remainingAmount > 0 && ['ISSUED', 'PARTIALLY_PAID'].includes(i.lifeCycleStatus))
+      .slice(0, 3),
     dueSoonInvoices,
     pendingConfirmations,
     recentInvoices:      invoices.slice(0, 5),
