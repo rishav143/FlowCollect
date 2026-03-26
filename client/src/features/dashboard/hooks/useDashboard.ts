@@ -16,10 +16,10 @@ export function useDashboard() {
     enabled:  !!orgId,
   })
 
-  // Overdue invoices for action table — sorted by most overdue first
+  // Overdue invoices for action table — top 3, most overdue first
   const overdueQuery = useQuery({
     queryKey: ['invoices', orgId, 'dashboard-overdue'],
-    queryFn:  () => listInvoices(orgId, { timeStatus: 'OVERDUE', size: 5, sort: 'dueDate,asc' }),
+    queryFn:  () => listInvoices(orgId, { timeStatus: 'OVERDUE', size: 3, sort: 'dueDate,asc' }),
     enabled:  !!orgId,
   })
 
@@ -30,10 +30,10 @@ export function useDashboard() {
     enabled:  !!orgId,
   })
 
-  // Pending confirmations — CONFIRMATION_FLOW orgs only
+  // Pending confirmations — top 3 by largest amount, CONFIRMATION_FLOW orgs only
   const confirmationsQuery = useQuery({
     queryKey: ['confirmations', orgId, 'dashboard'],
-    queryFn:  () => listConfirmations(orgId, { status: 'PENDING_APPROVAL', size: 10 }),
+    queryFn:  () => listConfirmations(orgId, { status: 'PENDING_APPROVAL', size: 3, sort: 'amountClaimed,desc' }),
     enabled:  !!orgId && isConfirmationFlow,
   })
 
@@ -85,7 +85,7 @@ export function useDashboard() {
       return d >= now && d <= in14Days
     })
     .sort((a, b) => new Date(a.dueDate!).getTime() - new Date(b.dueDate!).getTime())
-    .slice(0, 5)
+    .slice(0, 6)
 
   // AR Aging buckets — unpaid invoices grouped by days past due date
   const todayMidnight = new Date(now)
