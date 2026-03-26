@@ -13,8 +13,9 @@ interface Tab {
 const TABS: Tab[] = [
   { label: 'All',        filter: {} },
   { label: 'Draft',      filter: { lifeCycleStatus: 'DRAFT' } },
-  { label: 'Issued',     filter: { lifeCycleStatus: 'ISSUED' } },
-  { label: 'Overdue',    filter: { timeStatus: 'OVERDUE' } },
+  { label: 'Issued',     filter: { lifeCycleStatus: 'ISSUED', timeStatus: 'NOT_DUE' } },
+  { label: 'Due Today',  filter: { lifeCycleStatus: 'ISSUED', timeStatus: 'DUE_TODAY' } },
+  { label: 'Overdue',    filter: { lifeCycleStatus: 'ISSUED', timeStatus: 'OVERDUE' } },
   { label: 'Partial',    filter: { lifeCycleStatus: 'PARTIALLY_PAID' } },
   { label: 'Paid',       filter: { lifeCycleStatus: 'PAID' } },
   { label: 'Cancelled',  filter: { lifeCycleStatus: 'CANCELLED' } },
