@@ -58,7 +58,7 @@ function MobileCard({ customer, invoices, currency, onDelete }: ClientRow) {
         </div>
         <div>
           <p className="text-[10px] text-c-muted mb-0.5">Risk</p>
-          <span className={`text-xs font-medium ${meta.text}`}>{meta.label}</span>
+          <p className={`text-xs font-semibold ${meta.text}`}>{meta.label}</p>
         </div>
       </div>
     </div>
