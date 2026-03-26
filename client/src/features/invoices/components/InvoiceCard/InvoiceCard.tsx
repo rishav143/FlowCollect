@@ -16,7 +16,7 @@ function fmtDate(d: string | null) {
 type StatusInfo = { label: string; dot: string; text: string }
 
 function getStatus(lc: LifeCycleStatus, ts: TimeStatus): StatusInfo {
-  if (ts === 'OVERDUE'   && lc !== 'PAID' && lc !== 'CANCELLED' && lc !== 'DRAFT')
+  if (ts === 'OVERDUE'   && lc !== 'PAID' && lc !== 'CANCELLED' && lc !== 'DRAFT' && lc !== 'PARTIALLY_PAID')
     return { label: 'Overdue',   dot: 'bg-red-500',   text: 'text-red-600 dark:text-red-400' }
   if (ts === 'DUE_TODAY' && lc !== 'PAID' && lc !== 'CANCELLED' && lc !== 'PARTIALLY_PAID')
     return { label: 'Due Today', dot: 'bg-amber-500', text: 'text-amber-600 dark:text-amber-400' }

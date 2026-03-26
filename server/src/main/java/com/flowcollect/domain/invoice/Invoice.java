@@ -281,6 +281,7 @@ public class Invoice {
             this.lifeCycleStatus = LifeCycleStatus.ISSUED;
         } else if (totalPaid.compareTo(this.totalAmount) >= 0) {
             this.lifeCycleStatus = LifeCycleStatus.PAID;
+            this.timeStatus = TimeStatus.NOT_DUE; // Paid invoices are never overdue
         } else {
             this.lifeCycleStatus = LifeCycleStatus.PARTIALLY_PAID;
         }
@@ -301,6 +302,11 @@ public class Invoice {
     public void refreshTimeStatus(LocalDate referenceDate) {
         if (referenceDate == null) {
             throw new IllegalArgumentException("Reference date cannot be null");
+        }
+        // Paid and cancelled invoices have no meaningful time status
+        if (lifeCycleStatus == LifeCycleStatus.PAID || lifeCycleStatus == LifeCycleStatus.CANCELLED) {
+            this.timeStatus = TimeStatus.NOT_DUE;
+            return;
         }
         if (this.dueDate == null) {
             this.timeStatus = TimeStatus.NOT_DUE;
