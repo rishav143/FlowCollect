@@ -3,6 +3,7 @@ import { useAuthStore } from '@/store/auth.store'
 import { listInvoices } from '@/api/invoice.api'
 import { listConfirmations } from '@/api/confirmation.api'
 import { listCustomers } from '@/api/customer.api'
+import { getOrgStats } from '@/api/organization.api'
 
 export function useDashboard() {
   const orgId             = useAuthStore((s) => s.org?.id ?? '')
@@ -27,6 +28,13 @@ export function useDashboard() {
   const customersQuery = useQuery({
     queryKey: ['customers', orgId, 'dashboard'],
     queryFn:  () => listCustomers(orgId, { size: 200 }),
+    enabled:  !!orgId,
+  })
+
+  // Server-computed stats (collectedThisMonth uses real paidAt, includes partials)
+  const statsQuery = useQuery({
+    queryKey: ['org-stats', orgId],
+    queryFn:  () => getOrgStats(orgId),
     enabled:  !!orgId,
   })
 
@@ -68,11 +76,9 @@ export function useDashboard() {
       )
     : null
 
-  // Collected this month: invoices fully paid (updatedAt within current month)
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-  const collectedThisMonth = invoices
-    .filter((i) => i.lifeCycleStatus === 'PAID' && new Date(i.updatedAt) >= startOfMonth)
-    .reduce((s, i) => s + i.totalAmount, 0)
+  // Collected this month: real sum from the server using paidAt on each Payment row.
+  // Includes partial payments recorded this month, not just fully-paid invoices.
+  const collectedThisMonth = statsQuery.data?.collectedThisMonth ?? 0
 
   // Due soon: unpaid invoices with dueDate in next 14 days, sorted nearest-first
   const in14Days = new Date(now)

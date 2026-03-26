@@ -85,3 +85,16 @@ export async function purchaseCredits(orgId: string, body: PurchaseRequest): Pro
   const { data } = await api.post<BillingResponse>(`${base(orgId)}/billing/credits/purchase`, body)
   return data
 }
+
+// ---------------------------------------------------------------------------
+// Stats
+// ---------------------------------------------------------------------------
+
+export interface OrgStatsResponse {
+  collectedThisMonth: number
+}
+
+export async function getOrgStats(orgId: string): Promise<OrgStatsResponse> {
+  const { data } = await api.get<OrgStatsResponse>(`${base(orgId)}/stats`)
+  return data
+}
