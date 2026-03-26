@@ -16,16 +16,21 @@ api.interceptors.request.use((config) => {
   return config
 })
 
-// On 401 — token expired or invalid → clear auth and redirect to login
-// Skip redirect for auth endpoints (login/register) so their own error handlers run
+// On 401 — token expired or invalid → clear auth and redirect to login.
+// Only triggers when the server actually responds (not on network errors /
+// cold-start timeouts). Auth endpoints handle their own 401 errors.
 api.interceptors.response.use(
   (res) => res,
   (err) => {
-    const url = (err.config?.url ?? '') as string
-    if (err.response?.status === 401 && !url.includes('/auth/')) {
+    const url         = (err.config?.url ?? '') as string
+    const status      = err.response?.status
+    const hasResponse = !!err.response   // false on network error / no connection
+
+    if (status === 401 && hasResponse && !url.includes('/auth/')) {
       useAuthStore.getState().clearAuth()
       window.location.href = '/login'
     }
+
     return Promise.reject(err)
   },
 )

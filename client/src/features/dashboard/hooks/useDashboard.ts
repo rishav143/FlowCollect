@@ -31,11 +31,15 @@ export function useDashboard() {
     enabled:  !!orgId,
   })
 
-  // Server-computed stats (collectedThisMonth uses real paidAt, includes partials)
+  // Server-computed stats (collectedThisMonth uses real paidAt, includes partials).
+  // retry:0 — fail fast and fall back to the frontend estimate immediately.
+  // throwOnError:false — a failure here must never crash the dashboard.
   const statsQuery = useQuery({
-    queryKey: ['org-stats', orgId],
-    queryFn:  () => getOrgStats(orgId),
-    enabled:  !!orgId,
+    queryKey:     ['org-stats', orgId],
+    queryFn:      () => getOrgStats(orgId),
+    enabled:      !!orgId,
+    retry:        0,
+    throwOnError: false,
   })
 
   // Pending confirmations — top 3 by largest amount, CONFIRMATION_FLOW orgs only
