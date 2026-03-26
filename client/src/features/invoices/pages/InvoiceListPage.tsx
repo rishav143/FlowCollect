@@ -98,9 +98,9 @@ function DeleteConfirm({
 // ---------------------------------------------------------------------------
 
 function ArchiveConfirm({
-  count, onConfirm, onCancel, isArchiving,
+  label, onConfirm, onCancel, isArchiving,
 }: {
-  count:       number
+  label:       string
   onConfirm:   () => void
   onCancel:    () => void
   isArchiving: boolean
@@ -111,7 +111,7 @@ function ArchiveConfirm({
       <div className="relative w-full max-w-sm bg-white dark:bg-[#1B2838] rounded-2xl shadow-xl p-6">
         <h2 className="text-base font-semibold text-[#0D1B2A] dark:text-white mb-2">Archive Invoices</h2>
         <p className="text-sm text-c-muted mb-5">
-          Archive <span className="font-semibold text-[#0D1B2A] dark:text-white">{count} invoice{count !== 1 ? 's' : ''}</span>? They'll be hidden from your main list but can be restored from the Archived tab.
+          Archive <span className="font-semibold text-[#0D1B2A] dark:text-white">{label}</span>? They'll be hidden from your main list but can be restored from the Archived tab.
         </p>
         <div className="flex gap-3 justify-end">
           <button onClick={onCancel} className="px-4 py-2 rounded-lg text-sm font-medium text-c-muted hover:bg-[#F4F7F9] dark:hover:bg-[#243447] transition-colors">
@@ -220,14 +220,17 @@ export default function InvoiceListPage() {
   }
 
   async function confirmBulkArchive() {
-    if (archivingAllPaid) {
-      await archivePaidMutation.mutateAsync()
-    } else {
-      await bulkArchiveMutation.mutateAsync([...selectedIds])
-      setSelectedIds(new Set())
+    try {
+      if (archivingAllPaid) {
+        await archivePaidMutation.mutateAsync()
+      } else {
+        await bulkArchiveMutation.mutateAsync([...selectedIds])
+        setSelectedIds(new Set())
+      }
+    } finally {
+      setShowArchiveConfirm(false)
+      setArchivingAllPaid(false)
     }
-    setShowArchiveConfirm(false)
-    setArchivingAllPaid(false)
   }
 
   function openClearPaid() {
@@ -244,8 +247,10 @@ export default function InvoiceListPage() {
     await unarchiveMutation.mutateAsync(invoice.id)
   }
 
-  const isArchiving = archivePaidMutation.isPending || bulkArchiveMutation.isPending
-  const archiveCount = archivingAllPaid ? 0 : selectedIds.size
+  const isArchiving   = archivePaidMutation.isPending || bulkArchiveMutation.isPending
+  const archiveLabel  = archivingAllPaid
+    ? 'all paid invoices'
+    : `${selectedIds.size} invoice${selectedIds.size !== 1 ? 's' : ''}`
 
   return (
     <>
@@ -389,7 +394,7 @@ export default function InvoiceListPage() {
 
       {showArchiveConfirm && (
         <ArchiveConfirm
-          count={archivingAllPaid ? 0 : archiveCount}
+          label={archiveLabel}
           onConfirm={confirmBulkArchive}
           onCancel={() => { setShowArchiveConfirm(false); setArchivingAllPaid(false) }}
           isArchiving={isArchiving}

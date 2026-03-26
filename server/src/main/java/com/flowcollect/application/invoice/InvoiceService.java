@@ -257,12 +257,15 @@ public class InvoiceService {
         return paid.size();
     }
 
-    // Archive a specific list of invoice IDs (PAID or CANCELLED only).
+    // Archive a specific list of invoice IDs — silently skips invoices that cannot be archived.
     @Transactional
     public void bulkArchiveInvoices(UUID organizationId, List<UUID> invoiceIds) {
         organizationService.getById(organizationId);
         List<Invoice> invoices = invoiceRepository.findAllByIdInAndOrganizationId(invoiceIds, organizationId);
-        invoices.forEach(Invoice::archive);
+        invoices.stream()
+            .filter(inv -> inv.getLifeCycleStatus() == LifeCycleStatus.PAID
+                        || inv.getLifeCycleStatus() == LifeCycleStatus.CANCELLED)
+            .forEach(Invoice::archive);
         invoiceRepository.saveAll(invoices);
     }
 
@@ -303,7 +306,12 @@ public class InvoiceService {
 
         Specification<Invoice> spec = (root, query, cb) -> {
             Predicate p = cb.equal(root.get("organization").get("id"), organizationId);
-            p = cb.and(p, cb.equal(root.get("archived"), showArchived));
+            // Treat NULL archived as false (existing rows before column was added)
+            if (showArchived) {
+                p = cb.and(p, cb.isTrue(root.get("archived")));
+            } else {
+                p = cb.and(p, cb.or(cb.isFalse(root.get("archived")), root.get("archived").isNull()));
+            }
             if (timeStatus != null) {
                 p = cb.and(p, cb.equal(root.get("timeStatus"), timeStatus));
             }
