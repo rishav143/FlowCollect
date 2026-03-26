@@ -58,11 +58,13 @@ function RowSkeleton({ isLast }: { isLast: boolean }) {
 export default function DueSoonPanel({
   invoices,
   currency,
+  customerMap,
   isLoading,
   onFollowup,
 }: {
   invoices:    InvoiceResponse[]
   currency:    string
+  customerMap: Record<string, string>
   isLoading:   boolean
   onFollowup?: (inv: InvoiceResponse) => void
 }) {
@@ -105,9 +107,12 @@ export default function DueSoonPanel({
                 ].join(' ')}
                 onClick={() => navigate(`/invoices/${inv.id}`)}
               >
-                <span className="text-sm font-semibold text-[#0D1B2A] dark:text-white w-24 shrink-0">
-                  {inv.invoiceNumber}
-                </span>
+                <div className="w-28 shrink-0 min-w-0">
+                  <p className="text-sm font-semibold text-[#0D1B2A] dark:text-white">{inv.invoiceNumber}</p>
+                  {inv.customerId && customerMap[inv.customerId] && (
+                    <p className="text-xs text-c-muted truncate">{customerMap[inv.customerId]}</p>
+                  )}
+                </div>
 
                 <span className={`text-xs font-medium shrink-0 ${badge.text}`}>{badge.label}</span>
 

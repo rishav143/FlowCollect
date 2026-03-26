@@ -81,6 +81,7 @@ function OverdueSection({
   invoices,
   overdueTotal,
   currency,
+  customerMap,
   isLoading,
   onPay,
   onFollowup,
@@ -88,6 +89,7 @@ function OverdueSection({
   invoices:     InvoiceResponse[]
   overdueTotal: number
   currency:     string
+  customerMap:  Record<string, string>
   isLoading:    boolean
   onPay?:       (inv: InvoiceResponse) => void
   onFollowup?:  (inv: InvoiceResponse) => void
@@ -120,9 +122,12 @@ function OverdueSection({
                   ].join(' ')}
                   onClick={() => navigate(`/invoices/${inv.id}`)}
                 >
-                  <span className="text-sm font-semibold text-[#0D1B2A] dark:text-white w-24 shrink-0">
-                    {inv.invoiceNumber}
-                  </span>
+                  <div className="w-28 shrink-0 min-w-0">
+                    <p className="text-sm font-semibold text-[#0D1B2A] dark:text-white">{inv.invoiceNumber}</p>
+                    {inv.customerId && customerMap[inv.customerId] && (
+                      <p className="text-xs text-c-muted truncate">{customerMap[inv.customerId]}</p>
+                    )}
+                  </div>
 
                   <span className="text-xs font-medium text-red-600 dark:text-red-400 shrink-0">{days}d overdue</span>
 
@@ -251,6 +256,7 @@ interface Props {
   overdueTotal:         number
   pendingConfirmations: PaymentConfirmationResponse[]
   currency:             string
+  customerMap:          Record<string, string>
   isConfirmationFlow:   boolean
   isLoading:            boolean
   onPay?:               (inv: InvoiceResponse) => void
@@ -262,6 +268,7 @@ export default function ActionTable({
   overdueTotal,
   pendingConfirmations,
   currency,
+  customerMap,
   isConfirmationFlow,
   isLoading,
   onPay,
@@ -273,6 +280,7 @@ export default function ActionTable({
         invoices={overdueInvoices}
         overdueTotal={overdueTotal}
         currency={currency}
+        customerMap={customerMap}
         isLoading={isLoading}
         onPay={onPay}
         onFollowup={onFollowup}

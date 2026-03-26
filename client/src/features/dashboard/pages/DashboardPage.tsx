@@ -88,12 +88,13 @@ const STATUS_META: Record<LifeCycleStatus, { text: string; label: string }> = {
 // ---------------------------------------------------------------------------
 
 function ActivityRow({
-  invoice, currency, onClick, isLast,
+  invoice, currency, customerName, onClick, isLast,
 }: {
-  invoice:  InvoiceResponse
-  currency: string
-  onClick:  () => void
-  isLast:   boolean
+  invoice:       InvoiceResponse
+  currency:      string
+  customerName?: string
+  onClick:       () => void
+  isLast:        boolean
 }) {
   const { text, label } = STATUS_META[invoice.lifeCycleStatus]
   return (
@@ -105,10 +106,11 @@ function ActivityRow({
       ].join(' ')}
       onClick={onClick}
     >
-      {/* Invoice # */}
-      <span className="text-sm font-semibold text-[#0D1B2A] dark:text-white w-24 shrink-0 tabular-nums">
-        {invoice.invoiceNumber}
-      </span>
+      {/* Invoice # + client name */}
+      <div className="w-28 shrink-0 min-w-0">
+        <p className="text-sm font-semibold text-[#0D1B2A] dark:text-white tabular-nums">{invoice.invoiceNumber}</p>
+        {customerName && <p className="text-xs text-c-muted truncate">{customerName}</p>}
+      </div>
 
       {/* Status */}
       <span className={`text-xs font-medium shrink-0 ${text}`}>{label}</span>
@@ -143,11 +145,12 @@ function ActivitySkeleton({ isLast }: { isLast: boolean }) {
 }
 
 function RecentActivity({
-  invoices, currency, isLoading,
+  invoices, currency, customerMap, isLoading,
 }: {
-  invoices:  InvoiceResponse[]
-  currency:  string
-  isLoading: boolean
+  invoices:    InvoiceResponse[]
+  currency:    string
+  customerMap: Record<string, string>
+  isLoading:   boolean
 }) {
   const navigate = useNavigate()
   return (
@@ -181,6 +184,7 @@ function RecentActivity({
               key={inv.id}
               invoice={inv}
               currency={currency}
+              customerName={inv.customerId ? customerMap[inv.customerId] : undefined}
               isLast={idx === invoices.length - 1}
               onClick={() => navigate(`/invoices/${inv.id}`)}
             />
@@ -265,6 +269,7 @@ export default function DashboardPage() {
     isLoading,
     kpis,
     agingBuckets,
+    customerMap,
     overdueInvoices,
     dueSoonInvoices,
     pendingConfirmations,
@@ -331,6 +336,7 @@ export default function DashboardPage() {
           overdueTotal={kpis.overdueCount}
           pendingConfirmations={pendingConfirmations}
           currency={currency}
+          customerMap={customerMap}
           isConfirmationFlow={isConfirmationFlow}
           isLoading={isLoading}
           onPay={setPayTarget}
@@ -340,6 +346,7 @@ export default function DashboardPage() {
         <DueSoonPanel
           invoices={dueSoonInvoices}
           currency={currency}
+          customerMap={customerMap}
           isLoading={isLoading}
           onFollowup={setFollowupTarget}
         />
@@ -352,6 +359,7 @@ export default function DashboardPage() {
       <RecentActivity
         invoices={recentInvoices}
         currency={currency}
+        customerMap={customerMap}
         isLoading={isLoading}
       />
 

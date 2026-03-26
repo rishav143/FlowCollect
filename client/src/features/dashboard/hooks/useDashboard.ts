@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/store/auth.store'
 import { listInvoices } from '@/api/invoice.api'
 import { listConfirmations } from '@/api/confirmation.api'
+import { listCustomers } from '@/api/customer.api'
 
 export function useDashboard() {
   const orgId             = useAuthStore((s) => s.org?.id ?? '')
@@ -19,6 +20,13 @@ export function useDashboard() {
   const overdueQuery = useQuery({
     queryKey: ['invoices', orgId, 'dashboard-overdue'],
     queryFn:  () => listInvoices(orgId, { timeStatus: 'OVERDUE', size: 5, sort: 'dueDate,asc' }),
+    enabled:  !!orgId,
+  })
+
+  // Customers for name lookup
+  const customersQuery = useQuery({
+    queryKey: ['customers', orgId, 'dashboard'],
+    queryFn:  () => listCustomers(orgId, { size: 200 }),
     enabled:  !!orgId,
   })
 
@@ -102,6 +110,11 @@ export function useDashboard() {
 
   const pendingConfirmations = confirmationsQuery.data?.content ?? []
 
+  const customerMap: Record<string, string> = {}
+  for (const c of customersQuery.data?.content ?? []) {
+    customerMap[c.id] = c.name
+  }
+
   return {
     currency,
     isConfirmationFlow,
@@ -118,6 +131,7 @@ export function useDashboard() {
     },
 
     agingBuckets,
+    customerMap,
     overdueInvoices:     overdueQuery.data?.content ?? [],
     dueSoonInvoices,
     pendingConfirmations,
