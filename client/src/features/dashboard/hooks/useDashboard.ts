@@ -3,7 +3,6 @@ import { useAuthStore } from '@/store/auth.store'
 import { listInvoices } from '@/api/invoice.api'
 import { listConfirmations } from '@/api/confirmation.api'
 import { listCustomers } from '@/api/customer.api'
-import { getOrgStats } from '@/api/organization.api'
 
 export function useDashboard() {
   const orgId             = useAuthStore((s) => s.org?.id ?? '')
@@ -29,17 +28,6 @@ export function useDashboard() {
     queryKey: ['customers', orgId, 'dashboard'],
     queryFn:  () => listCustomers(orgId, { size: 200 }),
     enabled:  !!orgId,
-  })
-
-  // Server-computed stats (collectedThisMonth uses real paidAt, includes partials).
-  // retry:0 — fail fast and fall back to the frontend estimate immediately.
-  // throwOnError:false — a failure here must never crash the dashboard.
-  const statsQuery = useQuery({
-    queryKey:     ['org-stats', orgId],
-    queryFn:      () => getOrgStats(orgId),
-    enabled:      !!orgId,
-    retry:        0,
-    throwOnError: false,
   })
 
   // Pending confirmations — top 3 by largest amount, CONFIRMATION_FLOW orgs only
@@ -80,14 +68,11 @@ export function useDashboard() {
       )
     : null
 
-  // Collected this month — prefer server value (real paidAt, includes partials).
-  // Falls back to frontend estimate (PAID invoices updated this month) until
-  // the /stats endpoint is deployed.
+  // Collected this month: invoices fully paid (updatedAt within current month)
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-  const collectedFallback = invoices
+  const collectedThisMonth = invoices
     .filter((i) => i.lifeCycleStatus === 'PAID' && new Date(i.updatedAt) >= startOfMonth)
     .reduce((s, i) => s + i.totalAmount, 0)
-  const collectedThisMonth = statsQuery.data?.collectedThisMonth ?? collectedFallback
 
   // Due soon: unpaid invoices with dueDate in next 14 days, sorted nearest-first
   const in14Days = new Date(now)

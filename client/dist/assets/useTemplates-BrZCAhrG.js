@@ -1,0 +1,1 @@
+import{a as u,f as a,a7 as o}from"./index-CcxT3SSi.js";function l(t){const e=u(r=>{var s;return((s=r.org)==null?void 0:s.id)??""});return a({queryKey:["templates",e,t],queryFn:()=>o(e,t),enabled:!!e})}export{l as u};
