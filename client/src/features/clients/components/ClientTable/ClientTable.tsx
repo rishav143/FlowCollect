@@ -39,7 +39,6 @@ function MobileCard({ customer, invoices, currency, onDelete }: ClientRow) {
           {customer.companyName && <p className="text-xs text-c-muted truncate mt-0.5">{customer.companyName}</p>}
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <span className={`text-sm font-medium ${meta.text}`}>{meta.label}</span>
           <button
             onClick={(e) => { e.stopPropagation(); onDelete(customer) }}
             className="p-1 text-c-muted hover:text-red-500 transition-colors"
