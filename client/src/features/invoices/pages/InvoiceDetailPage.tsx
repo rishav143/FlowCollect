@@ -31,7 +31,7 @@ function fmtDate(d: string | null) {
 
 const STATUS_MAP: Record<LifeCycleStatus, { text: string; label: string }> = {
   DRAFT:          { text: 'text-c-muted',                            label: 'Draft'     },
-  ISSUED:         { text: 'text-blue-600 dark:text-blue-400',        label: 'Sent'      },
+  ISSUED:         { text: 'text-blue-600 dark:text-blue-400',        label: 'Issued'    },
   PARTIALLY_PAID: { text: 'text-[#29B6F6] dark:text-[#4FC3F7]',     label: 'Partial'   },
   PAID:           { text: 'text-green-600 dark:text-green-400',      label: 'Paid'      },
   CANCELLED:      { text: 'text-c-muted',                            label: 'Cancelled' },

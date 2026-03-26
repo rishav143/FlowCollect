@@ -22,7 +22,7 @@ function getStatus(lc: LifeCycleStatus, ts: TimeStatus): StatusInfo {
     return { label: 'Due Today', dot: 'bg-amber-500', text: 'text-amber-600 dark:text-amber-400' }
   const MAP: Record<LifeCycleStatus, StatusInfo> = {
     DRAFT:          { label: 'Draft',     dot: 'bg-[#8A9BAE]', text: 'text-c-muted' },
-    ISSUED:         { label: 'Sent',      dot: 'bg-blue-500',  text: 'text-blue-600 dark:text-blue-400' },
+    ISSUED:         { label: 'Issued',     dot: 'bg-blue-500',  text: 'text-blue-600 dark:text-blue-400' },
     PARTIALLY_PAID: { label: 'Partial',   dot: 'bg-[#29B6F6]', text: 'text-[#29B6F6]' },
     PAID:           { label: 'Paid',      dot: 'bg-green-500', text: 'text-green-600 dark:text-green-400' },
     CANCELLED:      { label: 'Cancelled', dot: 'bg-[#8A9BAE]', text: 'text-c-muted' },
