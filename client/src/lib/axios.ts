@@ -16,13 +16,24 @@ api.interceptors.request.use((config) => {
   return config
 })
 
-// On 401 — token expired or invalid → clear auth and redirect to login
+// On 401/403 — token expired or invalid → clear auth and redirect to login
+// On 404 for org-scoped routes — token points to a different DB/org → force re-login
 // Skip redirect for auth endpoints (login/register) so their own error handlers run
 api.interceptors.response.use(
   (res) => res,
   (err) => {
-    const url = (err.config?.url ?? '') as string
-    if (err.response?.status === 401 && !url.includes('/auth/')) {
+    const url    = (err.config?.url ?? '') as string
+    const status = err.response?.status as number | undefined
+    const isAuth = url.includes('/auth/')
+
+    const forceLogout =
+      !isAuth &&
+      (status === 401 ||
+        status === 403 ||
+        // Org not found in this DB — stale token from another environment
+        (status === 404 && url.includes('/organizations/')))
+
+    if (forceLogout) {
       useAuthStore.getState().clearAuth()
       window.location.href = '/login'
     }

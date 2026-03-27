@@ -1,6 +1,6 @@
 import { memo } from 'react'
-import { Mail, MessageSquare, MessageCircle, Pencil, Trash2 } from 'lucide-react'
-import type { ReminderRuleResponse, ReminderChannel } from '@/types/reminder.types'
+import { Mail, MessageSquare, MessageCircle, Pencil, Trash2, RotateCcw } from 'lucide-react'
+import type { ReminderRuleResponse, ReminderChannel, ReminderTriggerType } from '@/types/reminder.types'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -12,11 +12,11 @@ const CHANNEL_META: Record<ReminderChannel, { icon: React.ReactNode; color: stri
   WHATSAPP: { icon: <MessageCircle size={15} strokeWidth={1.8} />, color: 'text-green-500', bg: 'bg-green-500/10', label: 'WhatsApp' },
 }
 
-export function timingLabel(offset: number): string {
-  if (offset === 0) return 'On due date'
-  const abs = Math.abs(offset)
+export function timingLabel(daysOffset: number, triggerType: ReminderTriggerType): string {
+  if (triggerType === 'ON_DUE_DATE') return 'On due date'
+  const abs = Math.abs(daysOffset)
   const d   = `${abs} day${abs !== 1 ? 's' : ''}`
-  return offset < 0 ? `${d} before due` : `${d} after due`
+  return triggerType === 'BEFORE_DUE_DATE' ? `${d} before due` : `${d} after due`
 }
 
 // ---------------------------------------------------------------------------
@@ -32,7 +32,8 @@ interface Props {
 }
 
 const RuleRow = memo(function RuleRow({ rule, isLast, onEdit, onDelete, onToggle }: Props) {
-  const ch = CHANNEL_META[rule.channel]
+  const ch      = CHANNEL_META[rule.channel]
+  const isCyclic = rule.maxOccurrences > 1
 
   return (
     <div className={[
@@ -49,13 +50,21 @@ const RuleRow = memo(function RuleRow({ rule, isLast, onEdit, onDelete, onToggle
       {/* Timing + detail */}
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold text-[#0D1B2A] dark:text-white">
-          {timingLabel(rule.triggerOffset)}
+          {timingLabel(rule.daysOffset, rule.triggerType)}
           {rule.name && (
             <span className="ml-1.5 text-xs font-normal text-c-muted">· {rule.name}</span>
           )}
         </p>
-        <p className="text-xs text-c-muted mt-0.5">
-          {ch.label}{rule.templateName ? ` · ${rule.templateName}` : ''}
+        <p className="text-xs text-c-muted mt-0.5 flex items-center gap-1.5">
+          {ch.label}
+          {rule.templateName ? ` · ${rule.templateName}` : ''}
+          {isCyclic && (
+            <>
+              <span>·</span>
+              <RotateCcw size={10} strokeWidth={2} className="inline shrink-0" />
+              <span>{rule.maxOccurrences}× every {rule.cycleIntervalDays}d</span>
+            </>
+          )}
         </p>
       </div>
 

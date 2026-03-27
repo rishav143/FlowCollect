@@ -30,6 +30,6 @@ export async function deleteReminderRule(orgId: string, id: string): Promise<voi
 }
 
 export async function toggleReminderRule(orgId: string, id: string, active: boolean): Promise<ReminderRuleResponse> {
-  const { data } = await api.put<ReminderRuleResponse>(`${base(orgId)}/${id}/${active ? 'activate' : 'deactivate'}`)
+  const { data } = await api.patch<ReminderRuleResponse>(`${base(orgId)}/${id}/${active ? 'activate' : 'deactivate'}`)
   return data
 }

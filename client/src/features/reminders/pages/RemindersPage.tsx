@@ -84,8 +84,8 @@ export default function RemindersPage() {
   const deleteMut  = useDeleteReminderRule()
   const toggleMut  = useToggleReminderRule()
 
-  // Sort by triggerOffset ascending: before due → on due → after due
-  const rules = [...(data?.content ?? [])].sort((a, b) => a.triggerOffset - b.triggerOffset)
+  // Sort by daysOffset ascending: most-before (-N) → on due (0) → after (+N)
+  const rules = [...(data?.content ?? [])].sort((a, b) => a.daysOffset - b.daysOffset)
 
   async function confirmDelete() {
     if (!deleting) return
