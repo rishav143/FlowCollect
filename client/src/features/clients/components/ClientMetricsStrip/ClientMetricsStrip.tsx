@@ -1,5 +1,6 @@
 import type { CustomerResponse } from '@/types/customer.types'
 import type { InvoiceResponse } from '@/types/invoice.types'
+import { formatCurrency } from '@/lib/format'
 
 // ---------------------------------------------------------------------------
 // Risk classification (UI_LAYOUT.md spec)
@@ -85,12 +86,8 @@ export default function ClientMetricsStrip({ customers, invoicesByCustomer, curr
 
   const avgDelay = clientsWithInvoices > 0 ? Math.round(totalDelay / clientsWithInvoices) : 0
 
-  function fmt(n: number) {
-    return new Intl.NumberFormat('en-IN', { style: 'currency', currency, maximumFractionDigits: 0 }).format(n)
-  }
-
   const cards = [
-    { label: 'Outstanding',       value: fmt(totalOutstanding), sub: 'total unpaid',       color: totalOutstanding > 0 ? 'text-[#0D1B2A] dark:text-white' : 'text-green-600 dark:text-green-400' },
+    { label: 'Outstanding',       value: formatCurrency(totalOutstanding, currency, { decimals: false }), sub: 'total unpaid',       color: totalOutstanding > 0 ? 'text-[#0D1B2A] dark:text-white' : 'text-green-600 dark:text-green-400' },
     { label: 'High Risk',         value: String(highRisk),      sub: 'avg delay > 14d',    color: highRisk > 0 ? 'text-red-500' : 'text-[#0D1B2A] dark:text-white' },
     { label: 'Good Payers',       value: String(goodPayers),    sub: 'avg delay < 5d',     color: goodPayers > 0 ? 'text-green-600 dark:text-green-400' : 'text-[#0D1B2A] dark:text-white' },
     { label: 'Avg Payment Delay', value: `${avgDelay}d`,        sub: 'across all clients', color: 'text-[#0D1B2A] dark:text-white' },

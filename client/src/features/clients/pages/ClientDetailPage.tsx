@@ -11,6 +11,7 @@ import {
 } from '../components/ClientMetricsStrip/ClientMetricsStrip'
 import ClientInvoiceHistory from '../components/ClientInvoiceHistory/ClientInvoiceHistory'
 import EditClientModal from '../modals/EditClientModal'
+import { formatCurrency } from '@/lib/format'
 
 // ---------------------------------------------------------------------------
 // Automation toggle
@@ -90,10 +91,6 @@ export default function ClientDetailPage() {
   }
 
   // ── Stats ──────────────────────────────────────────────────────────────────
-  function fmt(n: number) {
-    return new Intl.NumberFormat('en-IN', { style: 'currency', currency, maximumFractionDigits: 0 }).format(n)
-  }
-
   const outstanding = invoices
     .filter((i) => i.lifeCycleStatus !== 'PAID' && i.lifeCycleStatus !== 'CANCELLED')
     .reduce((s, i) => s + i.remainingAmount, 0)
@@ -166,7 +163,7 @@ export default function ClientDetailPage() {
           <div className="flex gap-6 pt-3 border-t border-c-border flex-wrap">
             <Stat
               label="Outstanding"
-              value={fmt(outstanding)}
+              value={formatCurrency(outstanding, currency, { decimals: false })}
               sub="remaining balance"
               valueColor={outstanding > 0 ? undefined : 'text-green-600 dark:text-green-400'}
             />

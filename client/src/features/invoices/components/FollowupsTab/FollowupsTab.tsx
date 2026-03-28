@@ -2,6 +2,7 @@ import { useParams } from 'react-router-dom'
 import { Bell, Mail, MessageSquare, Phone } from 'lucide-react'
 import { useInvoiceFollowups } from '@/features/followups/hooks/useFollowups'
 import type { FollowUpChannel, FollowUpStatus } from '@/types/followup.types'
+import { formatDateTime } from '@/lib/format'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -20,13 +21,7 @@ const STATUS_DOT: Record<FollowUpStatus, { dot: string; text: string; label: str
   CANCELLED: { dot: 'bg-[#8A9BAE]', text: 'text-c-muted',                      label: 'Cancelled' },
 }
 
-function fmtDate(d: string | null) {
-  if (!d) return '—'
-  return new Date(d).toLocaleString('en-IN', {
-    day: 'numeric', month: 'short', year: 'numeric',
-    hour: '2-digit', minute: '2-digit',
-  })
-}
+function fmtDate(d: string | null) { return formatDateTime(d) }
 
 // ---------------------------------------------------------------------------
 // Component

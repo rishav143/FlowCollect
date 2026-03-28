@@ -3,10 +3,7 @@ import { Send } from 'lucide-react'
 import type { InvoiceResponse } from '@/types/invoice.types'
 import type { FollowUpResponse } from '@/types/followup.types'
 import { timeAgo, dueDateLabel } from '@/utils/date'
-
-function fmt(n: number, currency: string) {
-  return new Intl.NumberFormat('en-IN', { style: 'currency', currency, maximumFractionDigits: 0 }).format(n)
-}
+import { formatCurrency } from '@/lib/format'
 
 const CHANNEL_LABEL: Record<string, string> = {
   EMAIL: 'Email', SMS: 'SMS', WHATSAPP: 'WhatsApp',
@@ -47,7 +44,7 @@ const FollowupCard = memo(function FollowupCard({ invoice, currency, customerNam
       <div>
         <p className="text-[10px] text-c-muted uppercase tracking-wide mb-0.5">Remaining</p>
         <p className="text-lg font-bold tabular-nums text-[#0D1B2A] dark:text-white">
-          {fmt(invoice.remainingAmount, currency)}
+          {formatCurrency(invoice.remainingAmount, currency, { decimals: false })}
         </p>
       </div>
 

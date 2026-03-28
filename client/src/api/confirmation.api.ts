@@ -32,7 +32,7 @@ export async function approveConfirmation(
 ): Promise<PaymentConfirmationResponse> {
   const { data } = await api.post<PaymentConfirmationResponse>(
     `${base(orgId)}/${confirmationId}/approve`,
-    body ?? null,
+    body,
   )
   return data
 }
@@ -44,7 +44,7 @@ export async function requestRemainingConfirmation(
 ): Promise<PaymentConfirmationResponse> {
   const { data } = await api.post<PaymentConfirmationResponse>(
     `${base(orgId)}/${confirmationId}/request-remaining`,
-    body ?? null,
+    body,
   )
   return data
 }
@@ -56,7 +56,7 @@ export async function rejectConfirmation(
 ): Promise<PaymentConfirmationResponse> {
   const { data } = await api.post<PaymentConfirmationResponse>(
     `${base(orgId)}/${confirmationId}/reject`,
-    body ?? null,
+    body,
   )
   return data
 }

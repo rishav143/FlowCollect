@@ -3,15 +3,7 @@ import { ArrowRight, Trash2, FileText } from 'lucide-react'
 import InvoiceStatusBadge from '../InvoiceStatusBadge/InvoiceStatusBadge'
 import type { InvoiceResponse } from '@/types/invoice.types'
 import type { CustomerResponse } from '@/types/customer.types'
-
-function fmt(amount: number, currency: string) {
-  return new Intl.NumberFormat('en-IN', { style: 'currency', currency, maximumFractionDigits: 0 }).format(amount)
-}
-
-function fmtDate(d: string | null) {
-  if (!d) return '—'
-  return new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
-}
+import { formatCurrency, formatDate } from '@/lib/format'
 
 function RowSkeleton() {
   return (
@@ -97,17 +89,17 @@ export default function InvoiceTable({ invoices, customerMap, currency, isLoadin
 
                     {/* Due date */}
                     <td className="px-4 py-3.5 tabular-nums text-sm text-c-muted">
-                      {isPaid ? '—' : fmtDate(inv.dueDate)}
+                      {isPaid ? '—' : formatDate(inv.dueDate)}
                     </td>
 
                     {/* Amount */}
                     <td className="px-4 py-3.5 text-right">
                       <p className={`font-bold tabular-nums ${isPaid ? 'text-green-600 dark:text-green-400' : 'text-[#0D1B2A] dark:text-white'}`}>
-                        {fmt(inv.totalAmount, currency)}
+                        {formatCurrency(inv.totalAmount, currency, { decimals: false })}
                       </p>
                       {isPartial && (
                         <p className="text-xs tabular-nums mt-0.5 text-c-muted">
-                          {fmt(inv.remainingAmount, currency)} remaining
+                          {formatCurrency(inv.remainingAmount, currency, { decimals: false })} remaining
                         </p>
                       )}
                     </td>

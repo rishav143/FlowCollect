@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { CheckSquare, X } from 'lucide-react'
+import { CheckSquare, X, AlertCircle } from 'lucide-react'
+import type { AxiosError } from 'axios'
 import { useAuthStore } from '@/store/auth.store'
 import ViewToggle, { useViewPreference, gridClass } from '@/ui/components/ViewToggle'
 import {
@@ -116,6 +117,7 @@ export default function ApprovalsPage() {
   const [filter,        setFilter]        = useState<ApprovalFilter>('PENDING_APPROVAL')
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null)
   const [view,          setView]          = useViewPreference('approvals', 'list')
+  const [actionError,   setActionError]   = useState<string | null>(null)
 
   const { data, isLoading, isFetching } = useConfirmations(filter)
   const { data: pendingCount } = usePendingConfirmationCount()
@@ -136,22 +138,47 @@ export default function ApprovalsPage() {
   }
 
   function handleApprove(c: PaymentConfirmationResponse) {
-    approveMut.mutate({ id: c.id })
+    setActionError(null)
+    approveMut.mutate(
+      { id: c.id },
+      {
+        onError: (err) => {
+          const msg = (err as AxiosError<{ message?: string }>).response?.data?.message
+          setActionError(msg ?? 'Failed to approve — please try again.')
+        },
+      },
+    )
   }
 
   function handleRejectConfirm(note: string) {
     if (pendingAction?.type !== 'reject') return
+    setActionError(null)
     rejectMut.mutate(
       { id: pendingAction.confirmation.id, businessNote: note || undefined },
-      { onSuccess: () => setPendingAction(null) },
+      {
+        onSuccess: () => setPendingAction(null),
+        onError: (err) => {
+          const msg = (err as AxiosError<{ message?: string }>).response?.data?.message
+          setActionError(msg ?? 'Failed to reject — please try again.')
+          setPendingAction(null)
+        },
+      },
     )
   }
 
   function handleRequestRemainingConfirm(note: string) {
     if (pendingAction?.type !== 'request-remaining') return
+    setActionError(null)
     requestRemainingMut.mutate(
       { id: pendingAction.confirmation.id, businessNote: note || undefined },
-      { onSuccess: () => setPendingAction(null) },
+      {
+        onSuccess: () => setPendingAction(null),
+        onError: (err) => {
+          const msg = (err as AxiosError<{ message?: string }>).response?.data?.message
+          setActionError(msg ?? 'Failed to process — please try again.')
+          setPendingAction(null)
+        },
+      },
     )
   }
 
@@ -171,6 +198,15 @@ export default function ApprovalsPage() {
           </div>
           <ViewToggle value={view} onChange={setView} options={['list', 'grid2', 'grid3']} />
         </div>
+
+        {/* Action error */}
+        {actionError && (
+          <div className="flex items-start gap-2 px-3 py-2.5 rounded-lg bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-sm text-red-600 dark:text-red-400">
+            <AlertCircle size={15} className="shrink-0 mt-0.5" />
+            <span className="flex-1">{actionError}</span>
+            <button onClick={() => setActionError(null)} className="shrink-0 hover:opacity-70 transition-opacity"><X size={14} /></button>
+          </div>
+        )}
 
         {/* Filter tabs */}
         <ConfirmationFilterTabs

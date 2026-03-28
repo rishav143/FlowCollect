@@ -4,15 +4,7 @@ import { Trash2 } from 'lucide-react'
 import InvoiceStatusBadge from '../InvoiceStatusBadge/InvoiceStatusBadge'
 import type { InvoiceResponse } from '@/types/invoice.types'
 import type { CustomerResponse } from '@/types/customer.types'
-
-function fmt(n: number, currency: string) {
-  return new Intl.NumberFormat('en-IN', { style: 'currency', currency, maximumFractionDigits: 0 }).format(n)
-}
-
-function fmtDate(d: string | null) {
-  if (!d) return '—'
-  return new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
-}
+import { formatCurrency, formatDate } from '@/lib/format'
 
 interface Props {
   invoice:  InvoiceResponse
@@ -44,13 +36,13 @@ const InvoiceCard = memo(function InvoiceCard({ invoice, customer, currency, onD
 
       {/* Amount */}
       <p className={`text-xl font-bold tabular-nums ${isPaid ? 'text-green-600 dark:text-green-400' : 'text-[#0D1B2A] dark:text-white'}`}>
-        {fmt(invoice.totalAmount, currency)}
+        {formatCurrency(invoice.totalAmount, currency, { decimals: false })}
       </p>
 
       {/* Due date + delete */}
       <div className="flex items-center justify-between pt-1 border-t border-c-border">
         <p className="text-xs text-c-muted">
-          {isPaid ? 'Paid' : `Due ${fmtDate(invoice.dueDate)}`}
+          {isPaid ? 'Paid' : `Due ${formatDate(invoice.dueDate)}`}
         </p>
         {isDraft && (
           <button

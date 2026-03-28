@@ -1,16 +1,5 @@
 import { DollarSign, AlertCircle, TrendingUp, CheckCircle2, Timer } from 'lucide-react'
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function fmt(amount: number, currency: string) {
-  return new Intl.NumberFormat('en-IN', {
-    style:                 'currency',
-    currency,
-    maximumFractionDigits: 0,
-  }).format(amount)
-}
+import { formatCurrency, formatDate } from '@/lib/format'
 
 // ---------------------------------------------------------------------------
 // Card
@@ -86,7 +75,7 @@ export default function KpiStrip({ kpis, currency, isConfirmationFlow, isLoading
   const cards: CardProps[] = [
     {
       label:     'Total Unpaid',
-      value:     fmt(kpis.totalUnpaid, currency),
+      value:     formatCurrency(kpis.totalUnpaid, currency, { decimals: false }),
       sub:       kpis.totalUnpaidCount === 1
         ? '1 invoice outstanding'
         : `${kpis.totalUnpaidCount} invoices outstanding`,
@@ -96,7 +85,7 @@ export default function KpiStrip({ kpis, currency, isConfirmationFlow, isLoading
     },
     {
       label:      'Past Due',
-      value:      fmt(kpis.pastDueAmount, currency),
+      value:      formatCurrency(kpis.pastDueAmount, currency, { decimals: false }),
       sub:        kpis.overdueCount === 1
         ? '1 invoice overdue'
         : `${kpis.overdueCount} invoices overdue`,
@@ -107,7 +96,7 @@ export default function KpiStrip({ kpis, currency, isConfirmationFlow, isLoading
     },
     {
       label:      'Collected This Month',
-      value:      fmt(kpis.collectedThisMonth, currency),
+      value:      formatCurrency(kpis.collectedThisMonth, currency, { decimals: false }),
       sub:        kpis.collectedThisMonth > 0 ? 'Invoices paid this month' : 'No payments received yet',
       icon:       <TrendingUp size={16} strokeWidth={2} />,
       iconBg:     'bg-green-50 dark:bg-green-500/10',

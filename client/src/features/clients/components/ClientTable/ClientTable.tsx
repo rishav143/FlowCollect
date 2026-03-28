@@ -8,10 +8,7 @@ import {
 import type { ViewMode } from '@/ui/components/ViewToggle'
 import type { CustomerResponse } from '@/types/customer.types'
 import type { InvoiceResponse } from '@/types/invoice.types'
-
-function fmt(n: number, currency: string) {
-  return new Intl.NumberFormat('en-IN', { style: 'currency', currency, maximumFractionDigits: 0 }).format(n)
-}
+import { formatCurrency } from '@/lib/format'
 
 interface ClientRow {
   customer:          CustomerResponse
@@ -50,11 +47,11 @@ function MobileCard({ customer, invoices, currency, onDelete }: ClientRow) {
       <div className="grid grid-cols-3 gap-2 text-center">
         <div>
           <p className="text-[10px] text-c-muted mb-0.5">Outstanding</p>
-          <p className="text-xs font-semibold text-[#0D1B2A] dark:text-white tabular-nums">{fmt(outstanding, currency)}</p>
+          <p className="text-xs font-semibold text-[#0D1B2A] dark:text-white tabular-nums">{formatCurrency(outstanding, currency, { decimals: false })}</p>
         </div>
         <div>
           <p className="text-[10px] text-c-muted mb-0.5">Overdue</p>
-          <p className={`text-xs font-semibold tabular-nums ${overdue > 0 ? 'text-red-500' : 'text-c-muted'}`}>{overdue > 0 ? fmt(overdue, currency) : '—'}</p>
+          <p className={`text-xs font-semibold tabular-nums ${overdue > 0 ? 'text-red-500' : 'text-c-muted'}`}>{overdue > 0 ? formatCurrency(overdue, currency, { decimals: false }) : '—'}</p>
         </div>
         <div>
           <p className="text-[10px] text-c-muted mb-0.5">Risk</p>
@@ -153,11 +150,11 @@ export default function ClientTable({ customers, invoicesByCustomer, currency, i
                     {c.companyName && <p className="text-xs text-c-muted mt-0.5">{c.companyName}</p>}
                   </td>
                   <td className="py-3 px-4 text-right text-sm tabular-nums text-[#0D1B2A] dark:text-white">
-                    {fmt(outstanding, currency)}
+                    {formatCurrency(outstanding, currency, { decimals: false })}
                   </td>
                   <td className="py-3 px-4 text-right">
                     <span className={`text-sm tabular-nums font-medium ${overdue > 0 ? 'text-red-500' : 'text-c-muted'}`}>
-                      {overdue > 0 ? fmt(overdue, currency) : '—'}
+                      {overdue > 0 ? formatCurrency(overdue, currency, { decimals: false }) : '—'}
                     </span>
                   </td>
                   <td className="py-3 px-4 text-right">

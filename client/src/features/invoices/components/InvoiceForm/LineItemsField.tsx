@@ -1,4 +1,5 @@
 import { Plus, Trash2 } from 'lucide-react'
+import { formatCurrency } from '@/lib/format'
 
 export interface LineItem {
   description: string
@@ -10,12 +11,6 @@ interface Props {
   items:    LineItem[]
   onChange: (items: LineItem[]) => void
   currency: string
-}
-
-function fmt(n: number, currency: string) {
-  return new Intl.NumberFormat('en-IN', {
-    style: 'currency', currency, maximumFractionDigits: 0,
-  }).format(n)
 }
 
 const inputCls = [
@@ -80,7 +75,7 @@ export default function LineItemsField({ items, onChange, currency }: Props) {
             className={inputCls}
           />
           <span className="text-sm text-right font-medium text-[#0D1B2A] dark:text-white tabular-nums">
-            {fmt(item.quantity * item.unitPrice, currency)}
+            {formatCurrency(item.quantity * item.unitPrice, currency, { decimals: false })}
           </span>
           <button
             type="button"
@@ -106,7 +101,7 @@ export default function LineItemsField({ items, onChange, currency }: Props) {
       {/* Subtotal */}
       <div className="flex justify-end pt-2 border-t border-c-border">
         <span className="text-sm text-c-muted">
-          Subtotal: <span className="font-semibold text-[#0D1B2A] dark:text-white">{fmt(subtotal, currency)}</span>
+          Subtotal: <span className="font-semibold text-[#0D1B2A] dark:text-white">{formatCurrency(subtotal, currency, { decimals: false })}</span>
         </span>
       </div>
     </div>

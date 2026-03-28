@@ -13,13 +13,7 @@ import type { FollowUpChannel } from '@/types/followup.types'
 import type { CustomerResponse } from '@/types/customer.types'
 import type { TemplateResponse } from '@/types/template.types'
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function fmt(n: number, currency: string) {
-  return new Intl.NumberFormat('en-IN', { style: 'currency', currency, maximumFractionDigits: 0 }).format(n)
-}
+import { formatCurrency } from '@/lib/format'
 
 // ---------------------------------------------------------------------------
 // Dispatch Modal
@@ -306,7 +300,7 @@ function InvoiceRow({
       </td>
       {/* Amount owed */}
       <td className="py-3 px-4 text-sm font-bold tabular-nums text-[#0D1B2A] dark:text-white">
-        {fmt(invoice.remainingAmount, currency)}
+        {formatCurrency(invoice.remainingAmount, currency, { decimals: false })}
       </td>
       {/* Due */}
       <td className="py-3 px-4 text-sm">

@@ -27,6 +27,7 @@ const CURRENCIES = [
   { value: 'GBP', label: 'GBP — British Pound' },
   { value: 'AED', label: 'AED — UAE Dirham' },
   { value: 'SGD', label: 'SGD — Singapore Dollar' },
+  { value: 'AUD', label: 'AUD — Australian Dollar' },
 ]
 
 // ---------------------------------------------------------------------------

@@ -1,18 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { ArrowRight, CalendarClock, Bell } from 'lucide-react'
 import type { InvoiceResponse } from '@/types/invoice.types'
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function fmt(amount: number, currency: string) {
-  return new Intl.NumberFormat('en-IN', {
-    style:                 'currency',
-    currency,
-    maximumFractionDigits: 0,
-  }).format(amount)
-}
+import { formatCurrency } from '@/lib/format'
 
 function daysUntil(dueDate: string): number {
   const due   = new Date(dueDate)
@@ -131,7 +120,7 @@ export default function DueSoonPanel({
                 )}
 
                 <span className="text-sm font-semibold text-[#0D1B2A] dark:text-white tabular-nums">
-                  {fmt(inv.remainingAmount, currency)}
+                  {formatCurrency(inv.remainingAmount, currency, { decimals: false })}
                 </span>
 
                 <ArrowRight size={14} className="text-c-muted shrink-0" />

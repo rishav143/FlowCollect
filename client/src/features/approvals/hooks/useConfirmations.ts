@@ -32,7 +32,6 @@ export function usePendingConfirmationCount() {
     queryKey: ['confirmations-count', orgId],
     queryFn:  () => listConfirmations(orgId, { status: 'PENDING_APPROVAL', size: 1 }),
     enabled:  !!orgId,
-    staleTime: 60_000,
     select: (d) => d.totalElements,
   })
 }

@@ -8,7 +8,9 @@ import ActionTable  from '../components/ActionTable/ActionTable'
 import DueSoonPanel from '../components/DueSoonPanel/DueSoonPanel'
 import RecordPaymentModal from '@/features/invoices/modals/RecordPaymentModal'
 import FollowupModal      from '@/features/invoices/modals/FollowupModal'
-import type { InvoiceResponse, LifeCycleStatus } from '@/types/invoice.types'
+import type { InvoiceResponse } from '@/types/invoice.types'
+import { formatCurrency, formatDate } from '@/lib/format'
+import { getInvoiceStatusDisplay } from '@/features/invoices/components/InvoiceStatusBadge/InvoiceStatusBadge'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -22,15 +24,7 @@ function greeting(): string {
 }
 
 function todayLabel(): string {
-  return new Date().toLocaleDateString('en-IN', {
-    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
-  })
-}
-
-function fmt(amount: number, currency: string) {
-  return new Intl.NumberFormat('en-IN', {
-    style: 'currency', currency, maximumFractionDigits: 0,
-  }).format(amount)
+  return formatDate(new Date(), { style: 'long' })
 }
 
 import { timeAgoFine as timeAgo } from '@/utils/date'
@@ -72,18 +66,6 @@ function HealthPill({
 }
 
 // ---------------------------------------------------------------------------
-// Status dot for Recent Activity
-// ---------------------------------------------------------------------------
-
-const STATUS_META: Record<LifeCycleStatus, { text: string; label: string }> = {
-  DRAFT:          { text: 'text-c-muted',                            label: 'Draft'    },
-  ISSUED:         { text: 'text-blue-600 dark:text-blue-400',        label: 'Issued'   },
-  PARTIALLY_PAID: { text: 'text-[#0D1B2A] dark:text-white',         label: 'Partial'  },
-  PAID:           { text: 'text-green-600 dark:text-green-400',      label: 'Paid'     },
-  CANCELLED:      { text: 'text-red-500 dark:text-red-400',          label: 'Cancelled'},
-}
-
-// ---------------------------------------------------------------------------
 // Recent Activity — compact full-width panel
 // ---------------------------------------------------------------------------
 
@@ -96,7 +78,9 @@ function ActivityRow({
   onClick:       () => void
   isLast:        boolean
 }) {
-  const { text, label } = STATUS_META[invoice.lifeCycleStatus]
+  const { timeMeta, lcLabel, lcCls } = getInvoiceStatusDisplay(invoice.lifeCycleStatus, invoice.timeStatus)
+  const label = timeMeta ? timeMeta.label : lcLabel
+  const text  = timeMeta ? timeMeta.cls   : lcCls
   return (
     <li
       className={[
@@ -124,7 +108,7 @@ function ActivityRow({
 
       {/* Amount */}
       <span className="text-sm font-semibold text-[#0D1B2A] dark:text-white tabular-nums">
-        {fmt(invoice.totalAmount, currency)}
+        {formatCurrency(invoice.totalAmount, currency, { decimals: false })}
       </span>
 
       <ArrowRight size={13} className="text-c-muted shrink-0" />
@@ -241,7 +225,7 @@ function AgingBuckets({
                   <span className={`text-xs font-medium ${AGING_COLORS[i].text}`}>{bucket.label}</span>
                 </div>
                 <p className="text-base font-bold text-[#0D1B2A] dark:text-white tabular-nums">
-                  {new Intl.NumberFormat('en-IN', { style: 'currency', currency, maximumFractionDigits: 0 }).format(bucket.amount)}
+                  {formatCurrency(bucket.amount, currency, { decimals: false })}
                 </p>
                 <p className="text-xs text-c-muted">{bucket.count} invoice{bucket.count !== 1 ? 's' : ''}</p>
               </>

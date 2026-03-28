@@ -11,19 +11,7 @@ import InvoiceStatusBadge from '../components/InvoiceStatusBadge/InvoiceStatusBa
 import PaymentsTab from '../components/PaymentsTab/PaymentsTab'
 import FollowupsTab from '../components/FollowupsTab/FollowupsTab'
 import FollowupModal from '../modals/FollowupModal'
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function fmt(n: number, currency: string) {
-  return new Intl.NumberFormat('en-IN', { style: 'currency', currency, maximumFractionDigits: 0 }).format(n)
-}
-
-function fmtDate(d: string | null) {
-  if (!d) return '—'
-  return new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })
-}
+import { formatCurrency, formatDate } from '@/lib/format'
 
 // ---------------------------------------------------------------------------
 // Info row
@@ -149,7 +137,7 @@ export default function InvoiceDetailPage() {
             <div>
               <h1 className="text-2xl font-bold text-[#0D1B2A] dark:text-white">{invoice.invoiceNumber}</h1>
               <p className="text-sm text-c-muted mt-0.5">
-                Created {fmtDate(invoice.createdAt)}
+                Created {formatDate(invoice.createdAt)}
               </p>
             </div>
             <InvoiceStatusBadge lifecycle={invoice.lifeCycleStatus} time={invoice.timeStatus} className="text-sm" />
@@ -183,8 +171,8 @@ export default function InvoiceDetailPage() {
               <div className={activeTab !== 'details' ? 'hidden' : 'space-y-5'}>
                 <div>
                   <InfoRow label="Customer"   value={customer ? `${customer.name}${customer.companyName ? ` — ${customer.companyName}` : ''}` : '—'} />
-                  <InfoRow label="Issue Date" value={fmtDate(invoice.issueDate)} />
-                  <InfoRow label="Due Date"   value={fmtDate(invoice.dueDate)} />
+                  <InfoRow label="Issue Date" value={formatDate(invoice.issueDate)} />
+                  <InfoRow label="Due Date"   value={formatDate(invoice.dueDate)} />
                 </div>
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-c-muted mb-3">Line Items</p>
@@ -196,10 +184,10 @@ export default function InvoiceDetailPage() {
                         <div key={item.id} className="flex justify-between items-start gap-4 py-2 border-b border-c-border last:border-0">
                           <div className="min-w-0">
                             <p className="text-sm font-medium text-[#0D1B2A] dark:text-white">{item.description}</p>
-                            <p className="text-xs text-c-muted">{item.quantity} × {fmt(item.unitPrice, currency)}</p>
+                            <p className="text-xs text-c-muted">{item.quantity} × {formatCurrency(item.unitPrice, currency, { decimals: false })}</p>
                           </div>
                           <span className="text-sm font-semibold text-[#0D1B2A] dark:text-white tabular-nums shrink-0">
-                            {fmt(item.amount, currency)}
+                            {formatCurrency(item.amount, currency, { decimals: false })}
                           </span>
                         </div>
                       ))
@@ -229,19 +217,19 @@ export default function InvoiceDetailPage() {
           <div className="bg-white dark:bg-[#1B2838] rounded-xl border border-c-border p-5 self-start">
             <p className="text-xs font-semibold uppercase tracking-wide text-c-muted mb-4">Payment Summary</p>
             <div className="space-y-1">
-              <InfoRow label="Subtotal"  value={fmt(invoice.subtotal, currency)} />
+              <InfoRow label="Subtotal"  value={formatCurrency(invoice.subtotal, currency, { decimals: false })} />
               {invoice.taxPercentage > 0 && (
-                <InfoRow label={`Tax (${invoice.taxPercentage}%)`} value={fmt(invoice.totalAmount - invoice.subtotal, currency)} />
+                <InfoRow label={`Tax (${invoice.taxPercentage}%)`} value={formatCurrency(invoice.totalAmount - invoice.subtotal, currency, { decimals: false })} />
               )}
               <div className="py-2 border-b border-c-border flex justify-between">
                 <span className="text-sm font-semibold text-[#0D1B2A] dark:text-white">Total</span>
-                <span className="text-sm font-bold text-[#0D1B2A] dark:text-white tabular-nums">{fmt(invoice.totalAmount, currency)}</span>
+                <span className="text-sm font-bold text-[#0D1B2A] dark:text-white tabular-nums">{formatCurrency(invoice.totalAmount, currency, { decimals: false })}</span>
               </div>
-              <InfoRow label="Paid"      value={<span className="text-green-600 dark:text-green-400">{fmt(invoice.totalPaid, currency)}</span>} />
+              <InfoRow label="Paid"      value={<span className="text-green-600 dark:text-green-400">{formatCurrency(invoice.totalPaid, currency, { decimals: false })}</span>} />
               <div className="py-2 flex justify-between">
                 <span className="text-sm text-c-muted">Remaining</span>
                 <span className={`text-sm font-bold tabular-nums ${invoice.remainingAmount > 0 ? 'text-red-500' : 'text-green-600 dark:text-green-400'}`}>
-                  {fmt(invoice.remainingAmount, currency)}
+                  {formatCurrency(invoice.remainingAmount, currency, { decimals: false })}
                 </span>
               </div>
             </div>

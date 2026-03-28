@@ -1,21 +1,8 @@
 import { memo } from 'react'
 import { AlertTriangle } from 'lucide-react'
 import type { PaymentConfirmationResponse, ConfirmationStatus } from '@/types/confirmation.types'
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function fmt(n: number, currency: string) {
-  return new Intl.NumberFormat('en-IN', { style: 'currency', currency, maximumFractionDigits: 0 }).format(n)
-}
-
+import { formatCurrency, formatDate } from '@/lib/format'
 import { timeAgoFine as timeAgo } from '@/utils/date'
-
-function fmtDate(d: string | null) {
-  if (!d) return '—'
-  return new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
-}
 
 // ---------------------------------------------------------------------------
 // Claim type
@@ -84,12 +71,12 @@ const ConfirmationCard = memo(function ConfirmationCard({
       {/* ── Claimed amount + context ── */}
       <div className="mt-3 flex items-baseline gap-2 flex-wrap">
         <span className="text-xl font-bold text-[#0D1B2A] dark:text-white tabular-nums">
-          {fmt(c.amountClaimed, currency)}
+          {formatCurrency(c.amountClaimed, currency, { decimals: false })}
         </span>
         <span className="text-xs text-c-muted">
           claimed
           {claimType === 'FULL'    && ' · full payment'}
-          {claimType === 'PARTIAL' && ` · ${fmt(c.invoiceRemainingAmount - c.amountClaimed, currency)} still remaining`}
+          {claimType === 'PARTIAL' && ` · ${formatCurrency(c.invoiceRemainingAmount - c.amountClaimed, currency, { decimals: false })} still remaining`}
           {claimType === 'OVER'    && ' · exceeds balance'}
         </span>
       </div>
@@ -97,9 +84,9 @@ const ConfirmationCard = memo(function ConfirmationCard({
       {/* Invoice total context */}
       <p className="mt-1 text-xs text-c-muted">
         Invoice total{' '}
-        <span className="font-medium text-[#0D1B2A] dark:text-white">{fmt(c.invoiceTotalAmount, currency)}</span>
+        <span className="font-medium text-[#0D1B2A] dark:text-white">{formatCurrency(c.invoiceTotalAmount, currency, { decimals: false })}</span>
         {' · '}remaining{' '}
-        <span className="font-medium text-[#0D1B2A] dark:text-white">{fmt(c.invoiceRemainingAmount, currency)}</span>
+        <span className="font-medium text-[#0D1B2A] dark:text-white">{formatCurrency(c.invoiceRemainingAmount, currency, { decimals: false })}</span>
       </p>
 
       {/* ── Overpayment warning ── */}
@@ -124,7 +111,7 @@ const ConfirmationCard = memo(function ConfirmationCard({
       {c.businessNote && !isPending && (
         <div className="mt-3 p-3 rounded-lg border border-c-border">
           <p className="text-[10px] font-semibold uppercase tracking-wide text-c-muted mb-1">
-            Your Note · {fmtDate(c.reviewedAt)}
+            Your Note · {formatDate(c.reviewedAt)}
           </p>
           <p className="text-xs text-[#0D1B2A] dark:text-white leading-relaxed">{c.businessNote}</p>
         </div>

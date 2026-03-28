@@ -218,7 +218,8 @@ interface Props {
 export default function RuleModal({ rule, onClose }: Props) {
   const isEdit = !!rule
 
-  const [form, setForm] = useState<FormState>(EMPTY)
+  const [form,        setForm]        = useState<FormState>(EMPTY)
+  const [submitError, setSubmitError] = useState<string | null>(null)
 
   useEffect(() => {
     if (rule) {
@@ -240,9 +241,7 @@ export default function RuleModal({ rule, onClose }: Props) {
   const update    = useUpdateReminderRule()
   const isPending = create.isPending || update.isPending
 
-  const { data: templatesData } = useTemplates(
-    form.channel !== 'EMAIL' ? { channel: form.channel } : undefined,
-  )
+  const { data: templatesData } = useTemplates({ channel: form.channel })
   const templates = templatesData?.content ?? []
 
   function set<K extends keyof FormState>(key: K, value: FormState[K]) {
@@ -281,8 +280,7 @@ export default function RuleModal({ rule, onClose }: Props) {
   }
 
   function validationError(): string | null {
-    if (!form.name.trim()) return 'Rule name is required.'
-    if (!form.templateId)  return 'Please select a template.'
+    if (!form.templateId) return 'Please select a template.'
     return null
   }
 
@@ -291,6 +289,7 @@ export default function RuleModal({ rule, onClose }: Props) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (error) return
+    setSubmitError(null)
 
     const body: ReminderRuleRequest = {
       name:              form.name.trim() || undefined,
@@ -303,12 +302,17 @@ export default function RuleModal({ rule, onClose }: Props) {
       cycleIntervalDays: isCyclic ? interval : 0,
     }
 
-    if (isEdit) {
-      await update.mutateAsync({ id: rule!.id, body })
-    } else {
-      await create.mutateAsync(body)
+    try {
+      if (isEdit) {
+        await update.mutateAsync({ id: rule!.id, body })
+      } else {
+        await create.mutateAsync(body)
+      }
+      onClose()
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+      setSubmitError(msg ?? 'Something went wrong. Please try again.')
     }
-    onClose()
   }
 
   const showTimeline = form.advancedEnabled && form.direction !== 'ON'
@@ -520,9 +524,9 @@ export default function RuleModal({ rule, onClose }: Props) {
               )}
             </div>
 
-            {/* Validation error */}
-            {error && (
-              <p className="text-xs text-red-500 -mt-2">{error}</p>
+            {/* Validation / submit error */}
+            {(error || submitError) && (
+              <p className="text-xs text-red-500 -mt-2">{error ?? submitError}</p>
             )}
 
             {/* Submit */}

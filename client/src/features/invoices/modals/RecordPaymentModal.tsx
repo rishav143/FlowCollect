@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@/store/auth.store'
 import { recordPayment } from '@/api/payment.api'
 import type { PaymentMode } from '@/types/payment.types'
+import { formatCurrency } from '@/lib/format'
 
 const MODES: { value: PaymentMode; label: string }[] = [
   { value: 'UPI',           label: 'UPI' },
@@ -38,8 +39,6 @@ export default function RecordPaymentModal({ invoiceId, remainingAmount, currenc
   const [notes,       setNotes]       = useState('')
   const [error,       setError]       = useState<string | null>(null)
 
-  const fmt = (n: number) =>
-    new Intl.NumberFormat('en-IN', { style: 'currency', currency, maximumFractionDigits: 0 }).format(n)
 
   const mutation = useMutation({
     mutationFn: () => recordPayment(orgId, invoiceId, { amount, mode, referenceId: referenceId || undefined, notes: notes || undefined }),
@@ -75,7 +74,7 @@ export default function RecordPaymentModal({ invoiceId, remainingAmount, currenc
 
         {/* Body */}
         <div className="px-6 py-5 space-y-4">
-          <p className="text-sm text-c-muted">Remaining: <span className="font-semibold text-[#0D1B2A] dark:text-white">{fmt(remainingAmount)}</span></p>
+          <p className="text-sm text-c-muted">Remaining: <span className="font-semibold text-[#0D1B2A] dark:text-white">{formatCurrency(remainingAmount, currency, { decimals: false })}</span></p>
 
           <div>
             <label className={labelCls}>Amount *</label>

@@ -5,6 +5,7 @@ import { useAuthStore } from '@/store/auth.store'
 import { listPayments, deletePayment } from '@/api/payment.api'
 import RecordPaymentModal from '../../modals/RecordPaymentModal'
 import type { PaymentMode } from '@/types/payment.types'
+import { formatCurrency, formatDate } from '@/lib/format'
 
 const MODE_LABEL: Record<PaymentMode, string> = {
   CASH:          'Cash',
@@ -12,15 +13,6 @@ const MODE_LABEL: Record<PaymentMode, string> = {
   BANK_TRANSFER: 'Bank Transfer',
   CARD:          'Card',
   CHEQUE:        'Cheque',
-}
-
-function fmt(n: number, currency: string) {
-  return new Intl.NumberFormat('en-IN', { style: 'currency', currency, maximumFractionDigits: 0 }).format(n)
-}
-
-function fmtDate(iso: string | null) {
-  if (!iso) return '—'
-  return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
 interface Props {
@@ -88,9 +80,9 @@ export default function PaymentsTab({ invoiceId, remainingAmount, currency, life
                 className="flex items-center gap-4 px-4 py-3 bg-[#F4F7F9] dark:bg-[#243447] rounded-lg"
               >
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-[#0D1B2A] dark:text-white">{fmt(p.amount, currency)}</p>
+                  <p className="text-sm font-semibold text-[#0D1B2A] dark:text-white">{formatCurrency(p.amount, currency, { decimals: false })}</p>
                   <p className="text-xs text-c-muted">
-                    {p.mode ? MODE_LABEL[p.mode] : 'Unknown'} · {fmtDate(p.paidAt ?? p.createdAt)}
+                    {p.mode ? MODE_LABEL[p.mode] : 'Unknown'} · {formatDate(p.paidAt ?? p.createdAt)}
                     {p.referenceId && ` · Ref: ${p.referenceId}`}
                   </p>
                 </div>

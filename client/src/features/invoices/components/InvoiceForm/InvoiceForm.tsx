@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/store/auth.store'
 import { listCustomers } from '@/api/customer.api'
 import LineItemsField, { type LineItem } from './LineItemsField'
+import { formatCurrency } from '@/lib/format'
 
 const inputCls = [
   'w-full px-3 py-2 text-sm bg-[#F4F7F9] dark:bg-[#243447] rounded-lg',
@@ -118,17 +119,16 @@ export default function InvoiceForm({ initial, onChange, currency }: Props) {
         const subtotal = items.reduce((s, it) => s + it.quantity * it.unitPrice, 0)
         const taxAmt   = subtotal * (taxPercentage / 100)
         const total    = subtotal + taxAmt
-        const fmt      = (n: number) => new Intl.NumberFormat('en-IN', { style: 'currency', currency, maximumFractionDigits: 0 }).format(n)
         return (
           <div className="bg-[#F4F7F9] dark:bg-[#243447] rounded-lg p-3 space-y-1 text-sm">
             <div className="flex justify-between text-c-muted">
-              <span>Subtotal</span><span>{fmt(subtotal)}</span>
+              <span>Subtotal</span><span>{formatCurrency(subtotal, currency, { decimals: false })}</span>
             </div>
             <div className="flex justify-between text-c-muted">
-              <span>Tax ({taxPercentage}%)</span><span>{fmt(taxAmt)}</span>
+              <span>Tax ({taxPercentage}%)</span><span>{formatCurrency(taxAmt, currency, { decimals: false })}</span>
             </div>
             <div className="flex justify-between font-semibold text-[#0D1B2A] dark:text-white border-t border-[#8A9BAE]/20 pt-1 mt-1">
-              <span>Total</span><span>{fmt(total)}</span>
+              <span>Total</span><span>{formatCurrency(total, currency, { decimals: false })}</span>
             </div>
           </div>
         )

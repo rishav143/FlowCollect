@@ -16,10 +16,10 @@ export function useDashboard() {
     enabled:  !!orgId,
   })
 
-  // Overdue invoices for action table — fetch extra to cover zero-remaining edge cases
+  // Overdue invoices for action table — includes ISSUED and PARTIALLY_PAID
   const overdueQuery = useQuery({
     queryKey: ['invoices', orgId, 'dashboard-overdue'],
-    queryFn:  () => listInvoices(orgId, { lifeCycleStatus: 'ISSUED', timeStatus: 'OVERDUE', size: 10, sort: 'dueDate,asc' }),
+    queryFn:  () => listInvoices(orgId, { timeStatus: 'OVERDUE', size: 10, sort: 'dueDate,asc' }),
     enabled:  !!orgId,
   })
 
@@ -122,17 +122,17 @@ export function useDashboard() {
     kpis: {
       totalUnpaid,
       totalUnpaidCount,
-      overdueCount: overdueQuery.data?.totalElements ?? 0,
+      overdueCount: pastDueInvoices.length,
       pastDueAmount,
       collectedThisMonth,
       avgPaymentDelayDays,
-      pendingApprovalsCount: pendingConfirmations.length,
+      pendingApprovalsCount: confirmationsQuery.data?.totalElements ?? 0,
     },
 
     agingBuckets,
     customerMap,
     overdueInvoices:     (overdueQuery.data?.content ?? [])
-      .filter(i => i.remainingAmount > 0 && i.lifeCycleStatus === 'ISSUED')
+      .filter(i => i.remainingAmount > 0 && ['ISSUED', 'PARTIALLY_PAID'].includes(i.lifeCycleStatus))
       .slice(0, 3),
     dueSoonInvoices,
     pendingConfirmations,

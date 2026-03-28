@@ -1,39 +1,8 @@
 import { useNavigate } from 'react-router-dom'
 import { ArrowRight } from 'lucide-react'
-import type { InvoiceResponse, LifeCycleStatus, TimeStatus } from '@/types/invoice.types'
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function fmt(n: number, currency: string) {
-  return new Intl.NumberFormat('en-IN', { style: 'currency', currency, maximumFractionDigits: 0 }).format(n)
-}
-
-function fmtDate(d: string | null) {
-  if (!d) return '—'
-  return new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
-}
-
-// ---------------------------------------------------------------------------
-// Status
-// ---------------------------------------------------------------------------
-
-const LIFECYCLE_MAP: Record<LifeCycleStatus, { label: string; dot: string; text: string }> = {
-  DRAFT:          { label: 'Draft',     dot: 'bg-[#8A9BAE]', text: 'text-c-muted'                          },
-  ISSUED:         { label: 'Sent',      dot: 'bg-blue-500',  text: 'text-blue-600 dark:text-blue-400'      },
-  PARTIALLY_PAID: { label: 'Partial',   dot: 'bg-[#29B6F6]', text: 'text-[#29B6F6] dark:text-[#4FC3F7]'   },
-  PAID:           { label: 'Paid',      dot: 'bg-green-500', text: 'text-green-600 dark:text-green-400'    },
-  CANCELLED:      { label: 'Cancelled', dot: 'bg-[#8A9BAE]', text: 'text-c-muted'                          },
-}
-
-function getStatus(lc: LifeCycleStatus, ts: TimeStatus) {
-  if (ts === 'OVERDUE'   && lc !== 'PAID' && lc !== 'CANCELLED')
-    return { label: 'Overdue',   dot: 'bg-red-500',   text: 'text-red-600 dark:text-red-400'   }
-  if (ts === 'DUE_TODAY' && lc !== 'PAID' && lc !== 'CANCELLED' && lc !== 'PARTIALLY_PAID')
-    return { label: 'Due Today', dot: 'bg-amber-500', text: 'text-amber-600 dark:text-amber-400' }
-  return LIFECYCLE_MAP[lc]
-}
+import type { InvoiceResponse } from '@/types/invoice.types'
+import { formatCurrency, formatDate } from '@/lib/format'
+import { getInvoiceStatusDisplay } from '@/features/invoices/components/InvoiceStatusBadge/InvoiceStatusBadge'
 
 // ---------------------------------------------------------------------------
 // Component
@@ -71,7 +40,9 @@ export default function ClientInvoiceHistory({
   return (
     <ul>
       {invoices.map((inv, idx) => {
-        const { label, dot, text } = getStatus(inv.lifeCycleStatus, inv.timeStatus)
+        const { timeMeta, lcLabel, lcCls } = getInvoiceStatusDisplay(inv.lifeCycleStatus, inv.timeStatus)
+        const label = timeMeta ? timeMeta.label : lcLabel
+        const text  = timeMeta ? timeMeta.cls   : lcCls
         const isLast = idx === invoices.length - 1
         return (
           <li
@@ -95,12 +66,12 @@ export default function ClientInvoiceHistory({
 
             {/* Due date — hidden on very small screens */}
             <span className="text-xs text-c-muted hidden xs:block sm:block tabular-nums">
-              {fmtDate(inv.dueDate)}
+              {formatDate(inv.dueDate)}
             </span>
 
             {/* Amount */}
             <span className="text-sm font-semibold text-[#0D1B2A] dark:text-white tabular-nums">
-              {fmt(inv.totalAmount, currency)}
+              {formatCurrency(inv.totalAmount, currency, { decimals: false })}
             </span>
 
             <ArrowRight size={13} className="text-c-muted shrink-0" />
