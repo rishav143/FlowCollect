@@ -40,7 +40,7 @@ public class FollowUpController {
         this.followUpService = followUpService;
     }
 
-    // Creates a new follow-up for an invoice.
+    // Creates a new follow-up for an invoice. 
     @PostMapping
     public ResponseEntity<FollowUpResponse> createFollowUp(
             @PathVariable UUID organizationId,
