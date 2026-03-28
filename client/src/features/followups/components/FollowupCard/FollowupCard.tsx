@@ -21,9 +21,10 @@ interface Props {
   customerName?: string
   lastFollowup?: FollowUpResponse
   onSend:        () => void
+  canSend?:      boolean
 }
 
-const FollowupCard = memo(function FollowupCard({ invoice, currency, customerName, lastFollowup, onSend }: Props) {
+const FollowupCard = memo(function FollowupCard({ invoice, currency, customerName, lastFollowup, onSend, canSend = true }: Props) {
   const u = URGENCY[invoice.timeStatus] ?? URGENCY.NOT_DUE
 
   return (
@@ -72,14 +73,20 @@ const FollowupCard = memo(function FollowupCard({ invoice, currency, customerNam
       </div>
 
       {/* CTA */}
-      <button
-        onClick={onSend}
-        className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-semibold text-white transition-opacity hover:opacity-90"
-        style={{ background: 'linear-gradient(90deg, #29B6F6 0%, #4FC3F7 100%)' }}
-      >
-        <Send size={13} strokeWidth={2.5} />
-        Send Follow-up
-      </button>
+      {canSend ? (
+        <button
+          onClick={onSend}
+          className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-semibold text-white transition-opacity hover:opacity-90"
+          style={{ background: 'linear-gradient(90deg, #29B6F6 0%, #4FC3F7 100%)' }}
+        >
+          <Send size={13} strokeWidth={2.5} />
+          Send Follow-up
+        </button>
+      ) : (
+        <div className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-medium text-c-muted bg-[#F4F7F9] dark:bg-white/5 border border-c-border cursor-not-allowed">
+          No client assigned
+        </div>
+      )}
     </div>
   )
 })

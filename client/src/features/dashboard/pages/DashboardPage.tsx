@@ -7,7 +7,7 @@ import KpiStrip     from '../components/KpiStrip/KpiStrip'
 import ActionTable  from '../components/ActionTable/ActionTable'
 import DueSoonPanel from '../components/DueSoonPanel/DueSoonPanel'
 import RecordPaymentModal from '@/features/invoices/modals/RecordPaymentModal'
-import FollowupModal      from '@/features/invoices/modals/FollowupModal'
+import DispatchModal      from '@/features/followups/components/DispatchModal/DispatchModal'
 import type { InvoiceResponse } from '@/types/invoice.types'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { getInvoiceStatusDisplay } from '@/features/invoices/components/InvoiceStatusBadge/InvoiceStatusBadge'
@@ -359,8 +359,8 @@ export default function DashboardPage() {
       />
     )}
     {followupTarget && (
-      <FollowupModal
-        invoiceNumber={followupTarget.invoiceNumber}
+      <DispatchModal
+        invoice={followupTarget}
         onClose={() => setFollowupTarget(null)}
       />
     )}

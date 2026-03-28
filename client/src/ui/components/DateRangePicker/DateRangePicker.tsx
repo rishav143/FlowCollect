@@ -24,7 +24,10 @@ interface Props {
 // ---------------------------------------------------------------------------
 
 function toStr(d: Date) {
-  return d.toISOString().split('T')[0]
+  const y  = d.getFullYear()
+  const m  = String(d.getMonth() + 1).padStart(2, '0')
+  const dd = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${dd}`
 }
 
 function parseDate(s?: string): Date | undefined {
@@ -137,7 +140,7 @@ export default function DateRangePicker({ label, value, onChange }: Props) {
 
       {/* ── Popover ─────────────────────────────────────────────── */}
       {open && (
-        <div className="absolute top-full mt-2 left-0 z-50 bg-white dark:bg-[#1B2838] border border-c-border rounded-2xl shadow-2xl overflow-hidden min-w-[300px]">
+        <div className="absolute top-full mt-2 right-0 z-50 bg-white dark:bg-[#1B2838] border border-c-border rounded-2xl shadow-2xl overflow-hidden min-w-[300px]">
 
           {/* Presets */}
           <div className="flex gap-1 p-2 border-b border-c-border">
@@ -153,19 +156,17 @@ export default function DateRangePicker({ label, value, onChange }: Props) {
           </div>
 
           {/* Calendar */}
-          <div
-            className="p-3"
-            style={{
-              '--rdp-accent-color':            '#2E7A8E',
-              '--rdp-accent-background-color': 'rgba(46,122,142,0.12)',
-              '--rdp-day_button-border-radius': '999px',
-            } as React.CSSProperties}
-          >
+          <div className="p-3">
             <DayPicker
               mode="range"
               selected={selected}
               onSelect={handleSelect}
               showOutsideDays
+              style={{
+                '--rdp-accent-color':            '#29B6F6',
+                '--rdp-accent-background-color': 'rgba(41,182,246,0.12)',
+                '--rdp-day_button-border-radius': '999px',
+              } as React.CSSProperties}
             />
           </div>
 

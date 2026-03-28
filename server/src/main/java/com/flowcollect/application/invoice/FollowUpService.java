@@ -202,6 +202,17 @@ public class FollowUpService {
 
         Invoice invoice = invoiceService.getInvoiceById(organizationId, invoiceId);
 
+        // Validate upfront — fail fast before creating any follow-up records
+        Customer dispatchCustomer = invoice.getCustomer();
+        if (dispatchCustomer == null) {
+            throw new ValidationException(
+                "Cannot send follow-up: no client is assigned to this invoice. Please assign a client first.");
+        }
+        if (!dispatchCustomer.isActive()) {
+            throw new ValidationException(
+                "Cannot send follow-up: the client assigned to this invoice is inactive.");
+        }
+
         PaymentLink paymentLink = null;
         if (request.isIncludePaymentLink()) {
             PaymentGateway gateway = request.getPaymentGateway();

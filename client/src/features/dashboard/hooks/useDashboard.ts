@@ -68,11 +68,19 @@ export function useDashboard() {
       )
     : null
 
-  // Collected this month: invoices fully paid (updatedAt within current month)
+  // Collected this month: sum of totalPaid for PAID and PARTIALLY_PAID invoices
+  // whose latest payment activity (updatedAt) falls within the current month.
+  // Using totalPaid (not totalAmount) correctly counts only the amount actually
+  // received — for PAID invoices totalPaid === totalAmount; for PARTIALLY_PAID
+  // it is the partial amount collected so far.
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
   const collectedThisMonth = invoices
-    .filter((i) => i.lifeCycleStatus === 'PAID' && new Date(i.updatedAt) >= startOfMonth)
-    .reduce((s, i) => s + i.totalAmount, 0)
+    .filter(
+      (i) =>
+        ['PAID', 'PARTIALLY_PAID'].includes(i.lifeCycleStatus) &&
+        new Date(i.updatedAt) >= startOfMonth,
+    )
+    .reduce((s, i) => s + i.totalPaid, 0)
 
   // Due soon: unpaid invoices with dueDate in next 14 days, sorted nearest-first
   const in14Days = new Date(now)

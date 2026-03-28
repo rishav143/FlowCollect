@@ -1,5 +1,13 @@
-import { DollarSign, AlertCircle, TrendingUp, CheckCircle2, Timer } from 'lucide-react'
+import { AlertCircle, TrendingUp, CheckCircle2, Timer } from 'lucide-react'
 import { formatCurrency, formatDate } from '@/lib/format'
+
+function currencySymbol(currency: string): string {
+  return (
+    new Intl.NumberFormat('en', { style: 'currency', currency, minimumFractionDigits: 0, maximumFractionDigits: 0 })
+      .formatToParts(0)
+      .find((p) => p.type === 'currency')?.value ?? '$'
+  )
+}
 
 // ---------------------------------------------------------------------------
 // Card
@@ -79,7 +87,7 @@ export default function KpiStrip({ kpis, currency, isConfirmationFlow, isLoading
       sub:       kpis.totalUnpaidCount === 1
         ? '1 invoice outstanding'
         : `${kpis.totalUnpaidCount} invoices outstanding`,
-      icon:      <DollarSign size={16} strokeWidth={2} />,
+      icon:      <span className="text-sm font-bold leading-none">{currencySymbol(currency)}</span>,
       iconBg:    'bg-[#29B6F6]/10 dark:bg-[#29B6F6]/15',
       iconColor: 'text-[#29B6F6]',
     },
@@ -97,7 +105,7 @@ export default function KpiStrip({ kpis, currency, isConfirmationFlow, isLoading
     {
       label:      'Collected This Month',
       value:      formatCurrency(kpis.collectedThisMonth, currency, { decimals: false }),
-      sub:        kpis.collectedThisMonth > 0 ? 'Invoices paid this month' : 'No payments received yet',
+      sub:        kpis.collectedThisMonth > 0 ? 'Payments received this month' : 'No payments received yet',
       icon:       <TrendingUp size={16} strokeWidth={2} />,
       iconBg:     'bg-green-50 dark:bg-green-500/10',
       iconColor:  'text-green-500',

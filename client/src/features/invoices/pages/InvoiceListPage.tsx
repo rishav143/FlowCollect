@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Plus, Search, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, useLocation } from 'react-router-dom'
 import { useAuthStore } from '@/store/auth.store'
 import { useInvoices } from '../hooks/useInvoices'
 import { useDeleteInvoice } from '../hooks/useInvoiceMutations'
@@ -19,13 +19,20 @@ import type { CustomerResponse } from '@/types/customer.types'
 // Default date filters — created: last 30 days, due: open
 // ---------------------------------------------------------------------------
 
+function localDateStr(d: Date) {
+  const y  = d.getFullYear()
+  const m  = String(d.getMonth() + 1).padStart(2, '0')
+  const dd = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${dd}`
+}
+
 function initialCreated(): DateRangeValue {
   const to   = new Date()
   const from = new Date()
   from.setDate(from.getDate() - 30)
   return {
-    from: from.toISOString().split('T')[0],
-    to:   to.toISOString().split('T')[0],
+    from: localDateStr(from),
+    to:   localDateStr(to),
   }
 }
 
@@ -121,8 +128,11 @@ export default function InvoiceListPage() {
   const orgId    = useAuthStore((s) => s.org?.id ?? '')
   const currency = useAuthStore((s) => s.org?.currency ?? 'INR')
 
+  const location                         = useLocation()
   const [searchParams, setSearchParams] = useSearchParams()
-  const [filter,       setFilter]       = useState<InvoiceFilter>({})
+  const [filter,       setFilter]       = useState<InvoiceFilter>(
+    (location.state as InvoiceFilter | null) ?? {},
+  )
   const [search,       setSearch]       = useState('')
   const [page,         setPage]         = useState(0)
   const [showCreate,   setShowCreate]   = useState(false)
@@ -218,25 +228,30 @@ export default function InvoiceListPage() {
           </div>
         </div>
 
-        {/* ── Status tabs ──────────────────────────────────────────────── */}
-        <InvoiceStatusTabs active={filter} onChange={handleFilterChange} />
-
-        {/* ── Search + Date filters ────────────────────────────────────── */}
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Search */}
-          <div className="relative">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-c-muted pointer-events-none" />
-            <input
-              type="text"
-              placeholder="Search invoice number…"
-              value={search}
-              onChange={(e) => handleSearch(e.target.value)}
-              className="w-52 pl-8 pr-4 py-2 text-sm bg-white dark:bg-[#1B2838] border border-c-border rounded-lg focus:outline-none focus:border-[#8A9BAE]/40 text-[#0D1B2A] dark:text-white placeholder:text-c-muted transition-colors"
-            />
+        {/* ── Status tabs + Date filters ───────────────────────────────
+             Mobile:  stacked (tabs row, then date pickers row)
+             sm+:     single row — tabs flex-1, date pickers shrink-0    */}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+          {/* Tabs scroll independently; no overflow wrapper needed here */}
+          <div className="flex-1 min-w-0">
+            <InvoiceStatusTabs active={filter} onChange={handleFilterChange} />
           </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <DateRangePicker label="Created"  value={created} onChange={handleCreatedChange} />
+            <DateRangePicker label="Due date" value={due}     onChange={handleDueChange}     />
+          </div>
+        </div>
 
-          <DateRangePicker label="Created" value={created} onChange={handleCreatedChange} />
-          <DateRangePicker label="Due date" value={due}     onChange={handleDueChange}     />
+        {/* ── Search ──────────────────────────────────────────────────── */}
+        <div className="relative">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-c-muted pointer-events-none" />
+          <input
+            type="text"
+            placeholder="Search invoice number…"
+            value={search}
+            onChange={(e) => handleSearch(e.target.value)}
+            className="w-52 pl-8 pr-4 py-2 text-sm bg-white dark:bg-[#1B2838] border border-c-border rounded-lg focus:outline-none focus:border-[#8A9BAE]/40 text-[#0D1B2A] dark:text-white placeholder:text-c-muted transition-colors"
+          />
         </div>
 
         {/* ── Content ──────────────────────────────────────────────────── */}

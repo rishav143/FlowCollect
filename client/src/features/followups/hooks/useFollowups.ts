@@ -46,7 +46,6 @@ export function useFollowupsByInvoices(invoiceIds: string[]): Record<string, Fol
       queryKey: ['followups', orgId, id],
       queryFn:  () => listFollowups(orgId, id),
       enabled:  !!orgId,
-      staleTime: 30_000,
     })),
   })
 
@@ -54,7 +53,10 @@ export function useFollowupsByInvoices(invoiceIds: string[]): Record<string, Fol
   invoiceIds.forEach((id, i) => {
     const list = results[i]?.data
     if (list && list.length > 0) {
-      const sorted = [...list].sort(
+      // Only count successfully SENT follow-ups as "last contacted"
+      const sent = list.filter((f) => f.status === 'SENT')
+      if (sent.length === 0) return
+      const sorted = [...sent].sort(
         (a, b) => new Date(b.sentAt ?? b.createdAt).getTime() - new Date(a.sentAt ?? a.createdAt).getTime(),
       )
       map[id] = sorted[0]

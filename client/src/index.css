@@ -26,6 +26,31 @@
   }
 }
 
+/* ─── Scrollbar hide utility ────────────────────────────────────────────────
+ * Tailwind does not ship this without a plugin; define it globally so all
+ * overflow-x-auto containers (filter tabs, etc.) hide their scrollbar.
+ * ─────────────────────────────────────────────────────────────────────────── */
+@layer utilities {
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* ─── react-day-picker dark mode overrides ───────────────────────────────────
+ * rdp has no built-in dark mode; we override its CSS custom properties on the
+ * .rdp-root element when the .dark class is active on the document.
+ * ─────────────────────────────────────────────────────────────────────────── */
+.dark .rdp-root {
+  --rdp-accent-color:            #29B6F6;
+  --rdp-accent-background-color: rgba(41, 182, 246, 0.12);
+  --rdp-day_button-border-radius: 999px;
+  color: #e2e8f0; /* day numbers visible on dark bg */
+}
+
 /* Page navigation transition */
 @keyframes page-in {
   from { opacity: 0; transform: translateY(3px); }
@@ -34,4 +59,14 @@
 
 .page-enter {
   animation: page-in 0.15s ease-out;
+}
+
+/* Toast slide-in from right */
+@keyframes toast-in {
+  from { opacity: 0; transform: translateX(calc(100% + 1rem)); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.animate-toast-in {
+  animation: toast-in 0.22s cubic-bezier(0.22, 1, 0.36, 1);
 }

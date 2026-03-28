@@ -10,12 +10,9 @@ function daysUntil(dueDate: string): number {
   return Math.max(0, Math.ceil((due.getTime() - today.getTime()) / 86_400_000))
 }
 
-// Dot + text urgency indicator — no background shading
-function urgencyBadge(days: number) {
-  if (days === 0) return { dot: 'bg-red-500',   text: 'text-red-600 dark:text-red-400',     label: 'Due today' }
-  if (days <= 3)  return { dot: 'bg-amber-500', text: 'text-amber-600 dark:text-amber-400', label: `${days}d`  }
-  if (days <= 7)  return { dot: 'bg-blue-500',  text: 'text-blue-600 dark:text-blue-400',   label: `${days}d`  }
-  return           { dot: 'bg-[#8A9BAE]',       text: 'text-c-muted',                        label: `${days}d`  }
+function urgencyLabel(days: number): { label: string; text: string } {
+  if (days === 0) return { label: 'Due today', text: 'text-red-600 dark:text-red-400' }
+  return           { label: `${days}d`,        text: 'text-c-muted'                   }
 }
 
 // ---------------------------------------------------------------------------
@@ -37,13 +34,6 @@ function RowSkeleton({ isLast }: { isLast: boolean }) {
 // DueSoonPanel
 // ---------------------------------------------------------------------------
 
-/**
- * DueSoonPanel
- *
- * Shows invoices due in the next 14 days, sorted by nearest due date.
- * Urgency is colour-coded so users can act on the most time-sensitive
- * invoices first and send reminders before they become overdue.
- */
 export default function DueSoonPanel({
   invoices,
   currency,
@@ -85,45 +75,70 @@ export default function DueSoonPanel({
         <ul>
           {invoices.map((inv, idx) => {
             const days  = inv.dueDate ? daysUntil(inv.dueDate) : 0
-            const badge = urgencyBadge(days)
+            const badge = urgencyLabel(days)
             return (
               <li
                 key={inv.id}
                 className={[
-                  'group flex items-center gap-3 px-5 py-3 cursor-pointer',
+                  'group cursor-pointer',
                   'hover:bg-[#F4F7F9] dark:hover:bg-[#243447] transition-colors',
                   idx < invoices.length - 1 ? 'border-b border-c-border' : '',
                 ].join(' ')}
                 onClick={() => navigate(`/invoices/${inv.id}`)}
               >
-                <div className="w-28 shrink-0 min-w-0">
-                  <p className="text-sm font-semibold text-[#0D1B2A] dark:text-white">{inv.invoiceNumber}</p>
-                  {inv.customerId && customerMap[inv.customerId] && (
-                    <p className="text-xs text-c-muted truncate">{customerMap[inv.customerId]}</p>
-                  )}
+                {/* ── Mobile layout (< sm) — two rows ── */}
+                <div className="sm:hidden px-5 py-3">
+                  <div className="flex items-center gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold text-[#0D1B2A] dark:text-white">{inv.invoiceNumber}</p>
+                      {inv.customerId && customerMap[inv.customerId] && (
+                        <p className="text-xs text-c-muted truncate">{customerMap[inv.customerId]}</p>
+                      )}
+                    </div>
+                    <span className="text-sm font-semibold text-[#0D1B2A] dark:text-white tabular-nums shrink-0">
+                      {formatCurrency(inv.remainingAmount, currency, { decimals: false })}
+                    </span>
+                    <ArrowRight size={14} className="text-c-muted shrink-0" />
+                  </div>
+                  <div className="flex items-center justify-between mt-1.5">
+                    <span className={`text-xs ${badge.text}`}>{badge.label}</span>
+                    {onFollowup && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); onFollowup(inv) }}
+                        title="Send follow-up"
+                        className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium text-[#29B6F6] hover:bg-[#29B6F6]/10 transition-colors"
+                      >
+                        <Bell size={12} strokeWidth={2.5} />
+                      </button>
+                    )}
+                  </div>
                 </div>
 
-                <span className={`text-xs font-medium shrink-0 ${badge.text}`}>{badge.label}</span>
-
-                <span className="flex-1" />
-
-                {/* Quick remind — visible on hover */}
-                {onFollowup && (
-                  <button
-                    onClick={(e) => { e.stopPropagation(); onFollowup(inv) }}
-                    title="Send follow-up"
-                    className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium text-[#29B6F6] opacity-0 group-hover:opacity-100 hover:bg-[#29B6F6]/10 transition-all shrink-0"
-                  >
-                    <Bell size={12} strokeWidth={2.5} />
-                    Remind
-                  </button>
-                )}
-
-                <span className="text-sm font-semibold text-[#0D1B2A] dark:text-white tabular-nums">
-                  {formatCurrency(inv.remainingAmount, currency, { decimals: false })}
-                </span>
-
-                <ArrowRight size={14} className="text-c-muted shrink-0" />
+                {/* ── Desktop/tablet layout (sm+) — original single row ── */}
+                <div className="hidden sm:flex items-center gap-3 px-5 py-3">
+                  <div className="w-28 shrink-0 min-w-0">
+                    <p className="text-sm font-semibold text-[#0D1B2A] dark:text-white">{inv.invoiceNumber}</p>
+                    {inv.customerId && customerMap[inv.customerId] && (
+                      <p className="text-xs text-c-muted truncate">{customerMap[inv.customerId]}</p>
+                    )}
+                  </div>
+                  <span className={`text-xs font-medium shrink-0 ${badge.text}`}>{badge.label}</span>
+                  <span className="flex-1" />
+                  {onFollowup && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onFollowup(inv) }}
+                      title="Send follow-up"
+                      className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium text-[#29B6F6] opacity-0 group-hover:opacity-100 hover:bg-[#29B6F6]/10 transition-all shrink-0"
+                    >
+                      <Bell size={12} strokeWidth={2.5} />
+                      Follow-up
+                    </button>
+                  )}
+                  <span className="text-sm font-semibold text-[#0D1B2A] dark:text-white tabular-nums">
+                    {formatCurrency(inv.remainingAmount, currency, { decimals: false })}
+                  </span>
+                  <ArrowRight size={14} className="text-c-muted shrink-0" />
+                </div>
               </li>
             )
           })}

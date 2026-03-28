@@ -16,7 +16,7 @@ interface Props {
 
 export default function ConfirmationFilterTabs({ active, onChange, pendingCount }: Props) {
   return (
-    <div className="flex gap-1 border-b border-c-border -mb-px overflow-x-auto scrollbar-none">
+    <div className="flex gap-1 border-b border-c-border -mb-px overflow-x-auto scrollbar-hide">
       {TABS.map((t) => (
         <button
           key={t.id}

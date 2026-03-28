@@ -10,7 +10,7 @@ import InvoiceActionBar from '../components/InvoiceActionBar/InvoiceActionBar'
 import InvoiceStatusBadge from '../components/InvoiceStatusBadge/InvoiceStatusBadge'
 import PaymentsTab from '../components/PaymentsTab/PaymentsTab'
 import FollowupsTab from '../components/FollowupsTab/FollowupsTab'
-import FollowupModal from '../modals/FollowupModal'
+import DispatchModal from '@/features/followups/components/DispatchModal/DispatchModal'
 import { formatCurrency, formatDate } from '@/lib/format'
 
 // ---------------------------------------------------------------------------
@@ -239,7 +239,7 @@ export default function InvoiceDetailPage() {
 
       {/* Follow-up modal */}
       {showFollowup && (
-        <FollowupModal invoiceNumber={invoice.invoiceNumber} onClose={() => setShowFollowup(false)} />
+        <DispatchModal invoice={invoice} onClose={() => setShowFollowup(false)} />
       )}
 
       {/* Cancel confirm */}
