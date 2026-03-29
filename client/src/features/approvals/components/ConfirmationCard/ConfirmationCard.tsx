@@ -81,14 +81,6 @@ const ConfirmationCard = memo(function ConfirmationCard({
         </span>
       </div>
 
-      {/* Invoice total context */}
-      <p className="mt-1 text-xs text-c-muted">
-        Invoice total{' '}
-        <span className="font-medium text-[#0D1B2A] dark:text-white">{formatCurrency(c.invoiceTotalAmount, currency, { decimals: false })}</span>
-        {' · '}remaining{' '}
-        <span className="font-medium text-[#0D1B2A] dark:text-white">{formatCurrency(c.invoiceRemainingAmount, currency, { decimals: false })}</span>
-      </p>
-
       {/* ── Overpayment warning ── */}
       {claimType === 'OVER' && isPending && (
         <div className="mt-3 flex items-start gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20">
@@ -110,9 +102,10 @@ const ConfirmationCard = memo(function ConfirmationCard({
       {/* ── Business note (post-review) ── */}
       {c.businessNote && !isPending && (
         <div className="mt-3 p-3 rounded-lg border border-c-border">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-c-muted mb-1">
-            Your Note · {formatDate(c.reviewedAt)}
-          </p>
+          <div className="flex items-center gap-2 mb-1">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-c-muted">Your Note</p>
+            <p className="text-[10px] text-c-muted">{formatDate(c.reviewedAt)}</p>
+          </div>
           <p className="text-xs text-[#0D1B2A] dark:text-white leading-relaxed">{c.businessNote}</p>
         </div>
       )}
