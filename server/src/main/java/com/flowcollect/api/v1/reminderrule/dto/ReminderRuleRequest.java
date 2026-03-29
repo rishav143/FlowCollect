@@ -1,6 +1,7 @@
 package com.flowcollect.api.v1.reminderrule.dto;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 import com.flowcollect.domain.reminder.ReminderChannel;
@@ -20,6 +21,11 @@ public class ReminderRuleRequest {
     private Integer maxOccurrences;
     private Integer cycleIntervalDays;
     private LocalDate startDate;
+
+    // Per-occurrence template overrides (ordered by occurrence index, 0-based).
+    // Null means "not provided". Empty list clears overrides (all occurrences use templateId).
+    // When non-null, size must equal maxOccurrences.
+    private List<UUID> occurrenceTemplateIds;
 
     public String getName() {
         return name;
@@ -99,5 +105,13 @@ public class ReminderRuleRequest {
 
     public void setStartDate(LocalDate startDate) {
         this.startDate = startDate;
+    }
+
+    public List<UUID> getOccurrenceTemplateIds() {
+        return occurrenceTemplateIds;
+    }
+
+    public void setOccurrenceTemplateIds(List<UUID> occurrenceTemplateIds) {
+        this.occurrenceTemplateIds = occurrenceTemplateIds;
     }
 }

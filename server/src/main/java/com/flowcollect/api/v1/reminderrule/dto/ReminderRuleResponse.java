@@ -2,6 +2,7 @@ package com.flowcollect.api.v1.reminderrule.dto;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 import com.flowcollect.domain.reminder.ReminderChannel;
@@ -19,6 +20,7 @@ public class ReminderRuleResponse {
     private boolean active;
     private int maxOccurrences;
     private int cycleIntervalDays;
+    private List<UUID> occurrenceTemplateIds;
     private LocalDate startDate;
     private Instant createdAt;
     private Instant updatedAt;
@@ -55,6 +57,9 @@ public class ReminderRuleResponse {
 
     public int getCycleIntervalDays() { return cycleIntervalDays; }
     public void setCycleIntervalDays(int cycleIntervalDays) { this.cycleIntervalDays = cycleIntervalDays; }
+
+    public List<UUID> getOccurrenceTemplateIds() { return occurrenceTemplateIds; }
+    public void setOccurrenceTemplateIds(List<UUID> occurrenceTemplateIds) { this.occurrenceTemplateIds = occurrenceTemplateIds; }
 
     public LocalDate getStartDate() { return startDate; }
     public void setStartDate(LocalDate startDate) { this.startDate = startDate; }

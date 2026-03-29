@@ -76,13 +76,15 @@ export default function ViewToggle({ value, onChange, options = ['list', 'grid2'
       {options.map((opt) => {
         const { icon, title } = ICONS[opt]
         const active = value === opt
+        const isGridOpt = opt === 'grid2' || opt === 'grid3'
         return (
           <button
             key={opt}
             title={title}
             onClick={() => onChange(opt)}
             className={[
-              'w-7 h-7 flex items-center justify-center rounded-md transition-colors',
+              'w-7 h-7 items-center justify-center rounded-md transition-colors',
+              isGridOpt ? 'hidden sm:flex' : 'flex',
               active
                 ? 'bg-white dark:bg-[#1B2838] text-[#0D1B2A] dark:text-white shadow-sm'
                 : 'text-c-muted hover:text-[#0D1B2A] dark:hover:text-white',

@@ -1,6 +1,8 @@
 package com.flowcollect.application.reminder;
 
 import com.flowcollect.application.template.TemplateService;
+import com.flowcollect.domain.template.Template;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -61,10 +63,6 @@ public class ReminderRuleService {
         if (request.getChannel() == null) {
             throw new ValidationException("Channel cannot be null");
         }
-        if (request.getTemplateId() == null) {
-            throw new ValidationException("Template ID cannot be null");
-        }
-
         int maxOccurrences = request.getMaxOccurrences() != null ? request.getMaxOccurrences() : 1;
         if (maxOccurrences < 1) {
             throw new ValidationException("maxOccurrences must be at least 1");
@@ -77,15 +75,43 @@ public class ReminderRuleService {
             cycleIntervalDays = 0;
         }
 
+        // Resolve per-occurrence templates or fall back to single templateId
+        List<UUID> occurrenceTemplateIds = request.getOccurrenceTemplateIds();
+        List<UUID> resolvedOccurrenceIds = new ArrayList<>();
+        if (occurrenceTemplateIds != null && !occurrenceTemplateIds.isEmpty()) {
+            if (occurrenceTemplateIds.size() != maxOccurrences) {
+                throw new ValidationException(
+                    "occurrenceTemplateIds size (" + occurrenceTemplateIds.size() +
+                    ") must equal maxOccurrences (" + maxOccurrences + ")"
+                );
+            }
+            for (int i = 0; i < occurrenceTemplateIds.size(); i++) {
+                if (occurrenceTemplateIds.get(i) == null) {
+                    throw new ValidationException("occurrenceTemplateIds[" + i + "] must not be null");
+                }
+                templateService.getTemplateById(occurrenceTemplateIds.get(i)); // validates existence
+            }
+            resolvedOccurrenceIds = new ArrayList<>(occurrenceTemplateIds);
+        }
+
+        // Primary template: first occurrence template if per-occurrence overrides provided, else the explicit templateId
+        UUID primaryTemplateId = (resolvedOccurrenceIds.isEmpty())
+            ? request.getTemplateId()
+            : resolvedOccurrenceIds.get(0);
+        if (primaryTemplateId == null) {
+            throw new ValidationException("Template ID cannot be null");
+        }
+
         ReminderRule rule = new ReminderRule();
         rule.setOrganization(organization);
         rule.setName(name);
         rule.setDaysOffset(request.getDaysOffset());
         rule.setTriggerType(request.getTriggerType());
         rule.setChannel(request.getChannel());
-        rule.setTemplate(templateService.getTemplateById(request.getTemplateId()));
+        rule.setTemplate(templateService.getTemplateById(primaryTemplateId));
         rule.setMaxOccurrences(maxOccurrences);
         rule.setCycleIntervalDays(cycleIntervalDays);
+        rule.setOccurrenceTemplateIds(resolvedOccurrenceIds);
         if (request.getStartDate() != null) {
             rule.setStartDate(request.getStartDate());
         }
@@ -155,6 +181,36 @@ public class ReminderRuleService {
         if (request.getTemplateId() != null) {
             rule.setTemplate(templateService.getTemplateById(request.getTemplateId()));
         }
+
+        // Per-occurrence template overrides: only applied when field is explicitly provided
+        List<UUID> occurrenceTemplateIds = request.getOccurrenceTemplateIds();
+        if (occurrenceTemplateIds != null) {
+            if (occurrenceTemplateIds.isEmpty()) {
+                // Explicitly cleared — remove overrides
+                rule.setOccurrenceTemplateIds(new ArrayList<>());
+            } else {
+                // Resolve final maxOccurrences for size validation (may have been updated above)
+                int effectiveMax = request.getMaxOccurrences() != null
+                    ? request.getMaxOccurrences()
+                    : rule.getMaxOccurrences();
+                if (occurrenceTemplateIds.size() != effectiveMax) {
+                    throw new ValidationException(
+                        "occurrenceTemplateIds size (" + occurrenceTemplateIds.size() +
+                        ") must equal maxOccurrences (" + effectiveMax + ")"
+                    );
+                }
+                for (int i = 0; i < occurrenceTemplateIds.size(); i++) {
+                    if (occurrenceTemplateIds.get(i) == null) {
+                        throw new ValidationException("occurrenceTemplateIds[" + i + "] must not be null");
+                    }
+                    templateService.getTemplateById(occurrenceTemplateIds.get(i));
+                }
+                rule.setOccurrenceTemplateIds(new ArrayList<>(occurrenceTemplateIds));
+                // Keep primary template in sync with first occurrence
+                rule.setTemplate(templateService.getTemplateById(occurrenceTemplateIds.get(0)));
+            }
+        }
+
         if (request.isActive() != null) {
             if (Boolean.TRUE.equals(request.isActive())) {
                 rule.activate();

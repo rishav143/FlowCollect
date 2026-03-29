@@ -60,7 +60,7 @@ export default function DateRangePicker({ label, value, onChange }: Props) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
-  // Close on outside click
+  // Close on outside click (desktop only — mobile uses backdrop)
   useEffect(() => {
     function onMouseDown(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) {
@@ -71,12 +71,22 @@ export default function DateRangePicker({ label, value, onChange }: Props) {
     return () => document.removeEventListener('mousedown', onMouseDown)
   }, [])
 
+  // Prevent body scroll when mobile sheet is open
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => { document.body.style.overflow = '' }
+  }, [open])
+
   const selected: DateRange = {
     from: parseDate(value.from),
     to:   parseDate(value.to),
   }
 
-  const hasValue = !!(value.from || value.to)
+  const hasValue     = !!(value.from || value.to)
   const displayRange = rangeLabel(value)
 
   function handleSelect(range: DateRange | undefined) {
@@ -86,7 +96,6 @@ export default function DateRangePicker({ label, value, onChange }: Props) {
       to:   range.to   ? toStr(range.to)   : undefined,
     }
     onChange(next)
-    // Auto-close once both ends are selected
     if (range.from && range.to) setOpen(false)
   }
 
@@ -103,6 +112,51 @@ export default function DateRangePicker({ label, value, onChange }: Props) {
     onChange({})
     setOpen(false)
   }
+
+  // Shared panel content rendered inside both mobile sheet and desktop dropdown
+  const panelContent = (
+    <>
+      {/* Presets */}
+      <div className="flex gap-1 p-2 border-b border-c-border">
+        {PRESETS.map((p) => (
+          <button
+            key={p.label}
+            onClick={() => applyPreset(p.offset)}
+            className="flex-1 px-2 py-1.5 text-xs font-medium rounded-lg text-c-muted hover:text-[#0D1B2A] dark:hover:text-white hover:bg-[#F4F7F9] dark:hover:bg-[#243447] transition-colors whitespace-nowrap"
+          >
+            {p.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Calendar */}
+      <div className="p-3 flex justify-center">
+        <DayPicker
+          mode="range"
+          selected={selected}
+          onSelect={handleSelect}
+          showOutsideDays
+          style={{
+            '--rdp-accent-color':            '#29B6F6',
+            '--rdp-accent-background-color': 'rgba(41,182,246,0.12)',
+            '--rdp-day_button-border-radius': '999px',
+          } as React.CSSProperties}
+        />
+      </div>
+
+      {/* Footer — clear */}
+      {hasValue && (
+        <div className="px-3 pb-3 pt-0 flex justify-end">
+          <button
+            onClick={(e) => clear(e)}
+            className="text-xs text-c-muted hover:text-red-500 transition-colors"
+          >
+            Clear
+          </button>
+        </div>
+      )}
+    </>
+  )
 
   return (
     <div ref={ref} className="relative">
@@ -138,50 +192,40 @@ export default function DateRangePicker({ label, value, onChange }: Props) {
         )}
       </button>
 
-      {/* ── Popover ─────────────────────────────────────────────── */}
       {open && (
-        <div className="absolute top-full mt-2 right-0 z-50 bg-white dark:bg-[#1B2838] border border-c-border rounded-2xl shadow-2xl overflow-hidden min-w-[300px]">
-
-          {/* Presets */}
-          <div className="flex gap-1 p-2 border-b border-c-border">
-            {PRESETS.map((p) => (
-              <button
-                key={p.label}
-                onClick={() => applyPreset(p.offset)}
-                className="flex-1 px-2 py-1.5 text-xs font-medium rounded-lg text-c-muted hover:text-[#0D1B2A] dark:hover:text-white hover:bg-[#F4F7F9] dark:hover:bg-[#243447] transition-colors whitespace-nowrap"
-              >
-                {p.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Calendar */}
-          <div className="p-3">
-            <DayPicker
-              mode="range"
-              selected={selected}
-              onSelect={handleSelect}
-              showOutsideDays
-              style={{
-                '--rdp-accent-color':            '#29B6F6',
-                '--rdp-accent-background-color': 'rgba(41,182,246,0.12)',
-                '--rdp-day_button-border-radius': '999px',
-              } as React.CSSProperties}
+        <>
+          {/* ── Mobile: fixed bottom sheet ──────────────────────── */}
+          <div className="sm:hidden fixed inset-0 z-50 flex flex-col justify-end">
+            {/* Backdrop */}
+            <div
+              className="absolute inset-0 bg-black/40"
+              onClick={() => setOpen(false)}
             />
+            {/* Sheet */}
+            <div className="relative bg-white dark:bg-[#1B2838] rounded-t-2xl shadow-2xl overflow-hidden max-h-[90dvh] overflow-y-auto">
+              {/* Handle */}
+              <div className="flex justify-center pt-3 pb-1">
+                <div className="w-10 h-1 rounded-full bg-[#8A9BAE]/30" />
+              </div>
+              {/* Close row */}
+              <div className="flex items-center justify-between px-4 pb-2">
+                <p className="text-sm font-semibold text-[#0D1B2A] dark:text-white">{label}</p>
+                <button
+                  onClick={() => setOpen(false)}
+                  className="p-1.5 rounded-lg text-c-muted hover:bg-[#F4F7F9] dark:hover:bg-[#243447] transition-colors"
+                >
+                  <X size={16} strokeWidth={2} />
+                </button>
+              </div>
+              {panelContent}
+            </div>
           </div>
 
-          {/* Footer — clear */}
-          {hasValue && (
-            <div className="px-3 pb-3 pt-0 flex justify-end">
-              <button
-                onClick={(e) => clear(e)}
-                className="text-xs text-c-muted hover:text-red-500 transition-colors"
-              >
-                Clear
-              </button>
-            </div>
-          )}
-        </div>
+          {/* ── Desktop: absolute dropdown ────────────────────── */}
+          <div className="hidden sm:block absolute top-full mt-2 right-0 z-50 bg-white dark:bg-[#1B2838] border border-c-border rounded-2xl shadow-2xl overflow-hidden min-w-[300px]">
+            {panelContent}
+          </div>
+        </>
       )}
     </div>
   )

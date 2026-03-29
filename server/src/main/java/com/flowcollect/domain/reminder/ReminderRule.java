@@ -6,6 +6,8 @@ import jakarta.validation.constraints.NotNull;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import com.flowcollect.domain.organization.Organization;
@@ -76,6 +78,18 @@ public class ReminderRule {
     // Must be >= 1 when maxOccurrences > 1; ignored (0) when maxOccurrences == 1.
     @Column(name = "cycle_interval_days", nullable = false)
     private int cycleIntervalDays = 0;
+
+    // Per-occurrence template overrides (ordered by occurrence index).
+    // Empty list means all occurrences use the default `template` above.
+    // When non-empty, size must equal maxOccurrences.
+    @ElementCollection
+    @CollectionTable(
+        name = "reminder_rule_occurrence_templates",
+        joinColumns = @JoinColumn(name = "reminder_rule_id")
+    )
+    @Column(name = "template_id", nullable = false)
+    @OrderColumn(name = "occurrence_index")
+    private List<UUID> occurrenceTemplateIds = new ArrayList<>();
 
     // Optional date on or after which the automation engine begins processing this rule.
     // Null means no restriction — the engine starts immediately.
@@ -152,6 +166,14 @@ public class ReminderRule {
 
     public LocalDate getStartDate() {
         return startDate;
+    }
+
+    public List<UUID> getOccurrenceTemplateIds() {
+        return occurrenceTemplateIds;
+    }
+
+    public void setOccurrenceTemplateIds(List<UUID> occurrenceTemplateIds) {
+        this.occurrenceTemplateIds = occurrenceTemplateIds != null ? occurrenceTemplateIds : new ArrayList<>();
     }
 
     public boolean isCyclic() {

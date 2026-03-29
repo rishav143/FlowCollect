@@ -17,16 +17,18 @@ import type {
 type Direction = 'BEFORE' | 'ON' | 'AFTER'
 
 interface FormState {
-  name:              string
-  days:              string
-  direction:         Direction
-  channel:           ReminderChannel
-  templateId:        string
-  active:            boolean
+  name:                  string
+  days:                  string
+  direction:             Direction
+  channel:               ReminderChannel
+  templateId:            string
+  active:                boolean
   // Advanced
-  advancedEnabled:   boolean
-  maxOccurrences:    string
-  cycleIntervalDays: string
+  advancedEnabled:       boolean
+  maxOccurrences:        string
+  cycleIntervalDays:     string
+  // Per-occurrence templates (only used when cyclic; index = occurrence - 1)
+  occurrenceTemplateIds: string[]
 }
 
 const DIRECTION_TO_TRIGGER: Record<Direction, ReminderTriggerType> = {
@@ -56,15 +58,16 @@ const CYCLE_OPTIONS = [
 ]
 
 const EMPTY: FormState = {
-  name:              '',
-  days:              '3',
-  direction:         'BEFORE',
-  channel:           'EMAIL',
-  templateId:        '',
-  active:            true,
-  advancedEnabled:   false,
-  maxOccurrences:    '1',
-  cycleIntervalDays: '7',
+  name:                  '',
+  days:                  '3',
+  direction:             'BEFORE',
+  channel:               'EMAIL',
+  templateId:            '',
+  active:                true,
+  advancedEnabled:       false,
+  maxOccurrences:        '1',
+  cycleIntervalDays:     '7',
+  occurrenceTemplateIds: [],
 }
 
 // ---------------------------------------------------------------------------
@@ -158,7 +161,7 @@ function Timeline({
   }
 
   return (
-    <div className="pt-3 mt-1 border-t border-c-border/50">
+    <div className="pt-3 mt-1 border-t border-c-border">
       <p className="text-[10px] font-semibold uppercase tracking-wider text-c-muted mb-2">
         Schedule preview
       </p>
@@ -223,16 +226,25 @@ export default function RuleModal({ rule, onClose }: Props) {
 
   useEffect(() => {
     if (rule) {
+      const clampedMax = Math.min(10, Math.max(1, rule.maxOccurrences))
+      const isCyclicRule = clampedMax > 1
+      // Populate per-occurrence slots: use existing overrides if present, otherwise fill with the single templateId
+      const occSlots: string[] = isCyclicRule
+        ? Array.from({ length: clampedMax }, (_, i) =>
+            rule.occurrenceTemplateIds?.[i] ?? rule.templateId ?? ''
+          )
+        : []
       setForm({
-        name:              rule.name ?? '',
-        days:              String(Math.abs(rule.daysOffset) || 3),
-        direction:         TRIGGER_TO_DIRECTION[rule.triggerType],
-        channel:           rule.channel,
-        templateId:        rule.templateId ?? '',
-        active:            rule.active,
-        advancedEnabled:   rule.maxOccurrences > 1,
-        maxOccurrences:    String(Math.min(10, Math.max(1, rule.maxOccurrences))),
-        cycleIntervalDays: snapCycleInterval(rule.cycleIntervalDays),
+        name:                  rule.name ?? '',
+        days:                  String(Math.abs(rule.daysOffset) || 3),
+        direction:             TRIGGER_TO_DIRECTION[rule.triggerType],
+        channel:               rule.channel,
+        templateId:            rule.templateId ?? '',
+        active:                rule.active,
+        advancedEnabled:       isCyclicRule,
+        maxOccurrences:        String(clampedMax),
+        cycleIntervalDays:     snapCycleInterval(rule.cycleIntervalDays),
+        occurrenceTemplateIds: occSlots,
       })
     }
   }, [rule])
@@ -249,23 +261,55 @@ export default function RuleModal({ rule, onClose }: Props) {
   }
 
   function handleChannelChange(ch: ReminderChannel) {
-    setForm((prev) => ({ ...prev, channel: ch, templateId: '' }))
+    setForm((prev) => ({
+      ...prev,
+      channel:               ch,
+      templateId:            '',
+      occurrenceTemplateIds: prev.occurrenceTemplateIds.map(() => ''),
+    }))
   }
 
   function handleDirectionChange(dir: Direction) {
     setForm((prev) => ({
       ...prev,
-      direction: dir,
+      direction:             dir,
       // Reset cycle state whenever direction changes to avoid stale/invalid combos
-      maxOccurrences:    '1',
-      cycleIntervalDays: '7',
+      maxOccurrences:        '1',
+      cycleIntervalDays:     '7',
+      occurrenceTemplateIds: [],
     }))
+  }
+
+  function handleMaxOccurrencesChange(value: string) {
+    const next = Math.max(1, parseInt(value) || 1)
+    setForm((prev) => {
+      const current = prev.occurrenceTemplateIds
+      let nextSlots: string[]
+      if (next <= 1) {
+        nextSlots = []
+      } else if (next > current.length) {
+        // Grow: fill new slots with global templateId as a helpful default
+        nextSlots = [
+          ...current,
+          ...Array(next - current.length).fill(prev.templateId || ''),
+        ]
+      } else {
+        // Shrink: truncate
+        nextSlots = current.slice(0, next)
+      }
+      return { ...prev, maxOccurrences: value, occurrenceTemplateIds: nextSlots }
+    })
   }
 
   // Derived computed values
   const days        = Math.max(1, parseInt(form.days) || 1)
-  const maxOcc      = form.advancedEnabled ? Math.max(1, parseInt(form.maxOccurrences) || 1) : 1
   const interval    = Math.max(1, parseInt(form.cycleIntervalDays) || 1)
+  const rawMaxOcc   = form.advancedEnabled ? Math.max(1, parseInt(form.maxOccurrences) || 1) : 1
+  // Clamp to the highest occurrence option still valid given current days & interval,
+  // so that stale form state doesn't make isCyclic true when the select shows "1 time".
+  const maxOcc      = form.direction === 'BEFORE'
+    ? Math.min(rawMaxOcc, Math.max(1, ...OCCURRENCE_OPTIONS.filter(n => interval * (n - 1) < days)))
+    : rawMaxOcc
   const isCyclic    = form.direction !== 'ON' && maxOcc > 1
 
   // For BEFORE rules: an occurrence count n is valid if interval * (n-1) < days
@@ -280,7 +324,15 @@ export default function RuleModal({ rule, onClose }: Props) {
   }
 
   function validationError(): string | null {
-    if (!form.templateId) return 'Please select a template.'
+    if (isCyclic) {
+      for (let i = 0; i < maxOcc; i++) {
+        if (!form.occurrenceTemplateIds[i]) {
+          return `Please select a template for send ${i + 1}.`
+        }
+      }
+    } else {
+      if (!form.templateId) return 'Please select a template.'
+    }
     return null
   }
 
@@ -292,14 +344,15 @@ export default function RuleModal({ rule, onClose }: Props) {
     setSubmitError(null)
 
     const body: ReminderRuleRequest = {
-      name:              form.name.trim() || undefined,
-      daysOffset:        formToDaysOffset(form),
-      triggerType:       DIRECTION_TO_TRIGGER[form.direction],
-      channel:           form.channel,
-      templateId:        form.templateId || null,
-      active:            form.active,
-      maxOccurrences:    maxOcc,
-      cycleIntervalDays: isCyclic ? interval : 0,
+      name:                  form.name.trim() || undefined,
+      daysOffset:            formToDaysOffset(form),
+      triggerType:           DIRECTION_TO_TRIGGER[form.direction],
+      channel:               form.channel,
+      templateId:            isCyclic ? form.occurrenceTemplateIds[0] : (form.templateId || null),
+      active:                form.active,
+      maxOccurrences:        maxOcc,
+      cycleIntervalDays:     isCyclic ? interval : 0,
+      occurrenceTemplateIds: isCyclic ? form.occurrenceTemplateIds.slice(0, maxOcc) : [],
     }
 
     try {
@@ -409,22 +462,24 @@ export default function RuleModal({ rule, onClose }: Props) {
               </div>
             </div>
 
-            {/* Template */}
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wide text-c-muted mb-2">
-                Template
-              </label>
-              <select
-                value={form.templateId}
-                onChange={(e) => set('templateId', e.target.value)}
-                className="w-full text-sm rounded-lg border border-c-border bg-transparent text-[#0D1B2A] dark:text-white px-3 py-2.5 focus:outline-none focus:border-[#8A9BAE]/40 transition-colors"
-              >
-                <option value="">Select a template…</option>
-                {templates.map((t) => (
-                  <option key={t.id} value={t.id}>{t.name}</option>
-                ))}
-              </select>
-            </div>
+            {/* Template — hidden when cyclic (per-occurrence selectors replace it) */}
+            {!isCyclic && (
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wide text-c-muted mb-2">
+                  Template
+                </label>
+                <select
+                  value={form.templateId}
+                  onChange={(e) => set('templateId', e.target.value)}
+                  className="w-full text-sm rounded-lg border border-c-border bg-transparent text-[#0D1B2A] dark:text-white px-3 py-2.5 focus:outline-none focus:border-[#8A9BAE]/40 transition-colors"
+                >
+                  <option value="">Select a template…</option>
+                  {templates.map((t) => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             {/* Name */}
             <div>
@@ -485,7 +540,7 @@ export default function RuleModal({ rule, onClose }: Props) {
                       <span className="text-sm text-c-muted whitespace-nowrap">Send</span>
                       <select
                         value={form.maxOccurrences}
-                        onChange={(e) => set('maxOccurrences', e.target.value)}
+                        onChange={(e) => handleMaxOccurrencesChange(e.target.value)}
                         disabled={form.direction === 'ON'}
                         className="text-sm rounded-lg border border-c-border bg-white dark:bg-[#1B2838] text-[#0D1B2A] dark:text-white px-3 py-2 focus:outline-none focus:border-[#8A9BAE]/40 transition-colors disabled:opacity-40"
                       >
@@ -510,6 +565,38 @@ export default function RuleModal({ rule, onClose }: Props) {
                     </div>
                   </div>
 
+
+                  {/* Per-occurrence template selectors — shown only when cyclic */}
+                  {isCyclic && (
+                    <div>
+                      <label className="block text-xs font-semibold uppercase tracking-wide text-c-muted mb-2">
+                        Template per send
+                      </label>
+                      <div className="space-y-2">
+                        {Array.from({ length: maxOcc }, (_, i) => (
+                          <div key={i} className="flex items-center gap-2">
+                            <span className="text-xs text-c-muted whitespace-nowrap w-12 shrink-0">
+                              Send {i + 1}
+                            </span>
+                            <select
+                              value={form.occurrenceTemplateIds[i] ?? ''}
+                              onChange={(e) => {
+                                const next = [...form.occurrenceTemplateIds]
+                                next[i] = e.target.value
+                                set('occurrenceTemplateIds', next)
+                              }}
+                              className="flex-1 text-sm rounded-lg border border-c-border bg-white dark:bg-[#1B2838] text-[#0D1B2A] dark:text-white px-3 py-2 focus:outline-none focus:border-[#8A9BAE]/40 transition-colors"
+                            >
+                              <option value="">Select a template…</option>
+                              {templates.map((t) => (
+                                <option key={t.id} value={t.id}>{t.name}</option>
+                              ))}
+                            </select>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Timeline diagram */}
                   {showTimeline && (
