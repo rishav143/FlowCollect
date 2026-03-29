@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Send, Bell } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/store/auth.store'
@@ -109,29 +109,32 @@ export default function FollowupsPage() {
   const orgId    = useAuthStore((s) => s.org?.id ?? '')
   const currency = useAuthStore((s) => s.org?.currency ?? 'INR')
 
-  const [filter,  setFilter]  = useState<FollowupFilter>('ALL')
-  const [target,  setTarget]  = useState<InvoiceResponse | null>(null)
-  const [view,    setView]    = useViewPreference('followups', 'list')
-  const [sort,    setSort]    = useState<'dueDate' | 'leastContacted' | 'recentContacted'>('leastContacted')
+  const [filter,    setFilter]    = useState<FollowupFilter>('ALL')
+  const [target,    setTarget]    = useState<InvoiceResponse | null>(null)
+  const [view,      setView]      = useViewPreference('followups', 'list')
+
 
   const { data: rawInvoices = [], isLoading, isFetching } = useFollowupInvoices(filter)
-
-  // Fetch followup map from raw IDs — must be before sort so the
-  // lastContacted sort can reference it, and so query keys don't change
-  // every time sort order changes (which would cause unnecessary refetches).
   const lastFollowupMap = useFollowupsByInvoices(rawInvoices.map((i) => i.id))
 
-  const invoices = [...rawInvoices].sort((a, b) => {
-    if (sort === 'leastContacted' || sort === 'recentContacted') {
-      const aEntry = lastFollowupMap[a.id]
-      const bEntry = lastFollowupMap[b.id]
-      // Never contacted → 0 → floats to top for leastContacted
-      const aMs = aEntry ? new Date(aEntry.sentAt ?? aEntry.createdAt).getTime() : 0
-      const bMs = bEntry ? new Date(bEntry.sentAt ?? bEntry.createdAt).getTime() : 0
-      return sort === 'leastContacted' ? aMs - bMs : bMs - aMs
+  const invoices = useMemo(() => {
+    let list = [...rawInvoices]
+
+    if (filter === 'LEAST_CONTACTED') {
+      // Only show invoices that have never been contacted
+      list = list.filter((inv) => !lastFollowupMap[inv.id])
+      // Sort by due date so most urgent appear first
+      list.sort((a, b) =>
+        new Date(a.dueDate ?? '9999').getTime() - new Date(b.dueDate ?? '9999').getTime()
+      )
+    } else {
+      list.sort((a, b) =>
+        new Date(a.dueDate ?? '9999').getTime() - new Date(b.dueDate ?? '9999').getTime()
+      )
     }
-    return new Date(a.dueDate ?? '9999').getTime() - new Date(b.dueDate ?? '9999').getTime()
-  })
+
+    return list
+  }, [rawInvoices, lastFollowupMap, filter])
 
   const customersQuery = useQuery({
     queryKey: ['customers', orgId, 'all'],
@@ -161,32 +164,8 @@ export default function FollowupsPage() {
           <ViewToggle value={view} onChange={setView} />
         </div>
 
-        {/* Filter tabs + sort toggle — stacked on mobile, inline on sm+ */}
-        <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-          <div className="flex-1 min-w-0">
-            <FollowupFilterTabs active={filter} onChange={setFilter} />
-          </div>
-          <div className="flex gap-1 p-1 bg-[#F4F7F9] dark:bg-[#1B2838] rounded-lg shrink-0">
-            {([
-              { value: 'dueDate',         label: 'Due soon'           },
-              { value: 'leastContacted',  label: 'Least contacted'    },
-              { value: 'recentContacted', label: 'Recently contacted' },
-            ] as const).map((opt) => (
-              <button
-                key={opt.value}
-                onClick={() => setSort(opt.value)}
-                className={[
-                  'px-4 py-1.5 text-sm font-medium rounded-md transition-colors whitespace-nowrap',
-                  sort === opt.value
-                    ? 'bg-white dark:bg-[#243447] text-[#0D1B2A] dark:text-white shadow-sm'
-                    : 'text-c-muted hover:text-[#0D1B2A] dark:hover:text-white',
-                ].join(' ')}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-        </div>
+        {/* Filter tabs */}
+        <FollowupFilterTabs active={filter} onChange={setFilter} />
 
         {/* Content */}
         <div className={`transition-opacity duration-200 ${isFetching && !isLoading ? 'opacity-60' : 'opacity-100'}`}>

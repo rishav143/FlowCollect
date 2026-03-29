@@ -2,6 +2,9 @@ package com.flowcollect.infrastructure.persistence.invoice;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.flowcollect.domain.invoice.followup.FollowUp;
@@ -25,5 +28,9 @@ public interface FollowUpJpaRepository extends JpaRepository<FollowUp, UUID>, Jp
     );
 
     List<FollowUp> findByInvoiceIdAndStatus(UUID invoiceId, FollowUpStatus status);
+
+    @Modifying
+    @Query("UPDATE FollowUp f SET f.template = null WHERE f.template.id = :templateId")
+    void detachTemplate(@Param("templateId") UUID templateId);
 }
 

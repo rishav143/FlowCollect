@@ -5,7 +5,7 @@ import { listFollowups, dispatchFollowup } from '@/api/followup.api'
 import type { MultiChannelFollowUpRequest, FollowUpResponse } from '@/types/followup.types'
 import type { TimeStatus } from '@/types/invoice.types'
 
-export type FollowupFilter = 'ALL' | 'OVERDUE' | 'DUE_TODAY' | 'UPCOMING'
+export type FollowupFilter = 'ALL' | 'OVERDUE' | 'DUE_TODAY' | 'UPCOMING' | 'LEAST_CONTACTED'
 
 // Returns active invoices (ISSUED | PARTIALLY_PAID) filtered by time status
 export function useFollowupInvoices(filter: FollowupFilter) {
@@ -15,10 +15,10 @@ export function useFollowupInvoices(filter: FollowupFilter) {
     queryKey: ['followup-invoices', orgId, filter],
     queryFn: () => {
       const timeStatus: TimeStatus | undefined =
-        filter === 'OVERDUE'   ? 'OVERDUE'   :
-        filter === 'DUE_TODAY' ? 'DUE_TODAY' :
-        filter === 'UPCOMING'  ? 'NOT_DUE'   :
-        undefined
+        filter === 'OVERDUE'          ? 'OVERDUE'   :
+        filter === 'DUE_TODAY'        ? 'DUE_TODAY' :
+        filter === 'UPCOMING'         ? 'NOT_DUE'   :
+        undefined // ALL and LEAST_CONTACTED fetch everything
 
       return listInvoices(orgId, {
         lifeCycleStatus: undefined,

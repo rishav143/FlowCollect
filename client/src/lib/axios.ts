@@ -30,8 +30,10 @@ api.interceptors.response.use(
       !isAuth &&
       (status === 401 ||
         status === 403 ||
-        // Org not found in this DB — stale token from another environment
-        (status === 404 && url.includes('/organizations/')))
+        // Org root not found in this DB — stale token from another environment.
+        // Only match the org root itself (e.g. GET /organizations/{id}), NOT
+        // sub-resources like templates or invoices — those have their own 404 handling.
+        (status === 404 && /\/organizations\/[^/]+$/.test(url)))
 
     if (forceLogout) {
       useAuthStore.getState().clearAuth()

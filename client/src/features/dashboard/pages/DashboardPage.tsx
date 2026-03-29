@@ -327,25 +327,22 @@ export default function DashboardPage() {
           onFollowup={setFollowupTarget}
         />
 
-        <DueSoonPanel
-          invoices={dueSoonInvoices}
-          currency={currency}
-          customerMap={customerMap}
-          isLoading={isLoading}
-          onFollowup={setFollowupTarget}
-        />
+        <div className="space-y-4">
+          <DueSoonPanel
+            invoices={dueSoonInvoices}
+            currency={currency}
+            customerMap={customerMap}
+            isLoading={isLoading}
+            onFollowup={setFollowupTarget}
+          />
+          <RecentActivity
+            invoices={recentInvoices}
+            currency={currency}
+            customerMap={customerMap}
+            isLoading={isLoading}
+          />
+        </div>
       </div>
-
-      {/* ── Recent Activity ─────────────────────────────────────────────────
-          The 5 most recently touched invoices with status and time ago.
-          Gives a quick pulse on what happened without leaving the dashboard.
-      */}
-      <RecentActivity
-        invoices={recentInvoices}
-        currency={currency}
-        customerMap={customerMap}
-        isLoading={isLoading}
-      />
 
     </div>
 

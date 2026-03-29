@@ -1,60 +1,166 @@
 import { useEffect, useRef } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@/store/auth.store'
-import { listTemplates, createTemplate } from '@/api/template.api'
-import type { CreateTemplateRequest, TemplateChannel } from '@/types/template.types'
+import { listTemplates, createTemplate, updateTemplate } from '@/api/template.api'
+import type { CreateTemplateRequest } from '@/types/template.types'
+
+// Bump this number whenever the default template content changes.
+// The hook will update any existing default templates (matched by name) for orgs
+// that were seeded on an older version.
+const SEED_VERSION = 3
 
 // ---------------------------------------------------------------------------
-// Default template definitions — one per channel.
+// Default template definitions — mode-aware, one per channel.
 // Customers can edit or delete these at any time.
 // ---------------------------------------------------------------------------
 
-const DEFAULT_TEMPLATES: CreateTemplateRequest[] = [
-  {
-    name: 'Default Email Reminder',
-    channel: 'EMAIL',
-    tone: 'POLITE',
-    subject: 'Payment Reminder: Invoice {{invoiceNumber}}',
-    body: `Hi {{customerName}},
+type PaymentMode = 'PAYMENT_LINK' | 'CONFIRMATION_FLOW' | null | undefined
 
-This is a friendly reminder that invoice {{invoiceNumber}} for {{totalAmount}} is due on {{dueDate}}.
+function buildDefaultTemplates(paymentMode: PaymentMode): CreateTemplateRequest[] {
+  const isPaymentLink      = paymentMode === 'PAYMENT_LINK'
+  const isConfirmationFlow = paymentMode === 'CONFIRMATION_FLOW'
 
-Outstanding balance: {{remainingAmount}}
+  // ── EMAIL ─────────────────────────────────────────────────────────────────
+  let emailBody: string
+  let emailSubject: string
 
-Please make your payment at the earliest convenience. If you have any questions, feel free to reach out.
+  if (isPaymentLink) {
+    emailSubject = 'Payment due: Invoice {{invoiceNumber}}'
+    emailBody = `Hi {{customerName}},
 
-Best regards,
-{{organizationName}}`,
-  },
-  {
-    name: 'Default SMS Reminder',
-    channel: 'SMS',
-    tone: 'POLITE',
-    body: `Hi {{customerName}}, this is a reminder that invoice {{invoiceNumber}} for {{remainingAmount}} was due on {{dueDate}}. Please make your payment. - {{organizationName}}`,
-  },
-  {
-    name: 'Default WhatsApp Reminder',
-    channel: 'WHATSAPP',
-    tone: 'POLITE',
-    body: `Hi {{customerName}},
+This is a reminder that invoice {{invoiceNumber}} for {{remainingAmount}} was due on {{dueDate}}.
 
-We'd like to remind you that invoice *{{invoiceNumber}}* for *{{remainingAmount}}* was due on {{dueDate}}.
+You can complete your payment using the link below:
+{{paymentLink}}
 
-Please make your payment at the earliest convenience.
+If you have already paid, please disregard this message. Feel free to reach out if you have any questions.
 
-Thank you,
-{{organizationName}}`,
-  },
-]
+Regards,
+{{organizationName}}`
+  } else if (isConfirmationFlow) {
+    emailSubject = 'Payment reminder: Invoice {{invoiceNumber}}'
+    emailBody = `Hi {{customerName}},
+
+This is a reminder that invoice {{invoiceNumber}} for {{remainingAmount}} was due on {{dueDate}}.
+
+If you have already made the payment, please confirm it using the link below so we can update our records:
+{{confirmationLink}}
+
+If you haven't paid yet, please complete your payment and then use the link above to confirm. This helps us keep our records accurate and avoids any further reminders.
+
+Feel free to reach out if you have any questions or need assistance.
+
+Regards,
+{{organizationName}}`
+  } else {
+    emailSubject = 'Payment reminder: Invoice {{invoiceNumber}}'
+    emailBody = `Hi {{customerName}},
+
+This is a reminder that invoice {{invoiceNumber}} for {{remainingAmount}} was due on {{dueDate}}.
+
+Please arrange your payment at your earliest convenience. If you have already paid, kindly let us know so we can update our records.
+
+Feel free to reach out if you have any questions.
+
+Regards,
+{{organizationName}}`
+  }
+
+  // ── SMS ───────────────────────────────────────────────────────────────────
+  let smsBody: string
+
+  if (isPaymentLink) {
+    smsBody = `Hi {{customerName}}, this is a reminder that invoice {{invoiceNumber}} for {{remainingAmount}} was due on {{dueDate}}. Pay here: {{paymentLink}} - {{organizationName}}`
+  } else if (isConfirmationFlow) {
+    smsBody = `Hi {{customerName}}, invoice {{invoiceNumber}} for {{remainingAmount}} was due on {{dueDate}}. Already paid? Please confirm: {{confirmationLink}} - {{organizationName}}`
+  } else {
+    smsBody = `Hi {{customerName}}, this is a reminder that invoice {{invoiceNumber}} for {{remainingAmount}} was due on {{dueDate}}. Please make your payment at your earliest convenience. - {{organizationName}}`
+  }
+
+  // ── WHATSAPP ──────────────────────────────────────────────────────────────
+  let whatsappBody: string
+
+  if (isPaymentLink) {
+    whatsappBody = `Hi {{customerName}},
+
+This is a reminder that invoice *{{invoiceNumber}}* for *{{remainingAmount}}* was due on {{dueDate}}.
+
+Please complete your payment using the link below:
+{{paymentLink}}
+
+If you have already paid, please ignore this message. Reach out if you need any help.
+
+Regards,
+{{organizationName}}`
+  } else if (isConfirmationFlow) {
+    whatsappBody = `Hi {{customerName}},
+
+This is a reminder that invoice *{{invoiceNumber}}* for *{{remainingAmount}}* was due on {{dueDate}}.
+
+*Already paid?* Please confirm your payment here so we can update our records:
+{{confirmationLink}}
+
+*Haven't paid yet?* Please complete your payment and then confirm using the link above.
+
+Reach out if you have any questions.
+
+Regards,
+{{organizationName}}`
+  } else {
+    whatsappBody = `Hi {{customerName}},
+
+This is a reminder that invoice *{{invoiceNumber}}* for *{{remainingAmount}}* was due on {{dueDate}}.
+
+Please make your payment at your earliest convenience. If you have already paid, do let us know and we will update our records.
+
+Regards,
+{{organizationName}}`
+  }
+
+  return [
+    {
+      name:    'Default Email Reminder',
+      channel: 'EMAIL',
+      tone:    'POLITE',
+      subject: emailSubject,
+      body:    emailBody,
+    },
+    {
+      name:    'Default SMS Reminder',
+      channel: 'SMS',
+      tone:    'POLITE',
+      body:    smsBody,
+    },
+    {
+      name:    'Default WhatsApp Reminder',
+      channel: 'WHATSAPP',
+      tone:    'POLITE',
+      body:    whatsappBody,
+    },
+  ]
+}
+
+// Default template names — used to match and update existing defaults.
+const DEFAULT_NAMES = new Set([
+  'Default Email Reminder',
+  'Default SMS Reminder',
+  'Default WhatsApp Reminder',
+])
+
+function seedVersionKey(orgId: string) {
+  return `pp_tpl_seed_v_${orgId}`
+}
 
 // ---------------------------------------------------------------------------
-// Hook — seeds default templates once if the org has none for a channel.
+// Hook — seeds default templates on first run and re-applies updated content
+// whenever SEED_VERSION is bumped, matching by the well-known default names.
 // Runs only after the org is known; uses a ref so it fires at most once
 // per mount even under StrictMode double-invocation.
 // ---------------------------------------------------------------------------
 
 export function useDefaultTemplates() {
   const orgId       = useAuthStore((s) => s.org?.id ?? '')
+  const paymentMode = useAuthStore((s) => s.org?.paymentCollectionMode as PaymentMode)
   const queryClient = useQueryClient()
   const seeded      = useRef(false)
 
@@ -63,23 +169,57 @@ export function useDefaultTemplates() {
 
     async function seed() {
       try {
-        const page = await listTemplates(orgId, { size: 100 })
-        const existingChannels = new Set<TemplateChannel>(
-          page.content.map((t) => t.channel),
-        )
+        const storedVersion = parseInt(localStorage.getItem(seedVersionKey(orgId)) ?? '0', 10)
+        const needsUpdate   = storedVersion < SEED_VERSION
 
-        const toCreate = DEFAULT_TEMPLATES.filter(
-          (t) => !existingChannels.has(t.channel),
-        )
+        const page     = await listTemplates(orgId, { size: 100 })
+        const defaults = buildDefaultTemplates(paymentMode)
 
-        if (toCreate.length === 0) return
+        // Map channel → existing template for quick lookup
+        const existingByChannel = new Map(page.content.map((t) => [t.channel, t]))
+
+        const toCreate: CreateTemplateRequest[] = []
+        const updatePromises: Promise<unknown>[] = []
+
+        for (const def of defaults) {
+          const existing = existingByChannel.get(def.channel)
+          if (!existing) {
+            toCreate.push(def)
+          } else if (needsUpdate && DEFAULT_NAMES.has(existing.name)) {
+            // Only overwrite templates that still carry a default name —
+            // if the user renamed it, treat it as customised and leave it alone.
+            updatePromises.push(
+              updateTemplate(orgId, existing.id, {
+                subject: def.subject,
+                body:    def.body,
+              }),
+            )
+          }
+        }
 
         const created = await Promise.all(toCreate.map((t) => createTemplate(orgId, t)))
+        await Promise.all(updatePromises)
 
-        // Immediately update the query cache so any open subscribers (e.g. the
-        // dispatch modal) receive the new templates without waiting for a
-        // separate refetch round-trip.
-        const allTemplates = [...page.content, ...created]
+        if (toCreate.length === 0 && updatePromises.length === 0) {
+          localStorage.setItem(seedVersionKey(orgId), String(SEED_VERSION))
+          return
+        }
+
+        // Merge updates back into the page content for the cache
+        const updatedIds = new Set(
+          defaults
+            .map((d) => existingByChannel.get(d.channel))
+            .filter((t) => t && DEFAULT_NAMES.has(t.name))
+            .map((t) => t!.id),
+        )
+        const mergedDefaults = new Map(defaults.map((d) => [d.channel, d]))
+        const updatedExisting = page.content.map((t) =>
+          updatedIds.has(t.id)
+            ? { ...t, ...mergedDefaults.get(t.channel) }
+            : t,
+        )
+        const allTemplates = [...updatedExisting, ...created]
+
         queryClient.setQueryData(
           ['templates', orgId, { size: 100 }],
           {
@@ -90,8 +230,8 @@ export function useDefaultTemplates() {
             size:          200,
           },
         )
-        // Invalidate all other template queries (channel-filtered views, etc.)
         queryClient.invalidateQueries({ queryKey: ['templates', orgId] })
+        localStorage.setItem(seedVersionKey(orgId), String(SEED_VERSION))
       } catch {
         // Silently swallow — seeding is best-effort and non-blocking
       }
@@ -99,5 +239,5 @@ export function useDefaultTemplates() {
 
     seeded.current = true
     seed()
-  }, [orgId, queryClient])
+  }, [orgId, paymentMode, queryClient])
 }

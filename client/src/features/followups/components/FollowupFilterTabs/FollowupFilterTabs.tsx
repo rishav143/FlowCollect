@@ -1,10 +1,11 @@
 import type { FollowupFilter } from '../../hooks/useFollowups'
 
 const TABS: { id: FollowupFilter; label: string }[] = [
-  { id: 'ALL',       label: 'All Active'  },
-  { id: 'OVERDUE',   label: 'Overdue'     },
-  { id: 'DUE_TODAY', label: 'Due Today'   },
-  { id: 'UPCOMING',  label: 'Upcoming'    },
+  { id: 'ALL',              label: 'All Active'      },
+  { id: 'OVERDUE',          label: 'Overdue'         },
+  { id: 'DUE_TODAY',        label: 'Due Today'       },
+  { id: 'UPCOMING',         label: 'Upcoming'        },
+  { id: 'LEAST_CONTACTED',  label: 'Not Contacted' },
 ]
 
 interface Props {

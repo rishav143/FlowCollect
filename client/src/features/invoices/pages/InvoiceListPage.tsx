@@ -19,22 +19,7 @@ import type { CustomerResponse } from '@/types/customer.types'
 // Default date filters — created: last 30 days, due: open
 // ---------------------------------------------------------------------------
 
-function localDateStr(d: Date) {
-  const y  = d.getFullYear()
-  const m  = String(d.getMonth() + 1).padStart(2, '0')
-  const dd = String(d.getDate()).padStart(2, '0')
-  return `${y}-${m}-${dd}`
-}
 
-function initialCreated(): DateRangeValue {
-  const to   = new Date()
-  const from = new Date()
-  from.setDate(from.getDate() - 30)
-  return {
-    from: localDateStr(from),
-    to:   localDateStr(to),
-  }
-}
 
 // ---------------------------------------------------------------------------
 // Pagination
@@ -138,7 +123,7 @@ export default function InvoiceListPage() {
   const [showCreate,   setShowCreate]   = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<InvoiceResponse | null>(null)
   const [view,         setView]         = useViewPreference('invoices', 'list')
-  const [created,      setCreated]      = useState<DateRangeValue>(initialCreated)
+  const [created,      setCreated]      = useState<DateRangeValue>({})
   const [due,          setDue]          = useState<DateRangeValue>({})
 
   useEffect(() => {

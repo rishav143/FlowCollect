@@ -13,4 +13,6 @@ public interface ReminderRuleJpaRepository extends JpaRepository<ReminderRule, U
     List<ReminderRule> findByOrganizationIdAndActiveTrue(UUID organizationId);
 
     boolean existsByNameAndOrganizationId(String name, UUID organizationId);
+
+    boolean existsByTemplateId(UUID templateId);
 }

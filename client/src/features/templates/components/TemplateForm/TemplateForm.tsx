@@ -454,6 +454,14 @@ export default function TemplateForm({ defaultValues, onSubmit, isPending, submi
             ))}
           </div>
         </div>
+
+        {/* Bank / payment info hint */}
+        <div className="mt-3 flex items-start gap-2 px-3 py-2 rounded-lg bg-[#2E7A8E]/8 dark:bg-[#4FC3F7]/8 border border-[#2E7A8E]/20 dark:border-[#4FC3F7]/20">
+          <span className="text-[#2E7A8E] dark:text-[#4FC3F7] text-xs mt-px shrink-0">ℹ</span>
+          <p className="text-xs text-[#2E7A8E] dark:text-[#4FC3F7]">
+            You can include your bank details, UPI ID, or any payment instructions directly in the message body.
+          </p>
+        </div>
       </div>
 
       {/* Submit */}

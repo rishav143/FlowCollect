@@ -14,7 +14,10 @@ import com.flowcollect.domain.organization.Organization;
 import com.flowcollect.domain.template.Template;
 import com.flowcollect.domain.template.TemplateChannel;
 import com.flowcollect.domain.template.TemplateTone;
+import com.flowcollect.exception.http.ConflictException;
 import com.flowcollect.exception.http.ValidationException;
+import com.flowcollect.infrastructure.persistence.invoice.FollowUpJpaRepository;
+import com.flowcollect.infrastructure.persistence.reminder.ReminderRuleJpaRepository;
 import com.flowcollect.infrastructure.persistence.template.TemplateJpaRepository;
 
 import jakarta.persistence.criteria.Predicate;
@@ -25,13 +28,19 @@ public class TemplateService {
 
     private final TemplateJpaRepository templateRepository;
     private final OrganizationService organizationService;
+    private final ReminderRuleJpaRepository reminderRuleRepository;
+    private final FollowUpJpaRepository followUpRepository;
 
     public TemplateService(
         TemplateJpaRepository templateRepository,
-        OrganizationService organizationService
+        OrganizationService organizationService,
+        ReminderRuleJpaRepository reminderRuleRepository,
+        FollowUpJpaRepository followUpRepository
     ) {
         this.templateRepository = templateRepository;
         this.organizationService = organizationService;
+        this.reminderRuleRepository = reminderRuleRepository;
+        this.followUpRepository = followUpRepository;
     }
 
     // Create a new template for an organization.
@@ -156,6 +165,11 @@ public class TemplateService {
     public void deleteTemplateById(UUID organizationId, UUID templateId) {
         organizationService.getById(organizationId);
         TemplateUtil.validateTemplateWithOrganization(templateId, organizationId, templateRepository);
+        if (reminderRuleRepository.existsByTemplateId(templateId)) {
+            throw new ConflictException("Cannot delete this template because it is used by one or more reminder rules. Remove or reassign those rules first.");
+        }
+        // Detach historical follow-ups before deleting (column is nullable, safe to null out)
+        followUpRepository.detachTemplate(templateId);
         templateRepository.deleteById(templateId);
     }
 

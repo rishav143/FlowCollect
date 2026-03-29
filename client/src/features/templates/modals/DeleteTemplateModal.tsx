@@ -9,9 +9,14 @@ interface Props {
 }
 
 export default function DeleteTemplateModal({ template, onClose }: Props) {
-  const { mutate, isPending } = useDeleteTemplate()
+  const { mutate, isPending, isError, error, reset } = useDeleteTemplate()
+
+  const errorMessage =
+    (error as { response?: { data?: { message?: string } } })?.response?.data?.message
+    ?? 'Failed to delete template. It may be in use by a reminder rule.'
 
   function handleDelete() {
+    reset()
     mutate(template.id, { onSuccess: onClose })
   }
 
@@ -46,6 +51,13 @@ export default function DeleteTemplateModal({ template, onClose }: Props) {
                 Any reminder rules using this template will need to be updated.
               </p>
             </div>
+
+            {isError && (
+              <div className="flex items-start gap-2 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700/40 px-3 py-2">
+                <AlertTriangle size={14} className="text-red-500 mt-0.5 shrink-0" />
+                <p className="text-xs text-red-600 dark:text-red-400">{errorMessage}</p>
+              </div>
+            )}
 
             <div className="flex justify-end gap-2">
               <button
