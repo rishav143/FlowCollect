@@ -1,6 +1,10 @@
 package com.flowcollect.application.template;
 
+import java.math.BigDecimal;
+import java.text.NumberFormat;
+import java.util.Currency;
 import java.util.LinkedHashMap;
+import java.util.Locale;
 import java.util.Map;
 
 import org.springframework.stereotype.Service;
@@ -64,27 +68,58 @@ public class TemplateRenderer {
             String paymentLinkUrl,
             String confirmationLinkUrl
     ) {
+        String currencyCode = invoice.getOrganization().getCurrency() != null
+                ? invoice.getOrganization().getCurrency().getCurrencyCode()
+                : "USD";
+
         Map<String, String> values = new LinkedHashMap<>();
-        values.put("customerName", safe(customer.getName()));
-        values.put("companyName", safe(customer.getCompanyName()));
-        values.put("invoiceNumber", safe(invoice.getInvoiceNumber()));
-        values.put("issueDate", safe(invoice.getIssueDate()));
-        values.put("dueDate", safe(invoice.getDueDate()));
-        values.put("totalAmount", safe(invoice.getTotalAmount()));
-        values.put("totalPaid", safe(invoice.getTotalPaid()));
-        values.put("remainingAmount", safe(invoice.getRemainingAmount()));
-        values.put("organizationName", safe(invoice.getOrganization().getName()));
+        values.put("customerName",      safe(customer.getName()));
+        values.put("companyName",       safe(customer.getCompanyName()));
+        values.put("invoiceNumber",     safe(invoice.getInvoiceNumber()));
+        values.put("issueDate",         safe(invoice.getIssueDate()));
+        values.put("dueDate",           safe(invoice.getDueDate()));
+        values.put("totalAmount",       formatMoney(invoice.getTotalAmount(),     currencyCode));
+        values.put("totalPaid",         formatMoney(invoice.getTotalPaid(),       currencyCode));
+        values.put("remainingAmount",   formatMoney(invoice.getRemainingAmount(), currencyCode));
+        values.put("organizationName",  safe(invoice.getOrganization().getName()));
         values.put("organizationEmail", safe(invoice.getOrganization().getEmail()));
-        values.put("currency", invoice.getOrganization().getCurrency() != null
-                ? invoice.getOrganization().getCurrency().getCurrencyCode() : "");
-        values.put("paymentLink", safe(paymentLinkUrl));
-        values.put("confirmationLink", safe(confirmationLinkUrl));
+        values.put("currency",          currencyCode);
+        values.put("paymentLink",       safe(paymentLinkUrl));
+        values.put("confirmationLink",  safe(confirmationLinkUrl));
 
         String rendered = raw == null ? "" : raw;
         for (Map.Entry<String, String> entry : values.entrySet()) {
             rendered = rendered.replace("{{" + entry.getKey() + "}}", entry.getValue());
         }
         return rendered;
+    }
+
+    private String formatMoney(Object value, String currencyCode) {
+        if (value == null) return "";
+        try {
+            BigDecimal amount = new BigDecimal(String.valueOf(value));
+            Currency currency = Currency.getInstance(currencyCode);
+            NumberFormat fmt = NumberFormat.getCurrencyInstance(localeForCurrency(currencyCode));
+            fmt.setCurrency(currency);
+            fmt.setMinimumFractionDigits(0);
+            fmt.setMaximumFractionDigits(0);
+            return fmt.format(amount);
+        } catch (Exception e) {
+            return String.valueOf(value);
+        }
+    }
+
+    private Locale localeForCurrency(String currencyCode) {
+        return switch (currencyCode) {
+            case "INR" -> Locale.of("en", "IN");
+            case "USD" -> Locale.US;
+            case "EUR" -> Locale.GERMANY;
+            case "GBP" -> Locale.UK;
+            case "AUD" -> Locale.of("en", "AU");
+            case "SGD" -> Locale.of("en", "SG");
+            case "AED" -> Locale.of("ar", "AE");
+            default    -> Locale.US;
+        };
     }
 
     private String safe(Object value) {

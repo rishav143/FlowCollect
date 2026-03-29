@@ -61,6 +61,32 @@
   animation: page-in 0.15s ease-out;
 }
 
+/* ─── Template body editor ───────────────────────────────────────────────────
+ * Styles for the contenteditable message body editor in TemplateForm.
+ * .body-var-chip  — highlighted variable tokens ({{customerName}} etc.)
+ * .body-editor    — placeholder via ::before when the div is empty
+ * ─────────────────────────────────────────────────────────────────────────── */
+.body-var-chip {
+  display: inline;
+  background: rgba(46, 122, 142, 0.15);
+  color: #2E7A8E;
+  border-radius: 4px;
+  padding: 1px 5px;
+  cursor: default;
+  user-select: none;
+  font-style: normal;
+}
+.dark .body-var-chip {
+  background: rgba(79, 195, 247, 0.15);
+  color: #4FC3F7;
+}
+.body-editor:empty::before,
+.subject-editor:empty::before {
+  content: attr(data-placeholder);
+  color: var(--c-muted);
+  pointer-events: none;
+}
+
 /* Toast slide-in from right */
 @keyframes toast-in {
   from { opacity: 0; transform: translateX(calc(100% + 1rem)); }

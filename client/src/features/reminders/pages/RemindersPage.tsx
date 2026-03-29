@@ -49,7 +49,8 @@ function DeleteConfirm({
       <div className="relative w-full max-w-sm bg-white dark:bg-[#1B2838] rounded-2xl shadow-xl p-6">
         <h2 className="text-base font-semibold text-[#0D1B2A] dark:text-white mb-2">Delete Rule</h2>
         <p className="text-sm text-c-muted mb-5">
-          Remove this reminder rule? Automated follow-ups using it will stop.
+          {rule.name ? `Remove "${rule.name}"? ` : 'Remove this reminder rule? '}
+          Automated follow-ups using it will stop.
         </p>
         <div className="flex gap-3 justify-end">
           <button
@@ -119,7 +120,7 @@ export default function RemindersPage() {
           </button>
         </div>
 
-        {/* Content */}
+        {/* Rules list */}
         <div className="bg-white dark:bg-[#1B2838] rounded-xl border border-c-border overflow-hidden">
           {isLoading ? (
             <>

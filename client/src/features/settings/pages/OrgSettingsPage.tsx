@@ -136,21 +136,28 @@ export default function OrgSettingsPage() {
 
           <Field label="Payment Collection Mode">
             <div className="flex gap-2">
-              {(['CONFIRMATION_FLOW', 'PAYMENT_LINK'] as const).map((m) => (
-                <button
-                  key={m}
-                  type="button"
-                  onClick={() => setMode(m)}
-                  className={[
-                    'flex-1 py-2.5 text-sm font-medium rounded-lg border transition-colors',
-                    mode === m
-                      ? 'border-[#29B6F6] text-[#29B6F6] bg-[#29B6F6]/5'
-                      : 'border-c-border text-c-muted hover:text-[#0D1B2A] dark:hover:text-white',
-                  ].join(' ')}
-                >
-                  {m === 'CONFIRMATION_FLOW' ? 'Confirmation Flow' : 'Payment Link'}
-                </button>
-              ))}
+              <button
+                type="button"
+                onClick={() => setMode('CONFIRMATION_FLOW')}
+                className={[
+                  'flex-1 py-2.5 text-sm font-medium rounded-lg border transition-colors',
+                  mode === 'CONFIRMATION_FLOW'
+                    ? 'border-[#29B6F6] text-[#29B6F6] bg-[#29B6F6]/5'
+                    : 'border-c-border text-c-muted hover:text-[#0D1B2A] dark:hover:text-white',
+                ].join(' ')}
+              >
+                Confirmation Flow
+              </button>
+              <button
+                type="button"
+                disabled
+                className="flex-1 py-2.5 text-sm font-medium rounded-lg border border-c-border text-c-muted opacity-50 cursor-not-allowed relative"
+              >
+                Payment Link
+                <span className="ml-1.5 text-[10px] font-semibold uppercase tracking-wide text-[#29B6F6]">
+                  Coming Soon
+                </span>
+              </button>
             </div>
             <p className="text-xs text-c-muted mt-1.5">
               {mode === 'CONFIRMATION_FLOW'

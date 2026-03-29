@@ -22,7 +22,7 @@ export interface OrgProfileRequest {
   email?:                 string
   currency?:              string
   timezone?:              string
-  paymentCollectionMode?: 'PAYMENT_LINK' | 'CONFIRMATION_FLOW'
+  paymentCollectionMode?: 'PAYMENT_LINK' | 'CONFIRMATION_FLOW' | 'SIMPLE'
 }
 
 export async function getOrgProfile(orgId: string): Promise<OrgProfileResponse> {
