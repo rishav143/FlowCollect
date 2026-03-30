@@ -36,6 +36,7 @@ For the complete API reference, see [API.md](API.md).
 | PDF | Apache PDFBox 3.0.6 |
 | Payment gateways | Stripe Connect, Razorpay |
 | OAuth | Google, Microsoft |
+| AI | OpenAI Chat Completions API (gpt-4o-mini) |
 | Build | Maven (`mvnw`) |
 
 ---
@@ -54,6 +55,7 @@ server/
 │   │   ├── organization/    # Org management
 │   │   ├── paymentlink/     # Payment gateway link redirect
 │   │   ├── publicapi/       # Customer-facing confirmation endpoints (no auth)
+│   │   ├── ai/              # AI template generation/enhancement, insight endpoints
 │   │   ├── reminderrule/    # Automated reminder rule CRUD
 │   │   ├── template/        # Message template CRUD
 │   │   ├── user/            # User management
@@ -67,6 +69,7 @@ server/
 │   │   ├── oauth/           # OAuthService (Google/Microsoft)
 │   │   ├── organization/    # OrganizationService
 │   │   ├── paymentlink/     # PaymentLinkService, ConfirmationLinkService
+│   │   ├── ai/              # AiTemplateService, AiInsightService
 │   │   ├── reminder/        # ReminderRuleService, ReminderScheduler
 │   │   ├── template/        # TemplateService
 │   │   └── user/            # UserService
@@ -82,6 +85,7 @@ server/
 │   │   └── verification/    # EmailVerificationToken, PasswordResetToken, PhoneOtp
 │   │
 │   ├── infrastructure/      # External integrations and config
+│   │   ├── ai/              # OpenAiClient, OpenAiProperties, request/response DTOs
 │   │   ├── config/          # @ConfigurationProperties classes
 │   │   ├── email/           # Email sender
 │   │   ├── pdf/             # PDF generation
@@ -180,6 +184,10 @@ GOOGLE_OAUTH_CLIENT_SECRET=
 MICROSOFT_OAUTH_CLIENT_ID=
 MICROSOFT_OAUTH_CLIENT_SECRET=
 MICROSOFT_OAUTH_TENANT=common
+
+# OpenAI (AI features) — optional
+OPENAI_ENABLED=false
+OPENAI_API_KEY=
 ```
 
 ### 4. Start the app
@@ -227,6 +235,10 @@ Full reference of every environment variable the app reads:
 | `MICROSOFT_OAUTH_CLIENT_SECRET` | No | _(empty)_ | |
 | `MICROSOFT_OAUTH_TENANT` | No | `common` | Azure AD tenant; `common` allows any Microsoft account |
 | `SCHEDULER_PAYMENT_LINK_EXPIRY_CRON` | No | `0 0 0 * * *` | Cron for payment link expiry job |
+| `OPENAI_ENABLED` | No | `false` | Set `true` to enable AI features |
+| `OPENAI_API_KEY` | No | _(empty)_ | OpenAI secret key (`sk-...`); required when `OPENAI_ENABLED=true` |
+| `OPENAI_MODEL` | No | `gpt-4o-mini` | Override the OpenAI model (e.g. `gpt-4o`) |
+| `OPENAI_MAX_TOKENS` | No | `1024` | Max tokens per AI response |
 
 > **Graceful degradation:** Email, SMS, and gateway features are disabled by default. If a credential is missing, the relevant feature logs a warning and skips silently — the rest of the app works normally. This means you can run fully functional local dev with only the database and JWT secret configured.
 
@@ -480,6 +492,31 @@ Setup:
 3. Register the webhook endpoint `POST /api/v1/webhooks/razorpay` in Razorpay dashboard
 
 Credentials are encrypted with AES-256 before storage using `GATEWAY_ENCRYPTION_KEY`.
+
+---
+
+### OpenAI (AI features)
+
+FlowCollect uses the OpenAI Chat Completions API to power three AI capabilities:
+
+| Feature | Endpoint | What it does |
+|---|---|---|
+| Template generation | `POST .../ai/templates/generate` | Writes a new payment reminder template from scratch given channel and tone |
+| Template enhancement | `POST .../ai/templates/enhance` | Rewrites an existing template to better match a target tone while keeping all `{{placeholders}}` intact |
+| Org overview | `GET .../ai/insights/overview` | Summarises overdue balances, top customers to chase, and cash flow signals |
+| Customer intelligence | `GET .../ai/insights/customers/{id}` | Profiles a customer's payment behavior and recommends next actions |
+| Flexible insights | `POST .../ai/insights/ask` | Answers any natural-language question scoped by optional filters (status, date range, channel, customer) |
+
+**To activate:**
+1. Obtain an OpenAI API key from [platform.openai.com](https://platform.openai.com)
+2. Add to `.env`:
+   ```
+   OPENAI_ENABLED=true
+   OPENAI_API_KEY=sk-...
+   ```
+3. The default model is `gpt-4o-mini` (fast, cost-effective). Override with `OPENAI_MODEL=gpt-4o` for higher quality if needed.
+
+AI endpoints are **read-only** and **opt-in per deployment** — they never create, update, or delete data. If `OPENAI_ENABLED=false` or the key is missing, all AI endpoints return `503 Service Unavailable` gracefully.
 
 ---
 

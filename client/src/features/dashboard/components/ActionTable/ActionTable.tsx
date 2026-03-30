@@ -472,13 +472,14 @@ function ApprovalsSection({
 // Exported component
 // ---------------------------------------------------------------------------
 
+// ApprovalsSection is exported for use in PendingApprovalsPanel
+export { ApprovalsSection }
+
 interface Props {
   overdueInvoices:      InvoiceResponse[]
   overdueTotal:         number
-  pendingConfirmations: PaymentConfirmationResponse[]
   currency:             string
   customerMap:          Record<string, string>
-  isConfirmationFlow:   boolean
   isLoading:            boolean
   onPay?:               (inv: InvoiceResponse) => void
   onFollowup?:          (inv: InvoiceResponse) => void
@@ -487,32 +488,21 @@ interface Props {
 export default function ActionTable({
   overdueInvoices,
   overdueTotal,
-  pendingConfirmations,
   currency,
   customerMap,
-  isConfirmationFlow,
   isLoading,
   onPay,
   onFollowup,
 }: Props) {
   return (
-    <div className="space-y-4">
-      <OverdueSection
-        invoices={overdueInvoices}
-        overdueTotal={overdueTotal}
-        currency={currency}
-        customerMap={customerMap}
-        isLoading={isLoading}
-        onPay={onPay}
-        onFollowup={onFollowup}
-      />
-      {isConfirmationFlow && (
-        <ApprovalsSection
-          confirmations={pendingConfirmations}
-          currency={currency}
-          isLoading={isLoading}
-        />
-      )}
-    </div>
+    <OverdueSection
+      invoices={overdueInvoices}
+      overdueTotal={overdueTotal}
+      currency={currency}
+      customerMap={customerMap}
+      isLoading={isLoading}
+      onPay={onPay}
+      onFollowup={onFollowup}
+    />
   )
 }

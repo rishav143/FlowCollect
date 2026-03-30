@@ -1055,7 +1055,144 @@ Receives `payment_link.paid` events. Marks the associated payment link as paid a
 
 ---
 
-## 14. Diagnostics (Development Only)
+## 14. AI Features
+
+AI endpoints use OpenAI under the hood. They are **disabled by default** — set `OPENAI_ENABLED=true` and `OPENAI_API_KEY` in your environment to activate. All endpoints require **ADMIN or STAFF** role.
+
+If OpenAI is disabled or the API key is missing, all AI endpoints return `503 Service Unavailable`.
+
+> **Not destructive:** AI endpoints never create, update, or delete any data. Generate and enhance endpoints return suggestions for the caller to review — saving is done separately via the standard template CRUD endpoints. Insight endpoints are read-only.
+
+---
+
+### 14.1 AI — Generate Template
+**`POST /api/v1/organizations/{organizationId}/ai/templates/generate`** — ADMIN or STAFF
+
+Generates a brand-new payment reminder template from scratch based on channel and tone. Returns a suggestion — call `POST /templates` separately to save it.
+
+**Request body:**
+| Field | Type | Required | Values |
+|---|---|---|---|
+| `channel` | String | Yes | `EMAIL`, `SMS`, `WHATSAPP` |
+| `tone` | String | Yes | `POLITE`, `NEUTRAL`, `FIRM` |
+
+**Response: `200 OK`**
+| Field | Type | Notes |
+|---|---|---|
+| `subject` | String | Email subject line. `null` for SMS and WHATSAPP |
+| `body` | String | Message body with `{{placeholder}}` variables pre-populated |
+
+**Example:**
+```json
+POST /api/v1/organizations/{orgId}/ai/templates/generate
+{
+  "channel": "EMAIL",
+  "tone": "POLITE"
+}
+
+→ 200 OK
+{
+  "subject": "Friendly reminder: Invoice #INV-042 is due soon",
+  "body": "Hi {{customerName}},\n\nJust a quick reminder that invoice #{{invoiceNumber}} for {{totalAmount}} is due on {{dueDate}}.\n\nPlease pay at your earliest convenience:\n{{paymentLink}}\n\nThank you,\n{{organizationName}}"
+}
+```
+
+---
+
+### 14.2 AI — Enhance Template
+**`POST /api/v1/organizations/{organizationId}/ai/templates/enhance`** — ADMIN or STAFF
+
+Rewrites an existing template body (and subject) to better match a target tone, while preserving all `{{placeholder}}` variables exactly.
+
+**Request body:**
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `channel` | String | Yes | `EMAIL`, `SMS`, `WHATSAPP` |
+| `tone` | String | Yes | `POLITE`, `NEUTRAL`, `FIRM` |
+| `subject` | String | No | Existing subject (EMAIL only); omit for SMS/WHATSAPP |
+| `body` | String | Yes | Existing template body |
+
+**Response: `200 OK`**
+| Field | Type | Notes |
+|---|---|---|
+| `subject` | String | Rewritten subject. `null` for SMS and WHATSAPP |
+| `body` | String | Rewritten body — all original placeholders preserved |
+
+---
+
+### 14.3 AI — Organization Payment Health Overview
+**`GET /api/v1/organizations/{organizationId}/ai/insights/overview`** — ADMIN or STAFF
+
+Analyzes the organization's full invoice portfolio and returns actionable AI-generated insights. Covers: overdue priorities, top customers to chase, recent payment receipts, and cash flow signals.
+
+**Response: `200 OK`**
+| Field | Type | Notes |
+|---|---|---|
+| `insights` | String | Bullet-point list separated by `\n`. Each bullet starts with `- ` |
+
+**Example response:**
+```json
+{
+  "insights": "- 3 invoices are overdue totalling $4,200 — prioritise Acme Corp ($2,500) immediately as it is 45 days past due.\n- Collect $1,800 from two invoices due today before end of day.\n- You collected $6,100 in the last 30 days — strong momentum; follow up with the 3 partially-paid invoices to convert them.\n- Enable automated reminders for customers without automation to reduce manual chasing."
+}
+```
+
+---
+
+### 14.4 AI — Customer Payment Intelligence
+**`GET /api/v1/organizations/{organizationId}/ai/insights/customers/{customerId}`** — ADMIN or STAFF
+
+Analyzes a specific customer's invoice history and returns a payment behavior profile with recommended next actions.
+
+**Response: `200 OK`**
+| Field | Type | Notes |
+|---|---|---|
+| `insights` | String | Bullet-point list separated by `\n` |
+
+---
+
+### 14.5 AI — Ask Anything (Flexible Insight)
+**`POST /api/v1/organizations/{organizationId}/ai/insights/ask`** — ADMIN or STAFF
+
+Ask any payment-related question in natural language with optional data filters. The backend resolves the filters to real invoice and follow-up data, then asks OpenAI the question against that scoped context.
+
+**Request body:**
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `question` | String | Yes | Natural-language question; max 500 chars |
+| `customerId` | UUID | No | Scope data to one customer |
+| `lifeCycleStatus` | String | No | `DRAFT`, `ISSUED`, `PARTIALLY_PAID`, `PAID`, `CANCELLED` |
+| `timeStatus` | String | No | `NOT_DUE`, `DUE_TODAY`, `OVERDUE` |
+| `channel` | String | No | `EMAIL`, `SMS`, `WHATSAPP` — scopes follow-up data |
+| `fromDate` | String | No | `YYYY-MM-DD` — invoice issue date lower bound |
+| `toDate` | String | No | `YYYY-MM-DD` — invoice issue date upper bound |
+
+**Response: `200 OK`**
+| Field | Type | Notes |
+|---|---|---|
+| `insights` | String | Bullet-point list separated by `\n` |
+
+**Example requests:**
+```json
+// Who should I follow up with this week?
+{ "question": "Which customers should I chase this week?" }
+
+// Is SMS working?
+{ "question": "How effective are my SMS reminders?", "channel": "SMS" }
+
+// Q1 collection summary
+{ "question": "How much did I collect in Q1?", "fromDate": "2026-01-01", "toDate": "2026-03-31" }
+
+// Overdue situation
+{ "question": "Summarise my overdue situation", "timeStatus": "OVERDUE" }
+
+// One customer deep-dive
+{ "question": "Is this customer a reliable payer?", "customerId": "uuid-here" }
+```
+
+---
+
+## 15. Diagnostics (Development Only)
 
 > Remove or guard these before production. No JWT required.
 
@@ -1164,5 +1301,10 @@ Receives `payment_link.paid` events. Marks the associated payment link as paid a
 | GET | `/pay/{token}` | None | Payment link redirect |
 | POST | `/api/v1/webhooks/stripe` | None (HMAC) | Stripe webhook |
 | POST | `/api/v1/webhooks/razorpay` | None (HMAC) | Razorpay webhook |
+| POST | `/api/v1/organizations/{orgId}/ai/templates/generate` | ADMIN/STAFF | AI: generate template from scratch |
+| POST | `/api/v1/organizations/{orgId}/ai/templates/enhance` | ADMIN/STAFF | AI: rewrite template to target tone |
+| GET | `/api/v1/organizations/{orgId}/ai/insights/overview` | ADMIN/STAFF | AI: org payment health overview |
+| GET | `/api/v1/organizations/{orgId}/ai/insights/customers/{customerId}` | ADMIN/STAFF | AI: customer payment intelligence |
+| POST | `/api/v1/organizations/{orgId}/ai/insights/ask` | ADMIN/STAFF | AI: ask any question with optional filters |
 | POST | `/api/v1/diagnostics/test-email` | None | Send test email |
 | POST | `/api/v1/diagnostics/test-sms` | None | Send test SMS |

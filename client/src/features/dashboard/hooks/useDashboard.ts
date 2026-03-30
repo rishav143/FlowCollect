@@ -122,6 +122,46 @@ export function useDashboard() {
     customerMap[c.id] = c.name
   }
 
+  // ── Collections trend (last 6 months + 1 forecast month) ──────────────────
+  // Build monthly buckets for the past 6 months using PAID/PARTIALLY_PAID
+  // invoices. The forecast is the weighted average of the last 3 months,
+  // giving more weight to recent months (3x, 2x, 1x) so the prediction
+  // adapts quickly to changing collection velocity.
+
+  const MONTHS_BACK = 6
+  const SHORT_MONTH = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+
+  type TrendPoint = { month: string; collected: number; forecast?: number }
+
+  const trendData: TrendPoint[] = []
+
+  for (let i = MONTHS_BACK - 1; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+    const y = d.getFullYear()
+    const m = d.getMonth()
+    const collected = invoices
+      .filter((inv) => {
+        if (!['PAID', 'PARTIALLY_PAID'].includes(inv.lifeCycleStatus)) return false
+        const upd = new Date(inv.updatedAt)
+        return upd.getFullYear() === y && upd.getMonth() === m
+      })
+      .reduce((s, inv) => s + inv.totalPaid, 0)
+    trendData.push({ month: SHORT_MONTH[m], collected })
+  }
+
+  // Weighted forecast: w3 * last + w2 * prev + w1 * two-ago
+  const last3 = trendData.slice(-3).map((p) => p.collected)
+  const weights = [1, 2, 3]
+  const totalWeight = weights.reduce((a, b) => a + b, 0)
+  const forecast = last3.length > 0
+    ? Math.round(
+        last3.reduce((sum, val, idx) => sum + val * weights[idx], 0) / totalWeight,
+      )
+    : 0
+
+  const nextMonthIdx = (now.getMonth() + 1) % 12
+  trendData.push({ month: SHORT_MONTH[nextMonthIdx], collected: 0, forecast })
+
   return {
     currency,
     isConfirmationFlow,
@@ -139,6 +179,7 @@ export function useDashboard() {
 
     agingBuckets,
     customerMap,
+    collectionsTrend: trendData,
     overdueInvoices:     (overdueQuery.data?.content ?? [])
       .filter(i => i.remainingAmount > 0 && ['ISSUED', 'PARTIALLY_PAID'].includes(i.lifeCycleStatus))
       .slice(0, 3),
