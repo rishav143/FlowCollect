@@ -9,6 +9,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 import com.flowcollect.domain.organization.Organization;
+import com.flowcollect.domain.reminder.RuleMode;
 
 @Entity
 @Table(
@@ -26,12 +27,20 @@ public class Template {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    // Ownership
-
-    @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "organization_id", nullable = false)
+    // Ownership — null for system-defined templates that belong to no specific org
+    @ManyToOne(fetch = FetchType.LAZY, optional = true)
+    @JoinColumn(name = "organization_id", nullable = true)
     private Organization organization;
+
+    // Mode — AUTO templates are used by the recovery engine; MANUAL are user-triggered only
+    @NotNull
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 10)
+    private RuleMode mode = RuleMode.MANUAL;
+
+    // True for product-defined templates seeded by the platform (shown to users but not deletable)
+    @Column(name = "system_defined", nullable = false)
+    private boolean systemDefined = false;
 
     // Identity
     @NotBlank
@@ -160,5 +169,21 @@ public class Template {
 
     public void deactivate() {
         this.active = false;
+    }
+
+    public RuleMode getMode() {
+        return mode;
+    }
+
+    public void setMode(RuleMode mode) {
+        this.mode = mode;
+    }
+
+    public boolean isSystemDefined() {
+        return systemDefined;
+    }
+
+    public void setSystemDefined(boolean systemDefined) {
+        this.systemDefined = systemDefined;
     }
 }

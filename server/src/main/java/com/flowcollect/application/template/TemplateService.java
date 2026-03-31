@@ -11,6 +11,7 @@ import com.flowcollect.api.v1.template.dto.TemplateRequest;
 import com.flowcollect.application.organization.OrganizationService;
 import com.flowcollect.common.PaginationUtils;
 import com.flowcollect.domain.organization.Organization;
+import com.flowcollect.domain.reminder.RuleMode;
 import com.flowcollect.domain.template.Template;
 import com.flowcollect.domain.template.TemplateChannel;
 import com.flowcollect.domain.template.TemplateTone;
@@ -73,6 +74,7 @@ public class TemplateService {
         template.setChannel(request.getChannel());
         template.setBody(request.getBody());
         template.setTone(request.getTone());
+        template.setMode(request.getMode() != null ? request.getMode() : RuleMode.MANUAL);
         if (request.getSubject() != null) {
             template.setSubject(request.getSubject());
         }
@@ -87,9 +89,12 @@ public class TemplateService {
     }
 
     // Get a template by id without organization context (internal use).
+    // System-defined templates have no org — skip org validation for those.
     public Template getTemplateById(UUID templateId) {
         Template template = TemplateUtil.getTemplateOrThrow(templateId, templateRepository);
-        organizationService.getById(template.getOrganization().getId());
+        if (template.getOrganization() != null) {
+            organizationService.getById(template.getOrganization().getId());
+        }
         return template;
     }
 
@@ -105,7 +110,10 @@ public class TemplateService {
         PaginationUtils.validatePageable(pageable);
 
         Specification<Template> spec = (root, query, cb) -> {
-            Predicate p = cb.equal(root.get("organization").get("id"), organizationId);
+            // Include org-owned templates OR system-defined templates (visible to all orgs)
+            Predicate orgOwned = cb.equal(root.get("organization").get("id"), organizationId);
+            Predicate systemDefined = cb.isTrue(root.get("systemDefined"));
+            Predicate p = cb.or(orgOwned, systemDefined);
             if (name != null && !name.isBlank()) {
                 p = cb.and(p, cb.like(cb.lower(root.get("name")), "%" + name.toLowerCase() + "%"));
             }
@@ -156,6 +164,9 @@ public class TemplateService {
             }
             template.setBody(request.getBody());
         }
+        if (request.getMode() != null) {
+            template.setMode(request.getMode());
+        }
 
         return templateRepository.save(template);
     }
@@ -164,13 +175,13 @@ public class TemplateService {
     @Transactional
     public void deleteTemplateById(UUID organizationId, UUID templateId) {
         organizationService.getById(organizationId);
-        TemplateUtil.validateTemplateWithOrganization(templateId, organizationId, templateRepository);
-        if (reminderRuleRepository.existsByTemplateId(templateId)) {
+        Template template = TemplateUtil.validateTemplateWithOrganization(templateId, organizationId, templateRepository);
+        if (reminderRuleRepository.existsByTemplateId(template.getId())) {
             throw new ConflictException("Cannot delete this template because it is used by one or more reminder rules. Remove or reassign those rules first.");
         }
         // Detach historical follow-ups before deleting (column is nullable, safe to null out)
-        followUpRepository.detachTemplate(templateId);
-        templateRepository.deleteById(templateId);
+        followUpRepository.detachTemplate(template.getId());
+        templateRepository.deleteById(template.getId());
     }
 
     // Activate a template.

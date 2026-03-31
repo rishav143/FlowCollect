@@ -3,6 +3,7 @@ package com.flowcollect.api.v1.template.dto;
 import java.time.Instant;
 import java.util.UUID;
 
+import com.flowcollect.domain.reminder.RuleMode;
 import com.flowcollect.domain.template.TemplateChannel;
 import com.flowcollect.domain.template.TemplateTone;
 
@@ -13,10 +14,12 @@ public class TemplateResponse {
     private String subject;
     private String body;
     private TemplateTone tone;
+    private RuleMode mode;
+    private boolean systemDefined;
     private boolean active;
     private Instant createdAt;
     private Instant updatedAt;
-    
+
     // Getters & Setters
 
     public UUID getId() {
@@ -90,4 +93,10 @@ public class TemplateResponse {
     public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
     }
+
+    public RuleMode getMode() { return mode; }
+    public void setMode(RuleMode mode) { this.mode = mode; }
+
+    public boolean isSystemDefined() { return systemDefined; }
+    public void setSystemDefined(boolean systemDefined) { this.systemDefined = systemDefined; }
 }

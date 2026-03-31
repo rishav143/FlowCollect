@@ -16,6 +16,8 @@ public class FollowUpMapper {
         followUpResponse.setScheduledForDate(f.getScheduledForDate());
         followUpResponse.setAttachPdf(f.isAttachPdf());
         followUpResponse.setSentAt(f.getSentAt());
+        followUpResponse.setResendEmailId(f.getResendEmailId());
+        followUpResponse.setOpenedAt(f.getOpenedAt());
         followUpResponse.setCreatedAt(f.getCreatedAt());
         followUpResponse.setUpdatedAt(f.getUpdatedAt());
 

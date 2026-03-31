@@ -29,6 +29,10 @@ public interface FollowUpJpaRepository extends JpaRepository<FollowUp, UUID>, Jp
 
     List<FollowUp> findByInvoiceIdAndStatus(UUID invoiceId, FollowUpStatus status);
 
+    List<FollowUp> findByStatusAndInvoiceOrganizationId(FollowUpStatus status, UUID organizationId);
+
+    java.util.Optional<FollowUp> findByResendEmailId(String resendEmailId);
+
     @Modifying
     @Query("UPDATE FollowUp f SET f.template = null WHERE f.template.id = :templateId")
     void detachTemplate(@Param("templateId") UUID templateId);

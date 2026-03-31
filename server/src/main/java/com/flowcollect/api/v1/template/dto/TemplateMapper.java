@@ -11,6 +11,8 @@ public class TemplateMapper {
         response.setSubject(template.getSubject());
         response.setBody(template.getBody());
         response.setTone(template.getTone());
+        response.setMode(template.getMode());
+        response.setSystemDefined(template.isSystemDefined());
         response.setActive(template.isActive());
         response.setCreatedAt(template.getCreatedAt());
         response.setUpdatedAt(template.getUpdatedAt());

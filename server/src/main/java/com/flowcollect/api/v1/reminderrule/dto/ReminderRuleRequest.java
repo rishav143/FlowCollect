@@ -6,6 +6,7 @@ import java.util.UUID;
 
 import com.flowcollect.domain.reminder.ReminderChannel;
 import com.flowcollect.domain.reminder.ReminderTriggerType;
+import com.flowcollect.domain.reminder.RuleMode;
 
 public class ReminderRuleRequest {
     private String name;
@@ -26,6 +27,9 @@ public class ReminderRuleRequest {
     // Null means "not provided". Empty list clears overrides (all occurrences use templateId).
     // When non-null, size must equal maxOccurrences.
     private List<UUID> occurrenceTemplateIds;
+
+    // Null means "not provided" (keep existing value on update, default MANUAL on create)
+    private RuleMode mode;
 
     public String getName() {
         return name;
@@ -113,5 +117,13 @@ public class ReminderRuleRequest {
 
     public void setOccurrenceTemplateIds(List<UUID> occurrenceTemplateIds) {
         this.occurrenceTemplateIds = occurrenceTemplateIds;
+    }
+
+    public RuleMode getMode() {
+        return mode;
+    }
+
+    public void setMode(RuleMode mode) {
+        this.mode = mode;
     }
 }

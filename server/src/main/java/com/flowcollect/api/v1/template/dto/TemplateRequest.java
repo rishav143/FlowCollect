@@ -1,5 +1,6 @@
 package com.flowcollect.api.v1.template.dto;
 
+import com.flowcollect.domain.reminder.RuleMode;
 import com.flowcollect.domain.template.TemplateChannel;
 import com.flowcollect.domain.template.TemplateTone;
 
@@ -8,11 +9,14 @@ public class TemplateRequest {
     private String name;
 
     private TemplateChannel channel;
-    
+
     private String subject;
 
     private String body;
     private TemplateTone tone;
+
+    // Null means "not provided" (keep existing on update, default MANUAL on create)
+    private RuleMode mode;
     public String getName() {
         return name;
     }
@@ -53,4 +57,11 @@ public class TemplateRequest {
         this.tone = tone;
     }
 
+    public RuleMode getMode() {
+        return mode;
+    }
+
+    public void setMode(RuleMode mode) {
+        this.mode = mode;
+    }
 }

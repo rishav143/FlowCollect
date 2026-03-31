@@ -4,11 +4,10 @@ import { useDashboard } from '../hooks/useDashboard'
 import KpiStrip              from '../components/KpiStrip/KpiStrip'
 import ActionTable           from '../components/ActionTable/ActionTable'
 import CollectionsTrendChart from '../components/CollectionsTrendChart/CollectionsTrendChart'
-import PendingApprovalsPanel from '../components/PendingApprovalsPanel/PendingApprovalsPanel'
 import AiInsightBanner      from '../components/AiInsightBanner/AiInsightBanner'
-import RecordPaymentModal    from '@/features/invoices/modals/RecordPaymentModal'
+
 import DispatchModal         from '@/features/followups/components/DispatchModal/DispatchModal'
-import type { InvoiceResponse } from '@/types/invoice.types'
+import type { NeedsAttentionItem } from '@/api/dashboard.api'
 import { formatCurrency, formatDate } from '@/lib/format'
 
 // ---------------------------------------------------------------------------
@@ -127,8 +126,7 @@ function AgingBuckets({
 export default function DashboardPage() {
   const userName = useAuthStore((s) => s.user?.name?.split(' ')[0] ?? 'there')
 
-  const [payTarget,      setPayTarget]      = useState<InvoiceResponse | null>(null)
-  const [followupTarget, setFollowupTarget] = useState<InvoiceResponse | null>(null)
+  const [followupTarget, setFollowupTarget] = useState<NeedsAttentionItem | null>(null)
 
   const {
     currency,
@@ -136,10 +134,8 @@ export default function DashboardPage() {
     isLoading,
     kpis,
     agingBuckets,
-    customerMap,
     collectionsTrend,
-    overdueInvoices,
-    pendingConfirmations,
+    needsAttention,
   } = useDashboard()
 
   return (
@@ -172,8 +168,20 @@ export default function DashboardPage() {
         isLoading={isLoading}
       />
 
-      {/* ── AI Insights ─────────────────────────────────────────────────────── */}
-      <AiInsightBanner />
+      {/* ── Needs Attention + AI Insights ───────────────────────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 items-start">
+        <div className="lg:col-span-3">
+          <ActionTable
+            invoices={needsAttention}
+            currency={currency}
+            isLoading={isLoading}
+            onFollowup={setFollowupTarget}
+          />
+        </div>
+        <div className="lg:col-span-2">
+          <AiInsightBanner />
+        </div>
+      </div>
 
       {/* ── AR Aging ────────────────────────────────────────────────────────── */}
       <AgingBuckets
@@ -182,54 +190,19 @@ export default function DashboardPage() {
         isLoading={isLoading}
       />
 
-      {/* ── Main panels ─────────────────────────────────────────────────────────
-          Left  — Overdue invoices (Needs Attention) + Collections Trend chart
-          Right — Pending Approvals (confirmation-flow orgs only)
-      */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
-
-        {/* Left column */}
-        <div className="space-y-4">
-          <ActionTable
-            overdueInvoices={overdueInvoices}
-            overdueTotal={kpis.overdueCount}
-            currency={currency}
-            customerMap={customerMap}
-            isLoading={isLoading}
-            onPay={setPayTarget}
-            onFollowup={setFollowupTarget}
-          />
-          <CollectionsTrendChart
-            data={collectionsTrend}
-            currency={currency}
-            isLoading={isLoading}
-          />
-        </div>
-
-        {/* Right column — Pending Approvals */}
-        <PendingApprovalsPanel
-          confirmations={pendingConfirmations}
-          currency={currency}
-          isConfirmationFlow={isConfirmationFlow}
-          isLoading={isLoading}
-        />
-
-      </div>
+      {/* ── Collections Trend ───────────────────────────────────────────────── */}
+      <CollectionsTrendChart
+        data={collectionsTrend}
+        currency={currency}
+        isLoading={isLoading}
+      />
 
     </div>
 
     {/* ── Quick-action modals ──────────────────────────────────────────────── */}
-    {payTarget && (
-      <RecordPaymentModal
-        invoiceId={payTarget.id}
-        remainingAmount={payTarget.remainingAmount}
-        currency={currency}
-        onClose={() => setPayTarget(null)}
-      />
-    )}
     {followupTarget && (
       <DispatchModal
-        invoice={followupTarget}
+        invoice={{ id: followupTarget.invoiceId, invoiceNumber: followupTarget.invoiceNumber, customerId: followupTarget.customerId } as any}
         onClose={() => setFollowupTarget(null)}
       />
     )}

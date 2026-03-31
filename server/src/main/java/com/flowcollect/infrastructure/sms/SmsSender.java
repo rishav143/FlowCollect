@@ -30,7 +30,7 @@ public class SmsSender implements NotificationSender {
     }
 
     @Override
-    public void send(Customer customer, String subject, String body) {
+    public String send(Customer customer, String subject, String body) {
         ensureEnabled();
 
         String recipient = requireConfigured(customer.getPhone(), "customer phone");
@@ -51,6 +51,7 @@ public class SmsSender implements NotificationSender {
         } catch (Exception ex) {
             throw new InternalException("Failed to send SMS reminder: " + ex.getMessage());
         }
+        return null;
     }
 
     private void ensureEnabled() {

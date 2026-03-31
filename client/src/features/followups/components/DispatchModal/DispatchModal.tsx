@@ -79,8 +79,8 @@ function ChannelTemplateSelect({
 // ---------------------------------------------------------------------------
 
 interface Props {
-  invoice: InvoiceResponse
-  onClose: () => void
+  invoice:  InvoiceResponse
+  onClose:  () => void
 }
 
 export default function DispatchModal({ invoice, onClose }: Props) {

@@ -7,6 +7,7 @@ import java.util.UUID;
 
 import com.flowcollect.domain.reminder.ReminderChannel;
 import com.flowcollect.domain.reminder.ReminderTriggerType;
+import com.flowcollect.domain.reminder.RuleMode;
 
 public class ReminderRuleResponse {
     private UUID id;
@@ -22,6 +23,8 @@ public class ReminderRuleResponse {
     private int cycleIntervalDays;
     private List<UUID> occurrenceTemplateIds;
     private LocalDate startDate;
+    private RuleMode mode;
+    private boolean systemDefined;
     private Instant createdAt;
     private Instant updatedAt;
 
@@ -69,4 +72,10 @@ public class ReminderRuleResponse {
 
     public Instant getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
+
+    public RuleMode getMode() { return mode; }
+    public void setMode(RuleMode mode) { this.mode = mode; }
+
+    public boolean isSystemDefined() { return systemDefined; }
+    public void setSystemDefined(boolean systemDefined) { this.systemDefined = systemDefined; }
 }

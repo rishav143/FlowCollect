@@ -20,6 +20,8 @@ public class ReminderRuleMapper {
         response.setCycleIntervalDays(rule.getCycleIntervalDays());
         response.setOccurrenceTemplateIds(rule.getOccurrenceTemplateIds());
         response.setStartDate(rule.getStartDate());
+        response.setMode(rule.getMode());
+        response.setSystemDefined(rule.isSystemDefined());
         response.setCreatedAt(rule.getCreatedAt());
         response.setUpdatedAt(rule.getUpdatedAt());
         return response;

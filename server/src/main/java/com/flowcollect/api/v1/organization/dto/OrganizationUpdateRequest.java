@@ -30,6 +30,9 @@ public class OrganizationUpdateRequest {
     /** PAYMENT_LINK or CONFIRMATION_FLOW. Null means no change. */
     private String paymentCollectionMode;
 
+    /** Null means no change. */
+    private Boolean autoRecoveryEnabled;
+
     /* ======================
        Getters & Setters
        ====================== */
@@ -97,4 +100,7 @@ public class OrganizationUpdateRequest {
     public void setPaymentCollectionMode(String paymentCollectionMode) {
         this.paymentCollectionMode = paymentCollectionMode;
     }
+
+    public Boolean getAutoRecoveryEnabled() { return autoRecoveryEnabled; }
+    public void setAutoRecoveryEnabled(Boolean autoRecoveryEnabled) { this.autoRecoveryEnabled = autoRecoveryEnabled; }
 }

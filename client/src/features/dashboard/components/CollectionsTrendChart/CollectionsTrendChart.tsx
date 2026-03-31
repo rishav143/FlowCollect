@@ -48,7 +48,7 @@ function TopLabel(props: {
       fontSize={10}
       fontWeight={600}
       fill="currentColor"
-      className="text-[#0D1B2A] dark:text-white"
+      className="text-green-600 dark:text-green-400"
     >
       {compactAmount(value, currency)}
     </text>
@@ -86,7 +86,7 @@ interface Props {
 export default function CollectionsTrendChart({ data, currency, isLoading }: Props) {
   const isDark = useUIStore((s) => s.theme === 'dark')
 
-  const barColor  = isDark ? '#29B6F6' : '#29B6F6'
+  const barColor  = isDark ? '#4ade80' : '#22c55e'
   const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'
   const axisColor = isDark ? 'rgba(255,255,255,0.35)' : 'rgba(13,27,42,0.4)'
 
@@ -105,7 +105,7 @@ export default function CollectionsTrendChart({ data, currency, isLoading }: Pro
         {/* Legend */}
         <div className="flex items-center gap-3 text-xs text-c-muted">
           <span className="flex items-center gap-1">
-            <span className="inline-block w-3 h-2.5 rounded-sm bg-[#29B6F6]" />
+            <span className="inline-block w-3 h-2.5 rounded-sm bg-green-500 dark:bg-green-400" />
             Collected
           </span>
           <span className="flex items-center gap-1">

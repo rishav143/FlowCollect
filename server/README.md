@@ -309,6 +309,21 @@ Controls how the org collects payment:
 | `PAYMENT_LINK` | Follow-ups include a gateway checkout link. Customer pays directly online. Payment recorded automatically via webhook. |
 | `CONFIRMATION_FLOW` | Follow-ups include a confirmation link. Customer self-reports payment. Business user reviews and approves or rejects the claim. |
 
+### Recover — Smart Automation Engine
+
+The Recover feature automates debt recovery using product-defined (`systemDefined=true`) reminder rules and templates.
+
+**`RuleMode` enum** — applied to both `ReminderRule` and `Template`:
+
+| Mode | Behaviour |
+|---|---|
+| `AUTO` | Processed by the Recover engine when `autoRecoveryEnabled` is `true` on the org |
+| `MANUAL` | Only executed via explicit user action (manual follow-up dispatch) |
+
+**`autoRecoveryEnabled`** — org-level toggle (default `false`). Set via `PATCH /organizations/{orgId}` with `{ "autoRecoveryEnabled": true }`. When `true`, the engine runs all active `AUTO`-mode reminder rules for that org.
+
+**System-defined rules and templates** are seeded by the platform, visible to users, and fully editable. They have no owning organization (`organization_id = NULL` in the DB).
+
 ---
 
 ## Feature Flows
@@ -351,6 +366,7 @@ POST /organizations/{orgId}/reminder-rules
     "triggerType": "BEFORE_DUE_DATE",
     "channel": "EMAIL",
     "templateId": "...",
+    "mode": "MANUAL",    // or "AUTO" for the Recover engine
     "active": true
   }
 ```
@@ -360,6 +376,13 @@ The scheduler runs every 15 minutes. For every active rule, it checks all `ISSUE
 Invoices whose customer has `automationEnabled = false` are silently skipped. Use `PUT /customers/{id}/automation/disable` to opt a customer out of all automated reminders.
 
 Recurring rules: set `maxOccurrences` and `cycleIntervalDays` to fire the rule multiple times per invoice (e.g., every 3 days after due, up to 5 times).
+
+**Enabling Recover (AUTO mode):**
+```
+PATCH /organizations/{orgId}
+  body: { "autoRecoveryEnabled": true }
+```
+Once enabled, the engine automatically processes all active `AUTO`-mode rules for this org. System-defined AUTO rules are provided by the platform and appear at the top of the rules list.
 
 ---
 
@@ -431,7 +454,7 @@ POST /auth/reset-password    body: { "token": "...", "newPassword": "..." }
 | Job | Schedule | What it does |
 |---|---|---|
 | Invoice status sync | Every hour | Marks `ISSUED` invoices as `OVERDUE` when past their due date |
-| Automated reminder engine | Every 15 minutes | Fires follow-ups for invoices matching active reminder rules; skips invoices whose customer has `automationEnabled = false` |
+| Automated reminder engine | Every 15 minutes | Fires follow-ups for invoices matching active `MANUAL` and `AUTO` reminder rules; skips invoices whose customer has `automationEnabled = false`; `AUTO` rules only run for orgs with `autoRecoveryEnabled = true` |
 | Payment link expiry | Daily at midnight | Marks `ACTIVE`/`PARTIALLY_PAID` payment links as `EXPIRED` |
 
 Schedulers can be disabled for testing: set `scheduler.enabled=false` in application.properties.

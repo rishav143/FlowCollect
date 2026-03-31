@@ -37,32 +37,33 @@ public class EmailSender implements NotificationSender {
     }
 
     @Override
-    public void send(Customer customer, String subject, String body) {
-        send(customer, subject, body, false, null);
+    public String send(Customer customer, String subject, String body) {
+        return send(customer, subject, body, false, null);
     }
 
     @Override
-    public void send(Customer customer, String subject, String body, boolean attachPdf, Invoice invoice) {
+    public String send(Customer customer, String subject, String body, boolean attachPdf, Invoice invoice) {
         if (!emailClient.isConfigured()) {
             throw new InternalException("Email delivery is not configured. Set RESEND_API_KEY to enable it.");
         }
 
-        String recipient  = requireConfigured(customer.getEmail(), "customer email");
-        String fromAddress = requireConfigured(properties.getFromAddress(), "notification.email.from-address");
+        String recipient     = requireConfigured(customer.getEmail(), "customer email");
+        String fromAddress   = requireConfigured(properties.getFromAddress(), "notification.email.from-address");
         String fromFormatted = properties.getFromName() + " <" + fromAddress + ">";
-        String emailSubject = subject == null || subject.isBlank() ? properties.getFromName() + " reminder" : subject;
-        String emailBody    = body == null ? "" : body;
-        String html         = toHtml(emailBody);
+        String emailSubject  = subject == null || subject.isBlank() ? properties.getFromName() + " reminder" : subject;
+        String html          = toHtml(body == null ? "" : body);
 
         try {
             if (attachPdf && invoice != null) {
                 byte[] pdfBytes = pdfGenerator.generate(invoice);
-                emailClient.send(fromFormatted, recipient, emailSubject, html,
+                String emailId = emailClient.send(fromFormatted, recipient, emailSubject, html,
                         pdfGenerator.buildFileName(invoice), pdfBytes);
                 log.info("Sent EMAIL reminder with PDF to {} subject '{}'", recipient, emailSubject);
+                return emailId;
             } else {
-                emailClient.send(fromFormatted, recipient, emailSubject, html);
+                String emailId = emailClient.send(fromFormatted, recipient, emailSubject, html);
                 log.info("Sent EMAIL reminder to {} subject '{}'", recipient, emailSubject);
+                return emailId;
             }
         } catch (Exception ex) {
             throw new InternalException("Failed to send email reminder: " + ex.getMessage());

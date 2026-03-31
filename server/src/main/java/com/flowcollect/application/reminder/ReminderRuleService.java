@@ -17,6 +17,7 @@ import com.flowcollect.api.v1.reminderrule.dto.ReminderRuleRequest;
 import com.flowcollect.application.organization.OrganizationService;
 import com.flowcollect.domain.organization.Organization;
 import com.flowcollect.domain.reminder.ReminderRule;
+import com.flowcollect.domain.reminder.RuleMode;
 import com.flowcollect.exception.http.ValidationException;
 import com.flowcollect.infrastructure.persistence.reminder.ReminderRuleJpaRepository;
 
@@ -115,6 +116,7 @@ public class ReminderRuleService {
         if (request.getStartDate() != null) {
             rule.setStartDate(request.getStartDate());
         }
+        rule.setMode(request.getMode() != null ? request.getMode() : RuleMode.MANUAL);
         if (Boolean.TRUE.equals(request.isActive())) {
             rule.activate();
         }
@@ -135,7 +137,10 @@ public class ReminderRuleService {
         organizationService.getById(organizationId);
 
         Specification<ReminderRule> spec = (root, query, cb) -> {
-            Predicate p = cb.equal(root.get("organization").get("id"), organizationId);
+            // Include org-owned rules OR system-defined rules (visible to all orgs)
+            Predicate orgOwned = cb.equal(root.get("organization").get("id"), organizationId);
+            Predicate systemDefined = cb.isTrue(root.get("systemDefined"));
+            Predicate p = cb.or(orgOwned, systemDefined);
             if (name != null && !name.isBlank()) {
                 p = cb.and(p, cb.like(cb.lower(root.get("name")), "%" + name.toLowerCase() + "%"));
             }
@@ -211,6 +216,9 @@ public class ReminderRuleService {
             }
         }
 
+        if (request.getMode() != null) {
+            rule.setMode(request.getMode());
+        }
         if (request.isActive() != null) {
             if (Boolean.TRUE.equals(request.isActive())) {
                 rule.activate();
@@ -270,5 +278,10 @@ public class ReminderRuleService {
         );
         rule.deactivate();
         return reminderRuleRepository.save(rule);
+    }
+
+    // Returns all active system-defined AUTO rules for the recovery engine
+    public List<ReminderRule> getActiveSystemRules() {
+        return reminderRuleRepository.findBySystemDefinedTrueAndActiveTrueAndMode(RuleMode.AUTO);
     }
 }

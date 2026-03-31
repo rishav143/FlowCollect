@@ -85,6 +85,7 @@ export function useDispatchFollowup(invoiceId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['followups', orgId, invoiceId] })
       queryClient.invalidateQueries({ queryKey: ['followup-invoices', orgId] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats', orgId] })
     },
   })
 }

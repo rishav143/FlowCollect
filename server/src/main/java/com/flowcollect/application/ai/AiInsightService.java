@@ -23,8 +23,8 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
+import java.util.Currency;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -48,7 +48,9 @@ public class AiInsightService {
             You are a financial advisor for a small business using FlowCollect to manage invoices and collect payments.
             You receive structured payment data and provide concise, specific, and actionable advice.
             Always respond with valid JSON only — no markdown, no code fences.
-            The "insights" field must contain plain text with bullet points using "- " prefix, separated by newlines.
+            The "insights" field must contain exactly 3 bullet points using "- " prefix, separated by newlines.
+            Each bullet must be a single short sentence (under 20 words).
+            Use **bold** for key amounts, customer names, and action words to aid readability.
             """;
 
     private final InvoiceJpaRepository invoiceRepository;
@@ -84,7 +86,7 @@ public class AiInsightService {
      * @return AI-generated answer as a bullet-point string
      */
     public String ask(UUID organizationId, AskInsightRequest request) {
-        organizationService.getById(organizationId);
+        var org = organizationService.getById(organizationId);
 
         // --- Resolve invoices with applied filters ---
         List<Invoice> invoices = fetchFilteredInvoices(organizationId, request);
@@ -93,7 +95,7 @@ public class AiInsightService {
         List<FollowUp> followUps = fetchFilteredFollowUps(organizationId, request.getChannel());
 
         // --- Build scoped data summary ---
-        String dataSummary = buildScopedDataSummary(invoices, followUps, request);
+        String dataSummary = buildScopedDataSummary(invoices, followUps, request, org.getCurrency());
 
         // --- Ask AI the question in context ---
         String userPrompt = """
@@ -103,7 +105,9 @@ public class AiInsightService {
 
                 Question from the business owner: %s
 
-                Answer with 3-6 specific, actionable bullet points based only on the data above.
+                Answer with exactly 3 specific, actionable bullet points based only on the data above.
+                Each bullet must be a single short sentence (under 20 words).
+                Use **bold** for key amounts, customer names, and action words.
                 Each bullet on its own line starting with "- ".
                 If the data is insufficient to answer confidently, say so in one bullet.
 
@@ -122,12 +126,12 @@ public class AiInsightService {
      * @return AI-generated actionable insights as a bullet-point string
      */
     public String generateOverviewInsights(UUID organizationId) {
-        organizationService.getById(organizationId);
+        var org = organizationService.getById(organizationId);
 
         List<Invoice> invoices = fetchActiveInvoices(organizationId);
 
         OrgStats stats = computeOrgStats(invoices);
-        String prompt = buildOverviewPrompt(stats);
+        String prompt = buildOverviewPrompt(stats, org.getCurrency());
         String rawJson = openAiClient.chat(INSIGHT_SYSTEM_PROMPT, prompt);
         return parseInsights(rawJson);
     }
@@ -140,12 +144,13 @@ public class AiInsightService {
      * @return AI-generated customer intelligence as a bullet-point string
      */
     public String generateCustomerInsights(UUID organizationId, UUID customerId) {
+        var org = organizationService.getById(organizationId);
         Customer customer = customerService.getCustomerById(organizationId, customerId);
 
         List<Invoice> invoices = fetchCustomerInvoices(organizationId, customerId);
 
         CustomerStats stats = computeCustomerStats(invoices, customer);
-        String prompt = buildCustomerPrompt(stats, customer);
+        String prompt = buildCustomerPrompt(stats, customer, org.getCurrency());
         String rawJson = openAiClient.chat(INSIGHT_SYSTEM_PROMPT, prompt);
         return parseInsights(rawJson);
     }
@@ -190,7 +195,7 @@ public class AiInsightService {
         return followUpRepository.findAll(spec);
     }
 
-    private String buildScopedDataSummary(List<Invoice> invoices, List<FollowUp> followUps, AskInsightRequest request) {
+    private String buildScopedDataSummary(List<Invoice> invoices, List<FollowUp> followUps, AskInsightRequest request, Currency currency) {
         LocalDate today = LocalDate.now();
         StringBuilder sb = new StringBuilder();
 
@@ -220,9 +225,9 @@ public class AiInsightService {
                 .filter(i -> i.getLifeCycleStatus() == LifeCycleStatus.ISSUED || i.getLifeCycleStatus() == LifeCycleStatus.PARTIALLY_PAID)
                 .map(Invoice::getRemainingAmount).toList());
 
-        sb.append("Total billed: ").append(formatAmount(totalBilled)).append("\n");
-        sb.append("Total collected: ").append(formatAmount(totalPaid)).append("\n");
-        sb.append("Total outstanding: ").append(formatAmount(totalOutstanding)).append("\n");
+        sb.append("Total billed: ").append(formatAmount(totalBilled, currency)).append("\n");
+        sb.append("Total collected: ").append(formatAmount(totalPaid, currency)).append("\n");
+        sb.append("Total outstanding: ").append(formatAmount(totalOutstanding, currency)).append("\n");
 
         // Overdue detail
         List<Invoice> overdue = invoices.stream()
@@ -248,7 +253,7 @@ public class AiInsightService {
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (a, b) -> a, LinkedHashMap::new));
         if (!topCustomers.isEmpty()) {
             sb.append("Top customers by outstanding:\n");
-            topCustomers.forEach((name, amount) -> sb.append("- ").append(name).append(": ").append(formatAmount(amount)).append("\n"));
+            topCustomers.forEach((name, amount) -> sb.append("- ").append(name).append(": ").append(formatAmount(amount, currency)).append("\n"));
         }
 
         // Follow-up summary
@@ -405,31 +410,33 @@ public class AiInsightService {
 
     // --- Prompt builders ---
 
-    private String buildOverviewPrompt(OrgStats s) {
+    private String buildOverviewPrompt(OrgStats s, Currency currency) {
         StringBuilder sb = new StringBuilder();
         sb.append("Organization Payment Health Data:\n\n");
 
         sb.append("Outstanding Invoices:\n");
-        sb.append("- Overdue: ").append(s.overdueCount).append(" invoices, total outstanding: ").append(formatAmount(s.overdueAmount));
+        sb.append("- Overdue: ").append(s.overdueCount).append(" invoices, total outstanding: ").append(formatAmount(s.overdueAmount, currency));
         if (s.maxDaysOverdue > 0) sb.append(" (longest overdue: ").append(s.maxDaysOverdue).append(" days)");
         sb.append("\n");
-        sb.append("- Due today: ").append(s.dueTodayCount).append(" invoices, total: ").append(formatAmount(s.dueTodayAmount)).append("\n");
-        sb.append("- Not yet due: ").append(s.notDueCount).append(" invoices, total: ").append(formatAmount(s.notDueAmount)).append("\n");
+        sb.append("- Due today: ").append(s.dueTodayCount).append(" invoices, total: ").append(formatAmount(s.dueTodayAmount, currency)).append("\n");
+        sb.append("- Not yet due: ").append(s.notDueCount).append(" invoices, total: ").append(formatAmount(s.notDueAmount, currency)).append("\n");
 
         sb.append("\nLast ").append(RECENT_DAYS).append(" days:\n");
-        sb.append("- Invoices paid: ").append(s.recentlyPaidCount).append(", total received: ").append(formatAmount(s.recentlyPaidAmount)).append("\n");
+        sb.append("- Invoices paid: ").append(s.recentlyPaidCount).append(", total received: ").append(formatAmount(s.recentlyPaidAmount, currency)).append("\n");
 
         if (!s.topCustomersByOutstanding.isEmpty()) {
             sb.append("\nTop customers by outstanding balance:\n");
             s.topCustomersByOutstanding.forEach((name, amount) ->
-                    sb.append("- ").append(name).append(": ").append(formatAmount(amount)).append("\n"));
+                    sb.append("- ").append(name).append(": ").append(formatAmount(amount, currency)).append("\n"));
         }
 
         sb.append("""
 
-                Based on this data, provide 4-6 specific, actionable insights for the business owner.
-                Focus on: collection priorities, which customers to contact first, payment trends, and cash flow recommendations.
-                Be concise and direct. Each insight on its own line starting with "- ".
+                Based on this data, provide exactly 3 specific, actionable insights for the business owner.
+                Focus on: collection priorities, which customers to contact first, payment trends, and cash flow.
+                Each insight must be a single short sentence (under 20 words).
+                Use **bold** for key amounts, customer names, and action words.
+                Each insight on its own line starting with "- ".
 
                 Respond with JSON: {"insights": "<bullet points separated by \\n>"}
                 """);
@@ -437,7 +444,7 @@ public class AiInsightService {
         return sb.toString();
     }
 
-    private String buildCustomerPrompt(CustomerStats s, Customer customer) {
+    private String buildCustomerPrompt(CustomerStats s, Customer customer, Currency currency) {
         String displayName = customer.getCompanyName() != null && !customer.getCompanyName().isBlank()
                 ? customer.getName() + " (" + customer.getCompanyName() + ")"
                 : customer.getName();
@@ -456,20 +463,18 @@ public class AiInsightService {
         if (s.cancelled > 0) sb.append("- Cancelled: ").append(s.cancelled).append("\n");
 
         sb.append("\nFinancials:\n");
-        sb.append("- Total billed: ").append(formatAmount(s.totalBilled)).append("\n");
-        sb.append("- Total paid: ").append(formatAmount(s.totalPaid)).append("\n");
-        sb.append("- Total outstanding: ").append(formatAmount(s.totalOutstanding)).append("\n");
+        sb.append("- Total billed: ").append(formatAmount(s.totalBilled, currency)).append("\n");
+        sb.append("- Total paid: ").append(formatAmount(s.totalPaid, currency)).append("\n");
+        sb.append("- Total outstanding: ").append(formatAmount(s.totalOutstanding, currency)).append("\n");
 
         sb.append("\nAutomated reminders: ").append(s.automationEnabled ? "enabled" : "DISABLED").append("\n");
 
         sb.append("""
 
-                Based on this data, provide 3-5 insights covering:
-                - Payment behavior assessment (reliable payer, slow payer, etc.)
-                - Specific recommended next actions
-                - Whether to escalate, enable reminders, or adjust terms
-
-                Be concise and direct. Each insight on its own line starting with "- ".
+                Based on this data, provide exactly 3 insights covering payment behavior and recommended next actions.
+                Each insight must be a single short sentence (under 20 words).
+                Use **bold** for key amounts, customer names, and action words.
+                Each insight on its own line starting with "- ".
 
                 Respond with JSON: {"insights": "<bullet points separated by \\n>"}
                 """);
@@ -485,9 +490,10 @@ public class AiInsightService {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
-    private String formatAmount(BigDecimal amount) {
-        if (amount == null) return "0.00";
-        return amount.setScale(2, RoundingMode.HALF_UP).toPlainString();
+    private String formatAmount(BigDecimal amount, Currency currency) {
+        String symbol = currency.getSymbol();
+        if (amount == null) return symbol + "0.00";
+        return symbol + amount.setScale(2, RoundingMode.HALF_UP).toPlainString();
     }
 
     private String parseInsights(String rawJson) {

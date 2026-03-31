@@ -376,6 +376,11 @@ public class OrganizationService {
                 changed = true;
             }
         }
+        if (request.getAutoRecoveryEnabled() != null &&
+                request.getAutoRecoveryEnabled() != organization.isAutoRecoveryEnabled()) {
+            organization.setAutoRecoveryEnabled(request.getAutoRecoveryEnabled());
+            changed = true;
+        }
         if (!changed) {
             return organization;
         }

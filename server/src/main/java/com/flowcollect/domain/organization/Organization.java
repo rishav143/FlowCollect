@@ -74,6 +74,13 @@ public class Organization {
     @Column(name = "payment_collection_mode", nullable = false, length = 20)
     private PaymentCollectionMode paymentCollectionMode = PaymentCollectionMode.PAYMENT_LINK;
 
+    /**
+     * When true, the Recover engine automatically fires all AUTO-mode reminder rules
+     * for this organization's overdue invoices.
+     */
+    @Column(name = "auto_recovery_enabled", nullable = false)
+    private boolean autoRecoveryEnabled = false;
+
     // Audit
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
@@ -184,6 +191,14 @@ public class Organization {
 
     public void setPaymentCollectionMode(PaymentCollectionMode paymentCollectionMode) {
         this.paymentCollectionMode = paymentCollectionMode;
+    }
+
+    public boolean isAutoRecoveryEnabled() {
+        return autoRecoveryEnabled;
+    }
+
+    public void setAutoRecoveryEnabled(boolean autoRecoveryEnabled) {
+        this.autoRecoveryEnabled = autoRecoveryEnabled;
     }
 
     // Setters

@@ -43,17 +43,18 @@ public class ResendEmailClient {
         return apiKey != null && !apiKey.isBlank();
     }
 
-    /** Send a plain HTML email with no attachment. */
-    public void send(String from, String to, String subject, String html) {
-        send(from, to, subject, html, null, null);
+    /** Send a plain HTML email with no attachment. Returns the Resend email ID, or null if not configured. */
+    public String send(String from, String to, String subject, String html) {
+        return send(from, to, subject, html, null, null);
     }
 
-    /** Send an HTML email with an optional binary attachment (e.g. a PDF). */
-    public void send(String from, String to, String subject, String html,
-                     String attachmentFilename, byte[] attachmentBytes) {
+    /** Send an HTML email with an optional binary attachment (e.g. a PDF). Returns the Resend email ID, or null if not configured. */
+    @SuppressWarnings("unchecked")
+    public String send(String from, String to, String subject, String html,
+                       String attachmentFilename, byte[] attachmentBytes) {
         if (!isConfigured()) {
             log.warn("RESEND_API_KEY not configured — skipping email to {}", to);
-            return;
+            return null;
         }
 
         HttpHeaders headers = new HttpHeaders();
@@ -73,7 +74,10 @@ public class ResendEmailClient {
             body.put("attachments", List.of(attachment));
         }
 
-        restTemplate.postForObject(API_URL, new HttpEntity<>(body, headers), Map.class);
-        log.debug("Email sent via Resend HTTP API to {}", to);
+        Map<String, Object> response = restTemplate.postForObject(
+                API_URL, new HttpEntity<>(body, headers), Map.class);
+        String emailId = response != null ? (String) response.get("id") : null;
+        log.debug("Email sent via Resend HTTP API to {} — id={}", to, emailId);
+        return emailId;
     }
 }

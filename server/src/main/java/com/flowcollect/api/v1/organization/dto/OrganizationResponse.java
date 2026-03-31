@@ -18,6 +18,7 @@ public class OrganizationResponse {
     private String logoUrl;
     private OrganizationStatus status;
     private PaymentCollectionMode paymentCollectionMode;
+    private boolean autoRecoveryEnabled;
     private Instant createdAt;
     private Instant updatedAt;
 
@@ -120,4 +121,7 @@ public class OrganizationResponse {
     public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
     }
+
+    public boolean isAutoRecoveryEnabled() { return autoRecoveryEnabled; }
+    public void setAutoRecoveryEnabled(boolean autoRecoveryEnabled) { this.autoRecoveryEnabled = autoRecoveryEnabled; }
 }

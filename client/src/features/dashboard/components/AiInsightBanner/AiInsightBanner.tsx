@@ -1,7 +1,9 @@
+import React from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Sparkles, RefreshCw } from 'lucide-react'
 import { useAuthStore } from '@/store/auth.store'
 import { getAiOverviewInsights } from '@/api/ai.api'
+import { formatCurrency } from '@/lib/format'
 
 // Parse "- bullet\n- bullet" into a string array
 function parseBullets(raw: string): string[] {
@@ -11,8 +13,33 @@ function parseBullets(raw: string): string[] {
     .filter(Boolean)
 }
 
+// Reformat any raw currency amounts in AI text using proper locale formatting.
+// Handles amounts like ₹826382.40 → ₹8,26,382.40 (INR) or $1234567 → $1,234,567
+function reformatAmounts(text: string, currency: string): string {
+  // Match currency symbol(s) followed by digits (with or without existing separators)
+  return text.replace(
+    /(₹|\$|€|£|¥|₩|A\$|S\$|AED\s?)([\d,]+(?:\.\d{1,2})?)/g,
+    (_match, _symbol, numStr) => {
+      const num = parseFloat(numStr.replace(/,/g, ''))
+      if (isNaN(num)) return _match
+      // Keep decimals only if original had them
+      const hasDecimals = numStr.includes('.')
+      return formatCurrency(num, currency, { decimals: hasDecimals })
+    },
+  )
+}
+
+// Render a string that may contain **bold** segments as React nodes
+function renderBold(text: string): React.ReactNode {
+  const parts = text.split(/\*\*(.+?)\*\*/g)
+  return parts.map((part, i) =>
+    i % 2 === 1 ? <strong key={i}>{part}</strong> : part
+  )
+}
+
 export default function AiInsightBanner() {
-  const orgId = useAuthStore((s) => s.org?.id ?? '')
+  const orgId    = useAuthStore((s) => s.org?.id ?? '')
+  const currency = useAuthStore((s) => s.org?.currency ?? 'USD')
 
   const { data, isLoading, isError, isFetching, refetch } = useQuery({
     queryKey:  ['ai-insights-overview', orgId],
@@ -77,7 +104,7 @@ export default function AiInsightBanner() {
           <li key={i} className="flex items-start gap-2.5">
             <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-[#29B6F6] shrink-0" />
             <span className="text-sm text-[#0D1B2A] dark:text-[#C9D9E8] leading-snug">
-              {bullet}
+              {renderBold(reformatAmounts(bullet, currency))}
             </span>
           </li>
         ))}

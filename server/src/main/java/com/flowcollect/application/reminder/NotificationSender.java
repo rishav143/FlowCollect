@@ -12,9 +12,10 @@ public interface NotificationSender {
 
     FollowUpChannel channel();
 
-    void send(Customer customer, String subject, String body);
+    /** Sends the notification and returns an optional external message ID (e.g. Resend email ID), or null. */
+    String send(Customer customer, String subject, String body);
 
-    default void send(Customer customer, String subject, String body, boolean attachPdf, Invoice invoice) {
-        send(customer, subject, body);
+    default String send(Customer customer, String subject, String body, boolean attachPdf, Invoice invoice) {
+        return send(customer, subject, body);
     }
 }

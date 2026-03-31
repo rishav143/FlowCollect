@@ -1,16 +1,11 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowRight, CheckCircle2, Clock, Bell, Check, X, AlertCircle, RotateCcw } from 'lucide-react'
+import type { NeedsAttentionItem } from '@/api/dashboard.api'
 
-function currencySymbol(currency: string): string {
-  return (
-    new Intl.NumberFormat('en', { style: 'currency', currency, minimumFractionDigits: 0, maximumFractionDigits: 0 })
-      .formatToParts(0)
-      .find((p) => p.type === 'currency')?.value ?? '$'
-  )
-}
+
 import type { AxiosError } from 'axios'
-import type { InvoiceResponse } from '@/types/invoice.types'
+
 import type { PaymentConfirmationResponse } from '@/types/confirmation.types'
 import { formatCurrency } from '@/lib/format'
 import {
@@ -85,20 +80,14 @@ function RowSkeleton() {
 
 function OverdueSection({
   invoices,
-  overdueTotal,
   currency,
-  customerMap,
   isLoading,
-  onPay,
   onFollowup,
 }: {
-  invoices:     InvoiceResponse[]
-  overdueTotal: number
-  currency:     string
-  customerMap:  Record<string, string>
-  isLoading:    boolean
-  onPay?:       (inv: InvoiceResponse) => void
-  onFollowup?:  (inv: InvoiceResponse) => void
+  invoices:    NeedsAttentionItem[]
+  currency:    string
+  isLoading:   boolean
+  onFollowup?: (item: NeedsAttentionItem) => void
 }) {
   const navigate = useNavigate()
 
@@ -117,107 +106,43 @@ function OverdueSection({
         <>
           <ul>
             {invoices.map((inv, idx) => {
-              const days = inv.dueDate ? daysOverdue(inv.dueDate) : 0
+              const days      = inv.daysPastDue
               const borderCls = idx < invoices.length - 1 ? 'border-b border-c-border' : ''
               return (
                 <li
-                  key={inv.id}
-                  className={`group cursor-pointer hover:bg-[#F4F7F9] dark:hover:bg-[#243447] transition-colors ${borderCls}`}
-                  onClick={() => navigate(`/invoices/${inv.id}`)}
+                  key={inv.invoiceId}
+                  className={`flex items-center gap-3 px-5 py-3 cursor-pointer hover:bg-[#F4F7F9] dark:hover:bg-[#243447] transition-colors ${borderCls}`}
+                  onClick={() => navigate(`/invoices/${inv.invoiceId}`)}
                 >
-                  {/* ── Mobile layout (< sm) — two rows ── */}
-                  <div className="sm:hidden px-5 py-3">
-                    <div className="flex items-center gap-3">
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-semibold text-[#0D1B2A] dark:text-white">{inv.invoiceNumber}</p>
-                        {inv.customerId && customerMap[inv.customerId] && (
-                          <p className="text-xs text-c-muted truncate">{customerMap[inv.customerId]}</p>
-                        )}
-                      </div>
-                      <span className="text-sm font-semibold text-[#0D1B2A] dark:text-white tabular-nums shrink-0">
-                        {formatCurrency(inv.remainingAmount, currency, { decimals: false })}
-                      </span>
-                      <ArrowRight size={14} className="text-c-muted shrink-0" />
-                    </div>
-                    <div className="flex items-center justify-between mt-1.5">
-                      <span className="text-xs font-medium text-red-600 dark:text-red-400">{days}d overdue</span>
-                      <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                        {onPay && (
-                          <button
-                            onClick={() => onPay(inv)}
-                            title="Record payment"
-                            className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-500/10 transition-colors"
-                          >
-                            <span className="text-xs font-bold leading-none">{currencySymbol(currency)}</span>
-                          </button>
-                        )}
-                        {onFollowup && (
-                          <button
-                            onClick={() => onFollowup(inv)}
-                            title="Send follow-up"
-                            className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium text-[#29B6F6] hover:bg-[#29B6F6]/10 transition-colors"
-                          >
-                            <Bell size={12} strokeWidth={2.5} />
-                          </button>
-                        )}
-                      </div>
-                    </div>
+                  {/* Left — invoice number + customer name inline */}
+                  <div className="min-w-0 flex-1 flex items-center gap-1.5">
+                    <p className="text-sm font-semibold text-[#0D1B2A] dark:text-white shrink-0">{inv.invoiceNumber}</p>
+                    {inv.customerName && (
+                      <span className="text-xs text-c-muted truncate">{inv.customerName}</span>
+                    )}
                   </div>
 
-                  {/* ── Desktop/tablet layout (sm+) — original single row ── */}
-                  <div className="hidden sm:flex items-center gap-3 px-5 py-3">
-                    <div className="w-28 shrink-0 min-w-0">
-                      <p className="text-sm font-semibold text-[#0D1B2A] dark:text-white">{inv.invoiceNumber}</p>
-                      {inv.customerId && customerMap[inv.customerId] && (
-                        <p className="text-xs text-c-muted truncate">{customerMap[inv.customerId]}</p>
-                      )}
-                    </div>
-                    <span className="text-xs font-medium text-red-600 dark:text-red-400 shrink-0">{days}d overdue</span>
-                    <span className="flex-1" />
-                    <div
-                      className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      {onPay && (
-                        <button
-                          onClick={() => onPay(inv)}
-                          title="Record payment"
-                          className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-500/10 transition-colors"
-                        >
-                          <span className="text-xs font-bold leading-none">{currencySymbol(currency)}</span>
-                          Record Payment
-                        </button>
-                      )}
-                      {onFollowup && (
-                        <button
-                          onClick={() => onFollowup(inv)}
-                          title="Send follow-up"
-                          className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium text-[#29B6F6] hover:bg-[#29B6F6]/10 transition-colors"
-                        >
-                          <Bell size={12} strokeWidth={2.5} />
-                          Follow-up
-                        </button>
-                      )}
-                    </div>
+                  {/* Right — overdue badge · amount · reminder button */}
+                  <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
+                    <span className="text-xs font-medium text-red-500">{days}d overdue</span>
                     <span className="text-sm font-semibold text-[#0D1B2A] dark:text-white tabular-nums">
                       {formatCurrency(inv.remainingAmount, currency, { decimals: false })}
                     </span>
-                    <ArrowRight size={14} className="text-c-muted shrink-0" />
+                    {onFollowup && (
+                      <button
+                        onClick={() => onFollowup(inv)}
+                        title="Send reminder"
+                        className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium text-[#29B6F6] hover:bg-[#29B6F6]/10 transition-colors"
+                      >
+                        <Bell size={12} strokeWidth={2.5} />
+                        <span className="hidden sm:inline">Remind</span>
+                      </button>
+                    )}
                   </div>
                 </li>
               )
             })}
           </ul>
-          {overdueTotal > invoices.length && (
-            <div className="border-t border-c-border px-5 py-3">
-              <button
-                onClick={() => navigate('/invoices', { state: { timeStatus: 'OVERDUE', lifeCycleStatus: 'ISSUED' } })}
-                className="text-xs font-medium text-[#29B6F6] hover:underline"
-              >
-                View all {overdueTotal} overdue invoices →
-              </button>
-            </div>
-          )}
         </>
       )}
     </Section>
@@ -476,32 +401,18 @@ function ApprovalsSection({
 export { ApprovalsSection }
 
 interface Props {
-  overdueInvoices:      InvoiceResponse[]
-  overdueTotal:         number
-  currency:             string
-  customerMap:          Record<string, string>
-  isLoading:            boolean
-  onPay?:               (inv: InvoiceResponse) => void
-  onFollowup?:          (inv: InvoiceResponse) => void
+  invoices:    NeedsAttentionItem[]
+  currency:    string
+  isLoading:   boolean
+  onFollowup?: (item: NeedsAttentionItem) => void
 }
 
-export default function ActionTable({
-  overdueInvoices,
-  overdueTotal,
-  currency,
-  customerMap,
-  isLoading,
-  onPay,
-  onFollowup,
-}: Props) {
+export default function ActionTable({ invoices, currency, isLoading, onFollowup }: Props) {
   return (
     <OverdueSection
-      invoices={overdueInvoices}
-      overdueTotal={overdueTotal}
+      invoices={invoices}
       currency={currency}
-      customerMap={customerMap}
       isLoading={isLoading}
-      onPay={onPay}
       onFollowup={onFollowup}
     />
   )

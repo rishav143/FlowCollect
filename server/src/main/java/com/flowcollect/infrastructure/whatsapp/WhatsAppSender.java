@@ -40,7 +40,7 @@ public class WhatsAppSender implements NotificationSender {
     }
 
     @Override
-    public void send(Customer customer, String subject, String body) {
+    public String send(Customer customer, String subject, String body) {
         ensureEnabled();
 
         String recipient = requireConfigured(customer.getPhone(), "customer phone");
@@ -63,6 +63,7 @@ public class WhatsAppSender implements NotificationSender {
         } catch (Exception ex) {
             throw new InternalException("Failed to send WhatsApp reminder: " + ex.getMessage());
         }
+        return null;
     }
 
     /**
@@ -72,12 +73,13 @@ public class WhatsAppSender implements NotificationSender {
      *   2. Send a document message referencing that media_id (with the text as caption)
      */
     @Override
-    public void send(Customer customer, String subject, String body, boolean attachPdf, Invoice invoice) {
+    public String send(Customer customer, String subject, String body, boolean attachPdf, Invoice invoice) {
         if (attachPdf && invoice != null) {
             sendWithDocument(customer, subject, body, invoice);
         } else {
             send(customer, subject, body);
         }
+        return null;
     }
 
     // --- Private helpers ---

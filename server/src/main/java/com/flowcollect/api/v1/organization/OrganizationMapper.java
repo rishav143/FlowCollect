@@ -23,6 +23,7 @@ public final class OrganizationMapper {
         response.setLogoUrl(organization.getLogoUrl());
         response.setStatus(organization.getStatus());
         response.setPaymentCollectionMode(organization.getPaymentCollectionMode());
+        response.setAutoRecoveryEnabled(organization.isAutoRecoveryEnabled());
         response.setCreatedAt(organization.getCreatedAt());
         response.setUpdatedAt(organization.getUpdatedAt());
         return response;

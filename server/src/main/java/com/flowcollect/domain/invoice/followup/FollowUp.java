@@ -86,6 +86,14 @@ public class FollowUp {
 
     private Instant sentAt;
 
+    /** Resend email ID returned by the Resend API when this follow-up is sent via EMAIL channel. */
+    @Column(name = "resend_email_id")
+    private String resendEmailId;
+
+    /** Timestamp when Resend reported the email as opened (populated via Resend webhook). */
+    @Column(name = "opened_at")
+    private Instant openedAt;
+
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -199,6 +207,24 @@ public class FollowUp {
 
     public Instant getSentAt() {
         return sentAt;
+    }
+
+    public String getResendEmailId() {
+        return resendEmailId;
+    }
+
+    public void setResendEmailId(String resendEmailId) {
+        this.resendEmailId = resendEmailId;
+    }
+
+    public Instant getOpenedAt() {
+        return openedAt;
+    }
+
+    public void markOpened(Instant at) {
+        if (this.openedAt == null) {
+            this.openedAt = at;
+        }
     }
 
     public Instant getCreatedAt() {

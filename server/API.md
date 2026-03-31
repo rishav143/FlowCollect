@@ -199,6 +199,7 @@ Exchanges the provider's authorization code for a JWT. Creates the user if this 
 | `logoUrl` | String | nullable |
 | `status` | String | `ACTIVE`, `TRIAL`, `SUSPENDED`, `ARCHIVED` |
 | `paymentCollectionMode` | String | `PAYMENT_LINK` or `CONFIRMATION_FLOW` |
+| `autoRecoveryEnabled` | boolean | `true` when the Recover engine is active for this org |
 | `createdAt` | Instant | |
 | `updatedAt` | Instant | |
 
@@ -231,6 +232,7 @@ All fields optional.
 | `currency` | String | ISO 4217 code |
 | `timezone` | String | |
 | `paymentCollectionMode` | String | `PAYMENT_LINK` or `CONFIRMATION_FLOW` |
+| `autoRecoveryEnabled` | Boolean | `true` to enable the Recover engine; `false` to disable. `null` = no change |
 
 **Response: `200 OK`** — `OrganizationResponse`
 
@@ -594,6 +596,8 @@ Follow-ups are outbound messages (email, SMS) sent to customers about an invoice
 | `reminderRuleId` | UUID | nullable — set when triggered by a reminder rule |
 | `scheduledForDate` | String | `YYYY-MM-DD`, nullable |
 | `sentAt` | Instant | nullable |
+| `resendEmailId` | String | nullable — Resend email ID, set for EMAIL channel follow-ups |
+| `openedAt` | Instant | nullable — set when Resend reports the email was opened |
 | `createdAt` | Instant | |
 | `paymentLinkId` | UUID | nullable |
 | `paymentLinkUrl` | String | nullable — short URL sent to the customer |
@@ -689,6 +693,7 @@ Templates contain the message body for follow-ups. The body supports the followi
 | `subject` | String | No | Email subject line; max 200 |
 | `body` | String | Yes | Message content with optional placeholders |
 | `tone` | String | Yes | `POLITE`, `NEUTRAL`, or `FIRM` |
+| `mode` | String | No | `AUTO` or `MANUAL` (default `MANUAL`). `AUTO` templates are used by the Recover engine |
 
 **Response: `201 Created`** — `TemplateResponse`
 | Field | Type | Notes |
@@ -699,6 +704,8 @@ Templates contain the message body for follow-ups. The body supports the followi
 | `subject` | String | nullable |
 | `body` | String | |
 | `tone` | String | |
+| `mode` | String | `AUTO` or `MANUAL` |
+| `systemDefined` | boolean | `true` for platform-provided templates |
 | `active` | boolean | |
 | `createdAt` | Instant | |
 | `updatedAt` | Instant | |
@@ -707,6 +714,8 @@ Templates contain the message body for follow-ups. The body supports the followi
 
 ### 8.2 List Templates
 **`GET /api/v1/organizations/{organizationId}/templates`** — ADMIN or STAFF
+
+Returns both org-owned templates and platform-provided (`systemDefined=true`) templates. System templates appear in the list and can be edited but deletion is managed at the platform level.
 
 **Query params (all optional):** `name`, `channel`, `tone`, `page`, `size`, `sort`
 
@@ -724,7 +733,7 @@ Templates contain the message body for follow-ups. The body supports the followi
 ### 8.4 Update Template
 **`PATCH /api/v1/organizations/{organizationId}/templates/{id}`** — ADMIN or STAFF
 
-**Request body (all optional):** same fields as Create Template.
+**Request body (all optional):** same fields as Create Template (including `mode`).
 
 **Response: `200 OK`** — `TemplateResponse`
 
@@ -761,6 +770,7 @@ Reminder rules automate follow-up dispatch. The scheduler runs every 15 minutes,
 | `channel` | String | Yes | `EMAIL` or `SMS` |
 | `templateId` | UUID | Yes | Template to use for the automated message |
 | `active` | Boolean | No | Defaults to `false` — activate explicitly when ready |
+| `mode` | String | No | `AUTO` or `MANUAL` (default `MANUAL`). `AUTO` rules fire when `autoRecoveryEnabled` is on |
 | `maxOccurrences` | Integer | No | Max times this rule fires per invoice; `null` = unlimited |
 | `cycleIntervalDays` | Integer | No | Days between repeat firings (for recurring rules) |
 | `startDate` | String | No | `YYYY-MM-DD`; invoices before this date are skipped |
@@ -777,6 +787,8 @@ Reminder rules automate follow-up dispatch. The scheduler runs every 15 minutes,
 | `templateName` | String | |
 | `attachPdf` | boolean | |
 | `active` | boolean | |
+| `mode` | String | `AUTO` or `MANUAL` |
+| `systemDefined` | boolean | `true` for platform-provided rules |
 | `maxOccurrences` | Integer | nullable |
 | `cycleIntervalDays` | Integer | nullable |
 | `startDate` | String | nullable |
@@ -787,6 +799,8 @@ Reminder rules automate follow-up dispatch. The scheduler runs every 15 minutes,
 
 ### 9.2 List Reminder Rules
 **`GET /api/v1/organizations/{organizationId}/reminder-rules`** — ADMIN or STAFF
+
+Returns both org-owned rules and platform-provided (`systemDefined=true`) rules. System rules appear in the list and can be edited but deletion is managed at the platform level.
 
 **Query params (all optional):** `name`, `page`, `size`, `sort`
 
@@ -804,7 +818,7 @@ Reminder rules automate follow-up dispatch. The scheduler runs every 15 minutes,
 ### 9.4 Update Reminder Rule
 **`PATCH /api/v1/organizations/{organizationId}/reminder-rules/{reminderRuleId}`** — ADMIN or STAFF
 
-**Request body (all optional):** same fields as Create Reminder Rule.
+**Request body (all optional):** same fields as Create Reminder Rule (including `mode`).
 
 **Response: `200 OK`** — `ReminderRuleResponse`
 
@@ -1042,6 +1056,33 @@ Receives `payment_link.paid` events. Marks the associated payment link as paid a
 **Required header:** `X-Razorpay-Signature`
 
 **Response: `200 OK`**
+
+---
+
+### 12.4 Resend Email Webhook
+**`POST /api/v1/webhooks/resend`** — No JWT required; verified via svix signature headers (HMAC-SHA256)
+
+Receives Resend email lifecycle events. Currently processes `email.opened` — sets `openedAt` on the corresponding `FollowUp`.
+
+**Setup:**
+1. Enable **Open Tracking** in your Resend dashboard (Domain → Settings → Tracking).
+2. Add a webhook in Resend pointing to `https://<your-domain>/api/v1/webhooks/resend` and subscribe to the `email.opened` event.
+3. Copy the signing secret and set it as the `RESEND_WEBHOOK_SECRET` environment variable (format: `whsec_<base64>`).
+
+**Required headers (sent by Resend/svix):**
+| Header | Description |
+|---|---|
+| `svix-id` | Unique event ID |
+| `svix-timestamp` | Unix timestamp of the event |
+| `svix-signature` | `v1,<base64-hmac-sha256>` — one or more space-separated signatures |
+
+**Supported event types:**
+| Event | Action |
+|---|---|
+| `email.opened` | Sets `openedAt` on the matching `FollowUp` (matched via `data.email_id` → `FollowUp.resendEmailId`). Idempotent — first open wins. |
+
+**Response: `200 OK`** — always returned for valid/unverifiable payloads to prevent Resend retries.
+**Response: `401 Unauthorized`** — returned when signature verification fails.
 
 ---
 
@@ -1301,6 +1342,7 @@ Ask any payment-related question in natural language with optional data filters.
 | GET | `/pay/{token}` | None | Payment link redirect |
 | POST | `/api/v1/webhooks/stripe` | None (HMAC) | Stripe webhook |
 | POST | `/api/v1/webhooks/razorpay` | None (HMAC) | Razorpay webhook |
+| POST | `/api/v1/webhooks/resend` | None (svix HMAC) | Resend email open tracking webhook |
 | POST | `/api/v1/organizations/{orgId}/ai/templates/generate` | ADMIN/STAFF | AI: generate template from scratch |
 | POST | `/api/v1/organizations/{orgId}/ai/templates/enhance` | ADMIN/STAFF | AI: rewrite template to target tone |
 | GET | `/api/v1/organizations/{orgId}/ai/insights/overview` | ADMIN/STAFF | AI: org payment health overview |

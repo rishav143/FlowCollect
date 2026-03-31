@@ -17,7 +17,10 @@ export function useCreateInvoice() {
 
   return useMutation({
     mutationFn: (body: CreateInvoiceBody) => createInvoice(orgId, body),
-    onSuccess:  () => qc.invalidateQueries({ queryKey: ['invoices', orgId] }),
+    onSuccess:  () => {
+      qc.invalidateQueries({ queryKey: ['invoices', orgId] })
+      qc.invalidateQueries({ queryKey: ['dashboard-stats', orgId] })
+    },
   })
 }
 
@@ -27,7 +30,10 @@ export function useUpdateInvoice(invoiceId: string) {
 
   return useMutation({
     mutationFn: (body: UpdateInvoiceBody) => updateInvoice(orgId, invoiceId, body),
-    onSuccess:  () => qc.invalidateQueries({ queryKey: ['invoices', orgId] }),
+    onSuccess:  () => {
+      qc.invalidateQueries({ queryKey: ['invoices', orgId] })
+      qc.invalidateQueries({ queryKey: ['dashboard-stats', orgId] })
+    },
   })
 }
 
@@ -37,7 +43,10 @@ export function useDeleteInvoice() {
 
   return useMutation({
     mutationFn: (id: string) => deleteInvoice(orgId, id),
-    onSuccess:  () => qc.invalidateQueries({ queryKey: ['invoices', orgId] }),
+    onSuccess:  () => {
+      qc.invalidateQueries({ queryKey: ['invoices', orgId] })
+      qc.invalidateQueries({ queryKey: ['dashboard-stats', orgId] })
+    },
   })
 }
 
@@ -47,7 +56,10 @@ export function useIssueInvoice(invoiceId: string) {
 
   return useMutation({
     mutationFn: (issueDate?: string) => issueInvoice(orgId, invoiceId, issueDate),
-    onSuccess:  () => qc.invalidateQueries({ queryKey: ['invoices', orgId] }),
+    onSuccess:  () => {
+      qc.invalidateQueries({ queryKey: ['invoices', orgId] })
+      qc.invalidateQueries({ queryKey: ['dashboard-stats', orgId] })
+    },
   })
 }
 
@@ -57,7 +69,10 @@ export function useCancelInvoice(invoiceId: string) {
 
   return useMutation({
     mutationFn: () => cancelInvoice(orgId, invoiceId),
-    onSuccess:  () => qc.invalidateQueries({ queryKey: ['invoices', orgId] }),
+    onSuccess:  () => {
+      qc.invalidateQueries({ queryKey: ['invoices', orgId] })
+      qc.invalidateQueries({ queryKey: ['dashboard-stats', orgId] })
+    },
   })
 }
 

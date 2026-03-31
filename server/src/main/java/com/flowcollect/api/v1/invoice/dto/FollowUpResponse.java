@@ -21,6 +21,8 @@ public class FollowUpResponse {
     private LocalDate scheduledForDate;
     private boolean attachPdf;
     private Instant sentAt;
+    private String resendEmailId;
+    private Instant openedAt;
     private Instant createdAt;
     private Instant updatedAt;
 
@@ -125,6 +127,12 @@ public class FollowUpResponse {
     public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
     }
+
+    public String getResendEmailId() { return resendEmailId; }
+    public void setResendEmailId(String resendEmailId) { this.resendEmailId = resendEmailId; }
+
+    public Instant getOpenedAt() { return openedAt; }
+    public void setOpenedAt(Instant openedAt) { this.openedAt = openedAt; }
 
     public UUID getPaymentLinkId() { return paymentLinkId; }
     public void setPaymentLinkId(UUID paymentLinkId) { this.paymentLinkId = paymentLinkId; }

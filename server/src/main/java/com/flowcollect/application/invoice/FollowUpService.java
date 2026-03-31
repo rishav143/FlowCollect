@@ -352,9 +352,12 @@ public class FollowUpService {
                     template, fresh.getInvoice(), customer, paymentLinkUrl, confirmationLinkUrl);
 
             NotificationSender sender = resolveSender(fresh.getChannel());
-            sender.send(customer, subject, body, fresh.isAttachPdf(), fresh.getInvoice());
+            String externalMessageId = sender.send(customer, subject, body, fresh.isAttachPdf(), fresh.getInvoice());
 
             fresh.send();
+            if (externalMessageId != null) {
+                fresh.setResendEmailId(externalMessageId);
+            }
             return followUpRepository.save(fresh);
         } catch (RuntimeException ex) {
             log.warn("[followUp={}] Dispatch failed — marking FAILED", fresh.getId(), ex);

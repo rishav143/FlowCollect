@@ -3,6 +3,7 @@ import { useAuthStore } from '@/store/auth.store'
 import { listInvoices } from '@/api/invoice.api'
 import { listConfirmations } from '@/api/confirmation.api'
 import { listCustomers } from '@/api/customer.api'
+import { getDashboardStats } from '@/api/dashboard.api'
 
 export function useDashboard() {
   const orgId             = useAuthStore((s) => s.org?.id ?? '')
@@ -28,6 +29,14 @@ export function useDashboard() {
     queryKey: ['customers', orgId, 'dashboard'],
     queryFn:  () => listCustomers(orgId, { size: 200 }),
     enabled:  !!orgId,
+  })
+
+  // Dashboard stats — needsAttention list from backend
+  const dashboardStatsQuery = useQuery({
+    queryKey: ['dashboard-stats', orgId],
+    queryFn:  () => getDashboardStats(orgId),
+    enabled:  !!orgId,
+    staleTime: 0,
   })
 
   // Pending confirmations — top 3 by largest amount, CONFIRMATION_FLOW orgs only
@@ -180,6 +189,7 @@ export function useDashboard() {
     agingBuckets,
     customerMap,
     collectionsTrend: trendData,
+    needsAttention: dashboardStatsQuery.data?.needsAttention ?? [],
     overdueInvoices:     (overdueQuery.data?.content ?? [])
       .filter(i => i.remainingAmount > 0 && ['ISSUED', 'PARTIALLY_PAID'].includes(i.lifeCycleStatus))
       .slice(0, 3),
