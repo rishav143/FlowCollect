@@ -1,5 +1,6 @@
 export type ReminderChannel     = 'EMAIL' | 'SMS' | 'WHATSAPP'
 export type ReminderTriggerType = 'BEFORE_DUE_DATE' | 'ON_DUE_DATE' | 'AFTER_DUE_DATE'
+export type RuleMode            = 'MANUAL' | 'AUTO'
 
 export interface ReminderRuleResponse {
   id:               string
@@ -15,6 +16,8 @@ export interface ReminderRuleResponse {
   cycleIntervalDays:     number         // 0 when maxOccurrences == 1
   occurrenceTemplateIds: string[]       // per-occurrence overrides; empty = all use templateId
   startDate:             string | null  // YYYY-MM-DD; null = no restriction
+  mode:             RuleMode
+  systemDefined:    boolean
   createdAt:        string
   updatedAt:        string
 }

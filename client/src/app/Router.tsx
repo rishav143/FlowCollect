@@ -75,6 +75,7 @@ const router = createBrowserRouter([
         element: <AppShell />,
         children: [
           { path: '/dashboard',    lazy: routeLazy(() => import('@/features/dashboard/pages/DashboardPage')) },
+          { path: '/recover',      lazy: routeLazy(() => import('@/features/recover/pages/RecoverPage')) },
           { path: '/invoices',     lazy: routeLazy(() => import('@/features/invoices/pages/InvoiceListPage')) },
           { path: '/invoices/:id', lazy: routeLazy(() => import('@/features/invoices/pages/InvoiceDetailPage')) },
           { path: '/templates',    lazy: routeLazy(() => import('@/features/templates/pages/TemplatesPage')) },

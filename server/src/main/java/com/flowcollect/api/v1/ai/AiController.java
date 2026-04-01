@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
@@ -99,21 +100,23 @@ public class AiController {
             @RequestBody @Valid AskInsightRequest request
     ) {
         String insights = aiInsightService.ask(organizationId, request);
-        return ResponseEntity.ok(new AiInsightResponse(insights));
+        return ResponseEntity.ok(new AiInsightResponse(insights, false, java.time.Instant.now()));
     }
 
     /**
-     * Generates an AI payment health overview for the organization.
-     * Covers overdue priorities, top customers to chase, and cash flow signals.
+     * Returns AI payment health overview for the organization.
+     * Served from cache if generated today (org timezone); regenerates otherwise.
      *
      * GET /api/v1/organizations/{organizationId}/ai/insights/overview
+     * GET /api/v1/organizations/{organizationId}/ai/insights/overview?forceRefresh=true
      */
     @GetMapping("/insights/overview")
     public ResponseEntity<AiInsightResponse> overviewInsights(
-            @PathVariable UUID organizationId
+            @PathVariable UUID organizationId,
+            @RequestParam(defaultValue = "false") boolean forceRefresh
     ) {
-        String insights = aiInsightService.generateOverviewInsights(organizationId);
-        return ResponseEntity.ok(new AiInsightResponse(insights));
+        AiInsightService.OverviewInsightResult result = aiInsightService.getOverviewInsights(organizationId, forceRefresh);
+        return ResponseEntity.ok(new AiInsightResponse(result.insights(), result.cached(), result.generatedAt()));
     }
 
     /**
@@ -128,6 +131,6 @@ public class AiController {
             @PathVariable UUID customerId
     ) {
         String insights = aiInsightService.generateCustomerInsights(organizationId, customerId);
-        return ResponseEntity.ok(new AiInsightResponse(insights));
+        return ResponseEntity.ok(new AiInsightResponse(insights, false, java.time.Instant.now()));
     }
 }

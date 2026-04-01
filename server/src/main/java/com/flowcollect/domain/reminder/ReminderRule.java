@@ -31,7 +31,8 @@ public class ReminderRule {
 
     // Ownership — null for system-defined rules that belong to no specific org
     @ManyToOne(fetch = FetchType.LAZY, optional = true)
-    @JoinColumn(name = "organization_id", nullable = true)
+    @JoinColumn(name = "organization_id", nullable = true,
+                foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
     private Organization organization;
 
     // Mode — AUTO rules are processed by the recovery engine; MANUAL are user-triggered only

@@ -12,4 +12,6 @@ export interface Org {
   paymentCollectionMode: 'PAYMENT_LINK' | 'CONFIRMATION_FLOW'
   currency: string
   timezone: string
+  /** Whether the Recover engine (AUTO rules) is active for this org */
+  autoRecoveryEnabled: boolean
 }

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.flowcollect.api.v1.ai.dto.AskInsightRequest;
 import com.flowcollect.application.customer.CustomerService;
 import com.flowcollect.application.organization.OrganizationService;
+import com.flowcollect.domain.ai.AiInsightCache;
 import com.flowcollect.domain.customer.Customer;
 import com.flowcollect.domain.invoice.Invoice;
 import com.flowcollect.domain.invoice.LifeCycleStatus;
@@ -12,22 +13,27 @@ import com.flowcollect.domain.invoice.TimeStatus;
 import com.flowcollect.domain.invoice.followup.FollowUp;
 import com.flowcollect.domain.invoice.followup.FollowUpChannel;
 import com.flowcollect.domain.invoice.followup.FollowUpStatus;
+import com.flowcollect.domain.organization.Organization;
 import com.flowcollect.exception.http.InternalException;
 import com.flowcollect.infrastructure.ai.OpenAiClient;
+import com.flowcollect.infrastructure.persistence.ai.AiInsightCacheJpaRepository;
 import com.flowcollect.infrastructure.persistence.invoice.FollowUpJpaRepository;
 import com.flowcollect.infrastructure.persistence.invoice.InvoiceJpaRepository;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Currency;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -59,6 +65,7 @@ public class AiInsightService {
     private final OpenAiClient openAiClient;
     private final ObjectMapper objectMapper;
     private final FollowUpJpaRepository followUpRepository;
+    private final AiInsightCacheJpaRepository insightCacheRepository;
 
     public AiInsightService(
             InvoiceJpaRepository invoiceRepository,
@@ -66,7 +73,8 @@ public class AiInsightService {
             OrganizationService organizationService,
             OpenAiClient openAiClient,
             ObjectMapper objectMapper,
-            FollowUpJpaRepository followUpRepository
+            FollowUpJpaRepository followUpRepository,
+            AiInsightCacheJpaRepository insightCacheRepository
     ) {
         this.invoiceRepository = invoiceRepository;
         this.customerService = customerService;
@@ -74,7 +82,11 @@ public class AiInsightService {
         this.openAiClient = openAiClient;
         this.objectMapper = objectMapper;
         this.followUpRepository = followUpRepository;
+        this.insightCacheRepository = insightCacheRepository;
     }
+
+    /** Returned by {@link #getOverviewInsights} so the controller can build the response DTO. */
+    public record OverviewInsightResult(String insights, boolean cached, Instant generatedAt) {}
 
     /**
      * Flexible insight endpoint. The frontend sends a natural-language question
@@ -119,21 +131,41 @@ public class AiInsightService {
     }
 
     /**
-     * Generates a payment health overview for the organization.
-     * Covers: overdue invoices, collection priorities, recent receipts, and cash flow signals.
+     * Returns cached overview insights if generated today (in the org's timezone);
+     * otherwise regenerates, persists, and returns fresh data.
      *
      * @param organizationId the org to analyze
-     * @return AI-generated actionable insights as a bullet-point string
+     * @param forceRefresh   when true, always regenerates regardless of cache state
      */
-    public String generateOverviewInsights(UUID organizationId) {
-        var org = organizationService.getById(organizationId);
+    @Transactional
+    public OverviewInsightResult getOverviewInsights(UUID organizationId, boolean forceRefresh) {
+        Organization org = organizationService.getById(organizationId);
+        LocalDate todayInOrgTz = LocalDate.now(org.getTimezone() != null ? org.getTimezone() : ZoneId.of("UTC"));
 
+        Optional<AiInsightCache> existing = insightCacheRepository.findByOrganizationId(organizationId);
+
+        if (!forceRefresh && existing.isPresent()) {
+            AiInsightCache cache = existing.get();
+            if (todayInOrgTz.equals(cache.getGeneratedForDate())) {
+                return new OverviewInsightResult(cache.getInsights(), true, cache.getGeneratedAt());
+            }
+        }
+
+        // Generate fresh
         List<Invoice> invoices = fetchActiveInvoices(organizationId);
-
         OrgStats stats = computeOrgStats(invoices);
         String prompt = buildOverviewPrompt(stats, org.getCurrency());
         String rawJson = openAiClient.chat(INSIGHT_SYSTEM_PROMPT, prompt);
-        return parseInsights(rawJson);
+        String insights = parseInsights(rawJson);
+
+        // Upsert cache
+        AiInsightCache cache = existing.orElse(new AiInsightCache(org, insights, todayInOrgTz));
+        if (existing.isPresent()) {
+            cache.refresh(insights, todayInOrgTz);
+        }
+        insightCacheRepository.save(cache);
+
+        return new OverviewInsightResult(insights, false, cache.getGeneratedAt());
     }
 
     /**

@@ -36,6 +36,7 @@ const devSeed: Pick<AuthState, 'token' | 'user' | 'org'> = USE_MOCK
         paymentCollectionMode: 'CONFIRMATION_FLOW',
         currency: 'INR',
         timezone: 'Asia/Kolkata',
+        autoRecoveryEnabled: true,
       },
     }
   : { token: null, user: null, org: null }

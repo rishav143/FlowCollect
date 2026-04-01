@@ -31,6 +31,7 @@ interface BackendOrgResponse {
   currency:              string
   timezone:              string
   paymentCollectionMode: 'PAYMENT_LINK' | 'CONFIRMATION_FLOW'
+  autoRecoveryEnabled:   boolean
 }
 
 export interface RegisterResult {
@@ -72,6 +73,7 @@ export async function login(email: string, password: string): Promise<AuthRespon
       currency:              org.currency,
       timezone:              org.timezone,
       paymentCollectionMode: org.paymentCollectionMode,
+      autoRecoveryEnabled:   org.autoRecoveryEnabled ?? false,
     },
   }
 }

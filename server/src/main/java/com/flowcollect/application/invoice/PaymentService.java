@@ -19,6 +19,7 @@ import com.flowcollect.domain.invoice.LifeCycleStatus;
 import com.flowcollect.domain.invoice.payment.Payment;
 import com.flowcollect.domain.invoice.payment.PaymentMode;
 import com.flowcollect.exception.http.ValidationException;
+import com.flowcollect.infrastructure.persistence.invoice.FollowUpJpaRepository;
 import com.flowcollect.infrastructure.persistence.invoice.InvoiceJpaRepository;
 import com.flowcollect.infrastructure.persistence.invoice.PaymentJpaRepository;
 
@@ -28,11 +29,17 @@ public class PaymentService {
     private final PaymentJpaRepository paymentRepository;
     private final InvoiceJpaRepository invoiceRepository;
     private final InvoiceService invoiceService;
+    private final FollowUpJpaRepository followUpRepository;
 
-    public PaymentService(PaymentJpaRepository paymentRepository, InvoiceJpaRepository invoiceRepository, InvoiceService invoiceService) {
+    public PaymentService(
+            PaymentJpaRepository paymentRepository,
+            InvoiceJpaRepository invoiceRepository,
+            InvoiceService invoiceService,
+            FollowUpJpaRepository followUpRepository) {
         this.paymentRepository = paymentRepository;
         this.invoiceRepository = invoiceRepository;
         this.invoiceService = invoiceService;
+        this.followUpRepository = followUpRepository;
     }
 
     // Create a new payment for an invoice.
@@ -76,6 +83,7 @@ public class PaymentService {
         }
 
         Payment savedPayment = paymentRepository.save(payment);
+        tagAutoRecovery(savedPayment, invoiceId);
         updateInvoiceStatus(invoiceId);
         return savedPayment;
     }
@@ -115,8 +123,21 @@ public class PaymentService {
         if (notes != null) payment.setNotes(notes);
 
         Payment saved = paymentRepository.save(payment);
+        tagAutoRecovery(saved, invoiceId);
         updateInvoiceStatus(invoiceId);
         return saved;
+    }
+
+    /**
+     * If a SENT AUTO follow-up exists for this invoice, tag the payment with the
+     * rule that drove recovery. Called after both API and gateway payment paths.
+     */
+    private void tagAutoRecovery(Payment payment, UUID invoiceId) {
+        followUpRepository.findFirstSentAutoFollowUpByInvoiceId(invoiceId)
+                .map(followUp -> followUp.getReminderRule() != null ? followUp.getReminderRule().getId() : null)
+                .ifPresent(payment::setRecoveredByAutoRuleId);
+        // Persist the tag (payment is already managed within the same transaction)
+        paymentRepository.save(payment);
     }
 
     // Get a payment by its ID.

@@ -1,5 +1,5 @@
 import { AlertCircle, TrendingUp, CheckCircle2, Timer } from 'lucide-react'
-import { formatCurrency, formatDate } from '@/lib/format'
+import { formatCurrency } from '@/lib/format'
 
 function currencySymbol(currency: string): string {
   return (
@@ -21,11 +21,17 @@ interface CardProps {
   iconBg:    string
   iconColor: string
   valueColor?: string
+  alive?:    boolean
 }
 
-function KpiCard({ label, value, sub, icon, iconBg, iconColor, valueColor }: CardProps) {
+function KpiCard({ label, value, sub, icon, iconBg, iconColor, valueColor, alive }: CardProps) {
   return (
-    <div className="bg-white dark:bg-[#1B2838] rounded-xl border border-c-border p-5 flex flex-col gap-4">
+    <div className={[
+      'rounded-xl border p-5 flex flex-col gap-4 transition-colors duration-300',
+      alive
+        ? 'animate-pulse bg-green-50 dark:bg-green-500/10 border-green-300 dark:border-green-500/40'
+        : 'bg-white dark:bg-[#1B2838] border-c-border',
+    ].join(' ')}>
       <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${iconBg}`}>
         <span className={iconColor}>{icon}</span>
       </div>
@@ -66,12 +72,13 @@ interface Props {
     avgPaymentDelayDays:  number | null
     pendingApprovalsCount: number
   }
-  currency:            string
-  isConfirmationFlow:  boolean
-  isLoading:           boolean
+  currency:             string
+  isConfirmationFlow:   boolean
+  isLoading:            boolean
+  autoRecoveryEnabled?: boolean
 }
 
-export default function KpiStrip({ kpis, currency, isConfirmationFlow, isLoading }: Props) {
+export default function KpiStrip({ kpis, currency, isConfirmationFlow, isLoading, autoRecoveryEnabled }: Props) {
   if (isLoading) {
     return (
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -110,6 +117,7 @@ export default function KpiStrip({ kpis, currency, isConfirmationFlow, isLoading
       iconBg:     'bg-green-50 dark:bg-green-500/10',
       iconColor:  'text-green-500',
       valueColor: kpis.collectedThisMonth > 0 ? 'text-green-600 dark:text-green-400' : undefined,
+      alive:      autoRecoveryEnabled && kpis.collectedThisMonth > 0,
     },
     isConfirmationFlow
       ? {

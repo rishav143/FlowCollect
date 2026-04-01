@@ -19,6 +19,7 @@ import com.flowcollect.domain.invoice.followup.FollowUpStatus;
 import com.flowcollect.domain.invoice.followup.FollowUpTriggerType;
 import com.flowcollect.domain.organization.Organization;
 import com.flowcollect.domain.reminder.ReminderRule;
+import com.flowcollect.domain.reminder.RuleMode;
 import com.flowcollect.domain.reminder.ReminderTriggerType;
 import com.flowcollect.domain.template.TemplateChannel;
 
@@ -69,9 +70,22 @@ public class ReminderOrgProcessor {
     private int scheduleFollowUps(Organization organization) {
         LocalDate today = LocalDate.now(organization.getTimezone());
         int created = 0;
+
+        // Org-owned MANUAL rules always run
         for (ReminderRule rule : reminderRuleService.getActiveReminderRules(organization.getId())) {
-            created += scheduleFollowUpsForRule(organization, rule, today);
+            if (rule.getMode() == RuleMode.MANUAL) {
+                created += scheduleFollowUpsForRule(organization, rule, today);
+            }
         }
+
+        // AUTO rules (org-owned + system-defined) only run when Recover is enabled.
+        // Handled separately to include system-seeded rules (organization = null).
+        if (organization.isAutoRecoveryEnabled()) {
+            for (ReminderRule rule : reminderRuleService.getActiveAutoRulesForOrg(organization.getId())) {
+                created += scheduleFollowUpsForRule(organization, rule, today);
+            }
+        }
+
         return created;
     }
 

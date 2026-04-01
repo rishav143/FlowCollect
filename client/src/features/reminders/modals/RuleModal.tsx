@@ -491,7 +491,12 @@ export default function RuleModal({ rule, onClose }: Props) {
                 value={form.name}
                 onChange={(e) => set('name', e.target.value)}
                 placeholder="e.g. First nudge, Final warning"
-                className="w-full text-sm rounded-lg border border-c-border bg-transparent text-[#0D1B2A] dark:text-white placeholder:text-c-muted px-3 py-2.5 focus:outline-none focus:border-[#8A9BAE]/40 transition-colors"
+                readOnly={!!rule?.systemDefined}
+                title={rule?.systemDefined ? 'System rule names cannot be changed' : undefined}
+                className={[
+                  'w-full text-sm rounded-lg border border-c-border bg-transparent text-[#0D1B2A] dark:text-white placeholder:text-c-muted px-3 py-2.5 focus:outline-none focus:border-[#8A9BAE]/40 transition-colors',
+                  rule?.systemDefined ? 'opacity-50 cursor-not-allowed' : '',
+                ].join(' ')}
               />
             </div>
 

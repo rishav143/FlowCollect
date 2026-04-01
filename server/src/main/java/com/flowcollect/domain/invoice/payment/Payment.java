@@ -42,6 +42,14 @@ public class Payment {
     @Column(length = 255)
     private String notes;
 
+    /**
+     * Set when this payment is recorded and a SENT AUTO follow-up exists for its invoice.
+     * Tracks which system recovery rule contributed to collecting this payment.
+     * Plain UUID — no FK to avoid cascade issues with system-defined rules.
+     */
+    @Column(name = "recovered_by_auto_rule_id")
+    private UUID recoveredByAutoRuleId;
+
     // Audit
 
     @Column(nullable = false, updatable = false)
@@ -119,5 +127,13 @@ public class Payment {
 
     public Instant getCreatedAt() {
         return createdAt;
+    }
+
+    public UUID getRecoveredByAutoRuleId() {
+        return recoveredByAutoRuleId;
+    }
+
+    public void setRecoveredByAutoRuleId(UUID recoveredByAutoRuleId) {
+        this.recoveredByAutoRuleId = recoveredByAutoRuleId;
     }
 }

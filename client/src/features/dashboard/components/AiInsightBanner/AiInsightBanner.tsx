@@ -1,5 +1,5 @@
-import React from 'react'
-import { useQuery } from '@tanstack/react-query'
+import React, { useState } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Sparkles, RefreshCw } from 'lucide-react'
 import { useAuthStore } from '@/store/auth.store'
 import { getAiOverviewInsights } from '@/api/ai.api'
@@ -14,15 +14,12 @@ function parseBullets(raw: string): string[] {
 }
 
 // Reformat any raw currency amounts in AI text using proper locale formatting.
-// Handles amounts like ₹826382.40 → ₹8,26,382.40 (INR) or $1234567 → $1,234,567
 function reformatAmounts(text: string, currency: string): string {
-  // Match currency symbol(s) followed by digits (with or without existing separators)
   return text.replace(
     /(₹|\$|€|£|¥|₩|A\$|S\$|AED\s?)([\d,]+(?:\.\d{1,2})?)/g,
     (_match, _symbol, numStr) => {
       const num = parseFloat(numStr.replace(/,/g, ''))
       if (isNaN(num)) return _match
-      // Keep decimals only if original had them
       const hasDecimals = numStr.includes('.')
       return formatCurrency(num, currency, { decimals: hasDecimals })
     },
@@ -37,19 +34,44 @@ function renderBold(text: string): React.ReactNode {
   )
 }
 
+// "2h ago", "just now", "3d ago"
+function timeAgo(isoString: string): string {
+  const diffMs = Date.now() - new Date(isoString).getTime()
+  const mins   = Math.floor(diffMs / 60_000)
+  const hours  = Math.floor(diffMs / 3_600_000)
+  const days   = Math.floor(diffMs / 86_400_000)
+  if (mins < 1)   return 'just now'
+  if (mins < 60)  return `${mins}m ago`
+  if (hours < 24) return `${hours}h ago`
+  return `${days}d ago`
+}
+
 export default function AiInsightBanner() {
   const orgId    = useAuthStore((s) => s.org?.id ?? '')
   const currency = useAuthStore((s) => s.org?.currency ?? 'USD')
+  const qc       = useQueryClient()
+  const queryKey = ['ai-insights-overview', orgId]
 
-  const { data, isLoading, isError, isFetching, refetch } = useQuery({
-    queryKey:  ['ai-insights-overview', orgId],
+  const [isRefreshing, setIsRefreshing] = useState(false)
+
+  const { data, isLoading, isError } = useQuery({
+    queryKey,
     queryFn:   () => getAiOverviewInsights(orgId),
     enabled:   !!orgId,
-    // Fetch only once per page load — never auto-refetch to save API cost.
-    // The user can manually refresh via the button.
+    // Never auto-refetch — backend cache handles staleness by date.
     staleTime: Infinity,
     retry:     false,
   })
+
+  async function handleRefresh() {
+    setIsRefreshing(true)
+    try {
+      const fresh = await getAiOverviewInsights(orgId, true)
+      qc.setQueryData(queryKey, fresh)
+    } finally {
+      setIsRefreshing(false)
+    }
+  }
 
   // Loading skeleton
   if (isLoading) {
@@ -71,7 +93,7 @@ export default function AiInsightBanner() {
   // Silent failure — don't break the dashboard if AI is unavailable
   if (isError || !data) return null
 
-  const bullets = parseBullets(data)
+  const bullets = parseBullets(data.insights)
   if (bullets.length === 0) return null
 
   return (
@@ -83,18 +105,20 @@ export default function AiInsightBanner() {
           <span className="text-xs font-semibold text-[#0D1B2A] dark:text-white">
             AI Insights
           </span>
-          <span className="text-xs text-c-muted">· based on your current data</span>
+          <span className="text-xs text-c-muted">
+            · {data.cached ? `from ${timeAgo(data.generatedAt)}` : 'just generated'}
+          </span>
         </div>
         <button
-          onClick={() => refetch()}
-          disabled={isFetching}
+          onClick={handleRefresh}
+          disabled={isRefreshing}
           title="Refresh insights"
           className={[
             'text-c-muted hover:text-[#29B6F6] transition-colors p-1 rounded',
-            isFetching ? 'opacity-40 cursor-not-allowed' : '',
+            isRefreshing ? 'opacity-40 cursor-not-allowed' : '',
           ].join(' ')}
         >
-          <RefreshCw size={13} className={isFetching ? 'animate-spin' : ''} />
+          <RefreshCw size={13} className={isRefreshing ? 'animate-spin' : ''} />
         </button>
       </div>
 

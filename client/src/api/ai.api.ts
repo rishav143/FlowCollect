@@ -4,7 +4,19 @@ function base(orgId: string) {
   return `/api/v1/organizations/${orgId}/ai`
 }
 
-export async function getAiOverviewInsights(orgId: string): Promise<string> {
-  const { data } = await api.get<{ insights: string }>(`${base(orgId)}/insights/overview`)
-  return data.insights
+export interface AiOverviewInsight {
+  insights:    string
+  cached:      boolean
+  generatedAt: string  // ISO Instant
+}
+
+export async function getAiOverviewInsights(
+  orgId: string,
+  forceRefresh = false,
+): Promise<AiOverviewInsight> {
+  const { data } = await api.get<AiOverviewInsight>(
+    `${base(orgId)}/insights/overview`,
+    forceRefresh ? { params: { forceRefresh: true } } : undefined,
+  )
+  return data
 }

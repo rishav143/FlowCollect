@@ -284,4 +284,13 @@ public class ReminderRuleService {
     public List<ReminderRule> getActiveSystemRules() {
         return reminderRuleRepository.findBySystemDefinedTrueAndActiveTrueAndMode(RuleMode.AUTO);
     }
+
+    /**
+     * Returns all active AUTO rules an org should schedule: org-owned AUTO rules
+     * plus platform-seeded (systemDefined) AUTO rules.
+     * Used by the Recover scheduler.
+     */
+    public List<ReminderRule> getActiveAutoRulesForOrg(UUID orgId) {
+        return reminderRuleRepository.findActiveAutoRulesForOrg(orgId);
+    }
 }

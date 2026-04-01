@@ -9,6 +9,7 @@ import {
   Bell,
   Settings,
   LayoutTemplate,
+  Zap,
   X,
   ChevronLeft,
   ChevronRight,
@@ -26,10 +27,12 @@ import { useIsDesktop } from '@/hooks/useIsDesktop'
 // ---------------------------------------------------------------------------
 
 interface NavItemDef {
-  to:     string
-  icon:   LucideIcon
-  label:  string
-  count?: number
+  to:        string
+  icon:      LucideIcon
+  label:     string
+  count?:    number
+  highlight?: boolean
+  pulseDot?: boolean  // animated status dot (e.g. auto-recovery active)
 }
 
 // ---------------------------------------------------------------------------
@@ -41,12 +44,16 @@ function NavItem({
   icon: Icon,
   label,
   count,
+  highlight,
+  pulseDot,
   collapsed,
   onNavigate,
 }: NavItemDef & { collapsed: boolean; onNavigate: () => void }) {
 
   const activeClass   = 'bg-[#2E7A8E] text-white shadow-sm'
-  const inactiveClass = 'text-[#0D1B2A]/65 dark:text-white/60 hover:bg-[#8A9BAE]/10 dark:hover:bg-[#243447] hover:text-[#0D1B2A] dark:hover:text-white hover:shadow-sm'
+  const inactiveClass = highlight
+    ? 'text-[#F59E0B] hover:bg-[#F59E0B]/10 dark:hover:bg-[#F59E0B]/10 hover:shadow-sm'
+    : 'text-[#0D1B2A]/65 dark:text-white/60 hover:bg-[#8A9BAE]/10 dark:hover:bg-[#243447] hover:text-[#0D1B2A] dark:hover:text-white hover:shadow-sm'
 
   return (
     <div className="relative group">
@@ -63,7 +70,7 @@ function NavItem({
         }
       >
         {/* Icon — always same size, never moves */}
-        <Icon size={18} strokeWidth={1.8} className="shrink-0" />
+        <Icon size={18} strokeWidth={1.8} className={`shrink-0 ${pulseDot ? 'animate-pulse' : ''}`} />
 
         {/* Label + count — collapse together */}
         <span
@@ -81,6 +88,7 @@ function NavItem({
             </span>
           )}
         </span>
+
       </NavLink>
 
       {/* Tooltip — only visible in collapsed mode on hover */}
@@ -107,7 +115,8 @@ function NavItem({
 // ---------------------------------------------------------------------------
 
 export default function Sidebar() {
-  const org    = useAuthStore((s) => s.org)
+  const org               = useAuthStore((s) => s.org)
+  const autoRecoveryEnabled = useAuthStore((s) => s.org?.autoRecoveryEnabled ?? false)
   const badges = useNavBadges()
   const location = useLocation()
   const isDesktop = useIsDesktop()
@@ -208,18 +217,29 @@ export default function Sidebar() {
       {/* ── Primary nav ─────────────────────────────────────────────────── */}
       <nav
         className={[
-          'flex-1 pt-3 pb-2 space-y-0.5 overflow-y-auto',
+          'flex-1 pt-3 pb-2 overflow-y-auto',
           c ? 'lg:px-2 lg:overflow-visible px-3' : 'px-3',
         ].join(' ')}
       >
-        <NavItem to="/dashboard" icon={LayoutDashboard} label="Dashboard"  collapsed={c} onNavigate={closeSidebar} />
-        <NavItem to="/invoices"  icon={FileText}         label="Invoices"   collapsed={c} onNavigate={closeSidebar} />
-        <NavItem to="/followups" icon={Clock}        label="Follow-ups" count={badges.followups} collapsed={c} onNavigate={closeSidebar} />
-        {showApprovals && (
-          <NavItem to="/approvals" icon={CheckCircle2} label="Approvals" count={badges.approvals} collapsed={c} onNavigate={closeSidebar} />
-        )}
-        <NavItem to="/clients"   icon={Users}          label="Clients"   collapsed={c} onNavigate={closeSidebar} />
-        <NavItem to="/templates" icon={LayoutTemplate} label="Templates" collapsed={c} onNavigate={closeSidebar} />
+        {/* Main */}
+        {!c && <p className="px-3 mb-1 text-[10px] font-semibold uppercase tracking-widest text-c-muted">Main</p>}
+        <div className="space-y-0.5">
+          <NavItem to="/dashboard" icon={LayoutDashboard} label="Dashboard"  collapsed={c} onNavigate={closeSidebar} />
+          <NavItem to="/recover"   icon={Zap}             label="Recover"    highlight pulseDot={autoRecoveryEnabled} collapsed={c} onNavigate={closeSidebar} />
+          <NavItem to="/invoices"  icon={FileText}        label="Invoices"   collapsed={c} onNavigate={closeSidebar} />
+          <NavItem to="/followups" icon={Clock}           label="Follow-ups" count={badges.followups} collapsed={c} onNavigate={closeSidebar} />
+        </div>
+
+        {/* Manage */}
+        {!c && <p className="px-3 mt-4 mb-1 text-[10px] font-semibold uppercase tracking-widest text-c-muted">Manage</p>}
+        {c && <hr className="my-3 border-[#8A9BAE]/20 dark:border-white/10" />}
+        <div className="space-y-0.5">
+          <NavItem to="/clients"   icon={Users}          label="Clients"   collapsed={c} onNavigate={closeSidebar} />
+          {showApprovals && (
+            <NavItem to="/approvals" icon={CheckCircle2} label="Approvals" count={badges.approvals} collapsed={c} onNavigate={closeSidebar} />
+          )}
+          <NavItem to="/templates" icon={LayoutTemplate} label="Templates" collapsed={c} onNavigate={closeSidebar} />
+        </div>
       </nav>
 
       {/* ── Secondary nav ───────────────────────────────────────────────── */}

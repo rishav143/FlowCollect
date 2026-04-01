@@ -13,5 +13,8 @@ import java.util.UUID;
 public interface TemplateJpaRepository extends JpaRepository<Template, UUID>, JpaSpecificationExecutor<Template> {
     Optional<Template> findById(UUID id);
     boolean existsByNameAndOrganizationId(String name, UUID organizationId);
+
+    /** Find a system-level template (no org) by name — used by the seeder for idempotency. */
+    Optional<Template> findByNameAndOrganizationIsNull(String name);
 }
 

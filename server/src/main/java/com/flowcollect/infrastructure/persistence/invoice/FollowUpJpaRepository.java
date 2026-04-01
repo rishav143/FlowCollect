@@ -36,5 +36,37 @@ public interface FollowUpJpaRepository extends JpaRepository<FollowUp, UUID>, Jp
     @Modifying
     @Query("UPDATE FollowUp f SET f.template = null WHERE f.template.id = :templateId")
     void detachTemplate(@Param("templateId") UUID templateId);
+
+    /** Count SENT AUTO follow-ups dispatched today for an org (used for Recover KPI). */
+    @Query("SELECT COUNT(f) FROM FollowUp f WHERE f.invoice.organization.id = :orgId " +
+           "AND f.triggerType = 'AUTOMATED' AND f.reminderRule.mode = 'AUTO' " +
+           "AND f.status = 'SENT' AND f.sentAt >= :dayStart AND f.sentAt < :dayEnd")
+    long countSentAutoToday(
+        @Param("orgId") UUID orgId,
+        @Param("dayStart") java.time.Instant dayStart,
+        @Param("dayEnd") java.time.Instant dayEnd
+    );
+
+    /** Count PENDING AUTO follow-ups queued for an org (used for Recover KPI). */
+    @Query("SELECT COUNT(f) FROM FollowUp f WHERE f.invoice.organization.id = :orgId " +
+           "AND f.triggerType = 'AUTOMATED' AND f.reminderRule.mode = 'AUTO' " +
+           "AND f.status = 'PENDING'")
+    long countPendingAuto(@Param("orgId") UUID orgId);
+
+    /** Count SENT AUTO follow-ups dispatched this week for an org (used for Recover banner). */
+    @Query("SELECT COUNT(f) FROM FollowUp f WHERE f.invoice.organization.id = :orgId " +
+           "AND f.triggerType = 'AUTOMATED' AND f.reminderRule.mode = 'AUTO' " +
+           "AND f.status = 'SENT' AND f.sentAt >= :weekStart AND f.sentAt < :weekEnd")
+    long countSentAutoThisWeek(
+        @Param("orgId") UUID orgId,
+        @Param("weekStart") java.time.Instant weekStart,
+        @Param("weekEnd") java.time.Instant weekEnd
+    );
+
+    /** Any SENT AUTO follow-up for a given invoice — used to tag recovered payments. */
+    @Query("SELECT f FROM FollowUp f WHERE f.invoice.id = :invoiceId " +
+           "AND f.triggerType = 'AUTOMATED' AND f.reminderRule.mode = 'AUTO' " +
+           "AND f.status = 'SENT' ORDER BY f.sentAt DESC")
+    java.util.Optional<FollowUp> findFirstSentAutoFollowUpByInvoiceId(@Param("invoiceId") UUID invoiceId);
 }
 
