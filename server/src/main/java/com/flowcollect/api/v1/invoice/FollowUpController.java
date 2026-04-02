@@ -121,6 +121,18 @@ public class FollowUpController {
         return ResponseEntity.ok(FollowUpMapper.toResponse(failed));
     }
 
+    // Cancels (skips) a PENDING follow-up. Used by the Recover queue panel.
+    @PatchMapping("/{followUpId}/cancel")
+    public ResponseEntity<FollowUpResponse> cancelFollowUp(
+            @PathVariable UUID organizationId,
+            @PathVariable UUID invoiceId,
+            @PathVariable UUID followUpId
+    ) {
+        FollowUp followUp = followUpService.getFollowUp(organizationId, invoiceId, followUpId);
+        FollowUp cancelled = followUpService.cancelFollowUp(followUp);
+        return ResponseEntity.ok(FollowUpMapper.toResponse(cancelled));
+    }
+
     // Deletes a follow-up (only PENDING or FAILED can be deleted).
     @DeleteMapping("/{followUpId}")
     public ResponseEntity<Void> deleteFollowUp(

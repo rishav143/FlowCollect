@@ -63,6 +63,32 @@ public interface FollowUpJpaRepository extends JpaRepository<FollowUp, UUID>, Jp
         @Param("weekEnd") java.time.Instant weekEnd
     );
 
+    /** PENDING AUTO follow-ups for org — used for Today's Send Queue panel. */
+    @Query("SELECT f FROM FollowUp f " +
+           "JOIN FETCH f.invoice i " +
+           "LEFT JOIN FETCH i.customer " +
+           "WHERE i.organization.id = :orgId " +
+           "AND f.triggerType = 'AUTOMATED' AND f.reminderRule.mode = 'AUTO' " +
+           "AND f.status = 'PENDING' " +
+           "ORDER BY f.scheduledForDate ASC, f.createdAt ASC")
+    List<FollowUp> findPendingAutoQueue(@Param("orgId") UUID orgId);
+
+    /** Recent SENT or CANCELLED AUTO follow-ups for org — used for Activity Log panel. */
+    @Query("SELECT f FROM FollowUp f " +
+           "JOIN FETCH f.invoice i " +
+           "LEFT JOIN FETCH i.customer " +
+           "LEFT JOIN FETCH f.reminderRule " +
+           "WHERE i.organization.id = :orgId " +
+           "AND f.triggerType = 'AUTOMATED' AND f.reminderRule.mode = 'AUTO' " +
+           "AND f.status IN ('SENT', 'CANCELLED') " +
+           "AND f.updatedAt >= :since " +
+           "ORDER BY f.updatedAt DESC")
+    org.springframework.data.domain.Slice<FollowUp> findRecentAutoActivity(
+        @Param("orgId") UUID orgId,
+        @Param("since") java.time.Instant since,
+        org.springframework.data.domain.Pageable pageable
+    );
+
     /** Any SENT AUTO follow-up for a given invoice — used to tag recovered payments. */
     @Query("SELECT f FROM FollowUp f WHERE f.invoice.id = :invoiceId " +
            "AND f.triggerType = 'AUTOMATED' AND f.reminderRule.mode = 'AUTO' " +

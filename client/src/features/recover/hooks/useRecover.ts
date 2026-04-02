@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@/store/auth.store'
-import { getRecoverStats, setAutoRecovery } from '@/api/recover.api'
+import { getRecoverStats, getQueueActivity, skipFollowUp, setAutoRecovery } from '@/api/recover.api'
 import { listReminderRules } from '@/api/reminder.api'
 
 // ---------------------------------------------------------------------------
@@ -9,6 +9,7 @@ import { listReminderRules } from '@/api/reminder.api'
 
 const statsQk    = (orgId: string) => ['recover-stats', orgId]
 const rulesQk    = (orgId: string) => ['reminder-rules', orgId]  // shared with Reminders page
+const queueQk    = (orgId: string) => ['recover-queue', orgId]
 
 // ---------------------------------------------------------------------------
 // Stats
@@ -37,6 +38,35 @@ export function useAutoRules() {
     queryFn:  () => listReminderRules(orgId),
     enabled:  !!orgId,
     select:   (data) => data.content.filter((r) => r.mode === 'AUTO'),
+  })
+}
+
+// ---------------------------------------------------------------------------
+// Queue + Activity
+// ---------------------------------------------------------------------------
+
+export function useQueueActivity() {
+  const orgId = useAuthStore((s) => s.org?.id ?? '')
+  return useQuery({
+    queryKey: queueQk(orgId),
+    queryFn:  () => getQueueActivity(orgId),
+    enabled:  !!orgId,
+    refetchInterval: 30_000,
+    retry: false,
+  })
+}
+
+export function useSkipFollowUp() {
+  const orgId = useAuthStore((s) => s.org?.id ?? '')
+  const qc    = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ invoiceId, followUpId }: { invoiceId: string; followUpId: string }) =>
+      skipFollowUp(orgId, invoiceId, followUpId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queueQk(orgId) })
+      qc.invalidateQueries({ queryKey: statsQk(orgId) })
+    },
   })
 }
 

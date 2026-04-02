@@ -2,11 +2,12 @@ import { useState } from 'react'
 import {
   Zap, TrendingUp, Send, Clock, Shield,
   Mail, MessageSquare, MessageCircle, Pencil,
-  AlertCircle, RefreshCw, Loader2,
+  AlertCircle, RefreshCw, Loader2, SkipForward,
 } from 'lucide-react'
 import { useAuthStore } from '@/store/auth.store'
 import { formatCurrency } from '@/lib/format'
-import { useRecoverStats, useAutoRules, useToggleAutoRecovery } from '../hooks/useRecover'
+import { useRecoverStats, useAutoRules, useToggleAutoRecovery, useQueueActivity, useSkipFollowUp } from '../hooks/useRecover'
+import type { QueueItem, ActivityItem } from '@/api/recover.api'
 import { useToggleReminderRule } from '@/features/reminders/hooks/useReminders'
 import RuleModal from '@/features/reminders/modals/RuleModal'
 import type { ReminderRuleResponse, ReminderChannel } from '@/types/reminder.types'
@@ -88,6 +89,182 @@ function StatsError({ onRetry }: { onRetry: () => void }) {
         <RefreshCw size={12} />
         Retry
       </button>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function relativeTime(isoString: string): string {
+  const diff = Date.now() - new Date(isoString).getTime()
+  const mins = Math.floor(diff / 60_000)
+  if (mins < 1)  return 'just now'
+  if (mins < 60) return `${mins}m ago`
+  const hrs = Math.floor(mins / 60)
+  if (hrs  < 24) return `${hrs}h ago`
+  return `${Math.floor(hrs / 24)}d ago`
+}
+
+// ---------------------------------------------------------------------------
+// Today's Send Queue panel
+// ---------------------------------------------------------------------------
+
+function SendQueuePanel({
+  queue, totalPending, isLoading, isError, onSkip, skippingId,
+}: {
+  queue:       QueueItem[]
+  totalPending: number
+  isLoading:   boolean
+  isError:     boolean
+  onSkip:      (item: QueueItem) => void
+  skippingId:  string | null
+}) {
+  const extra = totalPending - queue.length
+
+  return (
+    <div className="bg-white dark:bg-[#1B2838] rounded-xl border border-c-border overflow-hidden">
+      <div className="px-5 py-3.5 border-b border-c-border flex items-center justify-between">
+        <span className="text-sm font-semibold text-[#0D1B2A] dark:text-white">Today's Send Queue</span>
+        {!isLoading && !isError && totalPending > 0 && (
+          <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400">
+            {totalPending} pending
+          </span>
+        )}
+      </div>
+
+      {isError ? (
+        <div className="flex items-center gap-2 px-5 py-8 text-c-muted text-sm">
+          <AlertCircle size={14} className="text-red-400 shrink-0" />
+          Could not load queue.
+        </div>
+      ) : isLoading ? (
+        <div className="divide-y divide-c-border">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="flex items-center gap-4 px-5 py-3.5 animate-pulse">
+              <div className="w-8 h-8 rounded-full bg-[#F4F7F9] dark:bg-white/10 shrink-0" />
+              <div className="flex-1 space-y-1.5">
+                <div className="h-3.5 w-32 rounded bg-[#F4F7F9] dark:bg-white/10" />
+                <div className="h-3 w-20 rounded bg-[#F4F7F9] dark:bg-white/10" />
+              </div>
+              <div className="w-12 h-3 rounded bg-[#F4F7F9] dark:bg-white/10" />
+              <div className="w-14 h-7 rounded-lg bg-[#F4F7F9] dark:bg-white/10" />
+            </div>
+          ))}
+        </div>
+      ) : queue.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-10 gap-1.5 text-center px-5">
+          <Clock size={18} className="text-c-muted/50" strokeWidth={1.5} />
+          <p className="text-sm text-c-muted">No follow-ups queued right now.</p>
+        </div>
+      ) : (
+        <>
+          <div className="divide-y divide-c-border">
+            {queue.map((item) => {
+              const ch = CHANNEL_META[item.channel]
+              const isSkipping = skippingId === item.followUpId
+              return (
+                <div key={item.followUpId} className="flex items-center gap-3 px-5 py-3.5">
+                  <div className={`w-8 h-8 rounded-full ${ch.bg} ${ch.color} flex items-center justify-center shrink-0`}>
+                    {ch.icon}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-[#0D1B2A] dark:text-white truncate">{item.customerName}</p>
+                    <p className="text-xs text-c-muted">{item.invoiceNumber}</p>
+                  </div>
+                  <span className={`text-xs font-semibold tabular-nums shrink-0 ${
+                    item.daysOverdue >= 14 ? 'text-red-500' :
+                    item.daysOverdue >= 7  ? 'text-orange-500' :
+                    item.daysOverdue >= 1  ? 'text-amber-500' :
+                    'text-c-muted'
+                  }`}>
+                    {item.daysOverdue > 0 ? `${item.daysOverdue}d` : 'Due'}
+                  </span>
+                  <span className="text-xs text-c-muted shrink-0 hidden sm:block">{ch.label}</span>
+                  <button
+                    onClick={() => onSkip(item)}
+                    disabled={isSkipping}
+                    className="shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-c-muted hover:text-[#0D1B2A] dark:hover:text-white hover:bg-[#F4F7F9] dark:hover:bg-[#243447] transition-colors disabled:opacity-40"
+                    aria-label="Skip this follow-up"
+                  >
+                    {isSkipping
+                      ? <Loader2 size={12} className="animate-spin" />
+                      : <SkipForward size={12} strokeWidth={2} />
+                    }
+                    <span className="hidden sm:inline">Skip</span>
+                  </button>
+                </div>
+              )
+            })}
+          </div>
+          {extra > 0 && (
+            <p className="px-5 py-2.5 text-xs text-c-muted text-center border-t border-c-border">
+              + {extra} more queued for today
+            </p>
+          )}
+        </>
+      )}
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Activity Log panel
+// ---------------------------------------------------------------------------
+
+function ActivityLogPanel({
+  activity, isLoading, isError,
+}: {
+  activity:  ActivityItem[]
+  isLoading: boolean
+  isError:   boolean
+}) {
+  return (
+    <div className="bg-white dark:bg-[#1B2838] rounded-xl border border-c-border overflow-hidden">
+      <div className="px-5 py-3.5 border-b border-c-border">
+        <span className="text-sm font-semibold text-[#0D1B2A] dark:text-white">Activity Log</span>
+      </div>
+
+      {isError ? (
+        <div className="flex items-center gap-2 px-5 py-8 text-c-muted text-sm">
+          <AlertCircle size={14} className="text-red-400 shrink-0" />
+          Could not load activity.
+        </div>
+      ) : isLoading ? (
+        <div className="divide-y divide-c-border">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="px-5 py-3.5 space-y-1.5 animate-pulse">
+              <div className="h-3.5 w-40 rounded bg-[#F4F7F9] dark:bg-white/10" />
+              <div className="h-3 w-28 rounded bg-[#F4F7F9] dark:bg-white/10" />
+            </div>
+          ))}
+        </div>
+      ) : activity.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-10 gap-1.5 text-center px-5">
+          <Send size={18} className="text-c-muted/50" strokeWidth={1.5} />
+          <p className="text-sm text-c-muted">No activity in the last 7 days.</p>
+        </div>
+      ) : (
+        <div className="divide-y divide-c-border">
+          {activity.map((item) => {
+            const ch = CHANNEL_META[item.channel]
+            const isSent = item.status === 'SENT'
+            return (
+              <div key={item.followUpId} className="px-5 py-3.5">
+                <p className="text-sm font-medium text-[#0D1B2A] dark:text-white">
+                  {isSent ? `${ch.label} sent to ${item.customerName}` : `Rule skipped for ${item.customerName}`}
+                </p>
+                <p className="text-xs text-c-muted mt-0.5">
+                  {item.invoiceNumber}
+                  {item.ruleName && ` · ${item.ruleName}`}
+                  {' · '}{relativeTime(item.eventAt)}
+                </p>
+              </div>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }
@@ -276,8 +453,19 @@ export default function RecoverPage() {
 
   const { data: stats, isLoading: statsLoading, isError: statsError, refetch: refetchStats } = useRecoverStats()
   const { data: autoRules, isLoading: rulesLoading } = useAutoRules()
+  const { data: queueActivity, isLoading: qaLoading, isError: qaError } = useQueueActivity()
   const toggleAutoRecovery = useToggleAutoRecovery()
   const toggleRule         = useToggleReminderRule()
+  const skipMutation       = useSkipFollowUp()
+  const [skippingId, setSkippingId] = useState<string | null>(null)
+
+  function handleSkip(item: import('@/api/recover.api').QueueItem) {
+    setSkippingId(item.followUpId)
+    skipMutation.mutate(
+      { invoiceId: item.invoiceId, followUpId: item.followUpId },
+      { onSettled: () => setSkippingId(null) }
+    )
+  }
 
   // De-duplicate templates from rules (multiple rules might share one template, unlikely but safe)
   const uniqueTemplates: { templateId: string; templateName: string | null; channel: ReminderChannel }[] = []
@@ -386,6 +574,27 @@ export default function RecoverPage() {
             />
           </div>
         )}
+
+        {/* ── Send Queue + Activity Log ─────────────────────────────────── */}
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 items-start">
+          <div className="lg:col-span-3">
+            <SendQueuePanel
+              queue={queueActivity?.queue ?? []}
+              totalPending={queueActivity?.totalPending ?? 0}
+              isLoading={qaLoading}
+              isError={qaError}
+              onSkip={handleSkip}
+              skippingId={skippingId}
+            />
+          </div>
+          <div className="lg:col-span-2">
+            <ActivityLogPanel
+              activity={queueActivity?.activity ?? []}
+              isLoading={qaLoading}
+              isError={qaError}
+            />
+          </div>
+        </div>
 
         {/* ── Rules + Templates row ──────────────────────────────────────── */}
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 items-start">

@@ -8,7 +8,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.flowcollect.api.v1.recover.dto.QueueActivityResponse;
 import com.flowcollect.api.v1.recover.dto.RecoverStatsResponse;
+import com.flowcollect.application.recover.RecoverQueueService;
 import com.flowcollect.application.recover.RecoverStatsService;
 import com.flowcollect.application.recover.RecoverStatsService.RecoverStats;
 import com.flowcollect.domain.user.UserRole;
@@ -20,9 +22,11 @@ import com.flowcollect.security.RequireRole;
 public class RecoverController {
 
     private final RecoverStatsService recoverStatsService;
+    private final RecoverQueueService recoverQueueService;
 
-    public RecoverController(RecoverStatsService recoverStatsService) {
+    public RecoverController(RecoverStatsService recoverStatsService, RecoverQueueService recoverQueueService) {
         this.recoverStatsService = recoverStatsService;
+        this.recoverQueueService = recoverQueueService;
     }
 
     /**
@@ -40,5 +44,15 @@ public class RecoverController {
                 stats.pendingToday(),
                 stats.sentThisWeek()
         ));
+    }
+
+    /**
+     * Returns today's send queue and recent activity log for the Recover page.
+     *
+     * GET /api/v1/organizations/{organizationId}/recover/queue-activity
+     */
+    @GetMapping("/queue-activity")
+    public ResponseEntity<QueueActivityResponse> getQueueActivity(@PathVariable UUID organizationId) {
+        return ResponseEntity.ok(recoverQueueService.getQueueAndActivity(organizationId));
     }
 }
