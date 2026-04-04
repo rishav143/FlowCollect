@@ -78,19 +78,19 @@ function AutoAgentBanner() {
   const tagline = options[m % options.length]
 
   return (
-    <div className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/25 text-sm">
+    <div className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-white dark:bg-[#1B2838] border border-amber-200 dark:border-amber-500/30 shadow-sm dark:shadow-[0_0_16px_rgba(245,158,11,0.12)] text-sm">
       <Zap size={14} className="shrink-0 text-amber-500 animate-pulse" strokeWidth={2.5} />
-      <span className="text-amber-700 dark:text-amber-400 font-medium text-xs">Automation engine</span>
-      <span className="text-amber-300 dark:text-amber-600 select-none">·</span>
+      <span className="text-amber-600 dark:text-amber-400 font-semibold text-xs whitespace-nowrap">Automation engine</span>
+      <span className="text-[#CBD5DF] dark:text-white/20 select-none">·</span>
       <div className="flex items-center gap-3 flex-wrap">
         {pills.map((p, i) => (
-          <span key={i} className="text-xs text-amber-700 dark:text-amber-400">
+          <span key={i} className="text-xs text-[#0D1B2A] dark:text-white">
             <span className="font-bold">{p.value}</span>
-            <span className="opacity-70 ml-1">{p.label}</span>
+            <span className="text-c-muted ml-1">{p.label}</span>
           </span>
         ))}
-        <span className="text-amber-300 dark:text-amber-600 select-none hidden sm:inline">·</span>
-        <span className="text-xs text-amber-600/70 dark:text-amber-500/70 italic hidden sm:inline">{tagline}</span>
+        <span className="text-[#CBD5DF] dark:text-white/20 select-none hidden sm:inline">·</span>
+        <span className="text-xs text-c-muted italic hidden sm:inline">{tagline}</span>
       </div>
     </div>
   )

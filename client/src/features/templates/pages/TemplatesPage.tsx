@@ -37,10 +37,10 @@ export default function TemplatesPage() {
   const [view, setView] = useViewPreference('templates', 'grid3')
 
   const { data, isLoading, isError } = useTemplates(
-    channelFilter !== 'ALL' ? { channel: channelFilter } : undefined,
+    channelFilter !== 'ALL' ? { channel: channelFilter, mode: 'MANUAL' } : { mode: 'MANUAL' },
   )
 
-  const templates = data?.content ?? []
+  const templates = (data?.content ?? []).filter((t) => t.mode === 'MANUAL' && !t.systemDefined)
 
   return (
     <div className="space-y-5">

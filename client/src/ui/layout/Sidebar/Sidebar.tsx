@@ -52,8 +52,8 @@ function NavItem({
 
   const activeClass   = 'bg-[#2E7A8E] text-white shadow-sm'
   const inactiveClass = highlight
-    ? 'text-[#F59E0B] hover:bg-[#F59E0B]/10 dark:hover:bg-[#F59E0B]/10 hover:shadow-sm'
-    : 'text-[#0D1B2A]/65 dark:text-white/60 hover:bg-[#8A9BAE]/10 dark:hover:bg-[#243447] hover:text-[#0D1B2A] dark:hover:text-white hover:shadow-sm'
+    ? 'text-amber-600 dark:text-[#F59E0B] hover:bg-amber-50 dark:hover:bg-[#F59E0B]/10 hover:shadow-sm'
+    : 'text-[#374151] dark:text-white/60 hover:bg-[#8A9BAE]/10 dark:hover:bg-[#243447] hover:text-[#0D1B2A] dark:hover:text-white hover:shadow-sm'
 
   return (
     <div className="relative group">

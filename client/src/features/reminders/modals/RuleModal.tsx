@@ -256,7 +256,7 @@ export default function RuleModal({ rule, onClose }: Props) {
   const update    = useUpdateReminderRule()
   const isPending = create.isPending || update.isPending
 
-  const { data: templatesData } = useTemplates({ channel: form.channel, mode: rule?.mode })
+  const { data: templatesData } = useTemplates({ channel: form.channel, mode: isAutoRule ? 'AUTO' : 'MANUAL' })
   const templates = templatesData?.content ?? []
 
   function set<K extends keyof FormState>(key: K, value: FormState[K]) {

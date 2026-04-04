@@ -85,8 +85,10 @@ export default function RemindersPage() {
   const deleteMut  = useDeleteReminderRule()
   const toggleMut  = useToggleReminderRule()
 
-  // Sort by daysOffset ascending: most-before (-N) → on due (0) → after (+N)
-  const rules = [...(data?.content ?? [])].sort((a, b) => a.daysOffset - b.daysOffset)
+  // Only show MANUAL rules — AUTO rules are system-managed and belong to the Recover page
+  const rules = [...(data?.content ?? [])]
+    .filter((r) => r.mode === 'MANUAL')
+    .sort((a, b) => a.daysOffset - b.daysOffset)
 
   async function confirmDelete() {
     if (!deleting) return

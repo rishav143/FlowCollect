@@ -93,7 +93,7 @@ export default function DispatchModal({ invoice, onClose }: Props) {
   const toast       = useToast()
   const dispatch    = useDispatchFollowup(invoice.id)
 
-  const { data: templatesData, isLoading, isFetching } = useTemplates({ size: 100 })
+  const { data: templatesData, isLoading, isFetching } = useTemplates({ size: 100, mode: 'MANUAL' })
   const templatesLoading = isLoading || isFetching
   const allTemplates = templatesData?.content ?? []
 

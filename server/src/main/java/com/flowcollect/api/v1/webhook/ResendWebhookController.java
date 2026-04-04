@@ -83,10 +83,10 @@ public class ResendWebhookController {
             JsonNode root      = objectMapper.readTree(payload);
             String   eventType = root.path("type").asText("");
 
-            if ("email.opened".equals(eventType)) {
+            if ("email.clicked".equals(eventType) || "email.opened".equals(eventType)) {
                 String emailId = root.path("data").path("email_id").asText(null);
                 if (emailId == null || emailId.isBlank()) {
-                    log.warn("email.opened event missing data.email_id — ignoring");
+                    log.warn("{} event missing data.email_id — ignoring", eventType);
                     return ResponseEntity.ok().build();
                 }
                 handleEmailOpened(emailId);

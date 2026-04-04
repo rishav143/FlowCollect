@@ -71,7 +71,7 @@ function InvoiceRow({
 }) {
   const overdue  = invoice.timeStatus === 'OVERDUE'
   const dueToday = invoice.timeStatus === 'DUE_TODAY'
-  const opened   = lastFollowup?.channel === 'EMAIL' && !!lastFollowup?.openedAt
+  const opened   = !!lastFollowup?.openedAt
 
   return (
     <div className="flex items-center gap-2 px-4 py-2.5 border-t border-c-border hover:bg-[#F4F7F9]/50 dark:hover:bg-white/5 transition-colors group">
@@ -112,7 +112,7 @@ function InvoiceRow({
             </span>
             {opened && (
               <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-green-50 text-green-700 dark:bg-green-500/15 dark:text-green-400 shrink-0">
-                Opened
+                Clicked
               </span>
             )}
           </>
@@ -203,9 +203,9 @@ function ActivityTimeline({
                   {autoSuffix}
                   {' — '}
                   {inv.invoiceNumber}
-                  {f.channel === 'EMAIL' && f.openedAt && (
+                  {f.openedAt && (
                     <span className="ml-1.5 text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-green-50 text-green-700 dark:bg-green-500/15 dark:text-green-400">
-                      Opened
+                      Clicked
                     </span>
                   )}
                 </p>
@@ -392,14 +392,14 @@ function MetricsStrip({
     [allFollowups, weekAgo],
   )
 
-  const emailSent = useMemo(
-    () => allFollowups.filter((f) => f.status === 'SENT' && f.channel === 'EMAIL'),
+  const allSent = useMemo(
+    () => allFollowups.filter((f) => f.status === 'SENT'),
     [allFollowups],
   )
 
-  const openRate =
-    emailSent.length > 0
-      ? Math.round((emailSent.filter((f) => f.openedAt != null).length / emailSent.length) * 100)
+  const clickRate =
+    allSent.length > 0
+      ? Math.round((allSent.filter((f) => f.openedAt != null).length / allSent.length) * 100)
       : null
 
   const cards = [
@@ -416,14 +416,14 @@ function MetricsStrip({
       color:  'text-[#0D1B2A] dark:text-white',
     },
     {
-      label:  'Email open rate',
-      value:  openRate != null ? `${openRate}%` : '—',
+      label:  'Link click rate',
+      value:  clickRate != null ? `${clickRate}%` : '—',
       sub:
-        emailSent.length > 0
-          ? `${emailSent.filter((f) => f.openedAt != null).length} of ${emailSent.length} opened`
-          : 'No emails sent yet',
+        allSent.length > 0
+          ? `${allSent.filter((f) => f.openedAt != null).length} of ${allSent.length} clicked`
+          : 'No reminders sent yet',
       color:
-        openRate != null && openRate >= 50
+        clickRate != null && clickRate >= 50
           ? 'text-[#2E7A8E] dark:text-[#29B6F6]'
           : 'text-[#0D1B2A] dark:text-white',
     },

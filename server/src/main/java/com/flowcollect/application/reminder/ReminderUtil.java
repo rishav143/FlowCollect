@@ -30,12 +30,17 @@ public class ReminderUtil {
         ReminderRuleJpaRepository reminderRuleRepository
     ) {
         if(organizationId == null) {
-            throw new NotFoundException( 
+            throw new NotFoundException(
                 "Organization ID cannot be null");
         }
         ReminderRule reminderRule = validateReminderRule(reminderRuleId, reminderRuleRepository);
-        if (!reminderRule.getOrganization().getId().equals(organizationId)) {
-            throw new NotFoundException( 
+        // System-defined rules have no org — allow read/edit from any org context
+        if (reminderRule.isSystemDefined()) {
+            return reminderRule;
+        }
+        if (reminderRule.getOrganization() == null ||
+                !reminderRule.getOrganization().getId().equals(organizationId)) {
+            throw new NotFoundException(
                 "Reminder rule not found");
         }
         return reminderRule;

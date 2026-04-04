@@ -78,13 +78,22 @@ public class RecoverSystemDataSeeder implements ApplicationRunner {
      * Existing user edits (body, subject, active flag) are never overwritten.
      */
     private Template ensureTemplate(String name, TemplateChannel channel, String subject, String body) {
-        return templateRepository.findByNameAndOrganizationIsNull(name).orElseGet(() -> {
+        return templateRepository.findByNameAndOrganizationIsNull(name).map(existing -> {
+            // Ensure mode is AUTO even for templates seeded before this field was set
+            if (existing.getMode() != RuleMode.AUTO) {
+                existing.setMode(RuleMode.AUTO);
+                templateRepository.save(existing);
+                log.info("[Seed] Updated system template '{}' mode to AUTO (id={})", name, existing.getId());
+            }
+            return existing;
+        }).orElseGet(() -> {
             Template t = new Template();
             t.setName(name);
             t.setChannel(channel);
             t.setSubject(subject);
             t.setBody(body);
             t.setTone(TemplateTone.POLITE);
+            t.setMode(RuleMode.AUTO);
             t.setSystemDefined(true);
             // organization stays null — platform-level, shared across all orgs
             Template saved = templateRepository.save(t);

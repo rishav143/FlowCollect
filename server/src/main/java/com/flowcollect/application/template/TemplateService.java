@@ -83,9 +83,18 @@ public class TemplateService {
     }
 
     // Get a template by id with organization context.
+    // System templates (org=null) are readable by any org — they are platform-level.
     public Template getTemplateById(UUID organizationId, UUID templateId) {
         organizationService.getById(organizationId);
-        return TemplateUtil.validateTemplateWithOrganization(templateId, organizationId, templateRepository);
+        Template template = TemplateUtil.getTemplateOrThrow(templateId, templateRepository);
+        // Allow system-defined templates to be read from any org context
+        if (template.isSystemDefined()) {
+            return template;
+        }
+        if (template.getOrganization() == null || !template.getOrganization().getId().equals(organizationId)) {
+            throw new com.flowcollect.exception.http.NotFoundException("Template not found with ID: " + templateId);
+        }
+        return template;
     }
 
     // Get a template by id without organization context (internal use).
@@ -140,7 +149,11 @@ public class TemplateService {
             throw new ValidationException("Template request must not be null");
         }
         organizationService.getById(organizationId);
-        Template template = TemplateUtil.validateTemplateWithOrganization(templateId, organizationId, templateRepository);
+        // System-defined templates (org=null) can be edited from any org context
+        Template template = TemplateUtil.getTemplateOrThrow(templateId, templateRepository);
+        if (!template.isSystemDefined()) {
+            template = TemplateUtil.validateTemplateWithOrganization(templateId, organizationId, templateRepository);
+        }
 
         if (request.getName() != null) {
             if (request.getName().isBlank()) {

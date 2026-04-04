@@ -175,8 +175,12 @@ export function useDefaultTemplates() {
         const page     = await listTemplates(orgId, { size: 100 })
         const defaults = buildDefaultTemplates(paymentMode)
 
-        // Map channel → existing template for quick lookup
-        const existingByChannel = new Map(page.content.map((t) => [t.channel, t]))
+        // Map channel → existing template for quick lookup — exclude system templates
+        // so system-defined AUTO templates (e.g. Day 3 Recovery Nudge) don't block
+        // creation of org-owned default templates on the same channel.
+        const existingByChannel = new Map(
+          page.content.filter((t) => !t.systemDefined).map((t) => [t.channel, t]),
+        )
 
         const toCreate: CreateTemplateRequest[] = []
         const updatePromises: Promise<unknown>[] = []
