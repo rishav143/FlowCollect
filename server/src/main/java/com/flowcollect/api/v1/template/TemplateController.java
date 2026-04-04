@@ -18,6 +18,7 @@ import com.flowcollect.api.v1.template.dto.TemplateRequest;
 import com.flowcollect.api.v1.template.dto.TemplateResponse;
 import com.flowcollect.application.template.TemplateService;
 import com.flowcollect.domain.template.Template;
+import com.flowcollect.domain.reminder.RuleMode;
 import com.flowcollect.domain.template.TemplateChannel;
 import com.flowcollect.domain.template.TemplateTone;
 import com.flowcollect.domain.user.UserRole;
@@ -73,9 +74,10 @@ public class TemplateController {
         @RequestParam(required = false) String name,
         @RequestParam(required = false) TemplateChannel channel,
         @RequestParam(required = false) TemplateTone tone,
+        @RequestParam(required = false) RuleMode mode,
         Pageable pageable
     ) {
-        Page<Template> templates = templateService.getAllTemplates(organizationId, name, channel, tone, pageable);
+        Page<Template> templates = templateService.getAllTemplates(organizationId, name, channel, tone, mode, pageable);
         return ResponseEntity.ok(templates.map(TemplateMapper::toResponse));
     }
 

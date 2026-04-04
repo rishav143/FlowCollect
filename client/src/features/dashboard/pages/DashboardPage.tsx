@@ -47,11 +47,35 @@ function AutoAgentBanner() {
   ]
 
   const h = new Date().getHours()
-  const tagline =
-    h < 6  ? 'Up late? The engine never sleeps.' :
-    h < 12 ? 'Grab a coffee — the engine is on it.' :
-    h < 17 ? 'Take a break, the engine\'s handling it.' :
-             'Wind down — the engine keeps working.'
+  const m = new Date().getMinutes()
+  const taglines: Record<number, string[]> = {
+    0:  ['Still up? Your invoices aren\'t sleeping either.', 'Night owl hours — your reminders are wide awake.'],
+    1:  ['Burning the midnight oil? It\'s all being handled.', 'Deep night mode — chasing those invoices for you.'],
+    2:  ['2 AM hustle? You\'re covered.', 'Doesn\'t need sleep. Lucky you.'],
+    3:  ['Pre-dawn grind. We respect it.', 'Way too early — or way too late. No judgment.'],
+    4:  ['Early bird or night owl? Either way, it\'s handled.', 'The sun\'s not up yet but your follow-ups are.'],
+    5:  ['Rise and grind — already beat you to it.', 'First light. Been running all night for you.'],
+    6:  ['Morning! Your invoices were already nudged.', 'Sunrise shift — already on the clock.'],
+    7:  ['Morning stretch — we\'ve been lifting for you.', 'Good morning! Your invoices are already on the move.'],
+    8:  ['Workday\'s young — already 3 steps ahead.', 'Start of the day, all warmed up for you.'],
+    9:  ['Grab a coffee — it\'s all being handled.', '9 AM momentum — in full swing.'],
+    10: ['Mid-morning hustle — nudges are going out.', 'You focus on the work, we\'ll focus on the money.'],
+    11: ['Almost noon — been grinding since dawn.', 'Pre-lunch lull? Not here.'],
+    12: ['Lunch break earned — we\'ve got it covered.', 'Noon check-in: fully operational.'],
+    13: ['Post-lunch dip? Doesn\'t apply here.', 'Afternoon shift — no naps allowed.'],
+    14: ['Deep work hours — invoices are being chased.', '2 PM focus mode. The boring stuff is handled.'],
+    15: ['Afternoon grind — steady as ever.', 'Tea time? Keep going, we\'ve got the follow-ups.'],
+    16: ['Golden hour — cash flow is golden too.', 'Late afternoon push — keeping pace with you.'],
+    17: ['End of the workday? Not quite.', '5 o\'clock somewhere — follow-ups don\'t care.'],
+    18: ['Wrapping up? We\'re just hitting our stride.', 'Evening mode — still day mode for your invoices.'],
+    19: ['Dinner time — your invoices are being served.', 'Winding down? The reminders aren\'t.'],
+    20: ['Evening chill — someone\'s gotta be responsible.', 'Netflix time? Your cash flow is being watched.'],
+    21: ['Night setting in — fully nocturnal over here.', 'You relax. This won\'t.'],
+    22: ['Late night — night shift specialist reporting in.', 'Before bed check-in: all good.'],
+    23: ['Almost midnight — no bedtimes here.', 'Night owl session — in our element.'],
+  }
+  const options = taglines[h] ?? ['The engine is running.']
+  const tagline = options[m % options.length]
 
   return (
     <div className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/25 text-sm">

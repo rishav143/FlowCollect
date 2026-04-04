@@ -104,6 +104,7 @@ public class TemplateService {
         String name,
         TemplateChannel channel,
         TemplateTone tone,
+        RuleMode mode,
         Pageable pageable
     ) {
         organizationService.getById(organizationId);
@@ -122,6 +123,9 @@ public class TemplateService {
             }
             if (tone != null) {
                 p = cb.and(p, cb.equal(root.get("tone"), tone));
+            }
+            if (mode != null) {
+                p = cb.and(p, cb.equal(root.get("mode"), mode));
             }
             return p;
         };

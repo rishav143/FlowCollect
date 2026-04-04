@@ -2,12 +2,12 @@ import { useState } from 'react'
 import {
   Zap, TrendingUp, Send, Clock, Shield,
   Mail, MessageSquare, MessageCircle, Pencil,
-  AlertCircle, RefreshCw, Loader2, SkipForward,
+  AlertCircle, RefreshCw, Loader2,
 } from 'lucide-react'
 import { useAuthStore } from '@/store/auth.store'
 import { formatCurrency } from '@/lib/format'
-import { useRecoverStats, useAutoRules, useToggleAutoRecovery, useQueueActivity, useSkipFollowUp } from '../hooks/useRecover'
-import type { QueueItem, ActivityItem } from '@/api/recover.api'
+import { useRecoverStats, useAutoRules, useToggleAutoRecovery, useQueueActivity } from '../hooks/useRecover'
+import type { UpcomingItem, ActivityItem } from '@/api/recover.api'
 import { useToggleReminderRule } from '@/features/reminders/hooks/useReminders'
 import RuleModal from '@/features/reminders/modals/RuleModal'
 import type { ReminderRuleResponse, ReminderChannel } from '@/types/reminder.types'
@@ -108,28 +108,26 @@ function relativeTime(isoString: string): string {
 }
 
 // ---------------------------------------------------------------------------
-// Today's Send Queue panel
+// Upcoming Follow-ups panel (next 7 days)
 // ---------------------------------------------------------------------------
 
-function SendQueuePanel({
-  queue, totalPending, isLoading, isError, onSkip, skippingId,
+function UpcomingPanel({
+  upcoming, totalUpcoming, isLoading, isError,
 }: {
-  queue:       QueueItem[]
-  totalPending: number
-  isLoading:   boolean
-  isError:     boolean
-  onSkip:      (item: QueueItem) => void
-  skippingId:  string | null
+  upcoming:      UpcomingItem[]
+  totalUpcoming: number
+  isLoading:     boolean
+  isError:       boolean
 }) {
-  const extra = totalPending - queue.length
+  const extra = totalUpcoming - upcoming.length
 
   return (
     <div className="bg-white dark:bg-[#1B2838] rounded-xl border border-c-border overflow-hidden">
       <div className="px-5 py-3.5 border-b border-c-border flex items-center justify-between">
-        <span className="text-sm font-semibold text-[#0D1B2A] dark:text-white">Today's Send Queue</span>
-        {!isLoading && !isError && totalPending > 0 && (
-          <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400">
-            {totalPending} pending
+        <span className="text-sm font-semibold text-[#0D1B2A] dark:text-white">Upcoming Follow-ups</span>
+        {!isLoading && !isError && totalUpcoming > 0 && (
+          <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-500/15 text-blue-700 dark:text-blue-400">
+            {totalUpcoming} in next 7 days
           </span>
         )}
       </div>
@@ -137,7 +135,7 @@ function SendQueuePanel({
       {isError ? (
         <div className="flex items-center gap-2 px-5 py-8 text-c-muted text-sm">
           <AlertCircle size={14} className="text-red-400 shrink-0" />
-          Could not load queue.
+          Could not load upcoming follow-ups.
         </div>
       ) : isLoading ? (
         <div className="divide-y divide-c-border">
@@ -149,58 +147,46 @@ function SendQueuePanel({
                 <div className="h-3 w-20 rounded bg-[#F4F7F9] dark:bg-white/10" />
               </div>
               <div className="w-12 h-3 rounded bg-[#F4F7F9] dark:bg-white/10" />
-              <div className="w-14 h-7 rounded-lg bg-[#F4F7F9] dark:bg-white/10" />
             </div>
           ))}
         </div>
-      ) : queue.length === 0 ? (
+      ) : upcoming.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-10 gap-1.5 text-center px-5">
           <Clock size={18} className="text-c-muted/50" strokeWidth={1.5} />
-          <p className="text-sm text-c-muted">No follow-ups queued right now.</p>
+          <p className="text-sm text-c-muted">No follow-ups scheduled in the next 7 days.</p>
         </div>
       ) : (
         <>
           <div className="divide-y divide-c-border">
-            {queue.map((item) => {
+            {upcoming.map((item, idx) => {
               const ch = CHANNEL_META[item.channel]
-              const isSkipping = skippingId === item.followUpId
               return (
-                <div key={item.followUpId} className="flex items-center gap-3 px-5 py-3.5">
+                <div key={`${item.invoiceId}-${idx}`} className="flex items-center gap-3 px-5 py-3.5">
                   <div className={`w-8 h-8 rounded-full ${ch.bg} ${ch.color} flex items-center justify-center shrink-0`}>
                     {ch.icon}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-[#0D1B2A] dark:text-white truncate">{item.customerName}</p>
-                    <p className="text-xs text-c-muted">{item.invoiceNumber}</p>
+                    <p className="text-xs text-c-muted">
+                      {item.invoiceNumber}
+                      {item.ruleName ? ` · ${item.ruleName}` : ''}
+                    </p>
                   </div>
-                  <span className={`text-xs font-semibold tabular-nums shrink-0 ${
-                    item.daysOverdue >= 14 ? 'text-red-500' :
-                    item.daysOverdue >= 7  ? 'text-orange-500' :
-                    item.daysOverdue >= 1  ? 'text-amber-500' :
-                    'text-c-muted'
-                  }`}>
-                    {item.daysOverdue > 0 ? `${item.daysOverdue}d` : 'Due'}
-                  </span>
                   <span className="text-xs text-c-muted shrink-0 hidden sm:block">{ch.label}</span>
-                  <button
-                    onClick={() => onSkip(item)}
-                    disabled={isSkipping}
-                    className="shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-c-muted hover:text-[#0D1B2A] dark:hover:text-white hover:bg-[#F4F7F9] dark:hover:bg-[#243447] transition-colors disabled:opacity-40"
-                    aria-label="Skip this follow-up"
-                  >
-                    {isSkipping
-                      ? <Loader2 size={12} className="animate-spin" />
-                      : <SkipForward size={12} strokeWidth={2} />
-                    }
-                    <span className="hidden sm:inline">Skip</span>
-                  </button>
+                  <span className={`text-xs font-semibold tabular-nums shrink-0 ${
+                    item.daysUntil === 0 ? 'text-amber-500' :
+                    item.daysUntil <= 2  ? 'text-orange-500' :
+                    'text-[#2E7A8E] dark:text-[#29B6F6]'
+                  }`}>
+                    {item.daysUntil === 0 ? 'Today' : `in ${item.daysUntil}d`}
+                  </span>
                 </div>
               )
             })}
           </div>
           {extra > 0 && (
             <p className="px-5 py-2.5 text-xs text-c-muted text-center border-t border-c-border">
-              + {extra} more queued for today
+              + {extra} more in the next 7 days
             </p>
           )}
         </>
@@ -447,26 +433,16 @@ export default function RecoverPage() {
   const currency           = useAuthStore((s) => s.org?.currency ?? 'USD')
   const autoRecoveryEnabled = useAuthStore((s) => s.org?.autoRecoveryEnabled ?? false)
 
-  const [editingRule,       setEditingRule]       = useState<ReminderRuleResponse | null>(null)
-  const [editingTemplate,   setEditingTemplate]   = useState<TemplateResponse | null>(null)
-  const [loadingTemplateId, setLoadingTemplateId] = useState<string | null>(null)
+  const [editingRule,        setEditingRule]        = useState<ReminderRuleResponse | null>(null)
+  const [editingTemplate,    setEditingTemplate]    = useState<TemplateResponse | null>(null)
+  const [loadingTemplateId,  setLoadingTemplateId]  = useState<string | null>(null)
+  const [templateFetchError, setTemplateFetchError] = useState<string | null>(null)
 
   const { data: stats, isLoading: statsLoading, isError: statsError, refetch: refetchStats } = useRecoverStats()
   const { data: autoRules, isLoading: rulesLoading } = useAutoRules()
   const { data: queueActivity, isLoading: qaLoading, isError: qaError } = useQueueActivity()
   const toggleAutoRecovery = useToggleAutoRecovery()
   const toggleRule         = useToggleReminderRule()
-  const skipMutation       = useSkipFollowUp()
-  const [skippingId, setSkippingId] = useState<string | null>(null)
-
-  function handleSkip(item: import('@/api/recover.api').QueueItem) {
-    setSkippingId(item.followUpId)
-    skipMutation.mutate(
-      { invoiceId: item.invoiceId, followUpId: item.followUpId },
-      { onSettled: () => setSkippingId(null) }
-    )
-  }
-
   // De-duplicate templates from rules (multiple rules might share one template, unlikely but safe)
   const uniqueTemplates: { templateId: string; templateName: string | null; channel: ReminderChannel }[] = []
   const seenTemplateIds = new Set<string>()
@@ -489,9 +465,12 @@ export default function RecoverPage() {
     const orgId = useAuthStore.getState().org?.id
     if (!orgId) return
     setLoadingTemplateId(templateId)
+    setTemplateFetchError(null)
     try {
       const full = await getTemplate(orgId, templateId)
       setEditingTemplate(full)
+    } catch {
+      setTemplateFetchError('Could not load template. Please try again.')
     } finally {
       setLoadingTemplateId(null)
     }
@@ -575,16 +554,14 @@ export default function RecoverPage() {
           </div>
         )}
 
-        {/* ── Send Queue + Activity Log ─────────────────────────────────── */}
+        {/* ── Upcoming Follow-ups + Activity Log ───────────────────────── */}
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 items-start">
           <div className="lg:col-span-3">
-            <SendQueuePanel
-              queue={queueActivity?.queue ?? []}
-              totalPending={queueActivity?.totalPending ?? 0}
+            <UpcomingPanel
+              upcoming={queueActivity?.upcoming ?? []}
+              totalUpcoming={queueActivity?.totalUpcoming ?? 0}
               isLoading={qaLoading}
               isError={qaError}
-              onSkip={handleSkip}
-              skippingId={skippingId}
             />
           </div>
           <div className="lg:col-span-2">
@@ -639,6 +616,12 @@ export default function RecoverPage() {
                 Recovery Templates
               </span>
             </div>
+            {templateFetchError && (
+              <div className="flex items-center gap-2 px-5 py-2.5 bg-red-50 dark:bg-red-500/10 border-b border-red-200 dark:border-red-500/20">
+                <AlertCircle size={13} className="text-red-400 shrink-0" />
+                <p className="text-xs text-red-600 dark:text-red-400">{templateFetchError}</p>
+              </div>
+            )}
 
             {rulesLoading ? (
               <div className="px-5 py-10 animate-pulse space-y-3">

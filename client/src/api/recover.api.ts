@@ -28,13 +28,14 @@ export async function getRecoverStats(orgId: string): Promise<RecoverStatsRespon
 export type FollowUpChannel = 'EMAIL' | 'SMS' | 'WHATSAPP'
 export type FollowUpStatus  = 'SENT' | 'CANCELLED'
 
-export interface QueueItem {
-  followUpId:    string
+export interface UpcomingItem {
   invoiceId:     string
   invoiceNumber: string
   customerName:  string
   channel:       FollowUpChannel
-  daysOverdue:   number
+  scheduledDate: string    // ISO local date
+  ruleName:      string | null
+  daysUntil:     number
 }
 
 export interface ActivityItem {
@@ -48,9 +49,9 @@ export interface ActivityItem {
 }
 
 export interface QueueActivityResponse {
-  queue:        QueueItem[]
-  totalPending: number
-  activity:     ActivityItem[]
+  upcoming:      UpcomingItem[]
+  totalUpcoming: number
+  activity:      ActivityItem[]
 }
 
 export async function getQueueActivity(orgId: string): Promise<QueueActivityResponse> {

@@ -14,6 +14,7 @@ export interface FollowUpResponse {
   scheduledForDate:   string | null
   attachPdf:          boolean
   sentAt:             string | null
+  openedAt:           string | null
   createdAt:          string
   updatedAt:          string
   paymentLinkId:      string | null

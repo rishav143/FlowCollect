@@ -221,8 +221,11 @@ interface Props {
 export default function RuleModal({ rule, onClose }: Props) {
   const isEdit = !!rule
 
-  const [form,        setForm]        = useState<FormState>(EMPTY)
-  const [submitError, setSubmitError] = useState<string | null>(null)
+  const [form,               setForm]               = useState<FormState>(EMPTY)
+  const [submitError,        setSubmitError]        = useState<string | null>(null)
+  const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false)
+
+  const isAutoRule = rule?.mode === 'AUTO'
 
   useEffect(() => {
     if (rule) {
@@ -253,7 +256,7 @@ export default function RuleModal({ rule, onClose }: Props) {
   const update    = useUpdateReminderRule()
   const isPending = create.isPending || update.isPending
 
-  const { data: templatesData } = useTemplates({ channel: form.channel })
+  const { data: templatesData } = useTemplates({ channel: form.channel, mode: rule?.mode })
   const templates = templatesData?.content ?? []
 
   function set<K extends keyof FormState>(key: K, value: FormState[K]) {
@@ -261,6 +264,7 @@ export default function RuleModal({ rule, onClose }: Props) {
   }
 
   function handleChannelChange(ch: ReminderChannel) {
+    setHasAttemptedSubmit(false)
     setForm((prev) => ({
       ...prev,
       channel:               ch,
@@ -340,6 +344,7 @@ export default function RuleModal({ rule, onClose }: Props) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    setHasAttemptedSubmit(true)
     if (error) return
     setSubmitError(null)
 
@@ -444,21 +449,28 @@ export default function RuleModal({ rule, onClose }: Props) {
                 Channel
               </label>
               <div className="flex gap-2">
-                {CHANNELS.map((ch) => (
-                  <button
-                    key={ch}
-                    type="button"
-                    onClick={() => handleChannelChange(ch)}
-                    className={[
-                      'flex-1 py-2 text-sm font-medium rounded-lg border transition-colors',
-                      form.channel === ch
-                        ? 'border-[#29B6F6] text-[#29B6F6] bg-[#29B6F6]/5'
-                        : 'border-c-border text-c-muted hover:text-[#0D1B2A] dark:hover:text-white',
-                    ].join(' ')}
-                  >
-                    {CHANNEL_LABEL[ch]}
-                  </button>
-                ))}
+                {CHANNELS.map((ch) => {
+                  const isSelected  = form.channel === ch
+                  const isDisabled  = isAutoRule && !isSelected
+                  return (
+                    <button
+                      key={ch}
+                      type="button"
+                      onClick={() => !isDisabled && handleChannelChange(ch)}
+                      disabled={isDisabled}
+                      className={[
+                        'flex-1 py-2 text-sm font-medium rounded-lg border transition-colors',
+                        isSelected
+                          ? 'border-[#29B6F6] text-[#29B6F6] bg-[#29B6F6]/5'
+                          : isDisabled
+                            ? 'border-c-border text-c-muted opacity-40 cursor-not-allowed'
+                            : 'border-c-border text-c-muted hover:text-[#0D1B2A] dark:hover:text-white',
+                      ].join(' ')}
+                    >
+                      {CHANNEL_LABEL[ch]}
+                    </button>
+                  )
+                })}
               </div>
             </div>
 
@@ -617,8 +629,11 @@ export default function RuleModal({ rule, onClose }: Props) {
             </div>
 
             {/* Validation / submit error */}
-            {(error || submitError) && (
-              <p className="text-xs text-red-500 -mt-2">{error ?? submitError}</p>
+            {(hasAttemptedSubmit && error) && (
+              <p className="text-xs text-red-500 -mt-2">{error}</p>
+            )}
+            {submitError && (
+              <p className="text-xs text-red-500 -mt-2">{submitError}</p>
             )}
 
             {/* Submit */}

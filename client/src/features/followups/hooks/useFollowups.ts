@@ -65,6 +65,26 @@ export function useFollowupsByInvoices(invoiceIds: string[]): Record<string, Fol
   return map
 }
 
+// Returns a map of invoiceId → all FollowUpResponse[] (shared query keys with useFollowupsByInvoices — no extra requests)
+export function useAllFollowupsByInvoices(invoiceIds: string[]): Record<string, FollowUpResponse[]> {
+  const orgId = useAuthStore((s) => s.org?.id ?? '')
+
+  const results = useQueries({
+    queries: invoiceIds.map((id) => ({
+      queryKey: ['followups', orgId, id],
+      queryFn:  () => listFollowups(orgId, id),
+      enabled:  !!orgId,
+    })),
+  })
+
+  const map: Record<string, FollowUpResponse[]> = {}
+  invoiceIds.forEach((id, i) => {
+    const list = results[i]?.data
+    if (list) map[id] = list
+  })
+  return map
+}
+
 export function useInvoiceFollowups(invoiceId: string) {
   const orgId = useAuthStore((s) => s.org?.id ?? '')
 

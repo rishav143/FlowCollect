@@ -1,16 +1,20 @@
 export type TemplateChannel = 'EMAIL' | 'SMS' | 'WHATSAPP'
 export type TemplateTone    = 'POLITE' | 'NEUTRAL' | 'FIRM'
 
+export type TemplateMode = 'MANUAL' | 'AUTO'
+
 export interface TemplateResponse {
-  id:        string
-  name:      string
-  channel:   TemplateChannel
-  subject:   string | null   // email only
-  body:      string
-  tone:      TemplateTone
-  active:    boolean
-  createdAt: string          // ISO-8601
-  updatedAt: string
+  id:            string
+  name:          string
+  channel:       TemplateChannel
+  subject:       string | null   // email only
+  body:          string
+  tone:          TemplateTone
+  mode:          TemplateMode
+  systemDefined: boolean
+  active:        boolean
+  createdAt:     string          // ISO-8601
+  updatedAt:     string
 }
 
 export interface CreateTemplateRequest {
@@ -28,6 +32,7 @@ export interface ListTemplatesParams {
   name?:    string
   channel?: TemplateChannel
   tone?:    TemplateTone
+  mode?:    TemplateMode
   page?:    number
   size?:    number
   sort?:    string

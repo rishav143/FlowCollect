@@ -4,18 +4,18 @@ import java.util.List;
 
 public class QueueActivityResponse {
 
-    private final List<QueueItemResponse> queue;
-    private final long totalPending;       // total in queue, queue list may be limited
+    private final List<UpcomingItemResponse> upcoming;
+    private final long totalUpcoming;
     private final List<ActivityItemResponse> activity;
 
-    public QueueActivityResponse(List<QueueItemResponse> queue, long totalPending,
+    public QueueActivityResponse(List<UpcomingItemResponse> upcoming, long totalUpcoming,
                                  List<ActivityItemResponse> activity) {
-        this.queue        = queue;
-        this.totalPending = totalPending;
-        this.activity     = activity;
+        this.upcoming      = upcoming;
+        this.totalUpcoming = totalUpcoming;
+        this.activity      = activity;
     }
 
-    public List<QueueItemResponse> getQueue()          { return queue; }
-    public long getTotalPending()                      { return totalPending; }
-    public List<ActivityItemResponse> getActivity()    { return activity; }
+    public List<UpcomingItemResponse> getUpcoming() { return upcoming; }
+    public long getTotalUpcoming()                  { return totalUpcoming; }
+    public List<ActivityItemResponse> getActivity() { return activity; }
 }

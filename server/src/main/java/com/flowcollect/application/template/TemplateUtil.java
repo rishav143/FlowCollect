@@ -33,7 +33,12 @@ public class TemplateUtil {
         
         Template template = getTemplateOrThrow(templateId, templateRepository);
 
-        if(!template.getOrganization().getId().equals(organizationId)) {
+        // System-defined templates have no org — block mutation from org context
+        if (template.getOrganization() == null) {
+            throw new NotFoundException("Template not found with ID: " + templateId);
+        }
+
+        if (!template.getOrganization().getId().equals(organizationId)) {
             throw new NotFoundException("Template not found with ID: " + templateId);
         }
 
