@@ -2,6 +2,7 @@ export type FollowUpChannel     = 'EMAIL' | 'SMS' | 'WHATSAPP'
 export type FollowUpStatus      = 'PENDING' | 'SENT' | 'FAILED' | 'CANCELLED'
 export type FollowUpTriggerType = 'MANUAL' | 'AUTOMATED'
 export type PaymentGateway      = 'STRIPE' | 'RAZORPAY'
+export type ClickedLinkType     = 'PAYMENT_LINK' | 'CONFIRMATION_LINK'
 
 export interface FollowUpResponse {
   id:                 string
@@ -15,6 +16,7 @@ export interface FollowUpResponse {
   attachPdf:          boolean
   sentAt:             string | null
   openedAt:           string | null
+  clickedLinkType:    ClickedLinkType | null
   createdAt:          string
   updatedAt:          string
   paymentLinkId:      string | null

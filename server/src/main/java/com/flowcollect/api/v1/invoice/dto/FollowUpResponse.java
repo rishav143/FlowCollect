@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
 
+import com.flowcollect.domain.invoice.followup.ClickedLinkType;
 import com.flowcollect.domain.invoice.followup.FollowUpChannel;
 import com.flowcollect.domain.invoice.followup.FollowUpStatus;
 import com.flowcollect.domain.invoice.followup.FollowUpTriggerType;
@@ -23,6 +24,7 @@ public class FollowUpResponse {
     private Instant sentAt;
     private String resendEmailId;
     private Instant openedAt;
+    private ClickedLinkType clickedLinkType;
     private Instant createdAt;
     private Instant updatedAt;
 
@@ -133,6 +135,9 @@ public class FollowUpResponse {
 
     public Instant getOpenedAt() { return openedAt; }
     public void setOpenedAt(Instant openedAt) { this.openedAt = openedAt; }
+
+    public ClickedLinkType getClickedLinkType() { return clickedLinkType; }
+    public void setClickedLinkType(ClickedLinkType clickedLinkType) { this.clickedLinkType = clickedLinkType; }
 
     public UUID getPaymentLinkId() { return paymentLinkId; }
     public void setPaymentLinkId(UUID paymentLinkId) { this.paymentLinkId = paymentLinkId; }

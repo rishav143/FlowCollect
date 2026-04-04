@@ -18,6 +18,7 @@ public class FollowUpMapper {
         followUpResponse.setSentAt(f.getSentAt());
         followUpResponse.setResendEmailId(f.getResendEmailId());
         followUpResponse.setOpenedAt(f.getOpenedAt());
+        followUpResponse.setClickedLinkType(f.getClickedLinkType());
         followUpResponse.setCreatedAt(f.getCreatedAt());
         followUpResponse.setUpdatedAt(f.getUpdatedAt());
 

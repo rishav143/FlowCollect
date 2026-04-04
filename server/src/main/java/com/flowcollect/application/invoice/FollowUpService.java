@@ -26,6 +26,7 @@ import com.flowcollect.application.template.TemplateService;
 import com.flowcollect.domain.confirmation.ConfirmationLink;
 import com.flowcollect.domain.customer.Customer;
 import com.flowcollect.domain.invoice.Invoice;
+import com.flowcollect.domain.invoice.followup.ClickedLinkType;
 import com.flowcollect.domain.invoice.followup.FollowUp;
 import com.flowcollect.domain.organization.PaymentCollectionMode;
 import com.flowcollect.domain.invoice.followup.FollowUpChannel;
@@ -53,6 +54,7 @@ public class FollowUpService {
     private final PaymentLinkService paymentLinkService;
     private final ConfirmationLinkService confirmationLinkService;
     private final Map<FollowUpChannel, NotificationSender> notificationSenders;
+    private final String appBaseUrl;
 
     public FollowUpService(
             FollowUpJpaRepository followUpRepository,
@@ -61,7 +63,8 @@ public class FollowUpService {
             TemplateRenderer templateRenderer,
             PaymentLinkService paymentLinkService,
             ConfirmationLinkService confirmationLinkService,
-            List<NotificationSender> notificationSenders
+            List<NotificationSender> notificationSenders,
+            @org.springframework.beans.factory.annotation.Value("${app.base-url}") String appBaseUrl
     ) {
         this.followUpRepository = followUpRepository;
         this.invoiceService = invoiceService;
@@ -70,6 +73,7 @@ public class FollowUpService {
         this.paymentLinkService = paymentLinkService;
         this.confirmationLinkService = confirmationLinkService;
         this.notificationSenders = indexSenders(notificationSenders);
+        this.appBaseUrl = appBaseUrl;
     }
 
     @Transactional(readOnly = true)
@@ -348,8 +352,24 @@ public class FollowUpService {
                 confirmationLinkUrl = confirmationLink.getPublicUrl();
             }
 
+            // Wrap the relevant link through our tracking redirect (works for all channels)
+            String trackingUrl = appBaseUrl + "/track/" + fresh.getId();
+
+            if (confirmationLinkUrl != null) {
+                fresh.setTrackedLinkUrl(confirmationLinkUrl);
+                fresh.setClickedLinkType(ClickedLinkType.CONFIRMATION_LINK);
+            } else if (paymentLinkUrl != null) {
+                fresh.setTrackedLinkUrl(paymentLinkUrl);
+                fresh.setClickedLinkType(ClickedLinkType.PAYMENT_LINK);
+            }
+
+            // Replace the real URL with the tracking URL in the rendered message
+            String effectivePaymentLinkUrl     = paymentLinkUrl      != null ? trackingUrl : null;
+            String effectiveConfirmationLinkUrl = confirmationLinkUrl != null ? trackingUrl : null;
+
             String body = templateRenderer.renderBody(
-                    template, fresh.getInvoice(), customer, paymentLinkUrl, confirmationLinkUrl);
+                    template, fresh.getInvoice(), customer,
+                    effectivePaymentLinkUrl, effectiveConfirmationLinkUrl);
 
             NotificationSender sender = resolveSender(fresh.getChannel());
             String externalMessageId = sender.send(customer, subject, body, fresh.isAttachPdf(), fresh.getInvoice());

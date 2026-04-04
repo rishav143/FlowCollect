@@ -112,7 +112,7 @@ function InvoiceRow({
             </span>
             {opened && (
               <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-green-50 text-green-700 dark:bg-green-500/15 dark:text-green-400 shrink-0">
-                Clicked
+                {lastFollowup?.clickedLinkType === 'PAYMENT_LINK' ? 'Payment link clicked' : lastFollowup?.clickedLinkType === 'CONFIRMATION_LINK' ? 'Confirmation clicked' : 'Clicked'}
               </span>
             )}
           </>
@@ -205,7 +205,7 @@ function ActivityTimeline({
                   {inv.invoiceNumber}
                   {f.openedAt && (
                     <span className="ml-1.5 text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-green-50 text-green-700 dark:bg-green-500/15 dark:text-green-400">
-                      Clicked
+                      {f.clickedLinkType === 'PAYMENT_LINK' ? 'Payment link clicked' : f.clickedLinkType === 'CONFIRMATION_LINK' ? 'Confirmation clicked' : 'Clicked'}
                     </span>
                   )}
                 </p>

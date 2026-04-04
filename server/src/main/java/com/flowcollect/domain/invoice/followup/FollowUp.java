@@ -90,9 +90,25 @@ public class FollowUp {
     @Column(name = "resend_email_id")
     private String resendEmailId;
 
-    /** Timestamp when Resend reported the email as opened (populated via Resend webhook). */
+    /**
+     * The real destination URL (payment or confirmation link) that the tracking
+     * redirect endpoint forwards the client to after recording the click.
+     * Populated at dispatch time for any follow-up that contains a trackable link.
+     */
+    @Column(name = "tracked_link_url", length = 2048)
+    private String trackedLinkUrl;
+
+    /**
+     * Timestamp when the client clicked the tracking link embedded in the message.
+     * Works across all channels (EMAIL, SMS, WhatsApp) via our own redirect endpoint.
+     */
     @Column(name = "opened_at")
     private Instant openedAt;
+
+    /** Which type of link the client clicked — PAYMENT_LINK or CONFIRMATION_LINK. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "clicked_link_type")
+    private ClickedLinkType clickedLinkType;
 
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
@@ -217,13 +233,30 @@ public class FollowUp {
         this.resendEmailId = resendEmailId;
     }
 
+    public String getTrackedLinkUrl() {
+        return trackedLinkUrl;
+    }
+
+    public void setTrackedLinkUrl(String trackedLinkUrl) {
+        this.trackedLinkUrl = trackedLinkUrl;
+    }
+
     public Instant getOpenedAt() {
         return openedAt;
     }
 
-    public void markOpened(Instant at) {
+    public ClickedLinkType getClickedLinkType() {
+        return clickedLinkType;
+    }
+
+    public void setClickedLinkType(ClickedLinkType clickedLinkType) {
+        this.clickedLinkType = clickedLinkType;
+    }
+
+    public void markOpened(Instant at, ClickedLinkType linkType) {
         if (this.openedAt == null) {
             this.openedAt = at;
+            this.clickedLinkType = linkType;
         }
     }
 

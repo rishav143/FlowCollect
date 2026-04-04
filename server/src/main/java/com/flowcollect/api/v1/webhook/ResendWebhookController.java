@@ -2,8 +2,6 @@ package com.flowcollect.api.v1.webhook;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.flowcollect.domain.invoice.followup.FollowUp;
-import com.flowcollect.infrastructure.persistence.invoice.FollowUpJpaRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -17,20 +15,18 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
-import java.time.Instant;
 import java.util.Base64;
-import java.util.Optional;
 
 /**
- * Receives Resend email event webhooks.
+ * Receives Resend email event webhooks (delivery status, bounces, etc.).
+ *
+ * Click/open tracking is handled by our own LinkTrackingController (/track/{followUpId})
+ * which works across all channels (EMAIL, SMS, WhatsApp) — not just email.
  *
  * Resend signs webhook payloads using the svix signing scheme:
  *   signature_input = "{svix-id}.{svix-timestamp}.{raw-body}"
  *   signature       = HMAC-SHA256(base64Decode(secret), signature_input)
  *   svix-signature header = "v1,<base64(signature)>"
- *
- * Enable open tracking + configure this URL in your Resend dashboard.
- * Set RESEND_WEBHOOK_SECRET to the signing secret from the Resend dashboard.
  *
  * This endpoint is excluded from JWT auth via JwtFilter.SKIP_PREFIXES (/api/v1/webhooks/).
  */
@@ -40,16 +36,13 @@ public class ResendWebhookController {
     private static final Logger log = LoggerFactory.getLogger(ResendWebhookController.class);
     private static final String HMAC_SHA256 = "HmacSHA256";
 
-    private final FollowUpJpaRepository followUpRepository;
     private final ObjectMapper objectMapper;
     private final String webhookSecret;
 
     public ResendWebhookController(
-            FollowUpJpaRepository followUpRepository,
             ObjectMapper objectMapper,
             @Value("${RESEND_WEBHOOK_SECRET:}") String webhookSecret
     ) {
-        this.followUpRepository = followUpRepository;
         this.objectMapper = objectMapper;
         this.webhookSecret = webhookSecret;
         if (webhookSecret == null || webhookSecret.isBlank()) {
@@ -83,38 +76,16 @@ public class ResendWebhookController {
             JsonNode root      = objectMapper.readTree(payload);
             String   eventType = root.path("type").asText("");
 
-            if ("email.clicked".equals(eventType) || "email.opened".equals(eventType)) {
-                String emailId = root.path("data").path("email_id").asText(null);
-                if (emailId == null || emailId.isBlank()) {
-                    log.warn("{} event missing data.email_id — ignoring", eventType);
-                    return ResponseEntity.ok().build();
-                }
-                handleEmailOpened(emailId);
-            } else {
-                log.debug("Unhandled Resend event type: {}", eventType);
-            }
+            // email.opened / email.clicked are no longer handled here —
+            // click tracking is done via our own /track/{followUpId} redirect endpoint
+            // which works for EMAIL, SMS, and WhatsApp uniformly.
+            log.debug("Resend event received: {} (no action taken)", eventType);
         } catch (Exception ex) {
             log.error("Error processing Resend webhook payload", ex);
             // Still return 200 to prevent Resend from retrying non-retryable errors
         }
 
         return ResponseEntity.ok().build();
-    }
-
-    private void handleEmailOpened(String emailId) {
-        Optional<FollowUp> opt = followUpRepository.findByResendEmailId(emailId);
-        if (opt.isEmpty()) {
-            log.debug("email.opened — no FollowUp found for resendEmailId={}", emailId);
-            return;
-        }
-        FollowUp followUp = opt.get();
-        if (followUp.getOpenedAt() != null) {
-            log.debug("email.opened — FollowUp {} already marked opened, skipping", followUp.getId());
-            return;
-        }
-        followUp.markOpened(Instant.now());
-        followUpRepository.save(followUp);
-        log.info("email.opened — marked FollowUp {} as opened (resendEmailId={})", followUp.getId(), emailId);
     }
 
     /**
