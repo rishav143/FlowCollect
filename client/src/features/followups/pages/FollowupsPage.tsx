@@ -10,6 +10,8 @@ import {
 } from '../hooks/useFollowups'
 import FollowupFilterTabs from '../components/FollowupFilterTabs/FollowupFilterTabs'
 import DispatchModal from '../components/DispatchModal/DispatchModal'
+import ConsolidatedDispatchModal from '../components/ConsolidatedDispatchModal/ConsolidatedDispatchModal'
+import SendAllModal from '../components/SendAllModal/SendAllModal'
 import type { InvoiceResponse } from '@/types/invoice.types'
 import type { FollowUpResponse } from '@/types/followup.types'
 import type { CustomerResponse } from '@/types/customer.types'
@@ -231,14 +233,18 @@ function ClientGroupCard({
   autoRecoveryEnabled,
   lastFollowupMap,
   allFollowupsMap,
+  customer,
   onSend,
+  onConsolidate,
 }: {
   group:                ClientGroupData
   currency:             string
   autoRecoveryEnabled:  boolean
   lastFollowupMap:      Record<string, FollowUpResponse>
   allFollowupsMap:      Record<string, FollowUpResponse[]>
+  customer:             CustomerResponse | undefined
   onSend:               (invoice: InvoiceResponse) => void
+  onConsolidate:        (group: ClientGroupData) => void
 }) {
   const [showAll, setShowAll] = useState(false)
 
@@ -318,9 +324,8 @@ function ClientGroupCard({
             </p>
           </div>
           <button
-            disabled
-            title="Coming soon"
-            className="text-xs px-3 py-1.5 rounded-lg font-semibold text-white opacity-40 cursor-not-allowed"
+            onClick={() => onConsolidate(group)}
+            className="text-xs px-3 py-1.5 rounded-lg font-semibold text-white hover:opacity-90 transition-opacity"
             style={{ background: 'linear-gradient(90deg, #29B6F6 0%, #4FC3F7 100%)' }}
           >
             Send consolidated
@@ -482,8 +487,10 @@ export default function FollowupsPage() {
   const currency            = useAuthStore((s) => s.org?.currency ?? 'INR')
   const autoRecoveryEnabled = useAuthStore((s) => s.org?.autoRecoveryEnabled ?? false)
 
-  const [filter, setFilter] = useState<FollowupFilter>('ALL')
-  const [target, setTarget] = useState<InvoiceResponse | null>(null)
+  const [filter,              setFilter]              = useState<FollowupFilter>('ALL')
+  const [target,              setTarget]              = useState<InvoiceResponse | null>(null)
+  const [consolidatedTarget,  setConsolidatedTarget]  = useState<ClientGroupData | null>(null)
+  const [showSendAll,         setShowSendAll]         = useState(false)
 
   const { data: rawInvoices = [], isLoading, isFetching } = useFollowupInvoices(filter)
   const allFollowupsMap = useAllFollowupsByInvoices(rawInvoices.map((i) => i.id))
@@ -568,9 +575,8 @@ export default function FollowupsPage() {
             )}
           </div>
           <button
-            disabled
-            title="Coming soon — requires backend batch dispatch"
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white opacity-50 cursor-not-allowed"
+            onClick={() => setShowSendAll(true)}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white hover:opacity-90 transition-opacity"
             style={{ background: 'linear-gradient(90deg, #29B6F6 0%, #4FC3F7 100%)' }}
           >
             <Send size={14} strokeWidth={2.5} />
@@ -617,7 +623,9 @@ export default function FollowupsPage() {
                   autoRecoveryEnabled={autoRecoveryEnabled}
                   lastFollowupMap={lastFollowupMap}
                   allFollowupsMap={allFollowupsMap}
+                  customer={customerMap[group.customerId]}
                   onSend={setTarget}
+                  onConsolidate={setConsolidatedTarget}
                 />
               ))}
             </div>
@@ -631,6 +639,26 @@ export default function FollowupsPage() {
         <DispatchModal
           invoice={target}
           onClose={() => setTarget(null)}
+        />
+      )}
+
+      {/* Send all modal */}
+      {showSendAll && (
+        <SendAllModal
+          clientGroups={clientGroups}
+          customerMap={customerMap}
+          currency={currency}
+          onClose={() => setShowSendAll(false)}
+        />
+      )}
+
+      {/* Consolidated dispatch modal */}
+      {consolidatedTarget && (
+        <ConsolidatedDispatchModal
+          group={consolidatedTarget}
+          customer={customerMap[consolidatedTarget.customerId]}
+          currency={currency}
+          onClose={() => setConsolidatedTarget(null)}
         />
       )}
     </>

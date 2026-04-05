@@ -1,5 +1,7 @@
+import { useState } from 'react'
 import { createPortal } from 'react-dom'
-import { X } from 'lucide-react'
+import { X, AlertCircle } from 'lucide-react'
+import type { AxiosError } from 'axios'
 import TemplateForm from '@/features/templates/components/TemplateForm/TemplateForm'
 import { useCreateTemplate } from '@/features/templates/hooks/useTemplateMutations'
 import type { TemplateFormValues } from '@/features/templates/schemas/template.schema'
@@ -10,9 +12,17 @@ interface Props {
 
 export default function CreateTemplateModal({ onClose }: Props) {
   const { mutate, isPending } = useCreateTemplate()
+  const [error, setError] = useState<string | null>(null)
 
   function handleSubmit(values: TemplateFormValues) {
-    mutate(values, { onSuccess: onClose })
+    setError(null)
+    mutate(values, {
+      onSuccess: onClose,
+      onError: (err) => {
+        const msg = (err as AxiosError<{ message?: string }>).response?.data?.message
+        setError(msg ?? 'Failed to create template — please try again.')
+      },
+    })
   }
 
   return createPortal(
@@ -41,6 +51,12 @@ export default function CreateTemplateModal({ onClose }: Props) {
           </div>
 
           <div className="px-6 py-5 overflow-y-auto flex-1">
+            {error && (
+              <div className="mb-4 flex items-start gap-2 px-3 py-2.5 rounded-lg bg-[#EF4444]/10 border border-[#EF4444]/30 text-sm text-[#EF4444]">
+                <AlertCircle size={15} className="shrink-0 mt-px" />
+                <span>{error}</span>
+              </div>
+            )}
             <TemplateForm
               onSubmit={handleSubmit}
               isPending={isPending}

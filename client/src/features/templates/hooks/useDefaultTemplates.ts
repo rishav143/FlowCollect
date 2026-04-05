@@ -185,10 +185,15 @@ export function useDefaultTemplates() {
         const toCreate: CreateTemplateRequest[] = []
         const updatePromises: Promise<unknown>[] = []
 
+        // If the org has been seeded before (storedVersion > 0), never re-create
+        // deleted defaults — the user intentionally removed them. Only create on
+        // the very first seed run (storedVersion === 0).
+        const firstRun = storedVersion === 0
+
         for (const def of defaults) {
           const existing = existingByChannel.get(def.channel)
           if (!existing) {
-            toCreate.push(def)
+            if (firstRun) toCreate.push(def)
           } else if (needsUpdate && DEFAULT_NAMES.has(existing.name)) {
             // Only overwrite templates that still carry a default name —
             // if the user renamed it, treat it as customised and leave it alone.

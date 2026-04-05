@@ -20,3 +20,34 @@ export async function getAiOverviewInsights(
   )
   return data
 }
+
+export interface AiTemplateResult {
+  subject: string | null
+  body:    string
+}
+
+export async function generateTemplate(
+  orgId:   string,
+  channel: string,
+  tone:    string,
+): Promise<AiTemplateResult> {
+  const { data } = await api.post<AiTemplateResult>(
+    `${base(orgId)}/templates/generate`,
+    { channel, tone },
+  )
+  return data
+}
+
+export async function enhanceTemplate(
+  orgId:    string,
+  channel:  string,
+  tone:     string,
+  body:     string,
+  subject?: string,
+): Promise<AiTemplateResult> {
+  const { data } = await api.post<AiTemplateResult>(
+    `${base(orgId)}/templates/enhance`,
+    { channel, tone, body, subject: subject ?? null },
+  )
+  return data
+}
