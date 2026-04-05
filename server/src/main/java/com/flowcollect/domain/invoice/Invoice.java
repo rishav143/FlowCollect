@@ -276,7 +276,7 @@ public class Invoice {
             return;
         }
 
-        this.totalPaid = totalPaid.max(BigDecimal.ZERO).setScale(2, RoundingMode.HALF_UP);
+        this.totalPaid = totalPaid.max(BigDecimal.ZERO).setScale(0, RoundingMode.HALF_UP);
 
         if (totalPaid.compareTo(BigDecimal.ZERO) <= 0) {
             this.lifeCycleStatus = LifeCycleStatus.ISSUED;
@@ -290,7 +290,7 @@ public class Invoice {
 
     public BigDecimal getRemainingAmount() {
         BigDecimal paid = this.totalPaid != null ? this.totalPaid : BigDecimal.ZERO;
-        return this.totalAmount.subtract(paid).max(BigDecimal.ZERO).setScale(2, RoundingMode.HALF_UP);
+        return this.totalAmount.subtract(paid).max(BigDecimal.ZERO).setScale(0, RoundingMode.HALF_UP);
     }
 
     public void setDueDate(LocalDate dueDate) {
@@ -327,7 +327,7 @@ public class Invoice {
         items.add(item);
         this.subtotal = this.subtotal
                 .add(item.getAmount())
-                .setScale(2, RoundingMode.HALF_UP);
+                .setScale(0, RoundingMode.HALF_UP);
         calculateTotal();
     }
 
@@ -343,7 +343,7 @@ public class Invoice {
             this.subtotal = this.subtotal
                     .subtract(item.getAmount())
                     .max(BigDecimal.ZERO)
-                    .setScale(2, RoundingMode.HALF_UP);
+                    .setScale(0, RoundingMode.HALF_UP);
             calculateTotal();
         }
     }
@@ -360,13 +360,13 @@ public class Invoice {
         calculateTotal();
     }
 
-    // Calculates the total amount of the invoice.
+    // Calculates the total amount of the invoice — rounded to the nearest whole unit.
     public void calculateTotal() {
         BigDecimal taxAmount = this.subtotal.multiply(this.taxInPercentage)
-                .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+                .divide(BigDecimal.valueOf(100), 0, RoundingMode.HALF_UP);
         this.totalAmount = this.subtotal
                 .add(taxAmount)
                 .max(BigDecimal.ZERO)
-                .setScale(2, RoundingMode.HALF_UP);
+                .setScale(0, RoundingMode.HALF_UP);
     }
 }

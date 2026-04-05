@@ -33,7 +33,7 @@ export default function RecordPaymentModal({ invoiceId, remainingAmount, currenc
   const orgId = useAuthStore((s) => s.org?.id ?? '')
   const qc    = useQueryClient()
 
-  const [amount,      setAmount]      = useState(remainingAmount)
+  const [amount,      setAmount]      = useState(Math.round(remainingAmount))
   const [mode,        setMode]        = useState<PaymentMode>('UPI')
   const [referenceId, setReferenceId] = useState('')
   const [notes,       setNotes]       = useState('')
@@ -78,7 +78,7 @@ export default function RecordPaymentModal({ invoiceId, remainingAmount, currenc
 
           <div>
             <label className={labelCls}>Amount *</label>
-            <input type="number" min={0.01} step={0.01} value={amount} onChange={(e) => setAmount(parseFloat(e.target.value) || 0)} className={inputCls} />
+            <input type="number" min={1} step={1} value={amount} onChange={(e) => setAmount(Math.round(parseFloat(e.target.value) || 0))} className={inputCls} />
           </div>
 
           <div>

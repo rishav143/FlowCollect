@@ -34,6 +34,9 @@ public class FollowUpResponse {
     private PaymentGateway paymentLinkGateway;
     private PaymentLinkStatus paymentLinkStatus;
 
+    /** True when this follow-up contained a trackable link (payment or confirmation). */
+    private boolean hasTrackableLink;
+
     public UUID getId() {
         return id;
     }

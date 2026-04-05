@@ -116,8 +116,8 @@ export default function InvoiceForm({ initial, onChange, currency }: Props) {
 
       {/* Tax + Total summary */}
       {taxPercentage > 0 && (() => {
-        const subtotal = items.reduce((s, it) => s + it.quantity * it.unitPrice, 0)
-        const taxAmt   = subtotal * (taxPercentage / 100)
+        const subtotal = Math.round(items.reduce((s, it) => s + it.quantity * it.unitPrice, 0))
+        const taxAmt   = Math.round(subtotal * (taxPercentage / 100))
         const total    = subtotal + taxAmt
         return (
           <div className="bg-[#F4F7F9] dark:bg-[#243447] rounded-lg p-3 space-y-1 text-sm">

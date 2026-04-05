@@ -501,6 +501,8 @@ public class InvoicePdfGenerator {
         }
         NumberFormat fmt = NumberFormat.getCurrencyInstance(Locale.US);
         fmt.setCurrency(currency);
+        fmt.setMinimumFractionDigits(0);
+        fmt.setMaximumFractionDigits(0);
         return fmt.format(amount == null ? BigDecimal.ZERO : amount);
     }
 

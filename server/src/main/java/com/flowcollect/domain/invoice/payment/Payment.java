@@ -94,7 +94,7 @@ public class Payment {
         if(amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("Amount cannot be null or negative");
         }
-        this.amount = amount.setScale(2, RoundingMode.HALF_UP);
+        this.amount = amount.setScale(0, RoundingMode.HALF_UP);
     }
 
     public PaymentMode getMode() {

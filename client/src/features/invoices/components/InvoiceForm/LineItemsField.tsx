@@ -35,7 +35,7 @@ export default function LineItemsField({ items, onChange, currency }: Props) {
     onChange(items.filter((_, i) => i !== idx))
   }
 
-  const subtotal = items.reduce((s, it) => s + it.quantity * it.unitPrice, 0)
+  const subtotal = Math.round(items.reduce((s, it) => s + it.quantity * it.unitPrice, 0))
 
   return (
     <div className="space-y-2">
@@ -69,9 +69,9 @@ export default function LineItemsField({ items, onChange, currency }: Props) {
           <input
             type="number"
             min={0}
-            step={0.01}
+            step={1}
             value={item.unitPrice}
-            onChange={(e) => update(idx, 'unitPrice', parseFloat(e.target.value) || 0)}
+            onChange={(e) => update(idx, 'unitPrice', Math.round(parseFloat(e.target.value) || 0))}
             className={inputCls}
           />
           <span className="text-sm text-right font-medium text-[#0D1B2A] dark:text-white tabular-nums">

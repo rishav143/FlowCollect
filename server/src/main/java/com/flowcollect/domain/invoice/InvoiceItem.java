@@ -69,14 +69,14 @@ public class InvoiceItem {
         item.invoice = invoice;
         item.description = description.trim();
         item.quantity = quantity;
-        item.unitPrice = unitPrice.setScale(2, RoundingMode.HALF_UP);
-        item.amount = item.unitPrice.multiply(BigDecimal.valueOf(item.quantity)).setScale(2, RoundingMode.HALF_UP);
+        item.unitPrice = unitPrice.setScale(0, RoundingMode.HALF_UP);
+        item.amount = item.unitPrice.multiply(BigDecimal.valueOf(item.quantity)).setScale(0, RoundingMode.HALF_UP);
         return item;
     }
 
     // Recomputes amount from quantity and unitPrice. Use when quantity or unitPrice is changed.
     public void recalculateAmount() {
-        this.amount = unitPrice.multiply(BigDecimal.valueOf(quantity)).setScale(2, RoundingMode.HALF_UP);
+        this.amount = unitPrice.multiply(BigDecimal.valueOf(quantity)).setScale(0, RoundingMode.HALF_UP);
     }
 
     // Getters
@@ -127,12 +127,12 @@ public class InvoiceItem {
         if (unitPrice == null || unitPrice.compareTo(BigDecimal.ZERO) < 0) {
             throw new IllegalArgumentException("Unit price cannot be null or negative");
         }
-        this.unitPrice = unitPrice.setScale(2, RoundingMode.HALF_UP);
+        this.unitPrice = unitPrice.setScale(0, RoundingMode.HALF_UP);
         recalculateAmount();
     }
 
     // For JPA hydration only. Prefer create() or setters for quantity/unitPrice which auto-recalculate.
     public void setAmount(BigDecimal amount) {
-        this.amount = amount != null ? amount.setScale(2, RoundingMode.HALF_UP) : BigDecimal.ZERO;
+        this.amount = amount != null ? amount.setScale(0, RoundingMode.HALF_UP) : BigDecimal.ZERO;
     }
 }
