@@ -7,12 +7,10 @@ import {
 import { useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@/store/auth.store'
 import { useToast } from '@/store/toast.store'
-import { useTemplates } from '@/features/templates/hooks/useTemplates'
-import { dispatchFollowup } from '@/api/followup.api'
+import { consolidatedDispatch } from '@/api/followup.api'
 import { formatCurrency } from '@/lib/format'
 import type { InvoiceResponse } from '@/types/invoice.types'
 import type { CustomerResponse } from '@/types/customer.types'
-import type { TemplateResponse } from '@/types/template.types'
 import type { FollowUpChannel } from '@/types/followup.types'
 
 // ---------------------------------------------------------------------------
@@ -43,24 +41,9 @@ const CHANNEL_CONFIG: {
   icon:     React.ReactNode
   requires: 'email' | 'phone'
 }[] = [
-  {
-    id:       'EMAIL',
-    label:    'Email',
-    icon:     <Mail size={14} strokeWidth={1.8} />,
-    requires: 'email',
-  },
-  {
-    id:       'SMS',
-    label:    'SMS',
-    icon:     <MessageSquare size={14} strokeWidth={1.8} />,
-    requires: 'phone',
-  },
-  {
-    id:       'WHATSAPP',
-    label:    'WhatsApp',
-    icon:     <MessageCircle size={14} strokeWidth={1.8} />,
-    requires: 'phone',
-  },
+  { id: 'EMAIL',    label: 'Email',    icon: <Mail          size={14} strokeWidth={1.8} />, requires: 'email' },
+  { id: 'SMS',      label: 'SMS',      icon: <MessageSquare size={14} strokeWidth={1.8} />, requires: 'phone' },
+  { id: 'WHATSAPP', label: 'WhatsApp', icon: <MessageCircle size={14} strokeWidth={1.8} />, requires: 'phone' },
 ]
 
 // ---------------------------------------------------------------------------
@@ -68,7 +51,7 @@ const CHANNEL_CONFIG: {
 // ---------------------------------------------------------------------------
 
 function ChannelPill({
-  id, label, icon, disabled, disabledReason, selected, onToggle,
+  label, icon, disabled, disabledReason, selected, onToggle,
 }: {
   id:             FollowUpChannel
   label:          string
@@ -104,7 +87,6 @@ function ChannelPill({
           <CheckCircle2 size={13} className="text-[#29B6F6]" strokeWidth={2.5} />
         )}
       </button>
-      {/* Tooltip */}
       {disabled && (
         <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1.5 rounded-lg bg-[#0D1B2A] dark:bg-[#243447] text-white text-[11px] font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-lg">
           {disabledReason}
@@ -113,58 +95,6 @@ function ChannelPill({
       )}
     </div>
   )
-}
-
-// ---------------------------------------------------------------------------
-// TemplateSelect — per channel
-// ---------------------------------------------------------------------------
-
-function TemplateSelect({
-  channel, label, icon, templates, value, loading, onChange,
-}: {
-  channel:   FollowUpChannel
-  label:     string
-  icon:      React.ReactNode
-  templates: TemplateResponse[]
-  value:     string
-  loading:   boolean
-  onChange:  (id: string) => void
-}) {
-  const active = templates.filter((t) => t.active)
-
-  return (
-    <div className="flex items-start gap-3">
-      <div className="w-7 h-7 rounded-full bg-[#F4F7F9] dark:bg-white/10 flex items-center justify-center text-c-muted shrink-0 mt-0.5">
-        {icon}
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-xs font-medium text-c-muted mb-1.5">{label} template</p>
-        {loading ? (
-          <div className="h-9 rounded-lg bg-[#F4F7F9] dark:bg-white/10 animate-pulse" />
-        ) : active.length === 0 ? (
-          <div className="flex items-start gap-2 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/40 px-3 py-2">
-            <AlertCircle size={13} className="text-amber-500 mt-0.5 shrink-0" />
-            <p className="text-xs text-amber-700 dark:text-amber-400">
-              No {label} template.{' '}
-              <a href="/templates" className="underline font-medium">Create one.</a>
-            </p>
-          </div>
-        ) : (
-          <select
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            className="w-full rounded-lg border border-c-border bg-white dark:bg-[#243447] text-sm text-[#0D1B2A] dark:text-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#29B6F6]/30 transition-shadow"
-          >
-            <option value="">— Select template —</option>
-            {active.map((t) => (
-              <option key={t.id} value={t.id}>{t.name}</option>
-            ))}
-          </select>
-        )}
-      </div>
-    </div>
-  )
-  void channel // used for key only
 }
 
 // ---------------------------------------------------------------------------
@@ -179,21 +109,11 @@ export default function ConsolidatedDispatchModal({ group, customer, currency, o
   const hasEmail = !!customer?.email
   const hasPhone = !!customer?.phone
 
-  // Default to first available channel
   const defaultChannels: FollowUpChannel[] = hasEmail ? ['EMAIL'] : hasPhone ? ['SMS'] : []
-  const [selectedChannels,  setSelectedChannels]  = useState<FollowUpChannel[]>(defaultChannels)
-  const [channelTemplates,  setChannelTemplates]  = useState<Partial<Record<FollowUpChannel, string>>>({})
-  const [attachPdf,         setAttachPdf]         = useState(false)
-  const [sending,           setSending]           = useState(false)
-  const [progress,          setProgress]          = useState<{ done: number; total: number } | null>(null)
-  const [sendError,         setSendError]         = useState<string | null>(null)
-
-  const { data: templatesData, isLoading: templatesLoading } = useTemplates({ size: 100, mode: 'MANUAL' })
-  const allTemplates = templatesData?.content ?? []
-
-  function templatesFor(ch: FollowUpChannel) {
-    return allTemplates.filter((t) => t.channel === ch)
-  }
+  const [selectedChannels, setSelectedChannels] = useState<FollowUpChannel[]>(defaultChannels)
+  const [sending,          setSending]          = useState(false)
+  const [progress,         setProgress]         = useState<{ done: number; total: number } | null>(null)
+  const [sendError,        setSendError]        = useState<string | null>(null)
 
   function toggleChannel(ch: FollowUpChannel) {
     setSelectedChannels((prev) =>
@@ -211,70 +131,45 @@ export default function ConsolidatedDispatchModal({ group, customer, currency, o
     return cfg.requires === 'email' ? 'No email on file' : 'No phone on file'
   }
 
-  // Channels that are selected but have no template chosen
-  const channelsWithoutTemplate = selectedChannels.filter(
-    (ch) => {
-      const active = templatesFor(ch).filter((t) => t.active)
-      return active.length > 0 && !channelTemplates[ch]
-    },
-  )
-  const channelsWithNoTemplates = selectedChannels.filter(
-    (ch) => templatesFor(ch).filter((t) => t.active).length === 0,
-  )
-  const canSend =
-    !sending &&
-    selectedChannels.length > 0 &&
-    channelsWithNoTemplates.length === 0 &&
-    channelsWithoutTemplate.length === 0
+  const canSend = !sending && selectedChannels.length > 0
 
   async function handleSend() {
-    if (!canSend) {
-      if (channelsWithoutTemplate.length > 0) {
-        setSendError(
-          `Please select a template for: ${channelsWithoutTemplate
-            .map((ch) => CHANNEL_CONFIG.find((c) => c.id === ch)?.label)
-            .join(', ')}`,
-        )
-      }
-      return
-    }
+    if (!canSend) return
     setSendError(null)
     setSending(true)
 
-    const total = group.invoices.length * selectedChannels.length
+    const total      = selectedChannels.length
+    const invoiceIds = group.invoices.map((inv) => inv.id)
     setProgress({ done: 0, total })
 
     let done = 0
     let firstError: string | null = null
 
-    for (const invoice of group.invoices) {
-      for (const ch of selectedChannels) {
-        try {
-          const result = await dispatchFollowup(orgId, invoice.id, {
-            channels:   [ch],
-            templateId: channelTemplates[ch],
-            attachPdf,
-          })
-          const anyFailed = result.some((f) => f.status === 'FAILED')
-          if (anyFailed && !firstError) {
-            firstError = `Some messages via ${CHANNEL_CONFIG.find((c) => c.id === ch)?.label} could not be delivered. Check client contact details.`
-          }
-        } catch (err: unknown) {
-          if (!firstError) {
-            firstError =
-              (err as { response?: { data?: { message?: string } } })?.response?.data?.message
-              ?? 'Something went wrong sending some messages.'
-          }
+    for (const ch of selectedChannels) {
+      try {
+        const results = await consolidatedDispatch(orgId, {
+          invoiceIds,
+          channels: [ch],
+        })
+        const failed = results.find((r) => r.status === 'FAILED')
+        if (failed && !firstError) {
+          firstError = failed.errorMessage
+            ?? `Could not deliver via ${CHANNEL_CONFIG.find((c) => c.id === ch)?.label}.`
         }
-        done += 1
-        setProgress({ done, total })
+      } catch (err: unknown) {
+        if (!firstError) {
+          firstError =
+            (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+            ?? 'Something went wrong. Please try again.'
+        }
       }
+      done += 1
+      setProgress({ done, total })
     }
 
     setSending(false)
     setProgress(null)
 
-    // Invalidate all invoices in the group
     for (const invoice of group.invoices) {
       queryClient.invalidateQueries({ queryKey: ['followups', orgId, invoice.id] })
     }
@@ -287,7 +182,9 @@ export default function ConsolidatedDispatchModal({ group, customer, currency, o
       const labels = selectedChannels
         .map((ch) => CHANNEL_CONFIG.find((c) => c.id === ch)?.label)
         .join(', ')
-      toast.success(`Consolidated follow-up sent via ${labels} for ${group.invoices.length} invoice${group.invoices.length !== 1 ? 's' : ''}`)
+      toast.success(
+        `Consolidated follow-up sent via ${labels} · ${group.invoices.length} invoice${group.invoices.length !== 1 ? 's' : ''}`,
+      )
       onClose()
     }
   }
@@ -331,10 +228,10 @@ export default function ConsolidatedDispatchModal({ group, customer, currency, o
             </button>
           </div>
 
-          {/* ── Scrollable body ─────────────────────────────────── */}
+          {/* ── Body ────────────────────────────────────────────── */}
           <div className="px-6 py-5 space-y-5 overflow-y-auto flex-1">
 
-            {/* Contact status */}
+            {/* Contact badges */}
             <div className="flex items-center gap-2 flex-wrap">
               <span className={[
                 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border',
@@ -356,7 +253,7 @@ export default function ConsolidatedDispatchModal({ group, customer, currency, o
               </span>
             </div>
 
-            {/* No contact at all */}
+            {/* No contact */}
             {!hasEmail && !hasPhone && (
               <div className="flex items-start gap-2 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/40 px-3.5 py-3">
                 <AlertCircle size={14} className="text-amber-500 mt-0.5 shrink-0" />
@@ -390,57 +287,14 @@ export default function ConsolidatedDispatchModal({ group, customer, currency, o
               )}
             </div>
 
-            {/* Template selectors */}
-            {selectedChannels.length > 0 && (
-              <div className="space-y-4">
-                <p className="text-xs font-semibold uppercase tracking-wider text-c-muted">
-                  Templates
-                </p>
-                {selectedChannels.map((ch) => {
-                  const cfg = CHANNEL_CONFIG.find((c) => c.id === ch)!
-                  return (
-                    <TemplateSelect
-                      key={ch}
-                      channel={ch}
-                      label={cfg.label}
-                      icon={cfg.icon}
-                      templates={templatesFor(ch)}
-                      value={channelTemplates[ch] ?? ''}
-                      loading={templatesLoading}
-                      onChange={(id) => setChannelTemplates((prev) => ({ ...prev, [ch]: id }))}
-                    />
-                  )
-                })}
-              </div>
-            )}
-
-            {/* Attach PDF */}
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-[#0D1B2A] dark:text-white">Attach invoice PDF</span>
-              <button
-                role="switch"
-                aria-checked={attachPdf}
-                onClick={() => setAttachPdf((v) => !v)}
-                className={[
-                  'relative w-9 h-5 rounded-full transition-colors shrink-0',
-                  attachPdf ? 'bg-[#2E7A8E]' : 'bg-[#E2E8F0] dark:bg-white/20',
-                ].join(' ')}
-              >
-                <span className={[
-                  'absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform',
-                  attachPdf ? 'translate-x-4' : 'translate-x-0',
-                ].join(' ')} />
-              </button>
-            </div>
-
-            {/* Invoice list summary */}
+            {/* Invoice summary */}
             <div className="rounded-xl border border-c-border overflow-hidden">
               <div className="px-4 py-2.5 bg-[#F4F7F9]/60 dark:bg-white/[0.02] border-b border-c-border">
                 <p className="text-xs font-semibold text-c-muted uppercase tracking-wider">
                   Invoices included
                 </p>
               </div>
-              <div className="divide-y divide-c-border max-h-36 overflow-y-auto">
+              <div className="divide-y divide-c-border max-h-40 overflow-y-auto">
                 {group.invoices.map((inv) => (
                   <div key={inv.id} className="flex items-center justify-between px-4 py-2 gap-3">
                     <span className="text-xs font-medium text-[#0D1B2A] dark:text-white truncate">
@@ -457,7 +311,7 @@ export default function ConsolidatedDispatchModal({ group, customer, currency, o
               </div>
             </div>
 
-            {/* Send progress */}
+            {/* Progress */}
             {progress && (
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between text-xs text-c-muted">
@@ -465,7 +319,7 @@ export default function ConsolidatedDispatchModal({ group, customer, currency, o
                     <Loader2 size={12} className="animate-spin" />
                     Sending…
                   </span>
-                  <span>{progress.done}/{progress.total}</span>
+                  <span>{progress.done} / {progress.total}</span>
                 </div>
                 <div className="w-full h-1.5 bg-[#F4F7F9] dark:bg-white/10 rounded-full overflow-hidden">
                   <div
@@ -488,7 +342,7 @@ export default function ConsolidatedDispatchModal({ group, customer, currency, o
             )}
           </div>
 
-          {/* ── Footer actions ───────────────────────────────────── */}
+          {/* ── Footer ──────────────────────────────────────────── */}
           <div className="px-6 pb-5 pt-3 border-t border-c-border shrink-0 flex gap-3">
             <button
               onClick={!sending ? onClose : undefined}
@@ -506,7 +360,7 @@ export default function ConsolidatedDispatchModal({ group, customer, currency, o
               {sending ? (
                 <><Loader2 size={14} className="animate-spin" /> Sending…</>
               ) : (
-                <><Send size={14} strokeWidth={2.5} /> Send to All</>
+                <><Send size={14} strokeWidth={2.5} /> Send</>
               )}
             </button>
           </div>

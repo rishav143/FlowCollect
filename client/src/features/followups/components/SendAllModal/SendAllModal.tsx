@@ -7,8 +7,7 @@ import {
 import { useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@/store/auth.store'
 import { useToast } from '@/store/toast.store'
-import { useTemplates } from '@/features/templates/hooks/useTemplates'
-import { dispatchFollowup } from '@/api/followup.api'
+import { consolidatedDispatch } from '@/api/followup.api'
 import { formatCurrency } from '@/lib/format'
 import type { CustomerResponse } from '@/types/customer.types'
 import type { InvoiceResponse } from '@/types/invoice.types'
@@ -126,16 +125,10 @@ export default function SendAllModal({ clientGroups, customerMap, currency, onCl
   // Active channel tab
   const [activeChannel, setActiveChannel] = useState<FollowUpChannel>('EMAIL')
 
-  // Per-channel template selection
-  const [channelTemplate, setChannelTemplate] = useState<Partial<Record<FollowUpChannel, string>>>({})
-
   // Send state
   const [sending,   setSending]   = useState(false)
   const [progress,  setProgress]  = useState<{ done: number; total: number } | null>(null)
   const [sendError, setSendError] = useState<string | null>(null)
-
-  const { data: templatesData, isLoading: templatesLoading } = useTemplates({ size: 100, mode: 'MANUAL' })
-  const allTemplates = templatesData?.content ?? []
 
   // Eligible groups per channel (exclude unknown customers)
   const eligibleGroups = useMemo(() => {
@@ -184,50 +177,43 @@ export default function SendAllModal({ clientGroups, customerMap, currency, onCl
   const activeSelected = getSelected(activeChannel)
   const selectedGroups = activeEligible.filter((g) => activeSelected.has(g.customerId))
 
-  const activeTemplates = allTemplates.filter((t) => t.channel === activeChannel && t.active)
-  const templateId      = channelTemplate[activeChannel] ?? ''
-
   const totalInvoices = selectedGroups.reduce((s, g) => s + g.invoices.length, 0)
 
   const canSend =
     !sending &&
     activeEligible.length > 0 &&
-    selectedGroups.length > 0 &&
-    !!templateId
+    selectedGroups.length > 0
 
   async function handleSend() {
     if (!canSend) return
     setSendError(null)
     setSending(true)
 
-    const total = totalInvoices
+    const total = selectedGroups.length
     setProgress({ done: 0, total })
 
     let done       = 0
     let firstError: string | null = null
 
     for (const group of selectedGroups) {
-      for (const invoice of group.invoices) {
-        try {
-          const result = await dispatchFollowup(orgId, invoice.id, {
-            channels:   [activeChannel],
-            templateId: templateId,
-            attachPdf:  false,
-          })
-          const anyFailed = result.some((f) => f.status === 'FAILED')
-          if (anyFailed && !firstError) {
-            firstError = `Some messages could not be delivered. Check client contact details.`
-          }
-        } catch (err: unknown) {
-          if (!firstError) {
-            firstError =
-              (err as { response?: { data?: { message?: string } } })?.response?.data?.message
-              ?? 'Something went wrong sending some messages.'
-          }
+      try {
+        const results = await consolidatedDispatch(orgId, {
+          invoiceIds: group.invoices.map((inv) => inv.id),
+          channels:   [activeChannel],
+        })
+        const failed = results.find((r) => r.status === 'FAILED')
+        if (failed && !firstError) {
+          firstError = failed.errorMessage ?? `Some messages could not be delivered.`
         }
-        done += 1
-        setProgress({ done, total })
+      } catch (err: unknown) {
+        if (!firstError) {
+          firstError =
+            (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+            ?? 'Something went wrong sending some messages.'
+        }
       }
+      done += 1
+      setProgress({ done, total })
     }
 
     setSending(false)
@@ -348,37 +334,6 @@ export default function SendAllModal({ clientGroups, customerMap, currency, onCl
               </div>
             ) : (
               <>
-                {/* Template selector */}
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-c-muted mb-2">
-                    Template
-                  </p>
-                  {templatesLoading ? (
-                    <div className="h-9 rounded-lg bg-[#F4F7F9] dark:bg-white/10 animate-pulse" />
-                  ) : activeTemplates.length === 0 ? (
-                    <div className="flex items-start gap-2 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/40 px-3.5 py-3">
-                      <AlertCircle size={13} className="text-amber-500 mt-0.5 shrink-0" />
-                      <p className="text-xs text-amber-700 dark:text-amber-400">
-                        No active {activeCfg.label} template found.{' '}
-                        <a href="/templates" className="underline font-medium">Create one.</a>
-                      </p>
-                    </div>
-                  ) : (
-                    <select
-                      value={templateId}
-                      onChange={(e) =>
-                        setChannelTemplate((prev) => ({ ...prev, [activeChannel]: e.target.value }))
-                      }
-                      className="w-full rounded-xl border border-c-border bg-white dark:bg-[#243447] text-sm text-[#0D1B2A] dark:text-white px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#29B6F6]/30 transition-shadow"
-                    >
-                      <option value="">— Select a template —</option>
-                      {activeTemplates.map((t) => (
-                        <option key={t.id} value={t.id}>{t.name}</option>
-                      ))}
-                    </select>
-                  )}
-                </div>
-
                 {/* Client list */}
                 <div>
                   <div className="flex items-center justify-between mb-2">
@@ -421,7 +376,7 @@ export default function SendAllModal({ clientGroups, customerMap, currency, onCl
                     <Loader2 size={12} className="animate-spin" />
                     Sending reminders…
                   </span>
-                  <span>{progress.done} / {progress.total} invoices</span>
+                  <span>{progress.done} / {progress.total} client{progress.total !== 1 ? 's' : ''}</span>
                 </div>
                 <div className="w-full h-1.5 bg-[#F4F7F9] dark:bg-white/10 rounded-full overflow-hidden">
                   <div

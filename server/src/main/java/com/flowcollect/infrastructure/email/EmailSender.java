@@ -10,7 +10,10 @@ import com.flowcollect.domain.invoice.Invoice;
 import com.flowcollect.domain.invoice.followup.FollowUpChannel;
 import com.flowcollect.exception.http.InternalException;
 import com.flowcollect.infrastructure.config.NotificationEmailProperties;
+import com.flowcollect.infrastructure.pdf.ConsolidatedSummaryPdfGenerator;
 import com.flowcollect.infrastructure.pdf.InvoicePdfGenerator;
+
+import java.util.List;
 
 @Component
 public class EmailSender implements NotificationSender {
@@ -20,15 +23,18 @@ public class EmailSender implements NotificationSender {
     private final ResendEmailClient emailClient;
     private final NotificationEmailProperties properties;
     private final InvoicePdfGenerator pdfGenerator;
+    private final ConsolidatedSummaryPdfGenerator summaryPdfGenerator;
 
     public EmailSender(
             ResendEmailClient emailClient,
             NotificationEmailProperties properties,
-            InvoicePdfGenerator pdfGenerator
+            InvoicePdfGenerator pdfGenerator,
+            ConsolidatedSummaryPdfGenerator summaryPdfGenerator
     ) {
         this.emailClient = emailClient;
         this.properties = properties;
         this.pdfGenerator = pdfGenerator;
+        this.summaryPdfGenerator = summaryPdfGenerator;
     }
 
     @Override
@@ -122,6 +128,34 @@ public class EmailSender implements NotificationSender {
         text = text.replaceAll("\\*\\*(.+?)\\*\\*", "<strong>$1</strong>");
         text = text.replaceAll("\\*(.+?)\\*", "<em>$1</em>");
         return text;
+    }
+
+    @Override
+    public String sendConsolidated(Customer customer, String subject, String body,
+                                   List<Invoice> invoices) {
+        if (!emailClient.isConfigured()) {
+            throw new InternalException("Email delivery is not configured. Set RESEND_API_KEY to enable it.");
+        }
+
+        String recipient     = requireConfigured(customer.getEmail(), "customer email");
+        String fromAddress   = requireConfigured(properties.getFromAddress(), "notification.email.from-address");
+        String fromFormatted = properties.getFromName() + " <" + fromAddress + ">";
+        String emailSubject  = subject == null || subject.isBlank() ? properties.getFromName() + " reminder" : subject;
+        String html          = toHtml(body == null ? "" : body);
+
+        try {
+            // Always attach a consolidated statement PDF — one clean document per customer
+            byte[] summaryPdf = summaryPdfGenerator.generate(invoices, customer);
+            String fileName   = summaryPdfGenerator.buildFileName(customer);
+            List<ResendEmailClient.Attachment> attachments =
+                    List.of(new ResendEmailClient.Attachment(fileName, summaryPdf));
+
+            String emailId = emailClient.send(fromFormatted, recipient, emailSubject, html, attachments);
+            log.info("Sent consolidated EMAIL with statement PDF to {} subject '{}'", recipient, emailSubject);
+            return emailId;
+        } catch (Exception ex) {
+            throw new InternalException("Failed to send consolidated email: " + ex.getMessage());
+        }
     }
 
     private String requireConfigured(String value, String propertyName) {

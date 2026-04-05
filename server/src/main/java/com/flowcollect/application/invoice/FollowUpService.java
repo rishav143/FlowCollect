@@ -16,6 +16,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.flowcollect.api.v1.invoice.dto.ConsolidatedFollowUpRequest;
+import com.flowcollect.api.v1.invoice.dto.ConsolidatedFollowUpResponse;
 import com.flowcollect.api.v1.invoice.dto.FollowUpRequest;
 import com.flowcollect.api.v1.invoice.dto.MultiChannelFollowUpRequest;
 import com.flowcollect.application.confirmation.ConfirmationLinkService;
@@ -242,6 +244,142 @@ public class FollowUpService {
         }
 
         return createdAndDispatched;
+    }
+
+    /**
+     * Sends one consolidated message per channel to a customer covering multiple invoices.
+     *
+     * <p>One {@link FollowUp} record is created per invoice per channel for full audit trail.
+     * However, only a single outbound message is sent per channel — rendered against all invoices
+     * with PDFs (one per invoice) attached when requested.
+     *
+     * <p>All invoices must belong to the same customer and organization.
+     */
+    @Transactional
+    public List<ConsolidatedFollowUpResponse> consolidatedDispatch(
+            UUID organizationId, ConsolidatedFollowUpRequest request) {
+
+        if (request == null) {
+            throw new ValidationException("Consolidated follow-up request must not be null");
+        }
+        if (request.getInvoiceIds() == null || request.getInvoiceIds().isEmpty()) {
+            throw new ValidationException("At least one invoice ID must be provided");
+        }
+        if (request.getChannels() == null || request.getChannels().isEmpty()) {
+            throw new ValidationException("At least one channel must be provided");
+        }
+        // Resolve + validate all invoices
+        List<Invoice> invoices = new java.util.ArrayList<>();
+        for (UUID invoiceId : request.getInvoiceIds().stream().distinct().toList()) {
+            invoices.add(invoiceService.getInvoiceById(organizationId, invoiceId));
+        }
+
+        // All must belong to the same customer
+        UUID customerId = invoices.get(0).getCustomer() != null
+                ? invoices.get(0).getCustomer().getId() : null;
+        if (customerId == null) {
+            throw new ValidationException(
+                "Cannot send consolidated follow-up: the first invoice has no client assigned.");
+        }
+        for (Invoice inv : invoices) {
+            if (inv.getCustomer() == null || !inv.getCustomer().getId().equals(customerId)) {
+                throw new ValidationException(
+                    "All invoices must belong to the same client for a consolidated follow-up.");
+            }
+            if (!inv.isIssued() && !inv.isPartiallyPaid()) {
+                throw new ValidationException(
+                    "Invoice " + inv.getInvoiceNumber() + " is not in a dispatchable state (must be ISSUED or PARTIALLY_PAID).");
+            }
+        }
+
+        Customer customer = invoices.get(0).getCustomer();
+        if (!customer.isActive()) {
+            throw new ValidationException("Cannot send consolidated follow-up: the client is inactive.");
+        }
+
+        // Optional custom template — when absent, the built-in consolidated template is used
+        Template template = null;
+        if (request.getTemplateId() != null) {
+            template = templateService.getTemplateById(organizationId, request.getTemplateId());
+            if (!template.isActive()) {
+                throw new ValidationException("Template is not active.");
+            }
+        }
+
+        List<FollowUpChannel> channels = request.getChannels().stream().distinct().toList();
+        List<ConsolidatedFollowUpResponse> results = new java.util.ArrayList<>(channels.size());
+
+        for (FollowUpChannel channel : channels) {
+            // Validate custom template channel match (only when a template was provided)
+            if (template != null &&
+                    template.getChannel() != com.flowcollect.domain.template.TemplateChannel.valueOf(channel.name())) {
+                throw new ValidationException(
+                    "Template channel " + template.getChannel() + " does not match requested channel " + channel + ".");
+            }
+
+            // Render subject + body — use custom template when provided, built-in otherwise
+            String subject;
+            String body;
+            if (template != null) {
+                subject = templateRenderer.renderConsolidatedSubject(template, invoices, customer);
+                body    = templateRenderer.renderConsolidatedBody(template, invoices, customer, null, null);
+            } else {
+                subject = templateRenderer.renderBuiltInConsolidatedSubject(channel, invoices, customer);
+                body    = templateRenderer.renderBuiltInConsolidatedBody(channel, invoices, customer);
+            }
+
+            // Create one FollowUp record per invoice (audit trail)
+            final Template finalTemplate = template;
+            List<FollowUp> followUps = new java.util.ArrayList<>(invoices.size());
+            for (Invoice inv : invoices) {
+                FollowUp fu = new FollowUp();
+                fu.setInvoice(inv);
+                fu.setChannel(channel);
+                fu.setTriggerType(FollowUpTriggerType.MANUAL);
+                fu.setStatus(FollowUpStatus.PENDING);
+                if (finalTemplate != null) fu.setTemplate(finalTemplate);
+                fu.setAttachPdf(false);
+                fu.setScheduledForDate(LocalDate.now(inv.getOrganization().getTimezone()));
+                followUps.add(followUpRepository.save(fu));
+            }
+
+            // Send one actual message for the entire group
+            ConsolidatedFollowUpResponse response = new ConsolidatedFollowUpResponse();
+            response.setChannel(channel);
+            response.setInvoiceIds(invoices.stream().map(Invoice::getId).toList());
+            response.setFollowUpIds(followUps.stream().map(FollowUp::getId).toList());
+
+            try {
+                NotificationSender sender = resolveSender(channel);
+                String externalId = sender.sendConsolidated(customer, subject, body, invoices);
+
+                java.time.Instant now = java.time.Instant.now();
+                for (FollowUp fu : followUps) {
+                    fu.send();
+                    if (externalId != null) fu.setResendEmailId(externalId);
+                    followUpRepository.save(fu);
+                }
+
+                response.setStatus(FollowUpStatus.SENT);
+                response.setExternalMessageId(externalId);
+                response.setSentAt(now);
+                log.info("[consolidated] Sent {} to customer={} invoices={} externalId={}",
+                        channel, customer.getId(), invoices.size(), externalId);
+
+            } catch (RuntimeException ex) {
+                log.warn("[consolidated] Dispatch failed channel={} customer={}", channel, customer.getId(), ex);
+                for (FollowUp fu : followUps) {
+                    fu.fail();
+                    followUpRepository.save(fu);
+                }
+                response.setStatus(FollowUpStatus.FAILED);
+                response.setErrorMessage(ex.getMessage());
+            }
+
+            results.add(response);
+        }
+
+        return results;
     }
 
     // Get a follow-up by id. Validates invoice ownership.

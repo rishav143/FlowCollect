@@ -49,9 +49,21 @@ public class ResendEmailClient {
     }
 
     /** Send an HTML email with an optional binary attachment (e.g. a PDF). Returns the Resend email ID, or null if not configured. */
-    @SuppressWarnings("unchecked")
     public String send(String from, String to, String subject, String html,
                        String attachmentFilename, byte[] attachmentBytes) {
+        List<Attachment> attachments = (attachmentFilename != null && attachmentBytes != null)
+                ? List.of(new Attachment(attachmentFilename, attachmentBytes))
+                : List.of();
+        return send(from, to, subject, html, attachments);
+    }
+
+    /**
+     * Send an HTML email with multiple binary attachments (e.g. one PDF per invoice).
+     * Returns the Resend email ID, or null if not configured.
+     */
+    @SuppressWarnings("unchecked")
+    public String send(String from, String to, String subject, String html,
+                       List<Attachment> attachments) {
         if (!isConfigured()) {
             log.warn("RESEND_API_KEY not configured — skipping email to {}", to);
             return null;
@@ -67,11 +79,16 @@ public class ResendEmailClient {
         body.put("subject", subject);
         body.put("html", html);
 
-        if (attachmentFilename != null && attachmentBytes != null) {
-            Map<String, String> attachment = new LinkedHashMap<>();
-            attachment.put("filename", attachmentFilename);
-            attachment.put("content", Base64.getEncoder().encodeToString(attachmentBytes));
-            body.put("attachments", List.of(attachment));
+        if (attachments != null && !attachments.isEmpty()) {
+            List<Map<String, String>> attachmentList = attachments.stream()
+                    .map(a -> {
+                        Map<String, String> m = new LinkedHashMap<>();
+                        m.put("filename", a.filename());
+                        m.put("content", Base64.getEncoder().encodeToString(a.bytes()));
+                        return m;
+                    })
+                    .toList();
+            body.put("attachments", attachmentList);
         }
 
         Map<String, Object> response = restTemplate.postForObject(
@@ -80,4 +97,7 @@ public class ResendEmailClient {
         log.debug("Email sent via Resend HTTP API to {} — id={}", to, emailId);
         return emailId;
     }
+
+    /** Value type for a named binary attachment. */
+    public record Attachment(String filename, byte[] bytes) {}
 }

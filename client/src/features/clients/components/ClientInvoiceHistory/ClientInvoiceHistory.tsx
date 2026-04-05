@@ -59,22 +59,20 @@ export default function ClientInvoiceHistory({
               {inv.invoiceNumber}
             </span>
 
-            {/* Status */}
-            <span className={`text-xs font-medium shrink-0 ${text}`}>{label}</span>
-
-            <span className="flex-1" />
-
-            {/* Due date — hidden on very small screens */}
-            <span className="text-xs text-c-muted hidden xs:block sm:block tabular-nums">
+            {/* Due date */}
+            <span className="text-xs text-c-muted shrink-0 tabular-nums hidden sm:block w-20">
               {formatDate(inv.dueDate)}
             </span>
 
             {/* Amount */}
-            <span className="text-sm font-semibold text-[#0D1B2A] dark:text-white tabular-nums">
+            <span className="text-sm font-semibold text-[#0D1B2A] dark:text-white shrink-0 tabular-nums w-24">
               {formatCurrency(inv.totalAmount, currency, { decimals: false })}
             </span>
 
-            <ArrowRight size={13} className="text-c-muted shrink-0" />
+            {/* Status */}
+            <span className={`text-xs font-medium shrink-0 ${text}`}>{label}</span>
+
+            <ArrowRight size={13} className="text-c-muted shrink-0 ml-auto" />
           </li>
         )
       })}

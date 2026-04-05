@@ -51,3 +51,13 @@ export async function enhanceTemplate(
   )
   return data
 }
+
+export async function getClientInsight(
+  orgId:      string,
+  customerId: string,
+): Promise<AiOverviewInsight> {
+  const { data } = await api.get<AiOverviewInsight>(
+    `${base(orgId)}/insights/customers/${customerId}`,
+  )
+  return data
+}
