@@ -2,6 +2,8 @@ package com.flowcollect.application.template;
 
 import java.math.BigDecimal;
 import java.text.NumberFormat;
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.Currency;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -140,12 +142,25 @@ public class TemplateRenderer {
                 ? invoice.getOrganization().getCurrency().getCurrencyCode()
                 : "USD";
 
+        long daysOverdue = 0;
+        try {
+            Object rawDue = invoice.getDueDate();
+            if (rawDue != null) {
+                LocalDate due = rawDue instanceof LocalDate
+                        ? (LocalDate) rawDue
+                        : LocalDate.parse(String.valueOf(rawDue));
+                long diff = ChronoUnit.DAYS.between(due, LocalDate.now());
+                daysOverdue = Math.max(0, diff);
+            }
+        } catch (Exception ignored) {}
+
         Map<String, String> values = new LinkedHashMap<>();
         values.put("customerName",      safe(customer.getName()));
         values.put("companyName",       safe(customer.getCompanyName()));
         values.put("invoiceNumber",     safe(invoice.getInvoiceNumber()));
         values.put("issueDate",         safe(invoice.getIssueDate()));
         values.put("dueDate",           safe(invoice.getDueDate()));
+        values.put("daysOverdue",       String.valueOf(daysOverdue));
         values.put("totalAmount",       formatMoney(invoice.getTotalAmount(),     currencyCode));
         values.put("totalPaid",         formatMoney(invoice.getTotalPaid(),       currencyCode));
         values.put("remainingAmount",   formatMoney(invoice.getRemainingAmount(), currencyCode));

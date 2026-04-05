@@ -53,20 +53,20 @@ public class RecoverSystemDataSeeder implements ApplicationRunner {
                 TPL_DAY3_NAME,
                 TemplateChannel.WHATSAPP,
                 null,
-                "Hi {{customer_name}}, a quick reminder that invoice {{invoice_number}} for {{amount}} " +
-                "was due {{days_overdue}} days ago. Pay now: {{payment_link}}. Reply STOP to opt out."
+                "Hi {{customerName}}, a quick reminder that invoice {{invoiceNumber}} for {{remainingAmount}} " +
+                "was due {{daysOverdue}} days ago. Pay now: {{paymentLink}}. Reply STOP to opt out."
         );
 
         Template tplDay7 = ensureTemplate(
                 TPL_DAY7_NAME,
                 TemplateChannel.EMAIL,
-                "Action Required: Invoice {{invoice_number}} is 7 days overdue",
-                "Dear {{customer_name}},\n\n" +
-                "Invoice {{invoice_number}} for {{amount}} issued on {{issue_date}} remains unpaid " +
+                "Action Required: Invoice {{invoiceNumber}} is 7 days overdue",
+                "Dear {{customerName}},\n\n" +
+                "Invoice {{invoiceNumber}} for {{remainingAmount}} issued on {{issueDate}} remains unpaid " +
                 "and is now 7 days past its due date.\n\n" +
-                "Please settle this at your earliest convenience: {{payment_link}}\n\n" +
+                "Please settle this at your earliest convenience: {{paymentLink}}\n\n" +
                 "If you have already paid, please disregard this message.\n\n" +
-                "Regards,\n{{organization_name}}"
+                "Regards,\n{{organizationName}}"
         );
 
         ensureRule(RULE_DAY3_NAME, 3, ReminderTriggerType.AFTER_DUE_DATE, ReminderChannel.WHATSAPP, tplDay3);
@@ -74,17 +74,52 @@ public class RecoverSystemDataSeeder implements ApplicationRunner {
     }
 
     /**
+     * Replaces all legacy snake_case placeholders with their camelCase equivalents
+     * so that TemplateRenderer can substitute them correctly.
+     */
+    private static String migrateSnakeCase(String text) {
+        if (text == null) return null;
+        return text
+                .replace("{{customer_name}}",    "{{customerName}}")
+                .replace("{{company_name}}",     "{{companyName}}")
+                .replace("{{invoice_number}}",   "{{invoiceNumber}}")
+                .replace("{{issue_date}}",       "{{issueDate}}")
+                .replace("{{due_date}}",         "{{dueDate}}")
+                .replace("{{days_overdue}}",     "{{daysOverdue}}")
+                .replace("{{amount}}",           "{{remainingAmount}}")
+                .replace("{{total_amount}}",     "{{totalAmount}}")
+                .replace("{{total_paid}}",       "{{totalPaid}}")
+                .replace("{{remaining_amount}}", "{{remainingAmount}}")
+                .replace("{{payment_link}}",     "{{paymentLink}}")
+                .replace("{{confirmation_link}}","{{confirmationLink}}")
+                .replace("{{organization_name}}","{{organizationName}}")
+                .replace("{{organization_email}}","{{organizationEmail}}");
+    }
+
+    /**
      * Inserts the template only if no system template with this name exists yet.
-     * Existing user edits (body, subject, active flag) are never overwritten.
+     * Existing user edits (body, subject, active flag) are never overwritten,
+     * but legacy snake_case placeholders are always migrated to camelCase.
      */
     private Template ensureTemplate(String name, TemplateChannel channel, String subject, String body) {
         return templateRepository.findByNameAndOrganizationIsNull(name).map(existing -> {
+            boolean dirty = false;
             // Ensure mode is AUTO even for templates seeded before this field was set
             if (existing.getMode() != RuleMode.AUTO) {
                 existing.setMode(RuleMode.AUTO);
-                templateRepository.save(existing);
+                dirty = true;
                 log.info("[Seed] Updated system template '{}' mode to AUTO (id={})", name, existing.getId());
             }
+            // Migrate snake_case placeholders to camelCase so the renderer can replace them
+            boolean hasSnakeCase = (existing.getBody() != null && existing.getBody().contains("{{customer_name}}"))
+                    || (existing.getSubject() != null && existing.getSubject().contains("{{invoice_number}}"));
+            if (hasSnakeCase) {
+                existing.setBody(migrateSnakeCase(existing.getBody()));
+                existing.setSubject(migrateSnakeCase(existing.getSubject()));
+                dirty = true;
+                log.info("[Seed] Migrated snake_case placeholders in template '{}' (id={})", name, existing.getId());
+            }
+            if (dirty) templateRepository.save(existing);
             return existing;
         }).orElseGet(() -> {
             Template t = new Template();

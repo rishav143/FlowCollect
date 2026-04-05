@@ -2,7 +2,7 @@ import { useState } from 'react'
 import {
   Zap, TrendingUp, Send, Clock, Shield,
   Mail, MessageSquare, MessageCircle, Pencil,
-  AlertCircle, RefreshCw, Loader2,
+  AlertCircle, RefreshCw, Loader2, RotateCcw,
 } from 'lucide-react'
 import { useAuthStore } from '@/store/auth.store'
 import { formatCurrency } from '@/lib/format'
@@ -267,7 +267,8 @@ interface RecoverRuleRowProps {
 }
 
 function RecoverRuleRow({ rule, isLast, onEdit, onToggle }: RecoverRuleRowProps) {
-  const ch = CHANNEL_META[rule.channel]
+  const ch       = CHANNEL_META[rule.channel]
+  const isCyclic = rule.maxOccurrences > 1
 
   return (
     <div className={[
@@ -289,9 +290,16 @@ function RecoverRuleRow({ rule, isLast, onEdit, onToggle }: RecoverRuleRowProps)
             <span className="ml-1.5 text-xs font-normal text-c-muted">· {rule.name}</span>
           )}
         </p>
-        <p className="text-xs text-c-muted mt-0.5">
+        <p className="text-xs text-c-muted mt-0.5 flex items-center gap-1.5">
           {ch.label}
           {rule.templateName ? ` · ${rule.templateName}` : ''}
+          {isCyclic && (
+            <>
+              <span>·</span>
+              <RotateCcw size={10} strokeWidth={2} className="inline shrink-0" />
+              <span>{rule.maxOccurrences}× every {rule.cycleIntervalDays}d</span>
+            </>
+          )}
         </p>
       </div>
 
