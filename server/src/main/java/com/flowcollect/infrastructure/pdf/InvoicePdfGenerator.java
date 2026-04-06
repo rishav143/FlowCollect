@@ -5,13 +5,14 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
-import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Currency;
 import java.util.List;
 import java.util.Locale;
+
+import com.flowcollect.infrastructure.util.CurrencyFormatter;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
@@ -496,14 +497,8 @@ public class InvoicePdfGenerator {
      */
     private String formatMoney(Invoice invoice, BigDecimal amount) {
         Currency currency = invoice.getOrganization().getCurrency();
-        if (currency == null) {
-            currency = Currency.getInstance("USD");
-        }
-        NumberFormat fmt = NumberFormat.getCurrencyInstance(Locale.US);
-        fmt.setCurrency(currency);
-        fmt.setMinimumFractionDigits(0);
-        fmt.setMaximumFractionDigits(0);
-        return fmt.format(amount == null ? BigDecimal.ZERO : amount);
+        String code = currency != null ? currency.getCurrencyCode() : "USD";
+        return CurrencyFormatter.format(amount == null ? BigDecimal.ZERO : amount, code);
     }
 
     private String formatPercentage(BigDecimal percentage) {

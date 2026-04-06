@@ -19,12 +19,12 @@ import com.flowcollect.infrastructure.ai.OpenAiClient;
 import com.flowcollect.infrastructure.persistence.ai.AiInsightCacheJpaRepository;
 import com.flowcollect.infrastructure.persistence.invoice.FollowUpJpaRepository;
 import com.flowcollect.infrastructure.persistence.invoice.InvoiceJpaRepository;
+import com.flowcollect.infrastructure.util.CurrencyFormatter;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -523,9 +523,7 @@ public class AiInsightService {
     }
 
     private String formatAmount(BigDecimal amount, Currency currency) {
-        String symbol = currency.getSymbol();
-        if (amount == null) return symbol + "0.00";
-        return symbol + amount.setScale(2, RoundingMode.HALF_UP).toPlainString();
+        return CurrencyFormatter.format(amount == null ? BigDecimal.ZERO : amount, currency);
     }
 
     private String parseInsights(String rawJson) {

@@ -9,11 +9,12 @@ import { generateTemplate, enhanceTemplate } from '@/api/ai.api'
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const BASE_PLACEHOLDERS = [
-  { label: 'Customer Name',     value: '{{customerName}}'    },
-  { label: 'Organization Name', value: '{{organizationName}}'},
-  { label: 'Invoice #',         value: '{{invoiceNumber}}'   },
-  { label: 'Amount Due',        value: '{{remainingAmount}}' },
-  { label: 'Due Date',          value: '{{dueDate}}'         },
+  { label: 'Customer Name',      value: '{{customerName}}'     },
+  { label: 'Organization Name',  value: '{{organizationName}}' },
+  { label: 'Organization Email', value: '{{organizationEmail}}'},
+  { label: 'Invoice #',          value: '{{invoiceNumber}}'    },
+  { label: 'Amount Due',         value: '{{remainingAmount}}'  },
+  { label: 'Due Date',           value: '{{dueDate}}'          },
 ]
 
 const BODY_LIMIT: Record<string, number> = {
@@ -474,6 +475,11 @@ export default function TemplateForm({
           <div>
             {errors.body && (
               <p className="text-xs text-[#EF4444]">{errors.body.message}</p>
+            )}
+            {bodyOver && (
+              <p className="text-xs text-[#EF4444]">
+                Message is too long for {channel === 'SMS' ? 'SMS' : channel === 'WHATSAPP' ? 'WhatsApp' : 'this channel'}. Please shorten it before saving.
+              </p>
             )}
             {aiError && (
               <p className="text-xs text-red-500">{aiError}</p>

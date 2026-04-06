@@ -32,7 +32,7 @@ class ConfirmationLinkServiceTest {
     void setUp() {
         MockitoAnnotations.openMocks(this);
         confirmationLinkService = new ConfirmationLinkService(confirmationLinkRepository);
-        ReflectionTestUtils.setField(confirmationLinkService, "appBaseUrl", "https://app.flowcollect.io");
+        ReflectionTestUtils.setField(confirmationLinkService, "appFrontendUrl", "https://app.flowcollect.io");
         when(invoice.getId()).thenReturn(invoiceId);
     }
 

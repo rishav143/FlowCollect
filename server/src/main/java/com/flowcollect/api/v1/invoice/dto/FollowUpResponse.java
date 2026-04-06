@@ -153,5 +153,8 @@ public class FollowUpResponse {
 
     public PaymentLinkStatus getPaymentLinkStatus() { return paymentLinkStatus; }
     public void setPaymentLinkStatus(PaymentLinkStatus paymentLinkStatus) { this.paymentLinkStatus = paymentLinkStatus; }
+
+    public boolean isHasTrackableLink() { return hasTrackableLink; }
+    public void setHasTrackableLink(boolean hasTrackableLink) { this.hasTrackableLink = hasTrackableLink; }
 }
 

@@ -116,7 +116,7 @@ export default function InvoiceTable({ invoices, customerMap, currency, isLoadin
                     className={[
                       'border-b border-c-border last:border-0 cursor-pointer transition-colors',
                       overdue
-                        ? 'bg-red-50/40 dark:bg-red-500/[0.04] hover:bg-red-50/70 dark:hover:bg-red-500/[0.07]'
+                        ? 'bg-red-50/40 dark:bg-red-500/[0.04] hover:bg-red-50/70 dark:hover:bg-red-500/[0.06]'
                         : 'hover:bg-[#F4F7F9] dark:hover:bg-[#243447]',
                     ].join(' ')}
                   >

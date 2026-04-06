@@ -117,7 +117,7 @@ export default function KpiStrip({ kpis, currency, isConfirmationFlow, isLoading
       iconBg:     'bg-green-50 dark:bg-green-500/10',
       iconColor:  'text-green-500',
       valueColor: kpis.collectedThisMonth > 0 ? 'text-green-600 dark:text-green-400' : undefined,
-      alive:      autoRecoveryEnabled && kpis.collectedThisMonth > 0,
+      alive:      false,
     },
     isConfirmationFlow
       ? {

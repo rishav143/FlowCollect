@@ -7,119 +7,139 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.flowcollect.domain.reminder.ReminderChannel;
-import com.flowcollect.domain.reminder.ReminderRule;
-import com.flowcollect.domain.reminder.ReminderTriggerType;
 import com.flowcollect.domain.reminder.RuleMode;
 import com.flowcollect.domain.template.Template;
 import com.flowcollect.domain.template.TemplateChannel;
 import com.flowcollect.domain.template.TemplateTone;
+import com.flowcollect.infrastructure.persistence.invoice.FollowUpJpaRepository;
 import com.flowcollect.infrastructure.persistence.reminder.ReminderRuleJpaRepository;
 import com.flowcollect.infrastructure.persistence.template.TemplateJpaRepository;
 
 /**
- * Seeds platform-defined AUTO reminder rules and their templates on startup.
+ * Seeds platform-defined MANUAL default templates on startup.
  *
- * Idempotency: checks by name (system-scoped) before inserting — safe to run on every restart.
- * User edits (toggle active, change body/subject) are preserved across restarts because we
- * only check for existence, never overwrite. Renaming a system rule is unsupported
- * (the UI should prevent it for systemDefined=true entries).
+ * Idempotency: checks by name (system-scoped, org=null) before inserting — safe to run on every restart.
+ * User edits (body, subject, active flag) are preserved across restarts because we only check existence,
+ * never overwrite. Also performs one-time cleanup of legacy AUTO system templates/rules from earlier versions.
  */
 @Component
 public class RecoverSystemDataSeeder implements ApplicationRunner {
 
     private static final Logger log = LoggerFactory.getLogger(RecoverSystemDataSeeder.class);
 
-    // Stable names used as idempotency keys — do not rename these constants.
-    static final String TPL_DAY3_NAME  = "Day 3 Recovery Nudge";
-    static final String TPL_DAY7_NAME  = "Day 7 Recovery Reminder";
-    static final String RULE_DAY3_NAME = "System: 3-Day Overdue WhatsApp";
-    static final String RULE_DAY7_NAME = "System: 7-Day Overdue Email";
+    // Legacy names — kept only for cleanup, do not re-use.
+    private static final String LEGACY_TPL_DAY3   = "Day 3 Recovery Nudge";
+    private static final String LEGACY_TPL_DAY7   = "Day 7 Recovery Reminder";
+    private static final String LEGACY_RULE_DAY3  = "System: 3-Day Overdue WhatsApp";
+    private static final String LEGACY_RULE_DAY7  = "System: 7-Day Overdue Email";
 
-    private final TemplateJpaRepository templateRepository;
+    // Current default template names — used as idempotency keys.
+    static final String TPL_DEFAULT_EMAIL     = "Default Email";
+    static final String TPL_DEFAULT_SMS       = "Default SMS";
+    static final String TPL_DEFAULT_WHATSAPP  = "Default WhatsApp";
+
+    private final TemplateJpaRepository     templateRepository;
     private final ReminderRuleJpaRepository reminderRuleRepository;
+    private final FollowUpJpaRepository     followUpRepository;
 
     public RecoverSystemDataSeeder(
             TemplateJpaRepository templateRepository,
-            ReminderRuleJpaRepository reminderRuleRepository) {
+            ReminderRuleJpaRepository reminderRuleRepository,
+            FollowUpJpaRepository followUpRepository) {
         this.templateRepository     = templateRepository;
         this.reminderRuleRepository = reminderRuleRepository;
+        this.followUpRepository     = followUpRepository;
     }
 
     @Override
     @Transactional
     public void run(ApplicationArguments args) {
-        Template tplDay3 = ensureTemplate(
-                TPL_DAY3_NAME,
-                TemplateChannel.WHATSAPP,
-                null,
-                "Hi {{customerName}}, a quick reminder that invoice {{invoiceNumber}} for {{remainingAmount}} " +
-                "was due {{daysOverdue}} days ago. Pay now: {{paymentLink}}. Reply STOP to opt out."
-        );
+        cleanupLegacySystemData();
 
-        Template tplDay7 = ensureTemplate(
-                TPL_DAY7_NAME,
+        ensureTemplate(
+                TPL_DEFAULT_EMAIL,
                 TemplateChannel.EMAIL,
-                "Action Required: Invoice {{invoiceNumber}} is 7 days overdue",
+                "Invoice {{invoiceNumber}} — Payment Confirmation",
                 "Dear {{customerName}},\n\n" +
-                "Invoice {{invoiceNumber}} for {{remainingAmount}} issued on {{issueDate}} remains unpaid " +
-                "and is now 7 days past its due date.\n\n" +
-                "Please settle this at your earliest convenience: {{paymentLink}}\n\n" +
-                "If you have already paid, please disregard this message.\n\n" +
+                "This is a reminder that invoice {{invoiceNumber}} for {{remainingAmount}} is due on {{dueDate}}.\n\n" +
+                "If you have already made the payment, please click the button below to confirm.\n\n" +
+                "{{confirmationLink}}\n\n" +
                 "Regards,\n{{organizationName}}"
         );
 
-        ensureRule(RULE_DAY3_NAME, 3, ReminderTriggerType.AFTER_DUE_DATE, ReminderChannel.WHATSAPP, tplDay3);
-        ensureRule(RULE_DAY7_NAME, 7, ReminderTriggerType.AFTER_DUE_DATE, ReminderChannel.EMAIL,    tplDay7);
+        ensureTemplate(
+                TPL_DEFAULT_SMS,
+                TemplateChannel.SMS,
+                null,
+                "Hi {{customerName}}, invoice {{invoiceNumber}} for {{remainingAmount}} is due on {{dueDate}}. " +
+                "Confirm receipt: {{confirmationLink}}"
+        );
+
+        ensureTemplate(
+                TPL_DEFAULT_WHATSAPP,
+                TemplateChannel.WHATSAPP,
+                null,
+                "Hi {{customerName}}, this is a reminder for invoice {{invoiceNumber}} of {{remainingAmount}} " +
+                "due on {{dueDate}}. Please confirm receipt: {{confirmationLink}}."
+        );
     }
 
-    /**
-     * Replaces all legacy snake_case placeholders with their camelCase equivalents
-     * so that TemplateRenderer can substitute them correctly.
-     */
-    private static String migrateSnakeCase(String text) {
-        if (text == null) return null;
-        return text
-                .replace("{{customer_name}}",    "{{customerName}}")
-                .replace("{{company_name}}",     "{{companyName}}")
-                .replace("{{invoice_number}}",   "{{invoiceNumber}}")
-                .replace("{{issue_date}}",       "{{issueDate}}")
-                .replace("{{due_date}}",         "{{dueDate}}")
-                .replace("{{days_overdue}}",     "{{daysOverdue}}")
-                .replace("{{amount}}",           "{{remainingAmount}}")
-                .replace("{{total_amount}}",     "{{totalAmount}}")
-                .replace("{{total_paid}}",       "{{totalPaid}}")
-                .replace("{{remaining_amount}}", "{{remainingAmount}}")
-                .replace("{{payment_link}}",     "{{paymentLink}}")
-                .replace("{{confirmation_link}}","{{confirmationLink}}")
-                .replace("{{organization_name}}","{{organizationName}}")
-                .replace("{{organization_email}}","{{organizationEmail}}");
+    // -------------------------------------------------------------------------
+    // One-time cleanup of legacy AUTO system templates and rules
+    // -------------------------------------------------------------------------
+
+    private void cleanupLegacySystemData() {
+        // Rules must be deleted before templates (FK constraint)
+        reminderRuleRepository.findByNameAndSystemDefinedTrue(LEGACY_RULE_DAY3).ifPresent(r -> {
+            followUpRepository.detachReminderRule(r.getId());
+            reminderRuleRepository.delete(r);
+            log.info("[Seed] Removed legacy system rule '{}'", LEGACY_RULE_DAY3);
+        });
+        reminderRuleRepository.findByNameAndSystemDefinedTrue(LEGACY_RULE_DAY7).ifPresent(r -> {
+            followUpRepository.detachReminderRule(r.getId());
+            reminderRuleRepository.delete(r);
+            log.info("[Seed] Removed legacy system rule '{}'", LEGACY_RULE_DAY7);
+        });
+        templateRepository.findByNameAndOrganizationIsNull(LEGACY_TPL_DAY3).ifPresent(t -> {
+            followUpRepository.detachTemplate(t.getId());
+            templateRepository.delete(t);
+            log.info("[Seed] Removed legacy system template '{}'", LEGACY_TPL_DAY3);
+        });
+        templateRepository.findByNameAndOrganizationIsNull(LEGACY_TPL_DAY7).ifPresent(t -> {
+            followUpRepository.detachTemplate(t.getId());
+            templateRepository.delete(t);
+            log.info("[Seed] Removed legacy system template '{}'", LEGACY_TPL_DAY7);
+        });
     }
 
-    /**
-     * Inserts the template only if no system template with this name exists yet.
-     * Existing user edits (body, subject, active flag) are never overwritten,
-     * but legacy snake_case placeholders are always migrated to camelCase.
+    // -------------------------------------------------------------------------
+    // Template seeding helpers
+    // -------------------------------------------------------------------------
+
+/**
+     * Inserts a MANUAL system template only if no system template with this name exists yet.
+     * Existing user edits are never overwritten; only snake_case placeholders are migrated.
      */
     private Template ensureTemplate(String name, TemplateChannel channel, String subject, String body) {
         return templateRepository.findByNameAndOrganizationIsNull(name).map(existing -> {
+            // Always sync body and subject — system templates are platform-owned, not user-editable content
             boolean dirty = false;
-            // Ensure mode is AUTO even for templates seeded before this field was set
-            if (existing.getMode() != RuleMode.AUTO) {
-                existing.setMode(RuleMode.AUTO);
+            if (!body.equals(existing.getBody())) {
+                existing.setBody(body);
                 dirty = true;
-                log.info("[Seed] Updated system template '{}' mode to AUTO (id={})", name, existing.getId());
             }
-            // Migrate snake_case placeholders to camelCase so the renderer can replace them
-            boolean hasSnakeCase = (existing.getBody() != null && existing.getBody().contains("{{customer_name}}"))
-                    || (existing.getSubject() != null && existing.getSubject().contains("{{invoice_number}}"));
-            if (hasSnakeCase) {
-                existing.setBody(migrateSnakeCase(existing.getBody()));
-                existing.setSubject(migrateSnakeCase(existing.getSubject()));
+            if (subject == null ? existing.getSubject() != null : !subject.equals(existing.getSubject())) {
+                existing.setSubject(subject);
                 dirty = true;
-                log.info("[Seed] Migrated snake_case placeholders in template '{}' (id={})", name, existing.getId());
             }
-            if (dirty) templateRepository.save(existing);
+            if (existing.getMode() != RuleMode.MANUAL) {
+                existing.setMode(RuleMode.MANUAL);
+                dirty = true;
+            }
+            if (dirty) {
+                templateRepository.save(existing);
+                log.info("[Seed] Synced system template '{}' (id={})", name, existing.getId());
+            }
             return existing;
         }).orElseGet(() -> {
             Template t = new Template();
@@ -128,39 +148,12 @@ public class RecoverSystemDataSeeder implements ApplicationRunner {
             t.setSubject(subject);
             t.setBody(body);
             t.setTone(TemplateTone.POLITE);
-            t.setMode(RuleMode.AUTO);
+            t.setMode(RuleMode.MANUAL);
             t.setSystemDefined(true);
-            // organization stays null — platform-level, shared across all orgs
+            // organization stays null — platform-level, visible to all orgs
             Template saved = templateRepository.save(t);
             log.info("[Seed] Created system template '{}' (id={})", name, saved.getId());
             return saved;
         });
-    }
-
-    /**
-     * Inserts the rule only if no system rule with this name exists yet.
-     * Checks regardless of active state so a user-deactivated rule is not re-inserted.
-     */
-    private void ensureRule(String name, int daysOffset, ReminderTriggerType triggerType,
-                             ReminderChannel channel, Template template) {
-        if (reminderRuleRepository.findByNameAndSystemDefinedTrue(name).isPresent()) {
-            return;
-        }
-
-        ReminderRule rule = new ReminderRule();
-        rule.setName(name);
-        rule.setDaysOffset(daysOffset);
-        rule.setTriggerType(triggerType);
-        rule.setChannel(channel);
-        rule.setTemplate(template);
-        rule.setMode(RuleMode.AUTO);
-        rule.setMaxOccurrences(1);
-        rule.setCycleIntervalDays(0);
-        rule.setSystemDefined(true);
-        rule.activate();
-        // organization stays null — platform-level
-
-        ReminderRule saved = reminderRuleRepository.save(rule);
-        log.info("[Seed] Created system reminder rule '{}' (id={})", name, saved.getId());
     }
 }

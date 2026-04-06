@@ -27,19 +27,16 @@ public class AiTemplateService {
             You always respond with valid JSON only, no markdown, no code fences.
             """;
 
-    // Placeholders that the TemplateRenderer understands
+    // Placeholders that the TemplateRenderer understands — ONLY use these, no others
     private static final String PLACEHOLDER_GUIDE = """
-            Available placeholders (use them naturally in the text):
+            Available placeholders (use ONLY these — do not invent any others):
             - {{customerName}} — recipient's full name
             - {{invoiceNumber}} — invoice reference number
-            - {{totalAmount}} — total invoice amount formatted with currency symbol
-            - {{remainingAmount}} — remaining unpaid amount formatted with currency symbol
+            - {{remainingAmount}} — remaining unpaid amount, already formatted with currency symbol (e.g. "₹5,000") — do NOT add a currency code or symbol before or after this placeholder
             - {{dueDate}} — payment due date
-            - {{paymentLink}} — payment gateway link (use when channel supports clickable links)
-            - {{confirmationLink}} — payment confirmation link (for manual-confirmation flow)
+            - {{confirmationLink}} — link for the customer to confirm they have made the payment
             - {{organizationName}} — business name
             - {{organizationEmail}} — business contact email
-            - {{companyName}} — customer's company name (may be absent; wrap in natural context)
             """;
 
     private final OpenAiClient openAiClient;
@@ -121,7 +118,8 @@ public class AiTemplateService {
                 - subject must be a short, specific email subject line for EMAIL
                 - body must follow the channel formatting rules above
                 - Use at least {{customerName}}, {{invoiceNumber}}, {{remainingAmount}}, and {{dueDate}}
-                - Include {{paymentLink}} naturally in the call-to-action for EMAIL and WHATSAPP
+                - Include {{confirmationLink}} as the call-to-action
+                - Do NOT use any placeholder not listed in the available placeholders above
                 """.formatted(
                 currency,
                 channel.name(),
@@ -185,7 +183,7 @@ public class AiTemplateService {
                     Channel formatting (EMAIL):
                     - Write a clear, professional email body with greeting, body paragraphs, and sign-off
                     - Paragraphs separated by blank lines (\\n\\n)
-                    - Use **bold** for key amounts and dates
+                    - Keep body under 1500 characters; 2000 at absolute maximum
                     - The body should be complete enough to stand alone as an email
                     """;
             case SMS -> """
@@ -199,9 +197,10 @@ public class AiTemplateService {
                     Channel formatting (WHATSAPP):
                     - Conversational but professional tone
                     - No subject line
+                    - Keep body under 800 characters; 1000 at absolute maximum
                     - Use *bold* (single asterisk) for key values like amounts or dates
                     - Use line breaks (\\n) for readability
-                    - End with a friendly call-to-action including the {{paymentLink}} or {{confirmationLink}}
+                    - End with a friendly call-to-action including the {{confirmationLink}}
                     """;
         };
     }

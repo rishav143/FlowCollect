@@ -1,14 +1,13 @@
 package com.flowcollect.application.template;
 
 import java.math.BigDecimal;
-import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
-import java.util.Currency;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
+
+import com.flowcollect.infrastructure.util.CurrencyFormatter;
 
 import org.springframework.stereotype.Service;
 
@@ -181,28 +180,10 @@ public class TemplateRenderer {
         if (value == null) return "";
         try {
             BigDecimal amount = new BigDecimal(String.valueOf(value));
-            Currency currency = Currency.getInstance(currencyCode);
-            NumberFormat fmt = NumberFormat.getCurrencyInstance(localeForCurrency(currencyCode));
-            fmt.setCurrency(currency);
-            fmt.setMinimumFractionDigits(0);
-            fmt.setMaximumFractionDigits(0);
-            return fmt.format(amount);
+            return CurrencyFormatter.format(amount, currencyCode);
         } catch (Exception e) {
             return String.valueOf(value);
         }
-    }
-
-    private Locale localeForCurrency(String currencyCode) {
-        return switch (currencyCode) {
-            case "INR" -> Locale.of("en", "IN");
-            case "USD" -> Locale.US;
-            case "EUR" -> Locale.GERMANY;
-            case "GBP" -> Locale.UK;
-            case "AUD" -> Locale.of("en", "AU");
-            case "SGD" -> Locale.of("en", "SG");
-            case "AED" -> Locale.of("ar", "AE");
-            default    -> Locale.US;
-        };
     }
 
     private String safe(Object value) {

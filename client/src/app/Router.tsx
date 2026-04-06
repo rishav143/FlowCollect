@@ -37,18 +37,6 @@ function GuestRoute() {
 }
 
 // ---------------------------------------------------------------------------
-// Placeholder — for routes not yet implemented
-// ---------------------------------------------------------------------------
-
-function PlaceholderPage({ title }: { title: string }) {
-  return (
-    <div className="flex flex-col items-center justify-center min-h-[60vh] text-center gap-2">
-      <p className="text-3xl">{title.split(' ')[0]}</p>
-      <h1 className="text-xl font-bold text-[#0D1B2A] dark:text-white">{title.split(' ').slice(1).join(' ')}</h1>
-      <p className="text-sm text-c-muted">Page coming soon</p>
-    </div>
-  )
-}
 
 // ---------------------------------------------------------------------------
 // Router — each child route loads its chunk on first navigation only
@@ -93,7 +81,7 @@ const router = createBrowserRouter([
   },
 
   // ── Public — no shell, no auth required ───────────────────────────────────
-  { path: '/confirm/:token', element: <PlaceholderPage title="✅ Payment Confirmation" /> },
+  { path: '/confirm/:token', lazy: routeLazy(() => import('@/features/confirm/pages/ConfirmPaymentPage')) },
 
   // Catch-all
   { path: '*', element: <Navigate to="/dashboard" replace /> },

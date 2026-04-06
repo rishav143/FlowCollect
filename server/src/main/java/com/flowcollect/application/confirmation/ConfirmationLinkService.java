@@ -27,8 +27,8 @@ public class ConfirmationLinkService {
 
     private final ConfirmationLinkJpaRepository confirmationLinkRepository;
 
-    @Value("${app.base-url}")
-    private String appBaseUrl;
+    @Value("${app.frontend-url}")
+    private String appFrontendUrl;
 
     public ConfirmationLinkService(ConfirmationLinkJpaRepository confirmationLinkRepository) {
         this.confirmationLinkRepository = confirmationLinkRepository;
@@ -90,7 +90,7 @@ public class ConfirmationLinkService {
 
     private ConfirmationLink createForInvoice(Invoice invoice) {
         String token = UUID.randomUUID().toString().replace("-", "");
-        String publicUrl = appBaseUrl + "/confirm/" + token;
+        String publicUrl = appFrontendUrl + "/confirm/" + token;
 
         ConfirmationLink link = new ConfirmationLink();
         link.setInvoice(invoice);

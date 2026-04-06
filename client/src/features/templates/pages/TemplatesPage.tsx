@@ -40,7 +40,9 @@ export default function TemplatesPage() {
     channelFilter !== 'ALL' ? { channel: channelFilter, mode: 'MANUAL' } : { mode: 'MANUAL' },
   )
 
-  const templates = (data?.content ?? []).filter((t) => t.mode === 'MANUAL' && !t.systemDefined)
+  const allTemplates  = (data?.content ?? []).filter((t) => t.mode === 'MANUAL')
+  const defaults      = allTemplates.filter((t) => t.systemDefined)
+  const userTemplates = allTemplates.filter((t) => !t.systemDefined)
 
   return (
     <div className="space-y-5">
@@ -95,7 +97,7 @@ export default function TemplatesPage() {
         </div>
       )}
 
-      {!isLoading && !isError && templates.length === 0 && (
+      {!isLoading && !isError && allTemplates.length === 0 && (
         <div className="py-16 flex flex-col items-center gap-3 text-center">
           <div className="w-12 h-12 rounded-full bg-[#F4F7F9] dark:bg-white/10 flex items-center justify-center">
             <FileText size={22} className="text-c-muted" strokeWidth={1.5} />
@@ -114,16 +116,37 @@ export default function TemplatesPage() {
         </div>
       )}
 
-      {!isLoading && !isError && templates.length > 0 && (
-        <div className={gridClass(view)}>
-          {templates.map((t) => (
-            <TemplateCardWithToggle
-              key={t.id}
-              template={t}
-              onEdit={setEditing}
-              onDelete={setDeleting}
-            />
-          ))}
+      {!isLoading && !isError && defaults.length > 0 && (
+        <div className="space-y-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-c-muted">Default Templates</p>
+          <div className={gridClass(view)}>
+            {defaults.map((t) => (
+              <TemplateCardWithToggle
+                key={t.id}
+                template={t}
+                onEdit={setEditing}
+                onDelete={setDeleting}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {!isLoading && !isError && userTemplates.length > 0 && (
+        <div className="space-y-3">
+          {defaults.length > 0 && (
+            <p className="text-xs font-semibold uppercase tracking-wide text-c-muted">Your Templates</p>
+          )}
+          <div className={gridClass(view)}>
+            {userTemplates.map((t) => (
+              <TemplateCardWithToggle
+                key={t.id}
+                template={t}
+                onEdit={setEditing}
+                onDelete={setDeleting}
+              />
+            ))}
+          </div>
         </div>
       )}
 

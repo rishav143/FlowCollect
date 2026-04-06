@@ -1,5 +1,5 @@
 import { memo } from 'react'
-import { Mail, MessageSquare, MessageCircle, Pencil, Trash2 } from 'lucide-react'
+import { Mail, MessageSquare, MessageCircle, Pencil, Trash2, Sparkles } from 'lucide-react'
 import type { TemplateResponse } from '@/types/template.types'
 
 // ---------------------------------------------------------------------------
@@ -35,13 +35,15 @@ const CHANNEL_ICON = {
 // ---------------------------------------------------------------------------
 
 interface Props {
-  template: TemplateResponse
-  onEdit:   (t: TemplateResponse) => void
-  onDelete: (t: TemplateResponse) => void
-  onToggle: (t: TemplateResponse) => void
+  template:   TemplateResponse
+  onEdit:     (t: TemplateResponse) => void
+  onDelete:   (t: TemplateResponse) => void
+  onToggle:   (t: TemplateResponse) => void
 }
 
 const TemplateCard = memo(function TemplateCard({ template, onEdit, onDelete, onToggle }: Props) {
+  const isSystem = template.systemDefined
+
   return (
     <div className={[
       'rounded-xl border transition-colors',
@@ -64,7 +66,14 @@ const TemplateCard = memo(function TemplateCard({ template, onEdit, onDelete, on
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
-            <ToneBadge tone={template.tone} />
+            {isSystem ? (
+              <span className="flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wide bg-[#29B6F6]/10 text-[#29B6F6]">
+                <Sparkles size={9} strokeWidth={2} />
+                Default
+              </span>
+            ) : (
+              <ToneBadge tone={template.tone} />
+            )}
 
             {/* Active toggle */}
             <button
@@ -109,13 +118,15 @@ const TemplateCard = memo(function TemplateCard({ template, onEdit, onDelete, on
           <Pencil size={13} strokeWidth={1.8} />
           Edit
         </button>
-        <button
-          onClick={() => onDelete(template)}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-[#EF4444] hover:bg-[#EF4444]/10 rounded-lg transition-colors"
-        >
-          <Trash2 size={13} strokeWidth={1.8} />
-          Delete
-        </button>
+        {!isSystem && (
+          <button
+            onClick={() => onDelete(template)}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-[#EF4444] hover:bg-[#EF4444]/10 rounded-lg transition-colors"
+          >
+            <Trash2 size={13} strokeWidth={1.8} />
+            Delete
+          </button>
+        )}
       </div>
     </div>
   )

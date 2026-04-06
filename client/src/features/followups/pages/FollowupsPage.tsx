@@ -233,7 +233,6 @@ function ClientGroupCard({
   autoRecoveryEnabled,
   lastFollowupMap,
   allFollowupsMap,
-  customer,
   onSend,
   onConsolidate,
 }: {
@@ -242,7 +241,6 @@ function ClientGroupCard({
   autoRecoveryEnabled:  boolean
   lastFollowupMap:      Record<string, FollowUpResponse>
   allFollowupsMap:      Record<string, FollowUpResponse[]>
-  customer:             CustomerResponse | undefined
   onSend:               (invoice: InvoiceResponse) => void
   onConsolidate:        (group: ClientGroupData) => void
 }) {
@@ -402,9 +400,16 @@ function MetricsStrip({
     [allFollowups],
   )
 
+  // Only follow-ups that had a trackable link (payment or confirmation) are
+  // eligible for click rate — plain reminders have nothing to click.
+  const trackableSent = useMemo(
+    () => allSent.filter((f) => f.hasTrackableLink),
+    [allSent],
+  )
+
   const clickRate =
-    allSent.length > 0
-      ? Math.round((allSent.filter((f) => f.openedAt != null).length / allSent.length) * 100)
+    trackableSent.length > 0
+      ? Math.round((trackableSent.filter((f) => f.openedAt != null).length / trackableSent.length) * 100)
       : null
 
   const cards = [
@@ -424,9 +429,9 @@ function MetricsStrip({
       label:  'Link click rate',
       value:  clickRate != null ? `${clickRate}%` : '—',
       sub:
-        allSent.length > 0
-          ? `${allSent.filter((f) => f.openedAt != null).length} of ${allSent.length} clicked`
-          : 'No reminders sent yet',
+        trackableSent.length > 0
+          ? `${trackableSent.filter((f) => f.openedAt != null).length} of ${trackableSent.length} clicked`
+          : 'No link reminders sent yet',
       color:
         clickRate != null && clickRate >= 50
           ? 'text-[#2E7A8E] dark:text-[#29B6F6]'
@@ -623,7 +628,6 @@ export default function FollowupsPage() {
                   autoRecoveryEnabled={autoRecoveryEnabled}
                   lastFollowupMap={lastFollowupMap}
                   allFollowupsMap={allFollowupsMap}
-                  customer={customerMap[group.customerId]}
                   onSend={setTarget}
                   onConsolidate={setConsolidatedTarget}
                 />

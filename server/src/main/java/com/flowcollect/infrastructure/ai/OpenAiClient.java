@@ -71,6 +71,9 @@ public class OpenAiClient {
             log.debug("OpenAI chat completion succeeded using model={}", properties.getModel());
             return response.firstContent();
 
+        } catch (org.springframework.web.client.HttpClientErrorException ex) {
+            log.error("OpenAI API client error: status={} body={}", ex.getStatusCode(), ex.getResponseBodyAsString());
+            throw new ServiceUnavailableException("AI request failed: " + ex.getStatusCode());
         } catch (RestClientException ex) {
             log.error("OpenAI API call failed: {}", ex.getMessage());
             throw new ServiceUnavailableException("AI service is temporarily unavailable. Please try again later.");

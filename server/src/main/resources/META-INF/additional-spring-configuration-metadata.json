@@ -1,0 +1,14 @@
+{
+  "properties": [
+    {
+      "name": "app.base-url",
+      "type": "java.lang.String",
+      "description": "Backend base URL used for API callbacks, tracking links, and payment gateway webhooks."
+    },
+    {
+      "name": "app.frontend-url",
+      "type": "java.lang.String",
+      "description": "Frontend base URL used for customer-facing links such as the payment confirmation page."
+    }
+  ]
+}

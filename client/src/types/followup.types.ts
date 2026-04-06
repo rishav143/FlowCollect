@@ -23,6 +23,7 @@ export interface FollowUpResponse {
   paymentLinkUrl:     string | null
   paymentLinkGateway: PaymentGateway | null
   paymentLinkStatus:  string | null
+  hasTrackableLink:   boolean
 }
 
 export interface MultiChannelFollowUpRequest {

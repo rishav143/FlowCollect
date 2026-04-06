@@ -34,48 +34,56 @@ function todayLabel(): string {
 // ---------------------------------------------------------------------------
 
 function AutoAgentBanner() {
-  const enabled = useAuthStore((s) => s.org?.autoRecoveryEnabled ?? false)
+  const enabled  = useAuthStore((s) => s.org?.autoRecoveryEnabled ?? false)
   const { data, isLoading } = useRecoverStats()
 
   if (!enabled) return null
   if (isLoading || !data) return null
 
-  const pills: { label: string; value: string }[] = [
-    { label: 'scheduled today', value: String(data.pendingToday) },
-    { label: 'sent this week',  value: String(data.sentThisWeek) },
-    { label: 'sent today',      value: String(data.sentToday) },
-  ]
-
+  // ── Tagline selection ────────────────────────────────────────────────────
   const h = new Date().getHours()
   const m = new Date().getMinutes()
-  const taglines: Record<number, string[]> = {
-    0:  ['Still up? Your invoices aren\'t sleeping either.', 'Night owl hours — your reminders are wide awake.'],
-    1:  ['Burning the midnight oil? It\'s all being handled.', 'Deep night mode — chasing those invoices for you.'],
-    2:  ['2 AM hustle? You\'re covered.', 'Doesn\'t need sleep. Lucky you.'],
-    3:  ['Pre-dawn grind. We respect it.', 'Way too early — or way too late. No judgment.'],
-    4:  ['Early bird or night owl? Either way, it\'s handled.', 'The sun\'s not up yet but your follow-ups are.'],
-    5:  ['Rise and grind — already beat you to it.', 'First light. Been running all night for you.'],
-    6:  ['Morning! Your invoices were already nudged.', 'Sunrise shift — already on the clock.'],
-    7:  ['Morning stretch — we\'ve been lifting for you.', 'Good morning! Your invoices are already on the move.'],
-    8:  ['Workday\'s young — already 3 steps ahead.', 'Start of the day, all warmed up for you.'],
-    9:  ['Grab a coffee — it\'s all being handled.', '9 AM momentum — in full swing.'],
-    10: ['Mid-morning hustle — nudges are going out.', 'You focus on the work, we\'ll focus on the money.'],
-    11: ['Almost noon — been grinding since dawn.', 'Pre-lunch lull? Not here.'],
-    12: ['Lunch break earned — we\'ve got it covered.', 'Noon check-in: fully operational.'],
-    13: ['Post-lunch dip? Doesn\'t apply here.', 'Afternoon shift — no naps allowed.'],
-    14: ['Deep work hours — invoices are being chased.', '2 PM focus mode. The boring stuff is handled.'],
-    15: ['Afternoon grind — steady as ever.', 'Tea time? Keep going, we\'ve got the follow-ups.'],
-    16: ['Golden hour — cash flow is golden too.', 'Late afternoon push — keeping pace with you.'],
-    17: ['End of the workday? Not quite.', '5 o\'clock somewhere — follow-ups don\'t care.'],
-    18: ['Wrapping up? We\'re just hitting our stride.', 'Evening mode — still day mode for your invoices.'],
-    19: ['Dinner time — your invoices are being served.', 'Winding down? The reminders aren\'t.'],
-    20: ['Evening chill — someone\'s gotta be responsible.', 'Netflix time? Your cash flow is being watched.'],
-    21: ['Night setting in — fully nocturnal over here.', 'You relax. This won\'t.'],
-    22: ['Late night — night shift specialist reporting in.', 'Before bed check-in: all good.'],
-    23: ['Almost midnight — no bedtimes here.', 'Night owl session — in our element.'],
-  }
-  const options = taglines[h] ?? ['The engine is running.']
-  const tagline = options[m % options.length]
+
+  const MORNING   = [
+    "Your invoices are being actively followed up.",
+    "Start your day easy — we're chasing your payments.",
+    "Your cash flow is already in motion.",
+    "While you plan your day, we're handling collections.",
+    "You focus on growth — we'll recover your payments.",
+  ]
+  const AFTERNOON = [
+    "Sit back, your invoices are being chased.",
+    "Follow-ups are running automatically.",
+    "We're handling reminders so you don't have to.",
+    "Your collections are on autopilot.",
+    "Payments are being nudged — no effort needed.",
+  ]
+  const EVENING   = [
+    "You worked — we chased your payments.",
+    "Your invoices stayed active all day.",
+    "Another day of consistent recovery.",
+    "You log off, we keep following up.",
+    "Recovery continues, even after hours.",
+  ]
+  const NIGHT     = [
+    "Sleep easy — your payments are being followed up.",
+    "Even now, your invoices are being chased.",
+    "We don't stop — your recovery continues.",
+    "Rest now — we'll handle the collections.",
+    "Quiet hours, active payment recovery.",
+  ]
+
+  const pool = h >= 6 && h < 12 ? MORNING
+             : h >= 12 && h < 17 ? AFTERNOON
+             : h >= 17 && h < 21 ? EVENING
+             : NIGHT
+  const tagline = pool[m % pool.length]
+
+  // ── Stats pills ──────────────────────────────────────────────────────────
+  const pills: { value: string; label: string }[] = [
+    { value: String(data.activeRules),  label: 'active rules'   },
+    { value: String(data.sentThisWeek), label: 'sent this week' },
+  ]
 
   return (
     <div className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-white dark:bg-[#1B2838] border border-amber-200 dark:border-amber-500/30 shadow-sm dark:shadow-[0_0_16px_rgba(245,158,11,0.12)] text-sm">

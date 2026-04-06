@@ -44,7 +44,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
             <span className="text-[#29B6F6]">Stress less.</span>
           </h2>
           <p className="text-[#8A9BAE] text-base mb-8">
-            The smart invoicing platform built for Indian freelancers &amp; agencies.
+            The smart invoicing platform built for freelancers &amp; agencies worldwide.
           </p>
           <ul className="space-y-3.5">
             {VALUE_PROPS.map((p) => (
@@ -58,7 +58,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
 
         {/* Footer tagline */}
         <p className="text-xs text-[#4E6478]">
-          Trusted by freelancers &amp; small businesses across India.
+          Trusted by freelancers &amp; small businesses around the world.
         </p>
       </div>
 

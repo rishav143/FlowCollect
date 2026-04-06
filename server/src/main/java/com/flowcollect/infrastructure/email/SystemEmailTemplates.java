@@ -4,6 +4,8 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
+import com.flowcollect.infrastructure.util.CurrencyFormatter;
+
 /**
  * Single source of truth for all system-generated email templates.
  *
@@ -134,7 +136,7 @@ public final class SystemEmailTemplates {
                 + esc(invoiceNumber) + "</strong> has been confirmed by <strong>"
                 + esc(orgName) + "</strong>. Thank you — your invoice is now fully settled!</p>"
                 + noteBlock,
-                appName
+                orgName
         );
         return new EmailContent(subject, html);
     }
@@ -182,7 +184,7 @@ public final class SystemEmailTemplates {
                 + "<p style=\"margin:16px 0 0;\">Please contact <strong>" + esc(orgName)
                 + "</strong> if you have any questions.</p>"
                 + noteBlock,
-                appName
+                orgName
         );
         return new EmailContent(subject, html);
     }
@@ -232,7 +234,7 @@ public final class SystemEmailTemplates {
                 + fmt(remainingBalance, currency) + "</strong> by <strong>"
                 + esc(dueDateStr) + "</strong>. Please contact <strong>"
                 + esc(orgName) + "</strong> if you have any questions.</p>",
-                appName
+                orgName
         );
         return new EmailContent(subject, html);
     }
@@ -257,23 +259,23 @@ public final class SystemEmailTemplates {
             String reason,
             String appName
     ) {
-        String subject = "Payment Not Verified — Invoice #" + invoiceNumber;
+        String subject = "Re: Invoice #" + invoiceNumber + " — Action Required";
 
         String reasonBlock = reason != null
-                ? notePanel("Reason", esc(reason), "#fef2f2", "#dc2626")
+                ? notePanel("Note from " + esc(orgName), esc(reason), "#fef2f2", "#dc2626")
                 : "";
 
         String html = page(
-                header(esc(invoiceNumber), "Payment Not Verified", "#dc2626"),
+                header(esc(invoiceNumber), "Payment Needs Attention", "#dc2626"),
                 "<p style=\"margin:0 0 16px;\">Hi <strong>" + esc(customerName) + "</strong>,</p>"
-                + "<p style=\"margin:0 0 16px;\">Unfortunately, your payment confirmation for"
-                + " <strong>Invoice #" + esc(invoiceNumber) + "</strong> could not be verified at this time.</p>"
+                + "<p style=\"margin:0 0 16px;\"><strong>" + esc(orgName) + "</strong> was unable to confirm"
+                + " your payment for <strong>Invoice #" + esc(invoiceNumber) + "</strong>.</p>"
                 + reasonBlock
                 + "<p style=\"margin:16px 0 0;\">The outstanding balance of <strong>"
-                + fmt(remainingBalance, currency) + "</strong> remains due."
-                + " Please resubmit your confirmation or contact <strong>"
-                + esc(orgName) + "</strong> for assistance.</p>",
-                appName
+                + fmt(remainingBalance, currency) + "</strong> is still pending."
+                + " Please get in touch with <strong>" + esc(orgName) + "</strong>"
+                + " or resubmit your payment details.</p>",
+                orgName
         );
         return new EmailContent(subject, html);
     }
@@ -332,9 +334,9 @@ public final class SystemEmailTemplates {
                 + text + "</p>";
     }
 
-    /** Formats a BigDecimal amount with its currency code, e.g. "45,000.00 INR". */
+    /** Formats a BigDecimal amount with locale-aware symbol and grouping, e.g. "₹77,143". */
     private static String fmt(BigDecimal amount, String currency) {
-        return esc(amount.toPlainString()) + " " + esc(currency);
+        return esc(CurrencyFormatter.format(amount, currency));
     }
 
     /** Minimal HTML escaping for all user-supplied strings. */

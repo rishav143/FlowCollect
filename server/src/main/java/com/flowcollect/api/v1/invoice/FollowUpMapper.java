@@ -29,6 +29,8 @@ public class FollowUpMapper {
             followUpResponse.setPaymentLinkStatus(f.getPaymentLink().getStatus());
         }
 
+        followUpResponse.setHasTrackableLink(f.getTrackedLinkUrl() != null);
+
         return followUpResponse;
     }
 }

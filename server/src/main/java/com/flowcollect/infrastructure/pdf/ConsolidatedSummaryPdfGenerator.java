@@ -5,13 +5,12 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
-import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Currency;
 import java.util.List;
-import java.util.Locale;
+
+import com.flowcollect.infrastructure.util.CurrencyFormatter;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
@@ -416,16 +415,8 @@ public class ConsolidatedSummaryPdfGenerator {
     }
 
     private String fmtMoney(BigDecimal amount, String currencyCode) {
-        try {
-            Currency currency = Currency.getInstance(currencyCode);
-            NumberFormat fmt  = NumberFormat.getCurrencyInstance(Locale.US);
-            fmt.setCurrency(currency);
-            fmt.setMinimumFractionDigits(0);
-            fmt.setMaximumFractionDigits(0);
-            return fmt.format(amount == null ? BigDecimal.ZERO : amount);
-        } catch (Exception e) {
-            return amount == null ? "-" : amount.toPlainString();
-        }
+        String result = CurrencyFormatter.format(amount == null ? BigDecimal.ZERO : amount, currencyCode);
+        return result.isBlank() ? "-" : result;
     }
 
     private String fmtDate(LocalDate date) {

@@ -97,6 +97,15 @@ public class EmailSender implements NotificationSender {
                 }
                 if (trimmed.isEmpty()) {
                     bodyHtml.append("<br>");
+                } else if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+                    // Standalone URL — render as a centered CTA button
+                    bodyHtml.append("<div style=\"text-align:center;margin:24px 0;\">")
+                            .append("<a href=\"").append(trimmed).append("\" ")
+                            .append("style=\"display:inline-block;padding:12px 28px;")
+                            .append("background:#29B6F6;color:#ffffff;text-decoration:none;")
+                            .append("border-radius:6px;font-weight:bold;font-size:15px;\">")
+                            .append("I've Paid")
+                            .append("</a></div>");
                 } else {
                     bodyHtml.append(inlineFormat(line)).append("<br>");
                 }

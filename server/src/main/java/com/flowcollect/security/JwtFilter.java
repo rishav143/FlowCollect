@@ -52,6 +52,7 @@ public class JwtFilter extends OncePerRequestFilter {
     /** Path prefixes that are publicly accessible (no JWT required). */
     private static final List<String> SKIP_PREFIXES = List.of(
             "/pay/",               // payment link customer redirect
+            "/confirm/",           // customer payment confirmation page (SPA route — pass through)
             "/track/",             // link click tracking redirect (sets openedAt, then redirects)
             "/api/v1/webhooks/",   // gateway webhook receivers (verified by gateway signature)
             "/api/v1/diagnostics/",// dev/staging diagnostics — remove before production

@@ -5,6 +5,7 @@ import com.flowcollect.domain.invoice.Invoice;
 import com.flowcollect.domain.invoice.followup.FollowUpChannel;
 import com.flowcollect.exception.http.InternalException;
 import com.flowcollect.infrastructure.config.NotificationEmailProperties;
+import com.flowcollect.infrastructure.pdf.ConsolidatedSummaryPdfGenerator;
 import com.flowcollect.infrastructure.pdf.InvoicePdfGenerator;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -22,6 +23,7 @@ class EmailSenderTest {
     @Mock private ResendEmailClient emailClient;
     @Mock private NotificationEmailProperties properties;
     @Mock private InvoicePdfGenerator pdfGenerator;
+    @Mock private ConsolidatedSummaryPdfGenerator summaryPdfGenerator;
     @Mock private Customer customer;
     @Mock private Invoice invoice;
 
@@ -34,7 +36,7 @@ class EmailSenderTest {
         when(properties.getFromAddress()).thenReturn("billing@flowcollect.io");
         when(properties.getFromName()).thenReturn("FlowCollect");
         when(customer.getEmail()).thenReturn("customer@example.com");
-        emailSender = new EmailSender(emailClient, properties, pdfGenerator);
+        emailSender = new EmailSender(emailClient, properties, pdfGenerator, summaryPdfGenerator);
     }
 
     // ===================================================================
