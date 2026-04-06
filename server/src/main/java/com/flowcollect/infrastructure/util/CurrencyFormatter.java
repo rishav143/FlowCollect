@@ -1,6 +1,8 @@
 package com.flowcollect.infrastructure.util;
 
 import java.math.BigDecimal;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.text.NumberFormat;
 import java.util.Currency;
 import java.util.Locale;
@@ -25,10 +27,11 @@ public final class CurrencyFormatter {
      *
      * <p>Examples:
      * <ul>
-     *   <li>INR, 77143  → "₹77,143"</li>
-     *   <li>USD, 1200   → "$1,200"</li>
-     *   <li>EUR, 1500   → "€1.500"</li>
-     *   <li>GBP, 950    → "£950"</li>
+     *   <li>INR, 77143    → "₹77,143"</li>
+     *   <li>INR, 1560858  → "₹15,60,858"  (Indian lakh system)</li>
+     *   <li>USD, 1200     → "$1,200"</li>
+     *   <li>EUR, 1500     → "€1.500"</li>
+     *   <li>GBP, 950      → "£950"</li>
      * </ul>
      *
      * @param amount       amount to format; {@code null} returns empty string
@@ -38,6 +41,19 @@ public final class CurrencyFormatter {
     public static String format(BigDecimal amount, String currencyCode) {
         if (amount == null || currencyCode == null || currencyCode.isBlank()) return "";
         try {
+            if ("INR".equals(currencyCode)) {
+                // Java's NumberFormat for en_IN uses US 3-digit grouping on many JVM versions.
+                // Force the Indian lakh system (groups of 2 after the first 3 from the right:
+                // e.g. 1560858 → 15,60,858) with an explicit DecimalFormat pattern.
+                // Avoid ¤ + setCurrency() which can silently reset the symbol; prepend ₹ directly.
+                DecimalFormatSymbols symbols = new DecimalFormatSymbols(Locale.of("en", "IN"));
+                symbols.setGroupingSeparator(',');
+                symbols.setDecimalSeparator('.');
+                DecimalFormat fmt = new DecimalFormat("#,##,##0", symbols);
+                fmt.setMinimumFractionDigits(0);
+                fmt.setMaximumFractionDigits(0);
+                return "₹" + fmt.format(amount);
+            }
             Currency currency = Currency.getInstance(currencyCode);
             NumberFormat fmt  = NumberFormat.getCurrencyInstance(localeFor(currencyCode));
             fmt.setCurrency(currency);
@@ -67,7 +83,7 @@ public final class CurrencyFormatter {
     public static Locale localeFor(String currencyCode) {
         if (currencyCode == null) return Locale.US;
         return switch (currencyCode) {
-            case "INR" -> Locale.of("en", "IN");   // ₹1,00,000
+            case "INR" -> Locale.of("en", "IN");   // ₹15,60,858 (lakh — handled by explicit DecimalFormat above)
             case "USD" -> Locale.US;                // $1,000
             case "EUR" -> Locale.GERMANY;           // €1.000
             case "GBP" -> Locale.UK;                // £1,000

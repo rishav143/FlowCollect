@@ -195,23 +195,27 @@ public class TemplateRenderer {
     // -----------------------------------------------------------------------
 
     private static final String BUILT_IN_EMAIL_SUBJECT =
-            "Invoice reminder – {{organizationName}}";
+            "Outstanding invoices from {{organizationName}}";
 
     private static final String BUILT_IN_EMAIL_BODY =
             "Hi {{customerName}},\n\n" +
-            "This is a friendly reminder that you have {{invoiceCount}} outstanding " +
-            "invoice{{invoiceCountSuffix}} with {{organizationName}} totalling {{remainingAmount}}.\n\n" +
-            "We've attached an invoice summary for your reference. We'd appreciate " +
-            "payment at your earliest convenience.\n\n" +
-            "If you have any questions, please don't hesitate to reach out at {{organizationEmail}}.\n\n" +
-            "Kind regards,\n" +
-            "{{organizationName}}";
+            "I hope this note finds you well. I'm writing to let you know that you have " +
+            "{{invoiceCount}} outstanding invoice{{invoiceCountSuffix}} with {{organizationName}} " +
+            "totalling {{remainingAmount}}.\n\n" +
+            "We've attached a full statement for your reference. When you have a moment, " +
+            "we'd appreciate you looking it over and settling the balance at your convenience.\n\n" +
+            "If you have any questions or would like to discuss the details, please feel free " +
+            "to reach out to us directly at {{organizationEmail}}. We're always happy to help.\n\n" +
+            "Thank you for your time and continued partnership.\n\n" +
+            "Best regards,\n" +
+            "{{organizationName}}\n" +
+            "{{organizationEmail}}";
 
     private static final String BUILT_IN_SMS_WHATSAPP_BODY =
             "Hi {{customerName}}, you have {{invoiceCount}} outstanding " +
             "invoice{{invoiceCountSuffix}} with {{organizationName}} totalling " +
-            "{{remainingAmount}}. Please settle at your earliest convenience. " +
-            "Questions? Contact us at {{organizationEmail}}.";
+            "{{remainingAmount}}. A statement has been attached for your reference. " +
+            "Questions? Reach us at {{organizationEmail}}.";
 
     public String renderBuiltInConsolidatedSubject(FollowUpChannel channel,
                                                     List<Invoice> invoices,

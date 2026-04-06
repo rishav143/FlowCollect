@@ -14,6 +14,8 @@ import com.flowcollect.infrastructure.pdf.ConsolidatedSummaryPdfGenerator;
 import com.flowcollect.infrastructure.pdf.InvoicePdfGenerator;
 
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Component
 public class EmailSender implements NotificationSender {
@@ -76,6 +78,9 @@ public class EmailSender implements NotificationSender {
         }
     }
 
+    // Matches http(s) URLs — stops at whitespace or common HTML-unsafe chars
+    private static final Pattern URL_PATTERN = Pattern.compile("https?://[^\\s\"<>]+");
+
     private String toHtml(String plainText) {
         String[] lines = plainText.split("\n", -1);
         StringBuilder bodyHtml = new StringBuilder();
@@ -97,17 +102,8 @@ public class EmailSender implements NotificationSender {
                 }
                 if (trimmed.isEmpty()) {
                     bodyHtml.append("<br>");
-                } else if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
-                    // Standalone URL — render as a centered CTA button
-                    bodyHtml.append("<div style=\"text-align:center;margin:24px 0;\">")
-                            .append("<a href=\"").append(trimmed).append("\" ")
-                            .append("style=\"display:inline-block;padding:12px 28px;")
-                            .append("background:#29B6F6;color:#ffffff;text-decoration:none;")
-                            .append("border-radius:6px;font-weight:bold;font-size:15px;\">")
-                            .append("I've Paid")
-                            .append("</a></div>");
                 } else {
-                    bodyHtml.append(inlineFormat(line)).append("<br>");
+                    bodyHtml.append(renderTextLine(line));
                 }
             }
         }
@@ -131,6 +127,49 @@ public class EmailSender implements NotificationSender {
                 </body>
                 </html>
                 """.formatted(bodyHtml);
+    }
+
+    /**
+     * Renders a non-empty, non-list line. Any URLs found anywhere in the line
+     * are extracted and rendered as centered CTA buttons; surrounding text is
+     * rendered as normal formatted text.
+     */
+    private String renderTextLine(String line) {
+        Matcher m = URL_PATTERN.matcher(line.trim());
+        if (!m.find()) {
+            return inlineFormat(line) + "<br>";
+        }
+
+        StringBuilder sb = new StringBuilder();
+        m.reset();
+        int last = 0;
+        while (m.find()) {
+            // Text before the URL
+            if (m.start() > last) {
+                String before = inlineFormat(line.trim().substring(last, m.start())).stripTrailing();
+                if (!before.isEmpty()) sb.append(before).append("<br>");
+            }
+            // Strip trailing punctuation that is not part of the URL
+            String raw     = m.group();
+            String url     = raw.replaceAll("[.,;:!?)]+$", "");
+            String trailer = raw.substring(url.length());
+            // CTA button
+            sb.append("<div style=\"text-align:center;margin:20px 0;\">")
+              .append("<a href=\"").append(url).append("\" ")
+              .append("style=\"display:inline-block;padding:12px 28px;")
+              .append("background:#29B6F6;color:#ffffff;text-decoration:none;")
+              .append("border-radius:6px;font-weight:bold;font-size:15px;\">")
+              .append("I&#39;ve Paid")
+              .append("</a></div>");
+            if (!trailer.isEmpty()) sb.append(trailer);
+            last = m.end();
+        }
+        // Any text after the last URL
+        if (last < line.trim().length()) {
+            String after = inlineFormat(line.trim().substring(last)).stripLeading();
+            if (!after.isEmpty()) sb.append(after).append("<br>");
+        }
+        return sb.toString();
     }
 
     private String inlineFormat(String text) {

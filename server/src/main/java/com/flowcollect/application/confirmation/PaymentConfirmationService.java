@@ -205,7 +205,7 @@ public class PaymentConfirmationService {
             confirmationLinkService.closeForInvoice(invoice.getId());
         }
 
-        if (request != null && request.isNotifyCustomer()) {
+        if (request == null || request.isNotifyCustomer()) {
             try {
                 if (refreshed.isPaid()) {
                     businessNotificationService.notifyCustomerPaymentConfirmedFull(refreshed, confirmation);
@@ -319,7 +319,7 @@ public class PaymentConfirmationService {
         PaymentConfirmation saved = confirmationRepository.save(confirmation);
 
         Invoice invoice = confirmation.getConfirmationLink().getInvoice();
-        if (request != null && request.isNotifyCustomer()) {
+        if (request == null || request.isNotifyCustomer()) {
             try {
                 businessNotificationService.notifyCustomerPaymentRejected(invoice, saved);
             } catch (Exception ex) {

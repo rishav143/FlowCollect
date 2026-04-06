@@ -59,28 +59,39 @@ public class RecoverSystemDataSeeder implements ApplicationRunner {
         ensureTemplate(
                 TPL_DEFAULT_EMAIL,
                 TemplateChannel.EMAIL,
-                "Invoice {{invoiceNumber}} — Payment Confirmation",
-                "Dear {{customerName}},\n\n" +
-                "This is a reminder that invoice {{invoiceNumber}} for {{remainingAmount}} is due on {{dueDate}}.\n\n" +
-                "If you have already made the payment, please click the button below to confirm.\n\n" +
+                "Invoice {{invoiceNumber}} from {{organizationName}}",
+                "Hi {{customerName}},\n\n" +
+                "I hope you're doing well. I'm writing regarding invoice {{invoiceNumber}} for {{remainingAmount}}, " +
+                "with a payment due date of {{dueDate}}.\n\n" +
+                "If you have already taken care of this, you can let us know using the link below — " +
+                "it helps us keep our records up to date and avoids any unnecessary follow-up.\n\n" +
                 "{{confirmationLink}}\n\n" +
-                "Regards,\n{{organizationName}}"
+                "If you have any questions about this invoice or would like to discuss anything, " +
+                "please don't hesitate to reach out to us at {{organizationEmail}}. We're happy to help.\n\n" +
+                "Thank you for your time and continued support.\n\n" +
+                "Best regards,\n" +
+                "{{organizationName}}\n" +
+                "{{organizationEmail}}"
         );
 
         ensureTemplate(
                 TPL_DEFAULT_SMS,
                 TemplateChannel.SMS,
                 null,
-                "Hi {{customerName}}, invoice {{invoiceNumber}} for {{remainingAmount}} is due on {{dueDate}}. " +
-                "Confirm receipt: {{confirmationLink}}"
+                "Hi {{customerName}}, invoice {{invoiceNumber}} for {{remainingAmount}} from {{organizationName}} " +
+                "is due on {{dueDate}}. Already paid? Confirm here: {{confirmationLink}}"
         );
 
         ensureTemplate(
                 TPL_DEFAULT_WHATSAPP,
                 TemplateChannel.WHATSAPP,
                 null,
-                "Hi {{customerName}}, this is a reminder for invoice {{invoiceNumber}} of {{remainingAmount}} " +
-                "due on {{dueDate}}. Please confirm receipt: {{confirmationLink}}."
+                "Hi {{customerName}},\n\n" +
+                "A quick note regarding invoice {{invoiceNumber}} for *{{remainingAmount}}*, due on *{{dueDate}}*.\n\n" +
+                "If you've already made the payment, please let us know using the link below so we can update our records:\n" +
+                "{{confirmationLink}}\n\n" +
+                "For any questions, feel free to reach us at {{organizationEmail}}.\n\n" +
+                "Thank you,\n{{organizationName}}"
         );
     }
 

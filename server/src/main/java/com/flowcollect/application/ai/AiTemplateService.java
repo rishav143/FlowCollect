@@ -120,6 +120,7 @@ public class AiTemplateService {
                 - Use at least {{customerName}}, {{invoiceNumber}}, {{remainingAmount}}, and {{dueDate}}
                 - Include {{confirmationLink}} as the call-to-action
                 - Do NOT use any placeholder not listed in the available placeholders above
+                - NEVER write literal currency amounts (e.g. ₹5,000 or $1,200) — ALWAYS use {{remainingAmount}} or other placeholders instead
                 """.formatted(
                 currency,
                 channel.name(),
@@ -162,6 +163,7 @@ public class AiTemplateService {
                 - Apply the target tone throughout
                 - Follow channel formatting rules above
                 - subject must be null for SMS and WHATSAPP
+                - NEVER write literal currency amounts (e.g. ₹5,000 or $1,200) — ALWAYS use {{remainingAmount}} or other placeholders instead
 
                 Respond with JSON in this exact shape:
                 {"subject": "<email subject or null>", "body": "<improved body>"}

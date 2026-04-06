@@ -64,7 +64,7 @@ public final class SystemEmailTemplates {
             String customerNote,
             String appName
     ) {
-        String subject = "Payment Claim Received — Invoice #" + invoiceNumber;
+        String subject = "Payment claim received – Invoice #" + invoiceNumber;
 
         String displayCustomer = (customerName != null && !customerName.isBlank())
                 ? "<strong>" + esc(customerName) + "</strong>"
@@ -122,19 +122,21 @@ public final class SystemEmailTemplates {
             String businessNote,
             String appName
     ) {
-        String subject = "Payment Confirmed — Invoice #" + invoiceNumber;
+        String subject = "Your payment has been confirmed – Invoice #" + invoiceNumber;
 
         String noteBlock = businessNote != null
                 ? notePanel(esc(orgName), esc(businessNote), "#f0fdf4", "#16a34a")
                 : "";
 
         String html = page(
-                header(esc(invoiceNumber), "Payment Confirmed ✓", "#16a34a"),
+                header(esc(invoiceNumber), "Payment Confirmed", "#16a34a"),
                 "<p style=\"margin:0 0 16px;\">Hi <strong>" + esc(customerName) + "</strong>,</p>"
-                + "<p style=\"margin:0 0 16px;\">Great news! Your payment of <strong>"
+                + "<p style=\"margin:0 0 16px;\">We're pleased to let you know that your payment of <strong>"
                 + fmt(amountConfirmed, currency) + "</strong> for <strong>Invoice #"
                 + esc(invoiceNumber) + "</strong> has been confirmed by <strong>"
-                + esc(orgName) + "</strong>. Thank you — your invoice is now fully settled!</p>"
+                + esc(orgName) + "</strong>.</p>"
+                + "<p style=\"margin:0 0 16px;\">Your invoice is now fully settled. "
+                + "Thank you for your prompt payment — we truly appreciate it.</p>"
                 + noteBlock,
                 orgName
         );
@@ -164,7 +166,7 @@ public final class SystemEmailTemplates {
             String businessNote,
             String appName
     ) {
-        String subject = "Partial Payment Received — Invoice #" + invoiceNumber;
+        String subject = "Payment received – Invoice #" + invoiceNumber;
 
         String noteBlock = businessNote != null
                 ? notePanel(esc(orgName), esc(businessNote), "#eff6ff", "#2563eb")
@@ -181,8 +183,9 @@ public final class SystemEmailTemplates {
                         + row("Remaining balance", "<span style=\"font-weight:bold;color:#dc2626;\">"
                                 + fmt(remainingBalance, currency) + "</span>")
                   )
-                + "<p style=\"margin:16px 0 0;\">Please contact <strong>" + esc(orgName)
-                + "</strong> if you have any questions.</p>"
+                + "<p style=\"margin:16px 0 0;\">If you have any questions about the remaining balance "
+                + "or your account, please don't hesitate to reach out to <strong>" + esc(orgName)
+                + "</strong> directly.</p>"
                 + noteBlock,
                 orgName
         );
@@ -215,7 +218,7 @@ public final class SystemEmailTemplates {
             LocalDate dueDate,
             String appName
     ) {
-        String subject = "Payment Request for Remaining Balance — Invoice #" + invoiceNumber;
+        String subject = "Outstanding balance – Invoice #" + invoiceNumber + " from " + orgName;
         String dueDateStr = dueDate != null ? dueDate.format(DATE_FMT) : "as soon as possible";
 
         String html = page(
@@ -230,10 +233,12 @@ public final class SystemEmailTemplates {
                                 + fmt(remainingBalance, currency) + "</span>")
                         + row("Due date", esc(dueDateStr))
                   )
-                + "<p style=\"margin:16px 0 0;\">We kindly request you to arrange the remaining <strong>"
+                + "<p style=\"margin:16px 0 0;\">We would appreciate your help in settling the remaining <strong>"
                 + fmt(remainingBalance, currency) + "</strong> by <strong>"
-                + esc(dueDateStr) + "</strong>. Please contact <strong>"
-                + esc(orgName) + "</strong> if you have any questions.</p>",
+                + esc(dueDateStr) + "</strong>.</p>"
+                + "<p style=\"margin:16px 0 0;\">If you have any questions or would like to discuss "
+                + "payment arrangements, please feel free to reach out to <strong>"
+                + esc(orgName) + "</strong> directly. We're happy to help.</p>",
                 orgName
         );
         return new EmailContent(subject, html);
@@ -259,22 +264,23 @@ public final class SystemEmailTemplates {
             String reason,
             String appName
     ) {
-        String subject = "Re: Invoice #" + invoiceNumber + " — Action Required";
+        String subject = "We could not verify your payment – Invoice #" + invoiceNumber;
 
         String reasonBlock = reason != null
                 ? notePanel("Note from " + esc(orgName), esc(reason), "#fef2f2", "#dc2626")
                 : "";
 
         String html = page(
-                header(esc(invoiceNumber), "Payment Needs Attention", "#dc2626"),
+                header(esc(invoiceNumber), "Payment Could Not Be Verified", "#dc2626"),
                 "<p style=\"margin:0 0 16px;\">Hi <strong>" + esc(customerName) + "</strong>,</p>"
-                + "<p style=\"margin:0 0 16px;\"><strong>" + esc(orgName) + "</strong> was unable to confirm"
-                + " your payment for <strong>Invoice #" + esc(invoiceNumber) + "</strong>.</p>"
+                + "<p style=\"margin:0 0 16px;\">We wanted to let you know that <strong>" + esc(orgName)
+                + "</strong> was unable to verify your payment for <strong>Invoice #"
+                + esc(invoiceNumber) + "</strong>.</p>"
                 + reasonBlock
                 + "<p style=\"margin:16px 0 0;\">The outstanding balance of <strong>"
-                + fmt(remainingBalance, currency) + "</strong> is still pending."
-                + " Please get in touch with <strong>" + esc(orgName) + "</strong>"
-                + " or resubmit your payment details.</p>",
+                + fmt(remainingBalance, currency) + "</strong> remains on your account. "
+                + "Please reach out to <strong>" + esc(orgName) + "</strong> directly — "
+                + "they will be happy to help you resolve this.</p>",
                 orgName
         );
         return new EmailContent(subject, html);
@@ -297,7 +303,10 @@ public final class SystemEmailTemplates {
                 + headerHtml
                 + bodyHtml
                 + "<hr style=\"border:none;border-top:1px solid #e5e7eb;margin:24px 0;\">"
-                + "<p style=\"color:#9ca3af;font-size:12px;margin:0;\">— " + esc(appName) + "</p>"
+                + "<p style=\"color:#9ca3af;font-size:12px;margin:0;line-height:1.6;\">"
+                + "This is a transactional notification sent by <strong style=\"color:#9ca3af;\">"
+                + esc(appName) + "</strong>. "
+                + "Please do not reply to this email.</p>"
                 + "</td></tr></table>"
                 + "</td></tr></table>"
                 + "</body></html>";
