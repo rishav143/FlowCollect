@@ -130,8 +130,11 @@ public class AiInsightService {
         return parseInsights(rawJson);
     }
 
+    /** Cache TTL: regenerate insights only when the last generation is older than this. */
+    private static final long INSIGHT_CACHE_TTL_HOURS = 48;
+
     /**
-     * Returns cached overview insights if generated today (in the org's timezone);
+     * Returns cached overview insights if generated within the last 48 hours;
      * otherwise regenerates, persists, and returns fresh data.
      *
      * @param organizationId the org to analyze
@@ -146,7 +149,8 @@ public class AiInsightService {
 
         if (!forceRefresh && existing.isPresent()) {
             AiInsightCache cache = existing.get();
-            if (todayInOrgTz.equals(cache.getGeneratedForDate())) {
+            Instant cutoff = Instant.now().minus(INSIGHT_CACHE_TTL_HOURS, ChronoUnit.HOURS);
+            if (cache.getGeneratedAt().isAfter(cutoff)) {
                 return new OverviewInsightResult(cache.getInsights(), true, cache.getGeneratedAt());
             }
         }

@@ -8,9 +8,14 @@ import { CheckCircle2, AlertCircle } from 'lucide-react'
 // Helpers
 // ---------------------------------------------------------------------------
 
+const CURRENCY_LOCALE: Record<string, string> = {
+  INR: 'en-IN', USD: 'en-US', EUR: 'de-DE', GBP: 'en-GB',
+  AED: 'en-AE', SGD: 'en-SG', AUD: 'en-AU',
+}
+
 function fmt(amount: number, currency: string) {
   try {
-    return new Intl.NumberFormat('en-IN', {
+    return new Intl.NumberFormat(CURRENCY_LOCALE[currency] ?? 'en-US', {
       style:                 'currency',
       currency,
       minimumFractionDigits: 0,

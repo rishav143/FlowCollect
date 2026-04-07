@@ -58,7 +58,7 @@ export default function AiInsightBanner() {
     queryKey,
     queryFn:   () => getAiOverviewInsights(orgId),
     enabled:   !!orgId,
-    // Never auto-refetch — backend cache handles staleness by date.
+    // Never auto-refetch — backend cache handles staleness (48h TTL).
     staleTime: Infinity,
     retry:     false,
   })
