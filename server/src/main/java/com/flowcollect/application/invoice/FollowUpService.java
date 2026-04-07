@@ -493,17 +493,24 @@ public class FollowUpService {
             // Wrap the relevant link through our tracking redirect (works for all channels)
             String trackingUrl = appBaseUrl + "/track/" + fresh.getId();
 
-            if (confirmationLinkUrl != null) {
+            // Only track links that the template actually uses — a template without
+            // {{confirmationLink}} / {{paymentLink}} has nothing to click, so it must
+            // not count towards click-rate metrics.
+            String rawBody = template.getBody() != null ? template.getBody() : "";
+            boolean templateHasConfirmationLink = rawBody.contains("{{confirmationLink}}");
+            boolean templateHasPaymentLink      = rawBody.contains("{{paymentLink}}");
+
+            if (confirmationLinkUrl != null && templateHasConfirmationLink) {
                 fresh.setTrackedLinkUrl(confirmationLinkUrl);
                 fresh.setClickedLinkType(ClickedLinkType.CONFIRMATION_LINK);
-            } else if (paymentLinkUrl != null) {
+            } else if (paymentLinkUrl != null && templateHasPaymentLink) {
                 fresh.setTrackedLinkUrl(paymentLinkUrl);
                 fresh.setClickedLinkType(ClickedLinkType.PAYMENT_LINK);
             }
 
             // Replace the real URL with the tracking URL in the rendered message
-            String effectivePaymentLinkUrl     = paymentLinkUrl      != null ? trackingUrl : null;
-            String effectiveConfirmationLinkUrl = confirmationLinkUrl != null ? trackingUrl : null;
+            String effectivePaymentLinkUrl     = (paymentLinkUrl      != null && templateHasPaymentLink)      ? trackingUrl : null;
+            String effectiveConfirmationLinkUrl = (confirmationLinkUrl != null && templateHasConfirmationLink) ? trackingUrl : null;
 
             String body = templateRenderer.renderBody(
                     template, fresh.getInvoice(), customer,

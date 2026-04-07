@@ -39,12 +39,17 @@ export async function updateOrgProfile(orgId: string, body: OrgProfileRequest): 
 // Team members
 // ---------------------------------------------------------------------------
 
+export type MemberType = 'USER' | 'INVITE'
+
 export interface MemberResponse {
-  id:       string
-  name:     string
-  email:    string
-  role:     'ADMIN' | 'STAFF'
-  joinedAt: string
+  id:         string
+  name:       string
+  email:      string
+  role:       'ADMIN' | 'STAFF'
+  status:     'ACTIVE' | 'INACTIVE' | 'PENDING'
+  memberType: MemberType
+  joinedAt:   string | null
+  invitedAt:  string | null
 }
 
 export async function listMembers(orgId: string): Promise<MemberResponse[]> {
@@ -52,9 +57,16 @@ export async function listMembers(orgId: string): Promise<MemberResponse[]> {
   return data
 }
 
-export async function inviteMember(orgId: string, body: { email: string; role: 'ADMIN' | 'STAFF' }): Promise<MemberResponse> {
+export async function inviteMember(
+  orgId: string,
+  body: { email: string; role: 'ADMIN' | 'STAFF' },
+): Promise<MemberResponse> {
   const { data } = await api.post<MemberResponse>(`${base(orgId)}/members/invite`, body)
   return data
+}
+
+export async function revokeInvite(orgId: string, inviteId: string): Promise<void> {
+  await api.delete(`${base(orgId)}/members/invites/${inviteId}`)
 }
 
 export async function removeMember(orgId: string, userId: string): Promise<void> {

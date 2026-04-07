@@ -81,7 +81,8 @@ const router = createBrowserRouter([
   },
 
   // ── Public — no shell, no auth required ───────────────────────────────────
-  { path: '/confirm/:token', lazy: routeLazy(() => import('@/features/confirm/pages/ConfirmPaymentPage')) },
+  { path: '/confirm/:token',       lazy: routeLazy(() => import('@/features/confirm/pages/ConfirmPaymentPage')) },
+  { path: '/accept-invite/:token', lazy: routeLazy(() => import('@/features/invite/pages/AcceptInvitePage')) },
 
   // Catch-all
   { path: '*', element: <Navigate to="/dashboard" replace /> },

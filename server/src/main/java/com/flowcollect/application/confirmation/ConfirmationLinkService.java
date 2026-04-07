@@ -84,6 +84,26 @@ public class ConfirmationLinkService {
         });
     }
 
+    /**
+     * Reopens the confirmation link for the given invoice if it exists and is currently closed.
+     *
+     * <p>Called when a recorded payment is deleted or reduced and the invoice reverts to an
+     * unpaid state (ISSUED or PARTIALLY_PAID). This allows the customer to resubmit via the
+     * same link that was already sent to them.
+     * Idempotent: no-op if the link is already open or does not exist.
+     *
+     * @param invoiceId the ID of the invoice whose link should be reopened
+     */
+    @Transactional
+    public void reopenForInvoice(UUID invoiceId) {
+        confirmationLinkRepository.findByInvoiceId(invoiceId).ifPresent(link -> {
+            if (!link.isOpen()) {
+                link.reopen();
+                confirmationLinkRepository.save(link);
+            }
+        });
+    }
+
     // -----------------------------------------------------------------------
     // Private helpers
     // -----------------------------------------------------------------------

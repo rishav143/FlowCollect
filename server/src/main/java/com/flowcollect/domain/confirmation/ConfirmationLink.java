@@ -90,6 +90,15 @@ public class ConfirmationLink {
         this.status = ConfirmationLinkStatus.CLOSED;
     }
 
+    /**
+     * Reopens this link. Called when a recorded payment is deleted or reduced and the
+     * invoice reverts to an unpaid state, allowing the customer to resubmit.
+     * Idempotent: reopening an already-open link is a no-op.
+     */
+    public void reopen() {
+        this.status = ConfirmationLinkStatus.OPEN;
+    }
+
     // Getters
 
     public UUID getId() { return id; }

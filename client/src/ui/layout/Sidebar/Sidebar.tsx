@@ -70,7 +70,7 @@ function NavItem({
         }
       >
         {/* Icon — always same size, never moves */}
-        <Icon size={18} strokeWidth={1.8} className={`shrink-0 ${pulseDot ? 'animate-pulse' : ''}`} />
+        <Icon size={18} strokeWidth={1.8} className="shrink-0" />
 
         {/* Label + count — collapse together */}
         <span

@@ -40,45 +40,6 @@ function AutoAgentBanner() {
   if (!enabled) return null
   if (isLoading || !data) return null
 
-  // ── Tagline selection ────────────────────────────────────────────────────
-  const h = new Date().getHours()
-  const m = new Date().getMinutes()
-
-  const MORNING   = [
-    "Your invoices are being actively followed up.",
-    "Start your day easy — we're chasing your payments.",
-    "Your cash flow is already in motion.",
-    "While you plan your day, we're handling collections.",
-    "You focus on growth — we'll recover your payments.",
-  ]
-  const AFTERNOON = [
-    "Sit back, your invoices are being chased.",
-    "Follow-ups are running automatically.",
-    "We're handling reminders so you don't have to.",
-    "Your collections are on autopilot.",
-    "Payments are being nudged — no effort needed.",
-  ]
-  const EVENING   = [
-    "You worked — we chased your payments.",
-    "Your invoices stayed active all day.",
-    "Another day of consistent recovery.",
-    "You log off, we keep following up.",
-    "Recovery continues, even after hours.",
-  ]
-  const NIGHT     = [
-    "Sleep easy — your payments are being followed up.",
-    "Even now, your invoices are being chased.",
-    "We don't stop — your recovery continues.",
-    "Rest now — we'll handle the collections.",
-    "Quiet hours, active payment recovery.",
-  ]
-
-  const pool = h >= 6 && h < 12 ? MORNING
-             : h >= 12 && h < 17 ? AFTERNOON
-             : h >= 17 && h < 21 ? EVENING
-             : NIGHT
-  const tagline = pool[m % pool.length]
-
   // ── Stats pills ──────────────────────────────────────────────────────────
   const pills: { value: string; label: string }[] = [
     { value: String(data.activeRules),  label: 'active rules'   },
@@ -87,7 +48,7 @@ function AutoAgentBanner() {
 
   return (
     <div className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-white dark:bg-[#1B2838] border border-amber-200 dark:border-amber-500/30 shadow-sm dark:shadow-[0_0_16px_rgba(245,158,11,0.12)] text-sm">
-      <Zap size={14} className="shrink-0 text-amber-500 animate-pulse" strokeWidth={2.5} />
+      <Zap size={14} className="shrink-0 text-amber-500" strokeWidth={2.5} />
       <span className="text-amber-600 dark:text-amber-400 font-semibold text-xs whitespace-nowrap">Automation engine</span>
       <span className="text-[#CBD5DF] dark:text-white/20 select-none">·</span>
       <div className="flex items-center gap-3 flex-wrap">
@@ -97,8 +58,6 @@ function AutoAgentBanner() {
             <span className="text-c-muted ml-1">{p.label}</span>
           </span>
         ))}
-        <span className="text-[#CBD5DF] dark:text-white/20 select-none hidden sm:inline">·</span>
-        <span className="text-xs text-c-muted italic hidden sm:inline">{tagline}</span>
       </div>
     </div>
   )
@@ -124,10 +83,7 @@ function AutoRecoveryWidget() {
         title="Go to Recover page"
       >
         {enabled && (
-          <span className="relative flex h-2 w-2 shrink-0">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500" />
-          </span>
+          <span className="inline-flex rounded-full h-2 w-2 bg-amber-500 shrink-0" />
         )}
         <Zap size={11} className={enabled ? 'text-amber-600 dark:text-amber-400' : 'text-c-muted'} strokeWidth={2.5} />
         <span className={`text-[11px] font-semibold ${enabled ? 'text-amber-700 dark:text-amber-400' : 'text-c-muted'}`}>

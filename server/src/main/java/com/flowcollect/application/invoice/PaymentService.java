@@ -14,6 +14,7 @@ import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
 import com.flowcollect.api.v1.invoice.dto.PaymentRequest;
+import com.flowcollect.application.confirmation.ConfirmationLinkService;
 import com.flowcollect.domain.invoice.Invoice;
 import com.flowcollect.domain.invoice.LifeCycleStatus;
 import com.flowcollect.domain.invoice.payment.Payment;
@@ -30,16 +31,19 @@ public class PaymentService {
     private final InvoiceJpaRepository invoiceRepository;
     private final InvoiceService invoiceService;
     private final FollowUpJpaRepository followUpRepository;
+    private final ConfirmationLinkService confirmationLinkService;
 
     public PaymentService(
             PaymentJpaRepository paymentRepository,
             InvoiceJpaRepository invoiceRepository,
             InvoiceService invoiceService,
-            FollowUpJpaRepository followUpRepository) {
+            FollowUpJpaRepository followUpRepository,
+            ConfirmationLinkService confirmationLinkService) {
         this.paymentRepository = paymentRepository;
         this.invoiceRepository = invoiceRepository;
         this.invoiceService = invoiceService;
         this.followUpRepository = followUpRepository;
+        this.confirmationLinkService = confirmationLinkService;
     }
 
     // Create a new payment for an invoice.
@@ -98,6 +102,12 @@ public class PaymentService {
 
         invoice.updateLifeCycleStatus(totalPaid);
         invoiceRepository.save(invoice);
+
+        // If the invoice reverted to an unpaid state, reopen the confirmation link so
+        // the customer can resubmit via the same URL that was already sent to them.
+        if (invoice.getLifeCycleStatus() != LifeCycleStatus.PAID) {
+            confirmationLinkService.reopenForInvoice(invoiceId);
+        }
     }
 
     /**
