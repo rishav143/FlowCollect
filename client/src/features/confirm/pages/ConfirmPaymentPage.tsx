@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useConfirmationView, useSubmitPaymentClaim } from '../hooks/useConfirmPayment'
 import type { CustomerConfirmationView } from '@/api/publicConfirmation.api'
-import { CheckCircle2, AlertCircle } from 'lucide-react'
+import { CheckCircle2, AlertCircle, Clock } from 'lucide-react'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -27,8 +27,8 @@ function fmt(amount: number, currency: string) {
 }
 
 function daysDiff(dateStr: string): number {
-  const due  = new Date(dateStr)
-  const now  = new Date()
+  const due = new Date(dateStr)
+  const now = new Date()
   due.setHours(0, 0, 0, 0)
   now.setHours(0, 0, 0, 0)
   return Math.floor((now.getTime() - due.getTime()) / 86_400_000)
@@ -50,55 +50,38 @@ const PAYMENT_METHODS = [
 ] as const
 
 // ---------------------------------------------------------------------------
-// Sub-components
+// Shell — consistent wrapper for all states
 // ---------------------------------------------------------------------------
 
-function Header({ view }: { view: CustomerConfirmationView }) {
+function PageShell({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{ background: '#2a9d8f' }} className="px-5 py-5 text-white">
+    <div className="min-h-screen bg-[#F4F7F9] flex flex-col items-center justify-start sm:justify-center px-0 sm:px-4 py-0 sm:py-10">
+      {children}
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Brand header strip inside the card
+// ---------------------------------------------------------------------------
+
+function BrandHeader({ subtitle }: { subtitle: string }) {
+  return (
+    <div
+      className="px-6 py-5 text-white sm:rounded-t-2xl"
+      style={{ background: 'linear-gradient(135deg, #29B6F6 0%, #0288D1 100%)' }}
+    >
       <p className="text-lg font-bold tracking-tight">
-        <span className="font-black">Flow</span>Collect
+        <span className="font-black">Paid</span>Peace
       </p>
-      <p className="text-sm opacity-90 mt-0.5">
-        Invoice {view.invoiceNumber} from {view.organizationName}
-      </p>
+      <p className="text-sm opacity-90 mt-0.5">{subtitle}</p>
     </div>
   )
 }
 
-function InvoiceSummary({ view }: { view: CustomerConfirmationView }) {
-  const overdue = daysDiff(view.dueDate)
-  return (
-    <div className="px-5 pt-5 pb-4 space-y-5">
-      {/* Info rows */}
-      <div className="space-y-2 text-sm">
-        <Row label="Client"          value={view.customerName} />
-        <Row label="Due date"        value={fmtDate(view.dueDate)} />
-        <Row label="Original amount" value={fmt(view.totalAmount, view.currency)} />
-        {view.totalPaid > 0 && (
-          <Row
-            label="Already paid"
-            value={fmt(view.totalPaid, view.currency)}
-            valueClass="text-[#2a9d8f] font-semibold"
-          />
-        )}
-      </div>
-
-      {/* Remaining balance hero */}
-      <div className="text-center py-2">
-        <p className="text-4xl font-bold text-gray-900">
-          {fmt(view.remainingAmount, view.currency)}
-        </p>
-        <p className="text-sm text-gray-500 mt-1">
-          Remaining balance
-          {overdue > 0 && (
-            <span className="text-red-500"> · {overdue} day{overdue !== 1 ? 's' : ''} overdue</span>
-          )}
-        </p>
-      </div>
-    </div>
-  )
-}
+// ---------------------------------------------------------------------------
+// Invoice summary rows
+// ---------------------------------------------------------------------------
 
 function Row({
   label,
@@ -111,82 +94,117 @@ function Row({
 }) {
   return (
     <div className="flex items-center justify-between gap-4">
-      <span className="text-gray-500">{label}</span>
-      <span className={valueClass}>{value}</span>
+      <span className="text-sm text-gray-500">{label}</span>
+      <span className={`text-sm ${valueClass}`}>{value}</span>
     </div>
   )
 }
 
 // ---------------------------------------------------------------------------
-// States
+// Loading skeleton
 // ---------------------------------------------------------------------------
 
 function LoadingSkeleton() {
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <div className="h-20 bg-[#2a9d8f]" />
-      <div className="px-5 pt-5 space-y-3 animate-pulse">
-        {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="flex justify-between">
-            <div className="h-4 w-24 rounded bg-gray-200" />
-            <div className="h-4 w-20 rounded bg-gray-200" />
-          </div>
-        ))}
-        <div className="h-12 w-36 mx-auto rounded bg-gray-200 mt-4" />
-      </div>
-    </div>
-  )
-}
-
-function ErrorPage({ message }: { message: string }) {
-  return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
-      <div className="text-center space-y-3 max-w-sm">
-        <AlertCircle size={40} className="text-red-400 mx-auto" />
-        <p className="text-base font-semibold text-gray-800">Link unavailable</p>
-        <p className="text-sm text-gray-500">{message}</p>
-      </div>
-    </div>
-  )
-}
-
-function AlreadyClosedPage({ view }: { view: CustomerConfirmationView }) {
-  return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <Header view={view} />
-      <div className="flex-1 flex items-center justify-center p-6">
-        <div className="text-center space-y-3 max-w-sm">
-          <CheckCircle2 size={44} className="text-[#2a9d8f] mx-auto" />
-          <p className="text-base font-semibold text-gray-800">Payment already confirmed</p>
-          <p className="text-sm text-gray-500">
-            This invoice has been fully settled. No further action needed.
-          </p>
+    <PageShell>
+      <div className="w-full sm:max-w-sm bg-white sm:rounded-2xl sm:shadow-sm sm:border sm:border-gray-100 overflow-hidden animate-pulse">
+        <div className="h-20 bg-[#29B6F6]/20" />
+        <div className="px-6 py-5 space-y-3">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="flex justify-between">
+              <div className="h-4 w-20 rounded bg-gray-100" />
+              <div className="h-4 w-24 rounded bg-gray-100" />
+            </div>
+          ))}
+          <div className="h-14 w-40 mx-auto rounded-xl bg-gray-100 mt-4" />
+          <div className="h-11 w-full rounded-xl bg-gray-100 mt-2" />
+          <div className="h-11 w-full rounded-xl bg-gray-100" />
+          <div className="h-12 w-full rounded-2xl bg-gray-100" />
         </div>
       </div>
-    </div>
-  )
-}
-
-function SuccessPage({ view, amountClaimed }: { view: CustomerConfirmationView; amountClaimed: number }) {
-  return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <Header view={view} />
-      <div className="flex-1 flex items-center justify-center p-6">
-        <div className="text-center space-y-3 max-w-sm">
-          <CheckCircle2 size={44} className="text-[#2a9d8f] mx-auto" />
-          <p className="text-base font-semibold text-gray-800">Payment claim submitted</p>
-          <p className="text-sm text-gray-500">
-            {fmt(amountClaimed, view.currency)} claimed.{' '}
-            <strong>{view.organizationName}</strong> will review and confirm your payment.
-          </p>
-        </div>
-      </div>
-    </div>
+    </PageShell>
   )
 }
 
 // ---------------------------------------------------------------------------
-// Main form
+// Error page
+// ---------------------------------------------------------------------------
+
+function ErrorPage({ message }: { message: string }) {
+  return (
+    <PageShell>
+      <div className="w-full sm:max-w-sm bg-white sm:rounded-2xl sm:shadow-sm sm:border sm:border-gray-100 overflow-hidden">
+        <BrandHeader subtitle="Payment Confirmation" />
+        <div className="px-6 py-10 text-center space-y-3">
+          <AlertCircle size={40} className="text-red-400 mx-auto" />
+          <p className="text-base font-semibold text-gray-800">Link unavailable</p>
+          <p className="text-sm text-gray-500">{message}</p>
+        </div>
+      </div>
+    </PageShell>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Already closed / settled
+// ---------------------------------------------------------------------------
+
+function AlreadyClosedPage({ view }: { view: CustomerConfirmationView }) {
+  return (
+    <PageShell>
+      <div className="w-full sm:max-w-sm bg-white sm:rounded-2xl sm:shadow-sm sm:border sm:border-gray-100 overflow-hidden">
+        <BrandHeader subtitle={`Invoice ${view.invoiceNumber} · ${view.organizationName}`} />
+        <div className="px-6 py-10 text-center space-y-3">
+          <CheckCircle2 size={44} className="text-[#29B6F6] mx-auto" />
+          <p className="text-base font-semibold text-gray-800">Invoice fully settled</p>
+          <p className="text-sm text-gray-500">
+            This invoice has been paid and confirmed. No further action is needed.
+          </p>
+        </div>
+        <div className="px-6 pb-6 text-center">
+          <p className="text-xs text-gray-400">
+            Sent by <strong className="text-gray-500">{view.organizationName}</strong> via PaidPeace
+          </p>
+        </div>
+      </div>
+    </PageShell>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Success page
+// ---------------------------------------------------------------------------
+
+function SuccessPage({ view, amountClaimed }: { view: CustomerConfirmationView; amountClaimed: number }) {
+  return (
+    <PageShell>
+      <div className="w-full sm:max-w-sm bg-white sm:rounded-2xl sm:shadow-sm sm:border sm:border-gray-100 overflow-hidden">
+        <BrandHeader subtitle={`Invoice ${view.invoiceNumber} · ${view.organizationName}`} />
+        <div className="px-6 py-10 text-center space-y-3">
+          <CheckCircle2 size={44} className="text-[#29B6F6] mx-auto" />
+          <p className="text-base font-semibold text-gray-800">Claim submitted</p>
+          <p className="text-sm text-gray-500">
+            Your payment of <strong className="text-gray-700">{fmt(amountClaimed, view.currency)}</strong> has
+            been submitted. <strong className="text-gray-700">{view.organizationName}</strong> will review and
+            confirm it shortly.
+          </p>
+        </div>
+        <div className="mx-6 mb-6 flex items-center gap-2 px-4 py-3 rounded-xl bg-[#F4F7F9] border border-gray-200">
+          <Clock size={14} className="text-gray-400 shrink-0" />
+          <p className="text-xs text-gray-500">You'll receive confirmation once the payment is verified.</p>
+        </div>
+        <div className="px-6 pb-6 text-center">
+          <p className="text-xs text-gray-400">
+            Sent by <strong className="text-gray-500">{view.organizationName}</strong> via PaidPeace
+          </p>
+        </div>
+      </div>
+    </PageShell>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Main payment form
 // ---------------------------------------------------------------------------
 
 function PaymentForm({ view, token }: { view: CustomerConfirmationView; token: string }) {
@@ -197,6 +215,8 @@ function PaymentForm({ view, token }: { view: CustomerConfirmationView; token: s
   const [amount,        setAmount]        = useState(Math.round(view.remainingAmount))
   const [submitted,     setSubmitted]     = useState(false)
   const [amountClaimed, setAmountClaimed] = useState(0)
+
+  const overdue = daysDiff(view.dueDate)
 
   function buildNote(): string {
     const parts: string[] = [`Payment method: ${paymentMethod}`]
@@ -227,99 +247,145 @@ function PaymentForm({ view, token }: { view: CustomerConfirmationView; token: s
     ? ((error as any)?.response?.data?.message ?? 'Something went wrong. Please try again.')
     : null
 
+  const currencySymbol = view.currency === 'INR' ? '₹'
+    : view.currency === 'USD' ? '$'
+    : view.currency === 'EUR' ? '€'
+    : view.currency === 'GBP' ? '£'
+    : view.currency
+
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <Header view={view} />
-      <InvoiceSummary view={view} />
+    <PageShell>
+      <div className="w-full sm:max-w-sm bg-white sm:rounded-2xl sm:shadow-sm sm:border sm:border-gray-100 overflow-hidden">
 
-      <div className="border-t border-gray-100" />
+        {/* Brand header */}
+        <BrandHeader subtitle={`Invoice ${view.invoiceNumber} · ${view.organizationName}`} />
 
-      <form onSubmit={handleSubmit} className="px-5 py-5 space-y-5 flex-1">
+        {/* Invoice summary */}
+        <div className="px-6 pt-5 pb-4 space-y-3">
+          <Row label="Client"          value={view.customerName} />
+          <Row label="Due date"        value={fmtDate(view.dueDate)} />
+          <Row label="Invoice total"   value={fmt(view.totalAmount, view.currency)} />
+          {view.totalPaid > 0 && (
+            <Row
+              label="Already paid"
+              value={fmt(view.totalPaid, view.currency)}
+              valueClass="text-[#29B6F6] font-semibold"
+            />
+          )}
+        </div>
 
-        {/* Payment method */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">
-            Payment method
-          </label>
-          <div className="relative">
-            <select
-              value={paymentMethod}
-              onChange={(e) => setPaymentMethod(e.target.value)}
-              className="w-full appearance-none bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 focus:outline-none focus:border-[#2a9d8f] transition-colors pr-9"
-            >
-              {PAYMENT_METHODS.map((m) => (
-                <option key={m} value={m}>{m}</option>
-              ))}
-            </select>
-            <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">▼</span>
+        {/* Remaining balance hero */}
+        <div className="mx-6 mb-5 rounded-xl bg-[#F4F7F9] border border-gray-200 px-5 py-4 text-center">
+          <p className="text-3xl font-bold text-gray-900 tabular-nums">
+            {fmt(view.remainingAmount, view.currency)}
+          </p>
+          <p className="text-xs text-gray-500 mt-1">
+            Remaining balance
+            {overdue > 0 && (
+              <span className="text-red-500 font-medium"> · {overdue} day{overdue !== 1 ? 's' : ''} overdue</span>
+            )}
+          </p>
+        </div>
+
+        {/* Divider */}
+        <div className="border-t border-gray-100 mx-6" />
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
+
+          {/* Payment method */}
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1.5">
+              Payment method
+            </label>
+            <div className="relative">
+              <select
+                value={paymentMethod}
+                onChange={(e) => setPaymentMethod(e.target.value)}
+                className="w-full appearance-none bg-white border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-[#29B6F6] transition-colors pr-8"
+              >
+                {PAYMENT_METHODS.map((m) => (
+                  <option key={m} value={m}>{m}</option>
+                ))}
+              </select>
+              <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-[10px]">▼</span>
+            </div>
           </div>
-        </div>
 
-        {/* Transaction reference */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">
-            Transaction / reference number{' '}
-            <span className="text-gray-400 font-normal">(optional)</span>
-          </label>
-          <input
-            type="text"
-            value={reference}
-            onChange={(e) => setReference(e.target.value)}
-            placeholder={`e.g. ${paymentMethod === 'UPI' ? 'UPI ref 423891756234' : 'TXN123456'}`}
-            className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-[#2a9d8f] transition-colors"
-          />
-        </div>
-
-        {/* Amount */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">
-            Amount paid
-          </label>
-          <div className="relative">
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-medium">
-              {view.currency === 'INR' ? '₹' : view.currency}
-            </span>
+          {/* Reference */}
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1.5">
+              Reference number{' '}
+              <span className="text-gray-400 font-normal normal-case">(optional)</span>
+            </label>
             <input
-              type="number"
-              min={1}
-              max={view.remainingAmount}
-              step={1}
-              value={amount}
-              onChange={(e) => setAmount(Math.round(Number(e.target.value)))}
-              required
-              className="w-full bg-white border border-gray-200 rounded-xl pl-8 pr-4 py-3 text-sm text-gray-900 focus:outline-none focus:border-[#2a9d8f] transition-colors"
+              type="text"
+              value={reference}
+              onChange={(e) => setReference(e.target.value)}
+              placeholder={paymentMethod === 'UPI' ? 'e.g. UPI ref 423891756234' : 'e.g. TXN123456'}
+              className="w-full bg-white border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-[#29B6F6] transition-colors"
             />
           </div>
+
+          {/* Amount */}
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1.5">
+              Amount paid
+            </label>
+            <div className="relative">
+              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-medium select-none">
+                {currencySymbol}
+              </span>
+              <input
+                type="number"
+                min={1}
+                max={view.remainingAmount}
+                step={1}
+                value={amount}
+                onChange={(e) => setAmount(Math.round(Number(e.target.value)))}
+                required
+                className="w-full bg-white border border-gray-200 rounded-xl pl-8 pr-3.5 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-[#29B6F6] transition-colors"
+              />
+            </div>
+          </div>
+
+          {/* Error */}
+          {errorMsg && (
+            <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-red-50 border border-red-200 text-sm text-red-600">
+              <AlertCircle size={14} className="shrink-0 mt-px" />
+              <span>{errorMsg}</span>
+            </div>
+          )}
+
+          {/* Submit */}
+          <button
+            type="submit"
+            disabled={isPending || amount <= 0}
+            className="w-full py-3.5 rounded-2xl text-white text-sm font-semibold transition-opacity disabled:opacity-50"
+            style={{ background: 'linear-gradient(135deg, #29B6F6 0%, #0288D1 100%)' }}
+          >
+            {isPending ? 'Submitting…' : 'Submit payment claim'}
+          </button>
+
+          <p className="text-center text-xs text-gray-400 pb-1">
+            {view.organizationName} will be notified to verify your payment.
+          </p>
+        </form>
+
+        {/* Footer */}
+        <div className="px-6 pb-5 text-center border-t border-gray-100 pt-4">
+          <p className="text-xs text-gray-400">
+            Sent by <strong className="text-gray-500">{view.organizationName}</strong> via PaidPeace
+          </p>
         </div>
 
-        {/* Error */}
-        {errorMsg && (
-          <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-red-50 border border-red-200 text-sm text-red-600">
-            <AlertCircle size={15} className="shrink-0 mt-px" />
-            <span>{errorMsg}</span>
-          </div>
-        )}
-
-        {/* Submit */}
-        <button
-          type="submit"
-          disabled={isPending || amount <= 0}
-          className="w-full py-3.5 rounded-2xl text-white text-base font-semibold transition-opacity disabled:opacity-50"
-          style={{ background: '#2a9d8f' }}
-        >
-          {isPending ? 'Submitting…' : 'Submit payment claim'}
-        </button>
-
-        <p className="text-center text-xs text-gray-400 pb-4">
-          {view.organizationName} will be notified to verify your payment
-        </p>
-      </form>
-    </div>
+      </div>
+    </PageShell>
   )
 }
 
 // ---------------------------------------------------------------------------
-// Page
+// Page entry point
 // ---------------------------------------------------------------------------
 
 export default function ConfirmPaymentPage() {

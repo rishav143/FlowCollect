@@ -21,20 +21,30 @@ import java.util.UUID;
 public class AiTemplateService {
 
     private static final String SYSTEM_PROMPT = """
-            You are an expert at writing professional payment reminder messages for businesses.
-            Your messages are concise, clear, and appropriate for the specified tone and channel.
-            You always preserve {{placeholder}} variables exactly as-is — never alter their spelling or braces.
-            You always respond with valid JSON only, no markdown, no code fences.
+            You are an expert at writing professional payment reminder messages for small businesses and freelancers.
+
+            Core rules — follow these without exception:
+            - Preserve every {{placeholder}} exactly as written — never alter spelling, case, or braces
+            - Never write literal currency amounts (e.g. ₹5,000 or $1,200) — always use {{remainingAmount}} instead
+            - Respond with valid JSON only — no markdown, no code fences, no explanation
+
+            Anti-spam rules — your output must pass Gmail and business email filters:
+            - Subject lines: never use "Reminder", "Action Required", "URGENT", "Re:", "FWD:", "Past Due Notice", "Payment Request", or any all-caps words
+            - Subject lines: be specific and factual — state the invoice number or business name, not a generic prompt
+            - Body: never use "click the button below", "click here", "this is a reminder", "dear customer", "kindly", or excessive punctuation (!!!)
+            - Body: do not open with "Dear {{customerName}}," — use a natural greeting or go straight to context
+            - Body: avoid hollow filler phrases like "I hope this email finds you well" or "Please do not hesitate to contact us"
+            - Body: every sentence should carry information — cut anything that does not
             """;
 
-    // Placeholders that the TemplateRenderer understands — ONLY use these, no others
+    // Placeholders that the TemplateRenderer understands
     private static final String PLACEHOLDER_GUIDE = """
-            Available placeholders (use ONLY these — do not invent any others):
+            Available placeholders — use ONLY these, never invent others:
             - {{customerName}} — recipient's full name
             - {{invoiceNumber}} — invoice reference number
-            - {{remainingAmount}} — remaining unpaid amount, already formatted with currency symbol (e.g. "₹5,000") — do NOT add a currency code or symbol before or after this placeholder
+            - {{remainingAmount}} — remaining balance, already formatted with currency symbol — do not add any currency code or symbol around it
             - {{dueDate}} — payment due date
-            - {{confirmationLink}} — link for the customer to confirm they have made the payment
+            - {{confirmationLink}} — link for the customer to confirm their payment
             - {{organizationName}} — business name
             - {{organizationEmail}} — business contact email
             """;
@@ -110,17 +120,13 @@ public class AiTemplateService {
                 %s
                 %s
 
-                Respond with JSON in this exact shape (no extra fields):
-                {"subject": "<email subject or null>", "body": "<message body>"}
-
                 Rules:
-                - subject must be null for SMS and WHATSAPP channels
-                - subject must be a short, specific email subject line for EMAIL
-                - body must follow the channel formatting rules above
                 - Use at least {{customerName}}, {{invoiceNumber}}, {{remainingAmount}}, and {{dueDate}}
                 - Include {{confirmationLink}} as the call-to-action
-                - Do NOT use any placeholder not listed in the available placeholders above
-                - NEVER write literal currency amounts (e.g. ₹5,000 or $1,200) — ALWAYS use {{remainingAmount}} or other placeholders instead
+                - subject must be null for SMS and WHATSAPP; a short factual subject line for EMAIL
+
+                Respond with JSON in this exact shape, no extra fields:
+                {"subject": "<email subject or null>", "body": "<message body>"}
                 """.formatted(
                 currency,
                 channel.name(),
@@ -158,12 +164,9 @@ public class AiTemplateService {
                 === END OF TEMPLATE ===
 
                 Rules:
-                - Keep every {{placeholder}} exactly as written — do not alter or remove any
                 - Preserve the core intent of the original message
                 - Apply the target tone throughout
-                - Follow channel formatting rules above
-                - subject must be null for SMS and WHATSAPP
-                - NEVER write literal currency amounts (e.g. ₹5,000 or $1,200) — ALWAYS use {{remainingAmount}} or other placeholders instead
+                - subject must be null for SMS and WHATSAPP; improve the subject line for EMAIL if present
 
                 Respond with JSON in this exact shape:
                 {"subject": "<email subject or null>", "body": "<improved body>"}
@@ -183,10 +186,11 @@ public class AiTemplateService {
         return switch (channel) {
             case EMAIL -> """
                     Channel formatting (EMAIL):
-                    - Write a clear, professional email body with greeting, body paragraphs, and sign-off
+                    - Write a clear, professional email body with a natural opening, concise body, and a sign-off
                     - Paragraphs separated by blank lines (\\n\\n)
-                    - Keep body under 1500 characters; 2000 at absolute maximum
-                    - The body should be complete enough to stand alone as an email
+                    - Keep body under 1200 characters; 1600 at absolute maximum
+                    - Subject line: use the invoice number or business name to make it specific (e.g. "Invoice {{invoiceNumber}} from {{organizationName}}")
+                    - Subject line: must not contain trigger words — see system-level anti-spam rules
                     """;
             case SMS -> """
                     Channel formatting (SMS):
