@@ -15,11 +15,14 @@ import org.springframework.stereotype.Service;
 
 import com.flowcollect.api.v1.invoice.dto.PaymentRequest;
 import com.flowcollect.application.confirmation.ConfirmationLinkService;
+import com.flowcollect.domain.confirmation.PaymentConfirmation;
+import com.flowcollect.domain.confirmation.PaymentConfirmationStatus;
 import com.flowcollect.domain.invoice.Invoice;
 import com.flowcollect.domain.invoice.LifeCycleStatus;
 import com.flowcollect.domain.invoice.payment.Payment;
 import com.flowcollect.domain.invoice.payment.PaymentMode;
 import com.flowcollect.exception.http.ValidationException;
+import com.flowcollect.infrastructure.persistence.confirmation.PaymentConfirmationJpaRepository;
 import com.flowcollect.infrastructure.persistence.invoice.FollowUpJpaRepository;
 import com.flowcollect.infrastructure.persistence.invoice.InvoiceJpaRepository;
 import com.flowcollect.infrastructure.persistence.invoice.PaymentJpaRepository;
@@ -32,18 +35,21 @@ public class PaymentService {
     private final InvoiceService invoiceService;
     private final FollowUpJpaRepository followUpRepository;
     private final ConfirmationLinkService confirmationLinkService;
+    private final PaymentConfirmationJpaRepository paymentConfirmationRepository;
 
     public PaymentService(
             PaymentJpaRepository paymentRepository,
             InvoiceJpaRepository invoiceRepository,
             InvoiceService invoiceService,
             FollowUpJpaRepository followUpRepository,
-            ConfirmationLinkService confirmationLinkService) {
+            ConfirmationLinkService confirmationLinkService,
+            PaymentConfirmationJpaRepository paymentConfirmationRepository) {
         this.paymentRepository = paymentRepository;
         this.invoiceRepository = invoiceRepository;
         this.invoiceService = invoiceService;
         this.followUpRepository = followUpRepository;
         this.confirmationLinkService = confirmationLinkService;
+        this.paymentConfirmationRepository = paymentConfirmationRepository;
     }
 
     // Create a new payment for an invoice.
@@ -219,11 +225,30 @@ public class PaymentService {
     }
 
     // Delete a payment by its ID and recalculate invoice status.
+    // Also auto-rejects any PENDING_APPROVAL confirmations on this invoice's link so
+    // the customer can resubmit via the same URL instead of seeing "already submitted".
     @Transactional
     public void deletePayment(UUID organizationId, UUID invoiceId, UUID paymentId) {
         invoiceService.getInvoiceById(organizationId, invoiceId);
         Payment payment = InvoiceUtil.getPaymentOrThrow(invoiceId, paymentId, paymentRepository);
         paymentRepository.delete(payment);
         updateInvoiceStatus(invoiceId);
+        rejectStalePendingConfirmations(invoiceId);
+    }
+
+    // Auto-reject any PENDING_APPROVAL confirmations whose link belongs to this invoice.
+    // Called after a payment is deleted so the customer can resubmit without hitting the
+    // "already submitted" guard in submitByCustomer.
+    private void rejectStalePendingConfirmations(UUID invoiceId) {
+        confirmationLinkService.findByInvoiceId(invoiceId).ifPresent(link -> {
+            List<PaymentConfirmation> pending = paymentConfirmationRepository
+                    .findByConfirmationLinkIdAndStatus(link.getId(), PaymentConfirmationStatus.PENDING_APPROVAL);
+            for (PaymentConfirmation c : pending) {
+                c.reject("Payment record deleted by business — please resubmit.");
+            }
+            if (!pending.isEmpty()) {
+                paymentConfirmationRepository.saveAll(pending);
+            }
+        });
     }
 }

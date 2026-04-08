@@ -98,14 +98,12 @@ export default function ClientTable({ customers, invoicesByCustomer, currency, i
     )
   }
 
-  const showCards = view === 'grid2' || view === 'grid3'
-  const cardCols  = view === 'grid3'
-    ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3'
-    : 'grid grid-cols-1 sm:grid-cols-2 gap-3'
+  const showCards = view === 'grid'
+  const cardCols  = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3'
 
   return (
     <>
-      {/* Card grid — shown when view is grid2 or grid3, or on mobile regardless */}
+      {/* Card grid — shown when view is grid, or on mobile regardless */}
       <div className={showCards ? cardCols : 'grid grid-cols-1 sm:grid-cols-2 gap-3 md:hidden'}>
         {customers.map((c) => (
           <MobileCard

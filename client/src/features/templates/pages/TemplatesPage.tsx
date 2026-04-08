@@ -34,7 +34,7 @@ export default function TemplatesPage() {
   const [showCreate, setShowCreate] = useState(false)
   const [editing,    setEditing]    = useState<TemplateResponse | null>(null)
   const [deleting,   setDeleting]   = useState<TemplateResponse | null>(null)
-  const [view, setView] = useViewPreference('templates', 'grid3')
+  const [view, setView] = useViewPreference('templates', 'grid')
 
   const { data, isLoading, isError } = useTemplates(
     channelFilter !== 'ALL' ? { channel: channelFilter, mode: 'MANUAL' } : { mode: 'MANUAL' },

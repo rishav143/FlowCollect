@@ -43,8 +43,8 @@ function GuestRoute() {
 // ---------------------------------------------------------------------------
 
 const router = createBrowserRouter([
-  // Root redirect
-  { path: '/', element: <Navigate to="/dashboard" replace /> },
+  // Landing page — public, no auth required
+  { path: '/', lazy: routeLazy(() => import('@/features/landing/pages/LandingPage')) },
 
   // ── Guest-only routes (redirect to /dashboard if already authenticated) ──
   {

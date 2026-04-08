@@ -5,7 +5,7 @@ import type { LifeCycleStatus, TimeStatus } from '@/types/invoice.types'
 // ---------------------------------------------------------------------------
 
 const TIME_META: Partial<Record<TimeStatus, { label: string; cls: string }>> = {
-  OVERDUE:   { label: 'Overdue',   cls: 'text-red-600 dark:text-red-400'     },
+  OVERDUE:   { label: 'Overdue',   cls: 'text-red-600 dark:text-red-300'     },
   DUE_TODAY: { label: 'Due Today', cls: 'text-amber-600 dark:text-amber-400' },
 }
 

@@ -1,5 +1,6 @@
 package com.flowcollect.application.confirmation;
 
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -102,6 +103,15 @@ public class ConfirmationLinkService {
                 confirmationLinkRepository.save(link);
             }
         });
+    }
+
+    /**
+     * Returns the confirmation link for the given invoice, if one exists.
+     * Used by callers that need to act on the link's confirmations directly.
+     */
+    @Transactional(readOnly = true)
+    public Optional<ConfirmationLink> findByInvoiceId(UUID invoiceId) {
+        return confirmationLinkRepository.findByInvoiceId(invoiceId);
     }
 
     // -----------------------------------------------------------------------

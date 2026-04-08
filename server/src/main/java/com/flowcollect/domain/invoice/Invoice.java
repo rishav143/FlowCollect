@@ -276,11 +276,13 @@ public class Invoice {
             return;
         }
 
+        // Round to scale 0 first, then use the rounded value for status comparison so that
+        // isPaid() and getRemainingAmount() always agree (both use this.totalPaid).
         this.totalPaid = totalPaid.max(BigDecimal.ZERO).setScale(0, RoundingMode.HALF_UP);
 
-        if (totalPaid.compareTo(BigDecimal.ZERO) <= 0) {
+        if (this.totalPaid.compareTo(BigDecimal.ZERO) <= 0) {
             this.lifeCycleStatus = LifeCycleStatus.ISSUED;
-        } else if (totalPaid.compareTo(this.totalAmount) >= 0) {
+        } else if (this.totalPaid.compareTo(this.totalAmount) >= 0) {
             this.lifeCycleStatus = LifeCycleStatus.PAID;
             this.timeStatus = TimeStatus.NOT_DUE; // Paid invoices are never overdue
         } else {

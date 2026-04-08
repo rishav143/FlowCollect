@@ -38,6 +38,7 @@ export default function PaymentsTab({ invoiceId, remainingAmount, currency, life
     onSuccess:  () => {
       qc.invalidateQueries({ queryKey: ['payments', orgId, invoiceId] })
       qc.invalidateQueries({ queryKey: ['invoices', orgId] })
+      qc.invalidateQueries({ queryKey: ['followups', orgId, invoiceId] })
     },
   })
 

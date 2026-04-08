@@ -92,6 +92,7 @@ export function useInvoiceFollowups(invoiceId: string) {
     queryKey: ['followups', orgId, invoiceId],
     queryFn:  () => listFollowups(orgId, invoiceId),
     enabled:  !!orgId && !!invoiceId,
+    staleTime: 0,
   })
 }
 

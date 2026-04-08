@@ -23,7 +23,7 @@ import type { PaymentConfirmationResponse } from '@/types/confirmation.types'
 
 function Skeleton({ view }: { view: string }) {
   return (
-    <div className={`${view === 'list' ? 'space-y-3' : `grid gap-4 ${view === 'grid3' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1 sm:grid-cols-2'}`} animate-pulse`}>
+    <div className={`${view === 'list' ? 'space-y-3' : 'grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'} animate-pulse`}>
       {[...Array(view === 'list' ? 3 : 6)].map((_, i) => (
         <div key={i} className="h-28 rounded-xl bg-[#F4F7F9] dark:bg-white/10" />
       ))}
@@ -131,7 +131,7 @@ export default function ApprovalsPage() {
               </p>
             )}
           </div>
-          <ViewToggle value={view} onChange={setView} options={['list', 'grid2', 'grid3']} />
+          <ViewToggle value={view} onChange={setView} />
         </div>
 
         {/* Action error */}

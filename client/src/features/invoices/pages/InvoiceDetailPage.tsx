@@ -167,49 +167,46 @@ export default function InvoiceDetailPage() {
 
             {/* Tab content */}
             <div className="bg-white dark:bg-[#1B2838] rounded-xl border border-c-border p-5">
-              {/* Details — always in DOM */}
-              <div className={activeTab !== 'details' ? 'hidden' : 'space-y-5'}>
-                <div>
-                  <InfoRow label="Customer"   value={customer ? `${customer.name}${customer.companyName ? ` — ${customer.companyName}` : ''}` : '—'} />
-                  <InfoRow label="Issue Date" value={formatDate(invoice.issueDate)} />
-                  <InfoRow label="Due Date"   value={formatDate(invoice.dueDate)} />
-                </div>
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-c-muted mb-3">Line Items</p>
-                  <div className="space-y-2">
-                    {invoice.items.length === 0 ? (
-                      <p className="text-sm text-c-muted">No line items</p>
-                    ) : (
-                      invoice.items.map((item) => (
-                        <div key={item.id} className="flex justify-between items-start gap-4 py-2 border-b border-c-border last:border-0">
-                          <div className="min-w-0">
-                            <p className="text-sm font-medium text-[#0D1B2A] dark:text-white">{item.description}</p>
-                            <p className="text-xs text-c-muted">{item.quantity} × {formatCurrency(item.unitPrice, currency, { decimals: false })}</p>
+              {activeTab === 'details' && (
+                <div className="space-y-5">
+                  <div>
+                    <InfoRow label="Customer"   value={customer ? `${customer.name}${customer.companyName ? ` — ${customer.companyName}` : ''}` : '—'} />
+                    <InfoRow label="Issue Date" value={formatDate(invoice.issueDate)} />
+                    <InfoRow label="Due Date"   value={formatDate(invoice.dueDate)} />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-c-muted mb-3">Line Items</p>
+                    <div className="space-y-2">
+                      {invoice.items.length === 0 ? (
+                        <p className="text-sm text-c-muted">No line items</p>
+                      ) : (
+                        invoice.items.map((item) => (
+                          <div key={item.id} className="flex justify-between items-start gap-4 py-2 border-b border-c-border last:border-0">
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium text-[#0D1B2A] dark:text-white">{item.description}</p>
+                              <p className="text-xs text-c-muted">{item.quantity} × {formatCurrency(item.unitPrice, currency, { decimals: false })}</p>
+                            </div>
+                            <span className="text-sm font-semibold text-[#0D1B2A] dark:text-white tabular-nums shrink-0">
+                              {formatCurrency(item.amount, currency, { decimals: false })}
+                            </span>
                           </div>
-                          <span className="text-sm font-semibold text-[#0D1B2A] dark:text-white tabular-nums shrink-0">
-                            {formatCurrency(item.amount, currency, { decimals: false })}
-                          </span>
-                        </div>
-                      ))
-                    )}
+                        ))
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
-              {/* Payments — always in DOM */}
-              <div className={activeTab !== 'payments' ? 'hidden' : ''}>
+              {activeTab === 'payments' && (
                 <PaymentsTab
                   invoiceId={id!}
                   remainingAmount={invoice.remainingAmount}
                   currency={currency}
                   lifeCycleStatus={invoice.lifeCycleStatus}
                 />
-              </div>
+              )}
 
-              {/* Follow-ups — always in DOM */}
-              <div className={activeTab !== 'followups' ? 'hidden' : ''}>
-                <FollowupsTab />
-              </div>
+              {activeTab === 'followups' && <FollowupsTab />}
             </div>
           </div>
 

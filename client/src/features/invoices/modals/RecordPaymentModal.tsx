@@ -45,6 +45,7 @@ export default function RecordPaymentModal({ invoiceId, remainingAmount, currenc
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['invoices', orgId] })
       qc.invalidateQueries({ queryKey: ['payments', orgId, invoiceId] })
+      qc.invalidateQueries({ queryKey: ['followups', orgId, invoiceId] })
       onClose()
     },
     onError: () => setError('Failed to record payment. Please try again.'),
