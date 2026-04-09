@@ -1,56 +1,47 @@
 import { FileText, Bell, BadgeCheck } from 'lucide-react'
-import ScrollReveal from './ScrollReveal'
 
 export default function HowItWorksSection() {
   return (
-    <section id="how-it-works" className="bg-white py-20 px-4">
+    <section id="how-it-works" className="bg-[#F4F7F9] py-20 px-4">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
-        <ScrollReveal>
-          <div className="text-center mb-14">
-            <p className="text-xs font-semibold uppercase tracking-widest text-c-muted mb-3">
-              How it works
-            </p>
-            <h2 className="text-3xl font-bold text-[#0D1B2A]">
-              Three steps to stop chasing clients
-            </h2>
-          </div>
-        </ScrollReveal>
+        <div className="text-center mb-14">
+          <p className="text-xs font-semibold uppercase tracking-widest text-c-muted mb-3">
+            How it works
+          </p>
+          <h2 className="text-3xl font-bold text-[#0D1B2A]">
+            Three steps to stop chasing clients
+          </h2>
+        </div>
 
         {/* Steps */}
         <div className="flex flex-col sm:flex-row gap-8 sm:gap-4 items-start">
-          <ScrollReveal delay={0} className="flex-1">
-            <Step
-              number="1"
-              icon={<FileText size={22} className="text-[#29B6F6]" />}
-              title="Add your invoice"
-              body="Enter your client's details and invoice amount. Takes 30 seconds — no complex setup needed."
-            />
-          </ScrollReveal>
+          <Step
+            number="1"
+            icon={<FileText size={22} className="text-[#29B6F6]" />}
+            title="Add your invoice"
+            body="Enter your client's details and invoice amount. Takes 30 seconds — no complex setup needed."
+          />
 
           {/* Connector */}
           <div className="hidden sm:block h-px flex-1 bg-c-border mt-10 self-start" />
 
-          <ScrollReveal delay={100} className="flex-1">
-            <Step
-              number="2"
-              icon={<Bell size={22} className="text-[#29B6F6]" />}
-              title="Set your rules"
-              body="Tell FlowCollect when to follow up — Day 1, Day 7, Day 14. Email and SMS. Your tone, your schedule."
-            />
-          </ScrollReveal>
+          <Step
+            number="2"
+            icon={<Bell size={22} className="text-[#29B6F6]" />}
+            title="Set your rules"
+            body="Tell FlowCollect when to follow up — Day 1, Day 7, Day 14 — via email, SMS, and WhatsApp. Your tone, your schedule."
+          />
 
           {/* Connector */}
           <div className="hidden sm:block h-px flex-1 bg-c-border mt-10 self-start" />
 
-          <ScrollReveal delay={200} className="flex-1">
-            <Step
-              number="3"
-              icon={<BadgeCheck size={22} className="text-[#29B6F6]" />}
-              title="Collect your money"
-              body="We send the reminders. Clients pay. You get notified. No more awkward messages — ever."
-            />
-          </ScrollReveal>
+          <Step
+            number="3"
+            icon={<BadgeCheck size={22} className="text-[#29B6F6]" />}
+            title="Collect your money"
+            body="We send the reminders. Clients pay. You get notified. No more awkward messages — ever."
+          />
         </div>
       </div>
     </section>
@@ -69,7 +60,7 @@ function Step({
   body: string
 }) {
   return (
-    <div className="relative">
+    <div className="flex-1 relative">
       <span
         className="absolute top-0 right-0 text-7xl font-black text-[#29B6F6]/10 select-none leading-none"
         aria-hidden

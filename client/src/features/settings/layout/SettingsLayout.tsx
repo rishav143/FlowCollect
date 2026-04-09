@@ -1,14 +1,16 @@
 import { useState } from 'react'
 import { useLocation } from 'react-router-dom'
-import OrgSettingsPage from '../pages/OrgSettingsPage'
-import BillingPage     from '../pages/BillingPage'
+import OrgSettingsPage     from '../pages/OrgSettingsPage'
+import BillingPage         from '../pages/BillingPage'
+import PaymentDetailsPage  from '../pages/PaymentDetailsPage'
 // TeamPage import removed — tab hidden until feature is enabled
 
 const TABS = [
-  { path: '/settings/org',     label: 'Organisation', Component: OrgSettingsPage },
+  { path: '/settings/org',             label: 'Organisation',   Component: OrgSettingsPage    },
+  { path: '/settings/payment-details', label: 'Payment Details', Component: PaymentDetailsPage },
   // Team tab hidden until feature is ready for users
-  // { path: '/settings/team',    label: 'Team',         Component: TeamPage        },
-  { path: '/settings/billing', label: 'Billing',      Component: BillingPage     },
+  // { path: '/settings/team',          label: 'Team',           Component: TeamPage           },
+  { path: '/settings/billing',         label: 'Billing',        Component: BillingPage        },
 ] as const
 
 type TabPath = typeof TABS[number]['path']
@@ -57,8 +59,9 @@ export default function SettingsLayout() {
 
       {/* All tabs rendered simultaneously — CSS-only toggle keeps components
           mounted so they never re-fetch or show skeleton loaders on switch */}
-      <div className={activeTab === '/settings/org'     ? undefined : 'hidden'}><OrgSettingsPage /></div>
-      <div className={activeTab === '/settings/billing' ? undefined : 'hidden'}><BillingPage /></div>
+      <div className={activeTab === '/settings/org'             ? undefined : 'hidden'}><OrgSettingsPage /></div>
+      <div className={activeTab === '/settings/payment-details' ? undefined : 'hidden'}><PaymentDetailsPage /></div>
+      <div className={activeTab === '/settings/billing'         ? undefined : 'hidden'}><BillingPage /></div>
 
     </div>
   )

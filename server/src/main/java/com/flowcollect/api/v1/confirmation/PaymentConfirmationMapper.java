@@ -3,9 +3,12 @@ package com.flowcollect.api.v1.confirmation;
 import com.flowcollect.api.v1.confirmation.dto.CustomerConfirmationView;
 import com.flowcollect.api.v1.confirmation.dto.PaymentConfirmationResponse;
 import com.flowcollect.api.v1.confirmation.dto.PaymentConfirmationSubmitResponse;
+import com.flowcollect.api.v1.organization.dto.OrgPaymentDetailsResponse;
+import com.flowcollect.application.organization.OrgPaymentDetailsService;
 import com.flowcollect.domain.confirmation.ConfirmationLink;
 import com.flowcollect.domain.confirmation.PaymentConfirmation;
 import com.flowcollect.domain.invoice.Invoice;
+import com.flowcollect.domain.organization.OrgPaymentDetails;
 
 public final class PaymentConfirmationMapper {
 
@@ -15,8 +18,14 @@ public final class PaymentConfirmationMapper {
      * Builds the public customer-facing view of a confirmation link.
      * No internal IDs are exposed — only the information the customer needs to
      * confirm they are paying the right invoice.
+     *
+     * @param link           the confirmation link
+     * @param paymentDetails optional payment receiving details for the org (may be null)
      */
-    public static CustomerConfirmationView toCustomerView(ConfirmationLink link) {
+    public static CustomerConfirmationView toCustomerView(
+            ConfirmationLink link,
+            OrgPaymentDetails paymentDetails
+    ) {
         Invoice invoice = link.getInvoice();
         CustomerConfirmationView view = new CustomerConfirmationView();
         view.setInvoiceNumber(invoice.getInvoiceNumber());
@@ -28,6 +37,9 @@ public final class PaymentConfirmationMapper {
         view.setDueDate(invoice.getDueDate());
         view.setCurrency(invoice.getOrganization().getCurrency().getCurrencyCode());
         view.setLinkStatus(link.getStatus().name());
+        if (paymentDetails != null && paymentDetails.hasAnyDetail()) {
+            view.setPaymentDetails(OrgPaymentDetailsService.toResponse(paymentDetails));
+        }
         return view;
     }
 

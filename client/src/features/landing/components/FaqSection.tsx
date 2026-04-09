@@ -5,15 +5,15 @@ import ScrollReveal from './ScrollReveal'
 const faqs = [
   {
     q: 'Will my client know the reminders are automated?',
-    a: 'No. Reminders go out from your name and email address. To your client it looks like a personal message — because the tone and schedule are yours. FlowCollect stays invisible.',
+    a: 'No. Reminders are sent from your name and email address. To your client, it looks like a personal message — because the tone and schedule are yours. FlowCollect stays invisible.',
   },
   {
     q: 'What if my client gets annoyed by the reminders?',
-    a: 'You control the tone and timing entirely. Start with a gentle nudge, escalate only if the invoice stays overdue. Most clients simply forgot — a polite reminder is welcome, not annoying.',
+    a: 'You control the tone and timing entirely. Start with a gentle nudge and escalate only if the invoice stays overdue. Most clients simply forget — a polite reminder is welcome, not annoying.',
   },
   {
     q: 'Does it work for international clients?',
-    a: 'Yes. Email reminders work for any client anywhere in the world. SMS reminders work for India and US phone numbers. More regions coming soon.',
+    a: 'Yes. Email and WhatsApp reminders work for any client anywhere in the world. SMS reminders cover India, the US, and most major regions.',
   },
   {
     q: 'I already use another invoicing tool. Do I need to switch?',
@@ -21,11 +21,11 @@ const faqs = [
   },
   {
     q: 'Is my data safe?',
-    a: 'We do not store any payment card details. Client data is encrypted in transit and at rest. We will never sell or share your data with third parties.',
+    a: 'Your data is encrypted in transit and at rest. We never store payment card details, and we never sell or share your data with third parties.',
   },
   {
-    q: 'What happens after the free plan limit?',
-    a: 'The Solo plan supports up to 10 active invoices at a time. Once you hit that, you can upgrade to Pro for unlimited invoices. No automatic charges — you choose when to upgrade.',
+    q: 'What happens when I reach the free plan limit?',
+    a: 'The Free plan supports up to 3 active invoices. Once you hit that, you can upgrade to Pro for unlimited invoices. No automatic charges — you choose when to upgrade.',
   },
 ]
 
@@ -54,14 +54,14 @@ function FaqItem({ q, a }: { q: string; a: string }) {
 
 export default function FaqSection() {
   return (
-    <section className="bg-[#F4F7F9] py-20 px-4">
+    <section id="faq" className="bg-[#F4F7F9] py-20 px-4">
       <div className="max-w-2xl mx-auto">
         <ScrollReveal>
           <div className="text-center mb-12">
             <p className="text-xs font-semibold uppercase tracking-widest text-c-muted mb-3">
               FAQ
             </p>
-            <h2 className="text-3xl font-bold text-[#0D1B2A]">Common questions</h2>
+            <h2 className="text-3xl font-bold text-[#0D1B2A]">Everything you're wondering about</h2>
           </div>
         </ScrollReveal>
 

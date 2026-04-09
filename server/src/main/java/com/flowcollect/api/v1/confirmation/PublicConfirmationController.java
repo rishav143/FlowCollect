@@ -8,8 +8,10 @@ import com.flowcollect.api.v1.confirmation.dto.CustomerPaymentSubmitRequest;
 import com.flowcollect.api.v1.confirmation.dto.PaymentConfirmationSubmitResponse;
 import com.flowcollect.application.confirmation.ConfirmationLinkService;
 import com.flowcollect.application.confirmation.PaymentConfirmationService;
+import com.flowcollect.application.organization.OrgPaymentDetailsService;
 import com.flowcollect.domain.confirmation.ConfirmationLink;
 import com.flowcollect.domain.confirmation.PaymentConfirmation;
+import com.flowcollect.domain.organization.OrgPaymentDetails;
 
 import jakarta.validation.Valid;
 
@@ -32,13 +34,16 @@ public class PublicConfirmationController {
 
     private final ConfirmationLinkService confirmationLinkService;
     private final PaymentConfirmationService paymentConfirmationService;
+    private final OrgPaymentDetailsService orgPaymentDetailsService;
 
     public PublicConfirmationController(
             ConfirmationLinkService confirmationLinkService,
-            PaymentConfirmationService paymentConfirmationService
+            PaymentConfirmationService paymentConfirmationService,
+            OrgPaymentDetailsService orgPaymentDetailsService
     ) {
         this.confirmationLinkService = confirmationLinkService;
         this.paymentConfirmationService = paymentConfirmationService;
+        this.orgPaymentDetailsService = orgPaymentDetailsService;
     }
 
     /**
@@ -51,7 +56,10 @@ public class PublicConfirmationController {
     @GetMapping("/{token}")
     public ResponseEntity<CustomerConfirmationView> getConfirmationView(@PathVariable String token) {
         ConfirmationLink link = confirmationLinkService.getByToken(token);
-        return ResponseEntity.ok(PaymentConfirmationMapper.toCustomerView(link));
+        OrgPaymentDetails paymentDetails = orgPaymentDetailsService
+                .findByOrgId(link.getInvoice().getOrganization().getId())
+                .orElse(null);
+        return ResponseEntity.ok(PaymentConfirmationMapper.toCustomerView(link, paymentDetails));
     }
 
     /**

@@ -5,7 +5,7 @@ import ScrollReveal from './ScrollReveal'
 const testimonials = [
   {
     quote:
-      'I used to feel embarrassed chasing clients for money. FlowCollect does it for me, professionally. ₹2L recovered in my first month.',
+      'I used to feel embarrassed chasing clients for money. Now FlowCollect does it for me — professionally and automatically. ₹2L recovered in my first month.',
     name: 'Priya S.',
     role: 'Freelance Designer · Bangalore',
     initials: 'PS',
@@ -19,7 +19,7 @@ const testimonials = [
   },
   {
     quote:
-      'The reminder feature is a game changer for Indian clients — they actually respond. I stopped dreading payment week.',
+      'The reminder feature is a game-changer for Indian clients — they actually respond. I stopped dreading payment week.',
     name: 'Riya M.',
     role: 'Independent Consultant · Mumbai',
     initials: 'RM',
@@ -34,9 +34,9 @@ export default function TestimonialsSection() {
         <ScrollReveal>
           <div className="text-center mb-12">
             <p className="text-xs font-semibold uppercase tracking-widest text-c-muted mb-3">
-              What people say
+              Early users
             </p>
-            <h2 className="text-3xl font-bold text-[#0D1B2A]">Freelancers love it</h2>
+            <h2 className="text-3xl font-bold text-[#0D1B2A]">What early users say</h2>
           </div>
         </ScrollReveal>
 

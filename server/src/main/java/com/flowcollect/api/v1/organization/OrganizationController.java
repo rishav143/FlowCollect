@@ -11,7 +11,10 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import com.flowcollect.api.v1.organization.dto.OrganizationCreateRequest;
 import com.flowcollect.api.v1.organization.dto.OrganizationResponse;
 import com.flowcollect.api.v1.organization.dto.OrganizationUpdateRequest;
+import com.flowcollect.api.v1.organization.dto.OrgPaymentDetailsRequest;
+import com.flowcollect.api.v1.organization.dto.OrgPaymentDetailsResponse;
 import com.flowcollect.application.organization.OrganizationService;
+import com.flowcollect.application.organization.OrgPaymentDetailsService;
 import com.flowcollect.domain.organization.Organization;
 import com.flowcollect.domain.user.UserRole;
 import com.flowcollect.security.RequireRole;
@@ -24,9 +27,14 @@ import java.util.UUID;
 public class OrganizationController {
 
     private final OrganizationService organizationService;
+    private final OrgPaymentDetailsService paymentDetailsService;
 
-    public OrganizationController(OrganizationService organizationService) {
+    public OrganizationController(
+            OrganizationService organizationService,
+            OrgPaymentDetailsService paymentDetailsService
+    ) {
         this.organizationService = organizationService;
+        this.paymentDetailsService = paymentDetailsService;
     }
 
     // Create a new organization.
@@ -82,6 +90,28 @@ public class OrganizationController {
     ) {
         Organization updated = organizationService.updateAuthorized(organizationId, request);
         return ResponseEntity.ok(OrganizationMapper.toResponse(updated));
+    }
+
+    // Get payment receiving details for an org.
+    @GetMapping("/{organizationId}/payment-details")
+    @RequireRole({ UserRole.ADMIN, UserRole.STAFF })
+    public ResponseEntity<OrgPaymentDetailsResponse> getPaymentDetails(@PathVariable UUID organizationId) {
+        organizationService.getAuthorizedById(organizationId); // authorization check
+        OrgPaymentDetailsResponse response = paymentDetailsService.getByOrgId(organizationId);
+        if (response == null) return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(response);
+    }
+
+    // Save (create or replace) payment receiving details for an org.
+    @PutMapping("/{organizationId}/payment-details")
+    @RequireRole({ UserRole.ADMIN })
+    public ResponseEntity<OrgPaymentDetailsResponse> savePaymentDetails(
+            @PathVariable UUID organizationId,
+            @Valid @RequestBody OrgPaymentDetailsRequest request
+    ) {
+        organizationService.getAuthorizedById(organizationId); // authorization check
+        OrgPaymentDetailsResponse response = paymentDetailsService.saveForOrg(organizationId, request);
+        return ResponseEntity.ok(response);
     }
 
     // Hard-delete an organization by id.

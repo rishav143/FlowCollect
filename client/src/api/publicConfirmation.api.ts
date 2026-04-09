@@ -1,15 +1,30 @@
 import publicApi from '@/lib/publicAxios'
 
+export interface PaymentDetails {
+  bankName?:          string | null
+  accountHolderName?: string | null
+  accountNumber?:     string | null
+  iban?:              string | null
+  swiftCode?:         string | null
+  routingNumber?:     string | null
+  ifscCode?:          string | null
+  upiId?:             string | null
+  paypalEmail?:       string | null
+  wiseEmail?:         string | null
+  additionalNote?:    string | null
+}
+
 export interface CustomerConfirmationView {
-  invoiceNumber:   string
+  invoiceNumber:    string
   organizationName: string
-  customerName:    string
-  totalAmount:     number
-  totalPaid:       number
-  remainingAmount: number
-  dueDate:         string   // ISO local date
-  currency:        string
-  linkStatus:      'OPEN' | 'CLOSED'
+  customerName:     string
+  totalAmount:      number
+  totalPaid:        number
+  remainingAmount:  number
+  dueDate:          string   // ISO local date
+  currency:         string
+  linkStatus:       'OPEN' | 'CLOSED'
+  paymentDetails?:  PaymentDetails | null
 }
 
 export interface SubmitPaymentClaimRequest {

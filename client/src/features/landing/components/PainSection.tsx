@@ -3,7 +3,7 @@ import ScrollReveal from './ScrollReveal'
 
 export default function PainSection() {
   return (
-    <section className="bg-white py-20 px-4">
+    <section className="bg-[#F4F7F9] py-20 px-4">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <ScrollReveal>
@@ -12,7 +12,7 @@ export default function PainSection() {
               The problem
             </p>
             <h2 className="text-3xl font-bold text-[#0D1B2A]">Sound familiar?</h2>
-            <p className="text-c-muted text-base mt-2">Every freelancer has been here.</p>
+            <p className="text-c-muted text-base mt-2">Every freelancer knows this feeling.</p>
           </div>
         </ScrollReveal>
 
@@ -43,7 +43,7 @@ export default function PainSection() {
               iconBg="bg-violet-50"
               title="The mental load"
               quote='"Who owes me? Did I follow up on that one? Was it 30 or 45 days?"'
-              body="Tracking overdue invoices in your head while trying to actually do your work."
+              body="You're mentally tracking who owes what, while still trying to actually do your work."
             />
           </ScrollReveal>
         </div>

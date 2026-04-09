@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useConfirmationView, useSubmitPaymentClaim } from '../hooks/useConfirmPayment'
-import type { CustomerConfirmationView } from '@/api/publicConfirmation.api'
-import { CheckCircle2, AlertCircle, Clock } from 'lucide-react'
+import type { CustomerConfirmationView, PaymentDetails } from '@/api/publicConfirmation.api'
+import { CheckCircle2, AlertCircle, Clock, Copy, Check, CreditCard, Wallet } from 'lucide-react'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -57,6 +57,111 @@ function PageShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-[#F4F7F9] flex flex-col items-center justify-start sm:justify-center px-0 sm:px-4 py-0 sm:py-10">
       {children}
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Copy field row
+// ---------------------------------------------------------------------------
+
+function CopyRow({ label, value }: { label: string; value: string }) {
+  const [copied, setCopied] = useState(false)
+  function handleCopy() {
+    navigator.clipboard.writeText(value).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1800)
+    })
+  }
+  return (
+    <div className="flex items-center justify-between gap-2 py-1.5">
+      <span className="text-xs text-gray-500 shrink-0">{label}</span>
+      <div className="flex items-center gap-0.5 min-w-0">
+        <span className="text-xs font-semibold text-[#0D2137] tabular-nums truncate">{value}</span>
+        <button
+          type="button"
+          onClick={handleCopy}
+          title="Copy"
+          className="shrink-0 p-1 rounded text-[#29B6F6] hover:text-[#0288D1] transition-colors"
+        >
+          {copied
+            ? <Check size={12} className="text-green-500" />
+            : <Copy size={12} />}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Payment details panel — shown on confirmation page alongside the form
+// ---------------------------------------------------------------------------
+
+/**
+ * Inline section rendered inside the confirmation card — between balance hero and form.
+ * Shows the business's payment receiving details with one-tap copy buttons.
+ */
+function PaymentDetailsSection({ details }: { details: PaymentDetails }) {
+  const hasBankWire = details.bankName || details.accountHolderName ||
+                      details.accountNumber || details.iban ||
+                      details.swiftCode || details.routingNumber || details.ifscCode
+  const hasUpi     = !!details.upiId
+  const hasWallets = details.paypalEmail || details.wiseEmail
+
+  if (!hasBankWire && !hasUpi && !hasWallets) return null
+
+  return (
+    <div className="mx-6 mb-5 rounded-xl border border-[#29B6F6]/20 bg-[#F0FBFF] overflow-hidden">
+      {/* Section label */}
+      <div className="px-4 py-2.5 border-b border-[#29B6F6]/15">
+        <p className="text-xs font-semibold text-[#0288D1]">Send your payment to</p>
+      </div>
+
+      <div className="px-4 py-3 space-y-3">
+        {hasBankWire && (
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-1.5 flex items-center gap-1">
+              <CreditCard size={10} strokeWidth={2} /> Bank / Wire Transfer
+            </p>
+            <div className="divide-y divide-[#29B6F6]/10">
+              {details.bankName          && <CopyRow label="Bank"         value={details.bankName} />}
+              {details.accountHolderName && <CopyRow label="Account name" value={details.accountHolderName} />}
+              {details.accountNumber     && <CopyRow label="Account no."  value={details.accountNumber} />}
+              {details.iban              && <CopyRow label="IBAN"         value={details.iban} />}
+              {details.swiftCode         && <CopyRow label="SWIFT / BIC"  value={details.swiftCode} />}
+              {details.routingNumber     && <CopyRow label="Routing no."  value={details.routingNumber} />}
+              {details.ifscCode          && <CopyRow label="IFSC"         value={details.ifscCode} />}
+            </div>
+          </div>
+        )}
+
+        {hasUpi && (
+          <div className={hasBankWire ? 'border-t border-[#29B6F6]/10 pt-2.5' : ''}>
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-1.5">UPI</p>
+            <div className="divide-y divide-[#29B6F6]/10">
+              <CopyRow label="UPI ID" value={details.upiId!} />
+            </div>
+          </div>
+        )}
+
+        {hasWallets && (
+          <div className={(hasBankWire || hasUpi) ? 'border-t border-[#29B6F6]/10 pt-2.5' : ''}>
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-1.5 flex items-center gap-1">
+              <Wallet size={10} strokeWidth={2} /> Digital Wallets
+            </p>
+            <div className="divide-y divide-[#29B6F6]/10">
+              {details.paypalEmail && <CopyRow label="PayPal" value={details.paypalEmail} />}
+              {details.wiseEmail   && <CopyRow label="Wise"   value={details.wiseEmail} />}
+            </div>
+          </div>
+        )}
+
+        {details.additionalNote && (
+          <p className="text-xs text-gray-500 pt-2 border-t border-[#29B6F6]/10">
+            {details.additionalNote}
+          </p>
+        )}
+      </div>
     </div>
   )
 }
@@ -255,130 +360,132 @@ function PaymentForm({ view, token }: { view: CustomerConfirmationView; token: s
 
   return (
     <PageShell>
-      <div className="w-full sm:max-w-sm bg-white sm:rounded-2xl sm:shadow-sm sm:border sm:border-gray-100 overflow-hidden">
+      <div className="w-full sm:max-w-sm">
+        <div className="w-full bg-white sm:rounded-2xl sm:shadow-sm sm:border sm:border-gray-100 overflow-hidden">
 
-        {/* Brand header */}
-        <BrandHeader subtitle={`Invoice ${view.invoiceNumber} · ${view.organizationName}`} />
+          {/* Brand header */}
+          <BrandHeader subtitle={`Invoice ${view.invoiceNumber} · ${view.organizationName}`} />
 
-        {/* Invoice summary */}
-        <div className="px-6 pt-5 pb-4 space-y-3">
-          <Row label="Client"          value={view.customerName} />
-          <Row label="Due date"        value={fmtDate(view.dueDate)} />
-          <Row label="Invoice total"   value={fmt(view.totalAmount, view.currency)} />
-          {view.totalPaid > 0 && (
-            <Row
-              label="Already paid"
-              value={fmt(view.totalPaid, view.currency)}
-              valueClass="text-[#29B6F6] font-semibold"
-            />
-          )}
-        </div>
-
-        {/* Remaining balance hero */}
-        <div className="mx-6 mb-5 rounded-xl bg-[#F4F7F9] border border-gray-200 px-5 py-4 text-center">
-          <p className="text-3xl font-bold text-gray-900 tabular-nums">
-            {fmt(view.remainingAmount, view.currency)}
-          </p>
-          <p className="text-xs text-gray-500 mt-1">
-            Remaining balance
-            {overdue > 0 && (
-              <span className="text-red-500 font-medium"> · {overdue} day{overdue !== 1 ? 's' : ''} overdue</span>
+          {/* Invoice summary */}
+          <div className="px-6 pt-5 pb-4 space-y-2.5">
+            <Row label="Client"        value={view.customerName} />
+            <Row label="Due date"      value={fmtDate(view.dueDate)} />
+            <Row label="Invoice total" value={fmt(view.totalAmount, view.currency)} />
+            {view.totalPaid > 0 && (
+              <Row
+                label="Already paid"
+                value={fmt(view.totalPaid, view.currency)}
+                valueClass="text-[#29B6F6] font-semibold"
+              />
             )}
-          </p>
-        </div>
+          </div>
 
-        {/* Divider */}
-        <div className="border-t border-gray-100 mx-6" />
+          {/* Remaining balance hero */}
+          <div className="mx-6 mb-5 rounded-xl bg-[#F4F7F9] border border-gray-200 px-5 py-4 text-center">
+            <p className="text-3xl font-bold text-gray-900 tabular-nums">
+              {fmt(view.remainingAmount, view.currency)}
+            </p>
+            <p className="text-xs text-gray-500 mt-1">
+              Remaining balance
+              {overdue > 0 && (
+                <span className="text-red-500 font-medium"> · {overdue} day{overdue !== 1 ? 's' : ''} overdue</span>
+              )}
+            </p>
+          </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
+          {/* Payment details — embedded inside the card, between hero and form */}
+          {view.paymentDetails && (
+            <PaymentDetailsSection details={view.paymentDetails} />
+          )}
 
-          {/* Payment method */}
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1.5">
-              Payment method
-            </label>
-            <div className="relative">
-              <select
-                value={paymentMethod}
-                onChange={(e) => setPaymentMethod(e.target.value)}
-                className="w-full appearance-none bg-white border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-[#29B6F6] transition-colors pr-8"
-              >
-                {PAYMENT_METHODS.map((m) => (
-                  <option key={m} value={m}>{m}</option>
-                ))}
-              </select>
-              <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-[10px]">▼</span>
+          {/* Divider */}
+          <div className="border-t border-gray-100 mx-6" />
+
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
+
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1.5">
+                Payment method
+              </label>
+              <div className="relative">
+                <select
+                  value={paymentMethod}
+                  onChange={(e) => setPaymentMethod(e.target.value)}
+                  className="w-full appearance-none bg-white border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-[#29B6F6] transition-colors pr-8"
+                >
+                  {PAYMENT_METHODS.map((m) => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </select>
+                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-[10px]">▼</span>
+              </div>
             </div>
-          </div>
 
-          {/* Reference */}
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1.5">
-              Reference number{' '}
-              <span className="text-gray-400 font-normal normal-case">(optional)</span>
-            </label>
-            <input
-              type="text"
-              value={reference}
-              onChange={(e) => setReference(e.target.value)}
-              placeholder={paymentMethod === 'UPI' ? 'e.g. UPI ref 423891756234' : 'e.g. TXN123456'}
-              className="w-full bg-white border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-[#29B6F6] transition-colors"
-            />
-          </div>
-
-          {/* Amount */}
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1.5">
-              Amount paid
-            </label>
-            <div className="relative">
-              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-medium select-none">
-                {currencySymbol}
-              </span>
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1.5">
+                Reference number{' '}
+                <span className="text-gray-400 font-normal normal-case">(optional)</span>
+              </label>
               <input
-                type="number"
-                min={1}
-                max={view.remainingAmount}
-                step={1}
-                value={amount}
-                onChange={(e) => setAmount(Math.round(Number(e.target.value)))}
-                required
-                className="w-full bg-white border border-gray-200 rounded-xl pl-8 pr-3.5 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-[#29B6F6] transition-colors"
+                type="text"
+                value={reference}
+                onChange={(e) => setReference(e.target.value)}
+                placeholder={paymentMethod === 'UPI' ? 'e.g. UPI ref 423891756234' : 'e.g. TXN123456'}
+                className="w-full bg-white border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-[#29B6F6] transition-colors"
               />
             </div>
+
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1.5">
+                Amount paid
+              </label>
+              <div className="relative">
+                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-medium select-none">
+                  {currencySymbol}
+                </span>
+                <input
+                  type="number"
+                  min={1}
+                  max={view.remainingAmount}
+                  step={1}
+                  value={amount}
+                  onChange={(e) => setAmount(Math.round(Number(e.target.value)))}
+                  required
+                  className="w-full bg-white border border-gray-200 rounded-xl pl-8 pr-3.5 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-[#29B6F6] transition-colors"
+                />
+              </div>
+            </div>
+
+            {errorMsg && (
+              <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-red-50 border border-red-200 text-sm text-red-600">
+                <AlertCircle size={14} className="shrink-0 mt-px" />
+                <span>{errorMsg}</span>
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={isPending || amount <= 0}
+              className="w-full py-3.5 rounded-2xl text-white text-sm font-semibold transition-opacity disabled:opacity-50"
+              style={{ background: 'linear-gradient(135deg, #29B6F6 0%, #0288D1 100%)' }}
+            >
+              {isPending ? 'Submitting…' : 'Submit payment claim'}
+            </button>
+
+            <p className="text-center text-xs text-gray-400 pb-1">
+              {view.organizationName} will be notified to verify your payment.
+            </p>
+          </form>
+
+          {/* Footer */}
+          <div className="px-6 pb-5 text-center border-t border-gray-100 pt-4">
+            <p className="text-xs text-gray-400">
+              Sent by <strong className="text-gray-500">{view.organizationName}</strong> via PaidPeace
+            </p>
           </div>
 
-          {/* Error */}
-          {errorMsg && (
-            <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-red-50 border border-red-200 text-sm text-red-600">
-              <AlertCircle size={14} className="shrink-0 mt-px" />
-              <span>{errorMsg}</span>
-            </div>
-          )}
-
-          {/* Submit */}
-          <button
-            type="submit"
-            disabled={isPending || amount <= 0}
-            className="w-full py-3.5 rounded-2xl text-white text-sm font-semibold transition-opacity disabled:opacity-50"
-            style={{ background: 'linear-gradient(135deg, #29B6F6 0%, #0288D1 100%)' }}
-          >
-            {isPending ? 'Submitting…' : 'Submit payment claim'}
-          </button>
-
-          <p className="text-center text-xs text-gray-400 pb-1">
-            {view.organizationName} will be notified to verify your payment.
-          </p>
-        </form>
-
-        {/* Footer */}
-        <div className="px-6 pb-5 text-center border-t border-gray-100 pt-4">
-          <p className="text-xs text-gray-400">
-            Sent by <strong className="text-gray-500">{view.organizationName}</strong> via PaidPeace
-          </p>
         </div>
-
       </div>
     </PageShell>
   )

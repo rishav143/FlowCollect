@@ -6,6 +6,7 @@ import ScrollReveal from './ScrollReveal'
 interface Plan {
   name: string
   price: string
+  originalPrice?: string
   period: string
   description: string
   cta: string
@@ -19,24 +20,25 @@ function getPlans(region: Region): Plan[] {
 
   return [
     {
-      name: 'Solo',
+      name: 'Free',
       price: isIndia ? '₹0' : '$0',
       period: '/mo',
-      description: 'Perfect for solo freelancers just getting started.',
+      description: 'Get started with the basics — no card required.',
       cta: 'Get started free',
       ctaTo: '/register',
       highlight: false,
       features: [
-        'Up to 10 active invoices',
+        'Up to 3 active invoices',
         'Automated email reminders',
-        'Client payment portal',
+        'Client payment confirmation',
         'Basic follow-up templates',
         'Invoice approval workflows',
       ],
     },
     {
       name: 'Pro',
-      price: isIndia ? '₹599' : '$14',
+      price: isIndia ? '₹499' : '$19',
+      originalPrice: isIndia ? '₹799' : '$29',
       period: '/mo',
       description: 'For freelancers serious about getting paid on time.',
       cta: 'Start free trial',
@@ -44,7 +46,7 @@ function getPlans(region: Region): Plan[] {
       highlight: true,
       features: [
         'Unlimited invoices',
-        'Email + SMS reminders',
+        'Email + SMS + WhatsApp reminders',
         'AI payment insights',
         'Trackable follow-up links',
         'Custom reminder schedules',
@@ -90,12 +92,12 @@ export default function PricingSection({ region }: { region: Region }) {
                 }`}
               >
                 {plan.highlight && (
-                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
+                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 flex items-center gap-2">
                     <span
                       className="px-3 py-1 rounded-full text-xs font-semibold text-white whitespace-nowrap"
                       style={{ background: 'linear-gradient(90deg, #29B6F6 0%, #4FC3F7 100%)' }}
                     >
-                      Most popular
+                      Early adopter · First 200 users
                     </span>
                   </div>
                 )}
@@ -105,6 +107,11 @@ export default function PricingSection({ region }: { region: Region }) {
                     {plan.name}
                   </p>
                   <div className="flex items-end gap-0.5 mb-1">
+                    {plan.originalPrice && (
+                      <span className="text-lg font-semibold text-c-muted line-through mr-1.5 mb-1.5">
+                        {plan.originalPrice}
+                      </span>
+                    )}
                     <span
                       className={`text-4xl font-black text-[#0D1B2A] transition-all ${isLoading ? 'opacity-30 blur-sm' : ''}`}
                     >
@@ -147,7 +154,7 @@ export default function PricingSection({ region }: { region: Region }) {
         {/* Footer note */}
         <ScrollReveal delay={160}>
           <p className="text-center text-xs text-c-muted mt-8">
-            Pro plan includes a 14-day free trial. No credit card required to start.
+            No credit card required. Lock in this price forever — it goes up after the first 200 users.
           </p>
         </ScrollReveal>
       </div>

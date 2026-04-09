@@ -36,6 +36,56 @@ export async function updateOrgProfile(orgId: string, body: OrgProfileRequest): 
 }
 
 // ---------------------------------------------------------------------------
+// Payment details (bank / UPI — shown on confirmation page)
+// ---------------------------------------------------------------------------
+
+export interface OrgPaymentDetailsResponse {
+  bankName?:          string | null
+  accountHolderName?: string | null
+  accountNumber?:     string | null   // domestic (US, IN, AU, etc.)
+  iban?:              string | null   // Europe, UK, Middle East
+  swiftCode?:         string | null   // international wire
+  routingNumber?:     string | null   // US ACH
+  ifscCode?:          string | null   // India
+  upiId?:             string | null   // India UPI
+  paypalEmail?:       string | null
+  wiseEmail?:         string | null
+  additionalNote?:    string | null
+}
+
+export interface OrgPaymentDetailsRequest {
+  bankName?:          string
+  accountHolderName?: string
+  accountNumber?:     string
+  iban?:              string
+  swiftCode?:         string
+  routingNumber?:     string
+  ifscCode?:          string
+  upiId?:             string
+  paypalEmail?:       string
+  wiseEmail?:         string
+  additionalNote?:    string
+}
+
+export async function getPaymentDetails(orgId: string): Promise<OrgPaymentDetailsResponse | null> {
+  try {
+    const { data } = await api.get<OrgPaymentDetailsResponse>(`${base(orgId)}/payment-details`)
+    return data
+  } catch (err: any) {
+    if (err?.response?.status === 204) return null
+    throw err
+  }
+}
+
+export async function savePaymentDetails(
+  orgId: string,
+  body: OrgPaymentDetailsRequest,
+): Promise<OrgPaymentDetailsResponse> {
+  const { data } = await api.put<OrgPaymentDetailsResponse>(`${base(orgId)}/payment-details`, body)
+  return data
+}
+
+// ---------------------------------------------------------------------------
 // Team members
 // ---------------------------------------------------------------------------
 
