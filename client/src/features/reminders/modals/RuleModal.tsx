@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { X, ChevronDown, ChevronUp } from 'lucide-react'
+import { X, ChevronDown, ChevronUp, AlertTriangle } from 'lucide-react'
 import { useCreateReminderRule, useUpdateReminderRule } from '../hooks/useReminders'
 import { useTemplates } from '@/features/templates/hooks/useTemplates'
+import { useAuthStore } from '@/store/auth.store'
 import type {
   ReminderRuleResponse,
   ReminderChannel,
@@ -43,7 +44,7 @@ const TRIGGER_TO_DIRECTION: Record<ReminderTriggerType, Direction> = {
   AFTER_DUE_DATE:  'AFTER',
 }
 
-const CHANNELS: ReminderChannel[] = ['EMAIL', 'SMS', 'WHATSAPP']
+const CHANNELS: ReminderChannel[] = ['EMAIL']
 const CHANNEL_LABEL: Record<ReminderChannel, string> = {
   EMAIL: 'Email', SMS: 'SMS', WHATSAPP: 'WhatsApp',
 }
@@ -226,8 +227,9 @@ export default function RuleModal({ rule, onClose }: Props) {
   const [submitError,        setSubmitError]        = useState<string | null>(null)
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false)
 
-  const isAutoRule      = rule?.mode === 'AUTO'
-  const isSystemDefined = !!rule?.systemDefined
+  const isAutoRule         = rule?.mode === 'AUTO'
+  const isSystemDefined    = !!rule?.systemDefined
+  const autoRecoveryEnabled = useAuthStore((s) => s.org?.autoRecoveryEnabled ?? false)
 
   useEffect(() => {
     if (rule) {
@@ -261,10 +263,11 @@ export default function RuleModal({ rule, onClose }: Props) {
   const update    = useUpdateReminderRule()
   const isPending = create.isPending || update.isPending
 
-  // System templates are seeded as MANUAL regardless of the rule mode, so don't filter by mode
-  // for system-defined rules — show all templates on the matching channel instead.
-  const { data: templatesData } = useTemplates({ channel: form.channel, mode: isSystemDefined ? undefined : isAutoRule ? 'AUTO' : 'MANUAL' })
-  const templates = templatesData?.content ?? []
+  const isAuto = isAutoRule || isSystemDefined
+  // AUTO rules (including system-defined) only show AUTO templates; MANUAL rules show MANUAL templates.
+  const { data: templatesData } = useTemplates({ channel: form.channel, mode: isAuto ? 'AUTO' : 'MANUAL' })
+  // Client-side guard: ensure stale cache never leaks wrong-mode templates into the picker
+  const templates = (templatesData?.content ?? []).filter((t) => t.mode === (isAuto ? 'AUTO' : 'MANUAL'))
 
   function set<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((prev) => ({ ...prev, [key]: value }))
@@ -425,6 +428,16 @@ export default function RuleModal({ rule, onClose }: Props) {
                 <span className="text-amber-500 text-xs mt-px">⚡</span>
                 <p className="text-xs text-amber-700 dark:text-amber-300">
                   This is a system-managed rule. Timing, channel, and occurrences are locked. You can change templates and toggle it on or off.
+                </p>
+              </div>
+            )}
+
+            {/* Auto-recovery overlap warning — only when creating a new rule */}
+            {!isEdit && autoRecoveryEnabled && (
+              <div className="flex items-start gap-2.5 px-3 py-2.5 rounded-lg bg-orange-50 dark:bg-orange-500/10 border border-orange-200 dark:border-orange-500/20 -mb-1">
+                <AlertTriangle size={14} className="text-orange-500 shrink-0 mt-0.5" strokeWidth={2} />
+                <p className="text-xs text-orange-700 dark:text-orange-300">
+                  Auto Recovery is currently <strong>on</strong>. This new rule will run alongside the system recovery rules — clients may receive multiple follow-ups around the same date. Consider your timing carefully.
                 </p>
               </div>
             )}

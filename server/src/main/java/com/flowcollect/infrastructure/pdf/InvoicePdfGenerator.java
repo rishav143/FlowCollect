@@ -521,7 +521,10 @@ public class InvoicePdfGenerator {
     }
 
     private String safe(String value) {
-        return value == null ? "" : value;
+        if (value == null) return "";
+        // PDFBox showText() cannot render control characters (e.g. \n U+000A) —
+        // replace any control character with a space so the font never chokes.
+        return value.replaceAll("[\\p{Cntrl}]", " ").trim();
     }
 
     private String sanitizeFileName(String value) {

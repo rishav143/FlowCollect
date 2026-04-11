@@ -23,7 +23,7 @@ export default function HeroSection() {
       {/* Sub-headline — outcome first, not feature list */}
       <p className="animate-fade-up animate-fade-up-delay-2 mt-6 text-lg text-[#8A9BAE] max-w-xl leading-relaxed">
         Your work is done. The follow-ups shouldn't be yours too.
-        Automated reminders via email, SMS &amp; WhatsApp — until you're paid.
+        Automated email reminders — until you're paid.
       </p>
 
       {/* CTA buttons */}

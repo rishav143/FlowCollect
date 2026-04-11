@@ -337,9 +337,9 @@ public class RecoverSystemDataSeeder implements ApplicationRunner {
                 RuleMode.AUTO
         );
 
-        // ── SMS templates ─────────────────────────────────────────────────────
+        // ── SMS templates — disabled for now, kept for future re-activation ────
 
-        Template tSmsPreDue = ensureTemplate(
+        ensureTemplate(
                 TPL_R_SMS_PRE_DUE, TemplateChannel.SMS, TemplateTone.POLITE,
                 null,
                 "Hi {{customerName}}, invoice {{invoiceNumber}} for {{remainingAmount}} from " +
@@ -347,7 +347,7 @@ public class RecoverSystemDataSeeder implements ApplicationRunner {
                 RuleMode.AUTO
         );
 
-        Template tSms2Weeks = ensureTemplate(
+        ensureTemplate(
                 TPL_R_SMS_2WEEKS, TemplateChannel.SMS, TemplateTone.NEUTRAL,
                 null,
                 "Hi {{customerName}}, invoice {{invoiceNumber}} for {{remainingAmount}} from " +
@@ -356,7 +356,7 @@ public class RecoverSystemDataSeeder implements ApplicationRunner {
                 RuleMode.AUTO
         );
 
-        Template tSmsFinal = ensureTemplate(
+        ensureTemplate(
                 TPL_R_SMS_FINAL, TemplateChannel.SMS, TemplateTone.FIRM,
                 null,
                 "Hi {{customerName}}, invoice {{invoiceNumber}} for {{remainingAmount}} from " +
@@ -364,9 +364,9 @@ public class RecoverSystemDataSeeder implements ApplicationRunner {
                 RuleMode.AUTO
         );
 
-        // ── WhatsApp templates ────────────────────────────────────────────────
+        // ── WhatsApp templates — disabled for now, kept for future re-activation
 
-        Template tWaWeek = ensureTemplate(
+        ensureTemplate(
                 TPL_R_WA_WEEK, TemplateChannel.WHATSAPP, TemplateTone.NEUTRAL,
                 null,
                 "Hi {{customerName}},\n\n" +
@@ -379,7 +379,7 @@ public class RecoverSystemDataSeeder implements ApplicationRunner {
                 RuleMode.AUTO
         );
 
-        Template tWaMonth = ensureTemplate(
+        ensureTemplate(
                 TPL_R_WA_MONTH, TemplateChannel.WHATSAPP, TemplateTone.FIRM,
                 null,
                 "Hi {{customerName}},\n\n" +
@@ -432,21 +432,22 @@ public class RecoverSystemDataSeeder implements ApplicationRunner {
                        tEmailFinal.getId()   // +49 final notice
                    ));
 
-        ensureRule(RULE_R_SMS_PRE_DUE, ReminderChannel.SMS,
-                   ReminderTriggerType.BEFORE_DUE_DATE, -7, 1, 0,
-                   tSmsPreDue, List.of());
-
-        // 2 occurrences every 14 days → +14 (neutral), +28 (firm)
-        ensureRule(RULE_R_SMS_AFTER_DUE, ReminderChannel.SMS,
-                   ReminderTriggerType.AFTER_DUE_DATE, 14, 2, 14,
-                   tSms2Weeks,
-                   List.of(tSms2Weeks.getId(), tSmsFinal.getId()));
-
-        // 2 occurrences every 21 days → +7 (neutral), +28 (firm)
-        ensureRule(RULE_R_WA_AFTER_DUE, ReminderChannel.WHATSAPP,
-                   ReminderTriggerType.AFTER_DUE_DATE, 7, 2, 21,
-                   tWaWeek,
-                   List.of(tWaWeek.getId(), tWaMonth.getId()));
+        // SMS and WhatsApp rules are disabled for now — kept for future re-activation.
+        // To re-enable, uncomment the blocks below and remove the rule names from cleanupLegacySystemData().
+        //
+        // ensureRule(RULE_R_SMS_PRE_DUE, ReminderChannel.SMS,
+        //            ReminderTriggerType.BEFORE_DUE_DATE, -7, 1, 0,
+        //            tSmsPreDue, List.of());
+        //
+        // ensureRule(RULE_R_SMS_AFTER_DUE, ReminderChannel.SMS,
+        //            ReminderTriggerType.AFTER_DUE_DATE, 14, 2, 14,
+        //            tSms2Weeks,
+        //            List.of(tSms2Weeks.getId(), tSmsFinal.getId()));
+        //
+        // ensureRule(RULE_R_WA_AFTER_DUE, ReminderChannel.WHATSAPP,
+        //            ReminderTriggerType.AFTER_DUE_DATE, 7, 2, 21,
+        //            tWaWeek,
+        //            List.of(tWaWeek.getId(), tWaMonth.getId()));
     }
 
     // =========================================================================
@@ -477,7 +478,11 @@ public class RecoverSystemDataSeeder implements ApplicationRunner {
                 LEGACY_RULE_EM_EMAIL_AFTER_DUE,
                 LEGACY_RULE_EM_SMS_PRE_DUE,
                 LEGACY_RULE_EM_SMS_AFTER_DUE,
-                LEGACY_RULE_EM_WA_AFTER_DUE
+                LEGACY_RULE_EM_WA_AFTER_DUE,
+                // SMS/WhatsApp rules disabled — remove from DB if previously seeded
+                RULE_R_SMS_PRE_DUE,
+                RULE_R_SMS_AFTER_DUE,
+                RULE_R_WA_AFTER_DUE
         )) {
             reminderRuleRepository.findByNameAndSystemDefinedTrue(ruleName).ifPresent(r -> {
                 followUpRepository.detachReminderRule(r.getId());

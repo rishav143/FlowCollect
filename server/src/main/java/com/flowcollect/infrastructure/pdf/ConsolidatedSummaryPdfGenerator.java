@@ -427,7 +427,12 @@ public class ConsolidatedSummaryPdfGenerator {
         return font.getStringWidth(safe(text)) / 1000f * size;
     }
 
-    private String safe(String v) { return v == null ? "" : v; }
+    private String safe(String v) {
+        if (v == null) return "";
+        // PDFBox showText() cannot render control characters (e.g. \n U+000A) —
+        // replace any control character with a space so the font never chokes.
+        return v.replaceAll("[\\p{Cntrl}]", " ").trim();
+    }
 
     // ── Inner types ────────────────────────────────────────────────────────────
 

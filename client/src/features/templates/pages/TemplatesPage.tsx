@@ -7,14 +7,7 @@ import CreateTemplateModal from '@/features/templates/modals/CreateTemplateModal
 import EditTemplateModal   from '@/features/templates/modals/EditTemplateModal'
 import DeleteTemplateModal from '@/features/templates/modals/DeleteTemplateModal'
 import ViewToggle, { useViewPreference, gridClass } from '@/ui/components/ViewToggle'
-import type { TemplateResponse, TemplateChannel } from '@/types/template.types'
-
-const CHANNEL_TABS: { label: string; value: TemplateChannel | 'ALL' }[] = [
-  { label: 'All',      value: 'ALL'      },
-  { label: 'Email',    value: 'EMAIL'    },
-  { label: 'SMS',      value: 'SMS'      },
-  { label: 'WhatsApp', value: 'WHATSAPP' },
-]
+import type { TemplateResponse } from '@/types/template.types'
 
 function CardSkeleton() {
   return (
@@ -30,17 +23,14 @@ function CardSkeleton() {
 }
 
 export default function TemplatesPage() {
-  const [channelFilter, setChannelFilter] = useState<TemplateChannel | 'ALL'>('ALL')
   const [showCreate, setShowCreate] = useState(false)
   const [editing,    setEditing]    = useState<TemplateResponse | null>(null)
   const [deleting,   setDeleting]   = useState<TemplateResponse | null>(null)
   const [view, setView] = useViewPreference('templates', 'grid')
 
-  const { data, isLoading, isError } = useTemplates(
-    channelFilter !== 'ALL' ? { channel: channelFilter, mode: 'MANUAL' } : { mode: 'MANUAL' },
-  )
+  const { data, isLoading, isError } = useTemplates({ channel: 'EMAIL', mode: 'MANUAL' })
 
-  const allTemplates  = (data?.content ?? []).filter((t) => t.mode === 'MANUAL')
+  const allTemplates  = (data?.content ?? []).filter((t) => t.mode === 'MANUAL' && t.channel === 'EMAIL')
   const defaults      = allTemplates.filter((t) => t.systemDefined)
   const userTemplates = allTemplates.filter((t) => !t.systemDefined)
 
@@ -64,24 +54,6 @@ export default function TemplatesPage() {
             <span className="hidden sm:inline">New Template</span>
           </button>
         </div>
-      </div>
-
-      {/* Channel filter tabs */}
-      <div className="flex gap-1 p-1 bg-[#F4F7F9] dark:bg-[#1B2838] rounded-lg w-fit">
-        {CHANNEL_TABS.map((tab) => (
-          <button
-            key={tab.value}
-            onClick={() => setChannelFilter(tab.value)}
-            className={[
-              'px-4 py-1.5 text-sm font-medium rounded-md transition-colors',
-              channelFilter === tab.value
-                ? 'bg-white dark:bg-[#243447] text-[#0D1B2A] dark:text-white shadow-sm'
-                : 'text-c-muted hover:text-[#0D1B2A] dark:hover:text-white',
-            ].join(' ')}
-          >
-            {tab.label}
-          </button>
-        ))}
       </div>
 
       {/* Content */}

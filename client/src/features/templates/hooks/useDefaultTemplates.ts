@@ -64,55 +64,6 @@ Regards,
 {{organizationName}}`
   }
 
-  // ── SMS ───────────────────────────────────────────────────────────────────
-  let smsBody: string
-
-  if (isPaymentLink) {
-    smsBody = `Hi {{customerName}}, this is a reminder that invoice {{invoiceNumber}} for {{remainingAmount}} was due on {{dueDate}}. Pay here: {{paymentLink}} - {{organizationName}}`
-  } else if (isConfirmationFlow) {
-    smsBody = `Hi {{customerName}}, invoice {{invoiceNumber}} for {{remainingAmount}} was due on {{dueDate}}. To pay or confirm a payment already made, visit: {{confirmationLink}} - {{organizationName}}`
-  } else {
-    smsBody = `Hi {{customerName}}, this is a reminder that invoice {{invoiceNumber}} for {{remainingAmount}} was due on {{dueDate}}. Please make your payment at your earliest convenience. - {{organizationName}}`
-  }
-
-  // ── WHATSAPP ──────────────────────────────────────────────────────────────
-  let whatsappBody: string
-
-  if (isPaymentLink) {
-    whatsappBody = `Hi {{customerName}},
-
-This is a reminder that invoice *{{invoiceNumber}}* for *{{remainingAmount}}* was due on {{dueDate}}.
-
-Please complete your payment using the link below:
-{{paymentLink}}
-
-If you have already paid, please ignore this message. Reach out if you need any help.
-
-Regards,
-{{organizationName}}`
-  } else if (isConfirmationFlow) {
-    whatsappBody = `Hi {{customerName}},
-
-A quick note regarding invoice *{{invoiceNumber}}* for *{{remainingAmount}}*, which was due on {{dueDate}}.
-
-The link below includes payment details if you have not yet settled this, and a way to confirm once your payment is done — so we can update our records promptly:
-{{confirmationLink}}
-
-For any questions, please reach out to us.
-
-Regards,
-{{organizationName}}`
-  } else {
-    whatsappBody = `Hi {{customerName}},
-
-This is a reminder that invoice *{{invoiceNumber}}* for *{{remainingAmount}}* was due on {{dueDate}}.
-
-Please make your payment at your earliest convenience. If you have already paid, do let us know and we will update our records.
-
-Regards,
-{{organizationName}}`
-  }
-
   return [
     {
       name:    'Default Email Reminder',
@@ -121,26 +72,12 @@ Regards,
       subject: emailSubject,
       body:    emailBody,
     },
-    {
-      name:    'Default SMS Reminder',
-      channel: 'SMS',
-      tone:    'POLITE',
-      body:    smsBody,
-    },
-    {
-      name:    'Default WhatsApp Reminder',
-      channel: 'WHATSAPP',
-      tone:    'POLITE',
-      body:    whatsappBody,
-    },
   ]
 }
 
 // Default template names — used to match and update existing defaults.
 const DEFAULT_NAMES = new Set([
   'Default Email Reminder',
-  'Default SMS Reminder',
-  'Default WhatsApp Reminder',
 ])
 
 function seedVersionKey(orgId: string) {

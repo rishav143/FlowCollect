@@ -225,7 +225,9 @@ export default function Sidebar() {
         {!c && <p className="px-3 mb-1 text-[10px] font-semibold uppercase tracking-widest text-c-muted">Main</p>}
         <div className="space-y-0.5">
           <NavItem to="/dashboard" icon={LayoutDashboard} label="Dashboard"  collapsed={c} onNavigate={closeSidebar} />
-          <NavItem to="/recover"   icon={Zap}             label="Recover"    highlight pulseDot={autoRecoveryEnabled} collapsed={c} onNavigate={closeSidebar} />
+          {autoRecoveryEnabled && (
+            <NavItem to="/recover" icon={Zap} label="Recover" highlight pulseDot collapsed={c} onNavigate={closeSidebar} />
+          )}
           <NavItem to="/invoices"  icon={FileText}        label="Invoices"   collapsed={c} onNavigate={closeSidebar} />
           <NavItem to="/followups" icon={Clock}           label="Follow-ups" count={badges.followups} collapsed={c} onNavigate={closeSidebar} />
         </div>

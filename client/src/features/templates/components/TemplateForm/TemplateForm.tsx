@@ -490,8 +490,6 @@ export default function TemplateForm({
           <label className={labelClass}>Channel</label>
           <select {...register('channel')} className={inputClass}>
             <option value="EMAIL">Email</option>
-            <option value="SMS">SMS</option>
-            <option value="WHATSAPP">WhatsApp</option>
           </select>
         </div>
         <div>
@@ -658,7 +656,7 @@ export default function TemplateForm({
         <div className="mt-3 flex items-start gap-2 px-3 py-2 rounded-lg bg-[#2E7A8E]/8 dark:bg-[#4FC3F7]/8 border border-[#2E7A8E]/20 dark:border-[#4FC3F7]/20">
           <span className="text-[#2E7A8E] dark:text-[#4FC3F7] text-xs mt-px shrink-0">ℹ</span>
           <p className="text-xs text-[#2E7A8E] dark:text-[#4FC3F7]">
-            You can include your bank details, UPI ID, or any payment instructions directly in the message body.
+            Payment details from Settings are shown automatically via <strong>{'{{confirmationLink}}'}</strong>.
           </p>
         </div>
       </div>

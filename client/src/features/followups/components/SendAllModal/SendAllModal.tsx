@@ -1,8 +1,8 @@
 import { useState, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import {
-  X, Send, AlertCircle, Mail, MessageSquare,
-  MessageCircle, Loader2, Users, CheckSquare, Square,
+  X, Send, AlertCircle, Mail,
+  Loader2, Users, CheckSquare, Square,
 } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@/store/auth.store'
@@ -43,9 +43,7 @@ type ChannelCfg = {
 }
 
 const CHANNELS: ChannelCfg[] = [
-  { id: 'EMAIL',    label: 'Email',    icon: <Mail          size={15} strokeWidth={1.8} />, requires: 'email' },
-  { id: 'SMS',      label: 'SMS',      icon: <MessageSquare size={15} strokeWidth={1.8} />, requires: 'phone' },
-  { id: 'WHATSAPP', label: 'WhatsApp', icon: <MessageCircle size={15} strokeWidth={1.8} />, requires: 'phone' },
+  { id: 'EMAIL', label: 'Email', icon: <Mail size={15} strokeWidth={1.8} />, requires: 'email' },
 ]
 
 function isEligible(customer: CustomerResponse | undefined, ch: ChannelCfg): boolean {
