@@ -39,6 +39,11 @@ public class WhatsAppSender implements NotificationSender {
         return FollowUpChannel.WHATSAPP;
     }
 
+    /**
+     * Sends a WhatsApp text message and returns the Meta message ID (wamid.xxx).
+     * The ID is stored on the FollowUp so incoming Meta webhook status updates
+     * (delivered, failed, read) can be correlated back to this follow-up.
+     */
     @Override
     public String send(Customer customer, String subject, String body) {
         ensureEnabled();
@@ -59,11 +64,14 @@ public class WhatsAppSender implements NotificationSender {
                 throw new InternalException("WhatsApp Cloud API returned status " + response.statusCode() + ": " + response.body());
             }
 
-            log.info("Sent WhatsApp reminder to {}", recipient);
+            String messageId = extractWhatsAppMessageId(response.body());
+            log.info("Sent WhatsApp reminder to {} — messageId={}", recipient, messageId);
+            return messageId;
+        } catch (InternalException ex) {
+            throw ex;
         } catch (Exception ex) {
             throw new InternalException("Failed to send WhatsApp reminder: " + ex.getMessage());
         }
-        return null;
     }
 
     /**
@@ -71,20 +79,20 @@ public class WhatsAppSender implements NotificationSender {
      * The flow follows the WhatsApp Cloud API two-step pattern:
      *   1. Upload the PDF bytes to the /media endpoint → receive a media_id
      *   2. Send a document message referencing that media_id (with the text as caption)
+     * Returns the Meta message ID for webhook correlation.
      */
     @Override
     public String send(Customer customer, String subject, String body, boolean attachPdf, Invoice invoice) {
         if (attachPdf && invoice != null) {
-            sendWithDocument(customer, subject, body, invoice);
+            return sendWithDocument(customer, subject, body, invoice);
         } else {
-            send(customer, subject, body);
+            return send(customer, subject, body);
         }
-        return null;
     }
 
     // --- Private helpers ---
 
-    private void sendWithDocument(Customer customer, String subject, String body, Invoice invoice) {
+    private String sendWithDocument(Customer customer, String subject, String body, Invoice invoice) {
         ensureEnabled();
         String recipient = requireConfigured(customer.getPhone(), "customer phone");
         String accessToken = requireConfigured(properties.getAccessToken(), "whatsapp.cloud.access-token");
@@ -110,7 +118,11 @@ public class WhatsAppSender implements NotificationSender {
                 throw new InternalException("WhatsApp Cloud API returned status " + response.statusCode() + ": " + response.body());
             }
 
-            log.info("Sent WhatsApp reminder with PDF attachment to {}", recipient);
+            String messageId = extractWhatsAppMessageId(response.body());
+            log.info("Sent WhatsApp reminder with PDF attachment to {} — messageId={}", recipient, messageId);
+            return messageId;
+        } catch (InternalException ex) {
+            throw ex;
         } catch (Exception ex) {
             throw new InternalException("Failed to send WhatsApp reminder with PDF: " + ex.getMessage());
         }
@@ -169,6 +181,29 @@ public class WhatsAppSender implements NotificationSender {
 
     private void appendString(ByteArrayOutputStream out, String s) {
         out.writeBytes(s.getBytes(StandardCharsets.UTF_8));
+    }
+
+    /**
+     * Extracts the Meta message ID from a WhatsApp Cloud API send response.
+     * Response shape: {"messages":[{"id":"wamid.xxx"}], ...}
+     * Returns null (non-fatal) if parsing fails — the message was still sent.
+     */
+    private String extractWhatsAppMessageId(String responseBody) {
+        try {
+            // Locate "messages":[{"id":"<value>"
+            int messagesIdx = responseBody.indexOf("\"messages\"");
+            if (messagesIdx < 0) return null;
+            int idIdx = responseBody.indexOf("\"id\"", messagesIdx);
+            if (idIdx < 0) return null;
+            int colonIdx = responseBody.indexOf(':', idIdx + 4);
+            int startQuote = responseBody.indexOf('"', colonIdx + 1);
+            int endQuote = responseBody.indexOf('"', startQuote + 1);
+            if (startQuote < 0 || endQuote < 0) return null;
+            return responseBody.substring(startQuote + 1, endQuote);
+        } catch (Exception ex) {
+            log.warn("Could not parse WhatsApp message ID from response: {}", responseBody);
+            return null;
+        }
     }
 
     /**

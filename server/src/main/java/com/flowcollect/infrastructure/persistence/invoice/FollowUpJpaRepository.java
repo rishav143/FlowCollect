@@ -33,6 +33,8 @@ public interface FollowUpJpaRepository extends JpaRepository<FollowUp, UUID>, Jp
 
     java.util.Optional<FollowUp> findByResendEmailId(String resendEmailId);
 
+    java.util.Optional<FollowUp> findByExternalChannelMessageId(String externalChannelMessageId);
+
     @Modifying
     @Query("UPDATE FollowUp f SET f.template = null WHERE f.template.id = :templateId")
     void detachTemplate(@Param("templateId") UUID templateId);

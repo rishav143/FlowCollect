@@ -30,6 +30,7 @@ public class FollowUpMapper {
         }
 
         followUpResponse.setHasTrackableLink(f.getTrackedLinkUrl() != null);
+        followUpResponse.setDeliveryStatus(f.getDeliveryStatus());
 
         return followUpResponse;
     }

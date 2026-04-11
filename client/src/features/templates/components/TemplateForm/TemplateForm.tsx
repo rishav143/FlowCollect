@@ -17,8 +17,112 @@ const BASE_PLACEHOLDERS = [
   { label: 'Due Date',           value: '{{dueDate}}'          },
 ]
 
+// ---------------------------------------------------------------------------
+// SMS segment counter — accurate GSM-7 / Unicode / extended-char logic
+// ---------------------------------------------------------------------------
+
+/**
+ * GSM-7 basic character set (single-byte, count as 1 each).
+ * Any character NOT in this set AND NOT in GSM7_EXTENDED forces Unicode mode.
+ */
+const GSM7_BASIC = new Set(
+  '@£$¥èéùìòÇ\nØø\rÅåΔ_ΦΓΛΩΠΨΣΘΞÆæßÉ !"#¤%&\'()*+,-./0123456789:;<=>?' +
+  '¡ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÑÜàabcdefghijklmnopqrstuvwxyzäöñüà' +
+  // ASCII printable that overlap
+  '§¿'
+)
+
+/**
+ * GSM-7 extended characters — still GSM-7 (no Unicode mode) but each costs 2 chars.
+ */
+const GSM7_EXTENDED = new Set('€[]{}\\^~|')
+
+interface SmsInfo {
+  /** Effective character count (extended chars counted as 2). */
+  charCount:  number
+  /** True when any non-GSM character forces UCS-2 encoding. */
+  isUnicode:  boolean
+  /** Number of SMS segments needed to send this message. */
+  segments:   number
+  /** Characters that forced Unicode mode, for display in warning. */
+  unicodeChars: string[]
+}
+
+function getSmsInfo(text: string): SmsInfo {
+  if (text.length === 0) {
+    return { charCount: 0, isUnicode: false, segments: 1, unicodeChars: [] }
+  }
+
+  let charCount   = 0
+  let isUnicode   = false
+  const unicodeSet = new Set<string>()
+
+  for (const ch of text) {
+    if (GSM7_EXTENDED.has(ch)) {
+      charCount += 2  // escape byte + char byte
+    } else if (GSM7_BASIC.has(ch)) {
+      charCount += 1
+    } else {
+      isUnicode = true
+      unicodeSet.add(ch)
+      charCount += 1  // in Unicode mode every char is 1 slot (2 bytes, but 70 slot limit)
+    }
+  }
+
+  // In Unicode mode, re-count as raw char length (each char = 1 slot, limit is 70/67)
+  const effectiveCount = isUnicode ? [...text].length : charCount
+
+  // Per-segment limits:
+  //   GSM-7:   single=160, multi=153 (6-byte UDH eats 7 chars worth of space)
+  //   Unicode: single=70,  multi=67
+  const singleLimit = isUnicode ? 70  : 160
+  const multiLimit  = isUnicode ? 67  : 153
+
+  const segments = effectiveCount <= singleLimit
+    ? 1
+    : Math.ceil(effectiveCount / multiLimit)
+
+  return {
+    charCount:    effectiveCount,
+    isUnicode,
+    segments,
+    unicodeChars: [...unicodeSet],
+  }
+}
+
+/**
+ * Worst-case expansions for segment estimation.
+ * IMPORTANT: use actual Unicode chars where the real value will contain them
+ * so that Unicode mode is correctly triggered during estimation.
+ */
+const PLACEHOLDER_EXPANSIONS: Record<string, string> = {
+  // ₹ is a Unicode char — its presence switches the entire message to UCS-2 (67 chars/seg limit)
+  '{{remainingAmount}}':   '₹1,23,456.00',          // 12 chars, forces Unicode
+  // Tracking URL: base-url/track/<uuid> — ~70 chars worst case
+  '{{paymentLink}}':       'x'.repeat(72),
+  '{{confirmationLink}}':  'x'.repeat(72),
+  '{{customerName}}':      'x'.repeat(25),
+  '{{organizationName}}':  'x'.repeat(40),
+  '{{organizationEmail}}': 'x'.repeat(35),
+  '{{invoiceNumber}}':     'x'.repeat(15),
+  '{{dueDate}}':           '31 December 2025',       // 16 chars
+}
+
+/** Returns worst-case rendered text with placeholders replaced by realistic values. */
+function expandPlaceholders(text: string): string {
+  let expanded = text
+  for (const [placeholder, value] of Object.entries(PLACEHOLDER_EXPANSIONS)) {
+    expanded = expanded.split(placeholder).join(value)
+  }
+  return expanded
+}
+
+/** Max SMS segments we allow saving. Beyond this the form is blocked. */
+const SMS_MAX_SEGMENTS = 2
+
 const BODY_LIMIT: Record<string, number> = {
-  SMS:      320,
+  // SMS has no fixed char limit here — we gate on segment count instead
+  SMS:      99999,
   WHATSAPP: 1000,
   EMAIL:    2000,
 }
@@ -295,6 +399,14 @@ export default function TemplateForm({
   const bodyLimit = BODY_LIMIT[channel] ?? 2000
   const bodyOver  = body.length > bodyLimit
 
+  // SMS-specific segment analysis
+  const smsTemplate = channel === 'SMS' ? getSmsInfo(body) : null
+  const smsExpanded = channel === 'SMS' ? getSmsInfo(expandPlaceholders(body)) : null
+  // Block save if worst-case expanded message exceeds max allowed segments
+  const smsTooLong  = channel === 'SMS' && smsExpanded != null && smsExpanded.segments > SMS_MAX_SEGMENTS
+  // Warn when ₹ will be injected via {{remainingAmount}}
+  const smsRupeeWarning = channel === 'SMS' && body.includes('{{remainingAmount}}') && !smsTemplate?.isUnicode
+
   const bodyReg    = register('body')
   const subjectReg = register('subject')
 
@@ -406,7 +518,7 @@ export default function TemplateForm({
               subjectRef.current = el
             }}
             className={inputClass}
-            placeholder="e.g. Friendly reminder — Invoice {{invoiceNumber}}"
+            placeholder="e.g. Friendly reminder: Invoice {{invoiceNumber}}"
           />
           {errors.subject && (
             <p className="mt-1 text-xs text-[#EF4444]">{errors.subject.message}</p>
@@ -450,6 +562,7 @@ export default function TemplateForm({
               bodyRef.current = el
             }}
             rows={8}
+            maxLength={channel === 'SMS' ? 306 : channel === 'WHATSAPP' ? 1000 : 2000}
             placeholder="Hi {{customerName}}, this is a friendly reminder…"
             className={[
               inputClass,
@@ -471,23 +584,43 @@ export default function TemplateForm({
         </div>
 
         {/* Counter + validation */}
-        <div className="mt-1 flex items-start justify-between gap-2">
-          <div>
+        <div className="mt-1.5 flex items-start justify-between gap-3">
+          <div className="space-y-1 min-w-0">
             {errors.body && (
               <p className="text-xs text-[#EF4444]">{errors.body.message}</p>
             )}
             {bodyOver && (
-              <p className="text-xs text-[#EF4444]">
-                Message is too long for {channel === 'SMS' ? 'SMS' : channel === 'WHATSAPP' ? 'WhatsApp' : 'this channel'}. Please shorten it before saving.
+              <p className="text-xs text-[#EF4444] font-medium">Message too long for this channel.</p>
+            )}
+            {smsTooLong && (
+              <p className="text-xs text-c-muted">
+                Message too long. Shorten it to stay within {SMS_MAX_SEGMENTS} segments.
+              </p>
+            )}
+            {!smsTooLong && (smsTemplate?.isUnicode || smsRupeeWarning) && (
+              <p className="text-xs text-c-muted">
+                Contains characters that require Unicode encoding (70 chars/segment).
               </p>
             )}
             {aiError && (
               <p className="text-xs text-red-500">{aiError}</p>
             )}
           </div>
-          <span className={`text-xs tabular-nums shrink-0 ${bodyOver ? 'text-[#EF4444] font-semibold' : 'text-c-muted'}`}>
-            {body.length} / {bodyLimit}
-          </span>
+
+          {/* Right side: char count + segment badges */}
+          <div className="flex flex-col items-end gap-1 shrink-0">
+            {channel !== 'SMS' && (
+              <span className={`text-xs tabular-nums ${bodyOver ? 'text-[#EF4444] font-semibold' : 'text-c-muted'}`}>
+                {body.length} / {bodyLimit}
+              </span>
+            )}
+
+            {channel === 'SMS' && smsExpanded && (
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-c-muted tabular-nums">{smsExpanded.charCount} chars · {smsExpanded.segments} seg</span>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* AI preview */}
@@ -534,7 +667,7 @@ export default function TemplateForm({
       <div className="flex justify-end pt-1">
         <button
           type="submit"
-          disabled={isPending || bodyOver}
+          disabled={isPending || bodyOver || smsTooLong}
           className="px-4 py-2 text-sm font-semibold text-white rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50"
           style={{ background: 'linear-gradient(90deg, #29B6F6 0%, #4FC3F7 100%)' }}
         >

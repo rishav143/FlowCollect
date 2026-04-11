@@ -3,6 +3,8 @@ export type FollowUpStatus      = 'PENDING' | 'SENT' | 'FAILED' | 'CANCELLED'
 export type FollowUpTriggerType = 'MANUAL' | 'AUTOMATED'
 export type PaymentGateway      = 'STRIPE' | 'RAZORPAY'
 export type ClickedLinkType     = 'PAYMENT_LINK' | 'CONFIRMATION_LINK'
+/** Async delivery confirmation for SMS and WhatsApp, set by provider webhooks. */
+export type DeliveryStatus      = 'DELIVERED' | 'UNDELIVERED'
 
 export interface FollowUpResponse {
   id:                 string
@@ -24,6 +26,7 @@ export interface FollowUpResponse {
   paymentLinkGateway: PaymentGateway | null
   paymentLinkStatus:  string | null
   hasTrackableLink:   boolean
+  deliveryStatus:     DeliveryStatus | null
 }
 
 export interface MultiChannelFollowUpRequest {

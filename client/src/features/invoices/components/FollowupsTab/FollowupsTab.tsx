@@ -1,7 +1,7 @@
 import { useParams } from 'react-router-dom'
 import { Bell, Mail, MessageSquare, Phone } from 'lucide-react'
 import { useInvoiceFollowups } from '@/features/followups/hooks/useFollowups'
-import type { FollowUpChannel, FollowUpStatus } from '@/types/followup.types'
+import type { DeliveryStatus, FollowUpChannel, FollowUpStatus } from '@/types/followup.types'
 import { formatDateTime } from '@/lib/format'
 
 // ---------------------------------------------------------------------------
@@ -19,6 +19,11 @@ const STATUS_DOT: Record<FollowUpStatus, { dot: string; text: string; label: str
   SENT:      { dot: 'bg-green-500', text: 'text-green-600 dark:text-green-400', label: 'Sent'      },
   FAILED:    { dot: 'bg-red-500',   text: 'text-red-600 dark:text-red-400',     label: 'Failed'    },
   CANCELLED: { dot: 'bg-[#8A9BAE]', text: 'text-c-muted',                      label: 'Cancelled' },
+}
+
+const DELIVERY_BADGE: Record<DeliveryStatus, { text: string; label: string }> = {
+  DELIVERED:   { text: 'text-green-600 dark:text-green-400',  label: 'Delivered'   },
+  UNDELIVERED: { text: 'text-red-500 dark:text-red-400',      label: 'Undelivered' },
 }
 
 function fmtDate(d: string | null) { return formatDateTime(d) }
@@ -84,10 +89,17 @@ export default function FollowupsTab() {
             </p>
           </div>
 
-          {/* Status */}
-          {(() => { const { text, label } = STATUS_DOT[fu.status]; return (
-            <span className={`text-xs font-medium shrink-0 ${text}`}>{label}</span>
-          )})()}
+          {/* Status + delivery badge */}
+          <div className="flex flex-col items-end gap-0.5 shrink-0">
+            {(() => { const { text, label } = STATUS_DOT[fu.status]; return (
+              <span className={`text-xs font-medium ${text}`}>{label}</span>
+            )})()}
+            {fu.deliveryStatus && fu.channel !== 'EMAIL' && (
+              <span className={`text-[10px] font-medium ${DELIVERY_BADGE[fu.deliveryStatus].text}`}>
+                {DELIVERY_BADGE[fu.deliveryStatus].label}
+              </span>
+            )}
+          </div>
         </div>
       ))}
     </div>

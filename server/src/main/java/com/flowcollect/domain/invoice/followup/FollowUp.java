@@ -91,6 +91,25 @@ public class FollowUp {
     private String resendEmailId;
 
     /**
+     * External message ID returned by the channel provider for SMS and WhatsApp follow-ups.
+     * SMS: Twilio message SID (e.g. "SMxxx").
+     * WhatsApp: Meta Cloud API message ID (e.g. "wamid.xxx").
+     * Used to correlate incoming provider webhooks back to this follow-up.
+     */
+    @Column(name = "external_channel_message_id")
+    private String externalChannelMessageId;
+
+    /**
+     * Async delivery confirmation status — set by provider webhooks after the message
+     * has been submitted (FollowUpStatus = SENT).
+     * Null until a delivery confirmation or failure webhook is received.
+     * Not used for EMAIL channel (Resend delivery tracking is handled separately).
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "delivery_status")
+    private DeliveryStatus deliveryStatus;
+
+    /**
      * The real destination URL (payment or confirmation link) that the tracking
      * redirect endpoint forwards the client to after recording the click.
      * Populated at dispatch time for any follow-up that contains a trackable link.
@@ -231,6 +250,22 @@ public class FollowUp {
 
     public void setResendEmailId(String resendEmailId) {
         this.resendEmailId = resendEmailId;
+    }
+
+    public String getExternalChannelMessageId() {
+        return externalChannelMessageId;
+    }
+
+    public void setExternalChannelMessageId(String externalChannelMessageId) {
+        this.externalChannelMessageId = externalChannelMessageId;
+    }
+
+    public DeliveryStatus getDeliveryStatus() {
+        return deliveryStatus;
+    }
+
+    public void setDeliveryStatus(DeliveryStatus deliveryStatus) {
+        this.deliveryStatus = deliveryStatus;
     }
 
     public String getTrackedLinkUrl() {

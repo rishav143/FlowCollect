@@ -29,6 +29,7 @@ import com.flowcollect.domain.confirmation.ConfirmationLink;
 import com.flowcollect.domain.customer.Customer;
 import com.flowcollect.domain.invoice.Invoice;
 import com.flowcollect.domain.invoice.followup.ClickedLinkType;
+import com.flowcollect.domain.invoice.followup.DeliveryStatus;
 import com.flowcollect.domain.invoice.followup.FollowUp;
 import com.flowcollect.domain.organization.PaymentCollectionMode;
 import com.flowcollect.domain.invoice.followup.FollowUpChannel;
@@ -356,7 +357,13 @@ public class FollowUpService {
                 java.time.Instant now = java.time.Instant.now();
                 for (FollowUp fu : followUps) {
                     fu.send();
-                    if (externalId != null) fu.setResendEmailId(externalId);
+                    if (externalId != null) {
+                        if (fu.getChannel() == FollowUpChannel.EMAIL) {
+                            fu.setResendEmailId(externalId);
+                        } else {
+                            fu.setExternalChannelMessageId(externalId);
+                        }
+                    }
                     followUpRepository.save(fu);
                 }
 
@@ -521,7 +528,12 @@ public class FollowUpService {
 
             fresh.send();
             if (externalMessageId != null) {
-                fresh.setResendEmailId(externalMessageId);
+                if (fresh.getChannel() == FollowUpChannel.EMAIL) {
+                    fresh.setResendEmailId(externalMessageId);
+                } else {
+                    // SMS (Twilio SID) or WhatsApp (Meta message ID)
+                    fresh.setExternalChannelMessageId(externalMessageId);
+                }
             }
             return followUpRepository.save(fresh);
         } catch (RuntimeException ex) {
@@ -549,6 +561,24 @@ public class FollowUpService {
             throw new ValidationException("Cannot delete a follow-up that has already been sent");
         }
         followUpRepository.delete(followUp);
+    }
+
+    /**
+     * Called by provider webhooks (Twilio for SMS, Meta for WhatsApp) to record
+     * async delivery confirmation or failure on a SENT follow-up.
+     *
+     * @param externalMessageId Twilio SID or Meta message ID
+     * @param status            DELIVERED or UNDELIVERED
+     */
+    @Transactional
+    public void updateDeliveryStatus(String externalMessageId, DeliveryStatus status) {
+        if (externalMessageId == null || externalMessageId.isBlank()) return;
+        followUpRepository.findByExternalChannelMessageId(externalMessageId).ifPresent(fu -> {
+            fu.setDeliveryStatus(status);
+            followUpRepository.save(fu);
+            log.info("[followUp={}] delivery status updated to {} (externalId={})",
+                    fu.getId(), status, externalMessageId);
+        });
     }
 
     private NotificationSender resolveSender(FollowUpChannel channel) {

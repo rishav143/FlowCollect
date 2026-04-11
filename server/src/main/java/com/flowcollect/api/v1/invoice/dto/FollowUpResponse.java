@@ -5,6 +5,7 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 import com.flowcollect.domain.invoice.followup.ClickedLinkType;
+import com.flowcollect.domain.invoice.followup.DeliveryStatus;
 import com.flowcollect.domain.invoice.followup.FollowUpChannel;
 import com.flowcollect.domain.invoice.followup.FollowUpStatus;
 import com.flowcollect.domain.invoice.followup.FollowUpTriggerType;
@@ -36,6 +37,9 @@ public class FollowUpResponse {
 
     /** True when this follow-up contained a trackable link (payment or confirmation). */
     private boolean hasTrackableLink;
+
+    /** Async delivery confirmation for SMS and WhatsApp — null until a webhook is received. */
+    private DeliveryStatus deliveryStatus;
 
     public UUID getId() {
         return id;
@@ -156,5 +160,8 @@ public class FollowUpResponse {
 
     public boolean isHasTrackableLink() { return hasTrackableLink; }
     public void setHasTrackableLink(boolean hasTrackableLink) { this.hasTrackableLink = hasTrackableLink; }
+
+    public DeliveryStatus getDeliveryStatus() { return deliveryStatus; }
+    public void setDeliveryStatus(DeliveryStatus deliveryStatus) { this.deliveryStatus = deliveryStatus; }
 }
 

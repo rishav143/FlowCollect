@@ -11,6 +11,10 @@ public class WhatsAppCloudProperties {
     private String accessToken;
     private String apiVersion = "v23.0";
     private String phoneNumberId;
+    /** Meta App Secret — used to verify X-Hub-Signature-256 on incoming webhook requests. */
+    private String appSecret;
+    /** Verify token registered in the Meta App webhook settings (used for hub challenge response). */
+    private String webhookVerifyToken;
 
     public boolean isEnabled() {
         return enabled;
@@ -42,5 +46,21 @@ public class WhatsAppCloudProperties {
 
     public void setPhoneNumberId(String phoneNumberId) {
         this.phoneNumberId = phoneNumberId;
+    }
+
+    public String getAppSecret() {
+        return appSecret;
+    }
+
+    public void setAppSecret(String appSecret) {
+        this.appSecret = appSecret;
+    }
+
+    public String getWebhookVerifyToken() {
+        return webhookVerifyToken;
+    }
+
+    public void setWebhookVerifyToken(String webhookVerifyToken) {
+        this.webhookVerifyToken = webhookVerifyToken;
     }
 }
