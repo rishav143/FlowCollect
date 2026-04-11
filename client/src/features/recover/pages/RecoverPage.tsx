@@ -25,9 +25,25 @@ const CHANNEL_META: Record<ReminderChannel, { icon: React.ReactNode; color: stri
   WHATSAPP: { icon: <MessageCircle size={14} strokeWidth={1.8} />, color: 'text-green-500', bg: 'bg-green-500/10', label: 'WhatsApp' },
 }
 
-function timingLabel(daysOffset: number): string {
+function timingLabel(rule: ReminderRuleResponse): string {
+  const { triggerType, daysOffset, maxOccurrences, cycleIntervalDays } = rule
   const abs = Math.abs(daysOffset)
-  return `${abs} day${abs !== 1 ? 's' : ''} after due`
+
+  let base: string
+  if (triggerType === 'ON_DUE_DATE') {
+    base = 'On due date'
+  } else if (triggerType === 'BEFORE_DUE_DATE') {
+    base = `${abs} day${abs !== 1 ? 's' : ''} before due`
+  } else {
+    base = `${abs} day${abs !== 1 ? 's' : ''} after due`
+  }
+
+  if (maxOccurrences > 1 && cycleIntervalDays > 0) {
+    const last = daysOffset + cycleIntervalDays * (maxOccurrences - 1)
+    base += ` → ${last}d`
+  }
+
+  return base
 }
 
 // ---------------------------------------------------------------------------
@@ -285,7 +301,7 @@ function RecoverRuleRow({ rule, isLast, onEdit, onToggle }: RecoverRuleRowProps)
       {/* Info */}
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold text-[#0D1B2A] dark:text-white">
-          {timingLabel(rule.daysOffset)}
+          {timingLabel(rule)}
           {rule.name && (
             <span className="ml-1.5 text-xs font-normal text-c-muted">· {rule.name}</span>
           )}
@@ -451,11 +467,30 @@ export default function RecoverPage() {
   const { data: queueActivity, isLoading: qaLoading, isError: qaError } = useQueueActivity()
   const toggleAutoRecovery = useToggleAutoRecovery()
   const toggleRule         = useToggleReminderRule()
-  // De-duplicate templates from rules (multiple rules might share one template, unlikely but safe)
+  const CHANNEL_ORDER: Record<ReminderChannel, number> = { EMAIL: 0, SMS: 1, WHATSAPP: 2 }
+  const TRIGGER_ORDER: Record<string, number> = { BEFORE_DUE_DATE: 0, ON_DUE_DATE: 1, AFTER_DUE_DATE: 2 }
+
+  const sortedRules = [...(autoRules ?? [])].sort((a, b) => {
+    const ch = CHANNEL_ORDER[a.channel] - CHANNEL_ORDER[b.channel]
+    if (ch !== 0) return ch
+    return (TRIGGER_ORDER[a.triggerType] ?? 3) - (TRIGGER_ORDER[b.triggerType] ?? 3)
+  })
+
+  // Collect all unique templates referenced by rules — both primary and per-occurrence overrides.
   const uniqueTemplates: { templateId: string; templateName: string | null; channel: ReminderChannel }[] = []
   const seenTemplateIds = new Set<string>()
-  for (const rule of autoRules ?? []) {
-    if (rule.templateId && !seenTemplateIds.has(rule.templateId)) {
+  for (const rule of sortedRules) {
+    // Per-occurrence templates take priority when present; otherwise fall back to primary template
+    const occIds   = rule.occurrenceTemplateIds ?? []
+    const occNames = rule.occurrenceTemplateNames ?? []
+    if (occIds.length > 0) {
+      occIds.forEach((id, i) => {
+        if (id && !seenTemplateIds.has(id)) {
+          seenTemplateIds.add(id)
+          uniqueTemplates.push({ templateId: id, templateName: occNames[i] ?? null, channel: rule.channel })
+        }
+      })
+    } else if (rule.templateId && !seenTemplateIds.has(rule.templateId)) {
       seenTemplateIds.add(rule.templateId)
       uniqueTemplates.push({ templateId: rule.templateId, templateName: rule.templateName, channel: rule.channel })
     }
@@ -605,11 +640,11 @@ export default function RecoverPage() {
                 <p className="text-xs text-c-muted">System rules will appear here once seeded on the server.</p>
               </div>
             ) : (
-              (autoRules ?? []).map((rule, idx) => (
+              sortedRules.map((rule, idx) => (
                 <RecoverRuleRow
                   key={rule.id}
                   rule={rule}
-                  isLast={idx === (autoRules ?? []).length - 1}
+                  isLast={idx === sortedRules.length - 1}
                   onEdit={setEditingRule}
                   onToggle={handleToggleRule}
                 />

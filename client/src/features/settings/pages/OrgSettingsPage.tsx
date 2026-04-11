@@ -47,6 +47,8 @@ export default function OrgSettingsPage() {
 
   const [name,     setName]     = useState('')
   const [email,    setEmail]    = useState('')
+  const [phone,    setPhone]    = useState('')
+  const [address,  setAddress]  = useState('')
   const [currency, setCurrency] = useState('INR')
   const [timezone, setTimezone] = useState('Asia/Kolkata')
   const [mode,     setMode]     = useState<'PAYMENT_LINK' | 'CONFIRMATION_FLOW'>('CONFIRMATION_FLOW')
@@ -56,6 +58,8 @@ export default function OrgSettingsPage() {
     if (data) {
       setName(data.name)
       setEmail(data.email)
+      setPhone(data.phone ?? '')
+      setAddress(data.address ?? '')
       setCurrency(data.currency)
       setTimezone(data.timezone)
       setMode(data.paymentCollectionMode)
@@ -64,7 +68,7 @@ export default function OrgSettingsPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    await update.mutateAsync({ name, email, currency, timezone, paymentCollectionMode: mode })
+    await update.mutateAsync({ name, email, phone: phone || undefined, address: address || undefined, currency, timezone, paymentCollectionMode: mode })
     setSaved(true)
     setTimeout(() => setSaved(false), 2500)
   }
@@ -106,6 +110,27 @@ export default function OrgSettingsPage() {
               placeholder="billing@yourcompany.com"
               className={inputCls}
             />
+          </Field>
+
+          <Field label="Phone (optional)">
+            <input
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="+1 555 000 0000"
+              className={inputCls}
+            />
+          </Field>
+
+          <Field label="Business Address (optional)">
+            <textarea
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              placeholder={"123 Main St\nCity, State / Province\nCountry"}
+              rows={3}
+              className={inputCls + ' resize-none'}
+            />
+            <p className="text-xs text-c-muted mt-1">Appears on invoices sent to your clients.</p>
           </Field>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

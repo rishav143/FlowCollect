@@ -418,7 +418,7 @@ public class InvoicePdfGenerator {
     private List<String> buildOrganizationLines(Organization org) {
         List<String> lines = new ArrayList<>();
         lines.add(safe(org.getName()));
-        if (org.getAddress() != null && !org.getAddress().isBlank()) lines.add(org.getAddress().trim());
+        if (org.getAddress() != null && !org.getAddress().isBlank()) addAddressLines(lines, org.getAddress());
         if (org.getEmail()   != null && !org.getEmail().isBlank())   lines.add(org.getEmail().trim());
         if (org.getPhone()   != null && !org.getPhone().isBlank())   lines.add(org.getPhone().trim());
         return lines;
@@ -432,10 +432,18 @@ public class InvoicePdfGenerator {
         }
         lines.add(safe(customer.getName()));
         if (customer.getCompanyName() != null && !customer.getCompanyName().isBlank()) lines.add(customer.getCompanyName().trim());
-        if (customer.getAddress()     != null && !customer.getAddress().isBlank())     lines.add(customer.getAddress().trim());
+        if (customer.getAddress()     != null && !customer.getAddress().isBlank())     addAddressLines(lines, customer.getAddress());
         if (customer.getEmail()       != null && !customer.getEmail().isBlank())       lines.add(customer.getEmail().trim());
         if (customer.getPhone()       != null && !customer.getPhone().isBlank())       lines.add(customer.getPhone().trim());
         return lines;
+    }
+
+    /** Splits an address on newlines so each line renders as a separate PDF row. */
+    private void addAddressLines(List<String> lines, String address) {
+        for (String part : address.split("\\r?\\n")) {
+            String trimmed = part.trim();
+            if (!trimmed.isEmpty()) lines.add(trimmed);
+        }
     }
 
     // ── Text wrapping ──────────────────────────────────────────────────────────

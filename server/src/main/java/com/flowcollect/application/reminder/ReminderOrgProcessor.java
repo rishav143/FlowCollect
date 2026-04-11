@@ -11,9 +11,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.flowcollect.application.invoice.FollowUpService;
 import com.flowcollect.application.invoice.InvoiceService;
+import com.flowcollect.application.template.TemplateService;
 import com.flowcollect.domain.invoice.Invoice;
 import com.flowcollect.domain.invoice.LifeCycleStatus;
 import com.flowcollect.domain.invoice.followup.FollowUp;
+import com.flowcollect.domain.template.Template;
 import com.flowcollect.domain.invoice.followup.FollowUpChannel;
 import com.flowcollect.domain.invoice.followup.FollowUpStatus;
 import com.flowcollect.domain.invoice.followup.FollowUpTriggerType;
@@ -42,17 +44,20 @@ public class ReminderOrgProcessor {
     private final ReminderRuleService reminderRuleService;
     private final InvoiceService invoiceService;
     private final FollowUpService followUpService;
+    private final TemplateService templateService;
     private final int maxPendingAgeDays;
 
     public ReminderOrgProcessor(
             ReminderRuleService reminderRuleService,
             InvoiceService invoiceService,
             FollowUpService followUpService,
+            TemplateService templateService,
             @org.springframework.beans.factory.annotation.Value("${scheduler.reminder.max-pending-age-days:1}") int maxPendingAgeDays
     ) {
         this.reminderRuleService = reminderRuleService;
         this.invoiceService = invoiceService;
         this.followUpService = followUpService;
+        this.templateService = templateService;
         this.maxPendingAgeDays = maxPendingAgeDays;
     }
 
@@ -136,10 +141,26 @@ public class ReminderOrgProcessor {
         };
     }
 
+    private Template resolveTemplate(ReminderRule rule, int occurrence) {
+        java.util.List<java.util.UUID> occIds = rule.getOccurrenceTemplateIds();
+        if (occIds != null && occurrence < occIds.size()) {
+            java.util.UUID tplId = occIds.get(occurrence);
+            if (tplId != null) {
+                try {
+                    return templateService.getTemplateById(tplId);
+                } catch (RuntimeException ex) {
+                    log.warn("[rule={}] Could not load occurrence template at index {} (id={}), falling back to primary",
+                            rule.getId(), occurrence, tplId);
+                }
+            }
+        }
+        return rule.getTemplate();
+    }
+
     private FollowUp buildFollowUp(Invoice invoice, ReminderRule rule, int occurrence, LocalDate scheduledDate) {
         FollowUp followUp = new FollowUp();
         followUp.setInvoice(invoice);
-        followUp.setTemplate(rule.getTemplate());
+        followUp.setTemplate(resolveTemplate(rule, occurrence));
         followUp.setReminderRule(rule);
         followUp.setChannel(FollowUpChannel.valueOf(rule.getChannel().name()));
         followUp.setTriggerType(FollowUpTriggerType.AUTOMATED);

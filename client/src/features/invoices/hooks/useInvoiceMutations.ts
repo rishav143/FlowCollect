@@ -86,8 +86,28 @@ export function useDownloadPdf() {
       const a    = document.createElement('a')
       a.href     = url
       a.download = `${invoiceNumber}.pdf`
+      a.style.display = 'none'
+      document.body.appendChild(a)
       a.click()
+      document.body.removeChild(a)
       URL.revokeObjectURL(url)
+    },
+    onError: async (err: unknown) => {
+      const res = (err as { response?: { data?: unknown } })?.response
+      let message = 'Failed to download PDF.'
+      if (res?.data instanceof Blob) {
+        try {
+          const text = await (res.data as Blob).text()
+          const json = JSON.parse(text)
+          message = json.message ?? json.error ?? text
+        } catch {
+          message = await (res.data as Blob).text().catch(() => message)
+        }
+      } else if (typeof res?.data === 'object' && res?.data !== null) {
+        message = (res.data as { message?: string }).message ?? message
+      }
+      console.error('[PDF download error]', message)
+      alert(message)
     },
   })
 }

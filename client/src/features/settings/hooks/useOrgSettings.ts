@@ -21,11 +21,21 @@ export function useOrgProfile() {
 }
 
 export function useUpdateOrgProfile() {
-  const orgId = useAuthStore((s) => s.org?.id ?? '')
-  const qc    = useQueryClient()
+  const orgId   = useAuthStore((s) => s.org?.id ?? '')
+  const org     = useAuthStore((s) => s.org)
+  const setAuth = useAuthStore((s) => s.setAuth)
+  const token   = useAuthStore((s) => s.token)
+  const user    = useAuthStore((s) => s.user)
+  const qc      = useQueryClient()
   return useMutation({
     mutationFn: (body: OrgProfileRequest) => updateOrgProfile(orgId, body),
-    onSuccess:  () => qc.invalidateQueries({ queryKey: qk(orgId) }),
+    onSuccess:  (_, variables) => {
+      // Sync changed fields into the persisted auth store so UI updates immediately
+      if (token && user && org) {
+        setAuth(token, user, { ...org, ...variables })
+      }
+      qc.invalidateQueries({ queryKey: qk(orgId) })
+    },
   })
 }
 

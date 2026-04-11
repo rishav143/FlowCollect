@@ -13,7 +13,7 @@ const faqs = [
   },
   {
     q: 'Does it work for international clients?',
-    a: 'Yes. Email and WhatsApp reminders work for any client anywhere in the world. SMS reminders cover India, the US, and most major regions.',
+    a: 'Yes. Email and WhatsApp reminders work for any client, anywhere in the world. SMS reminders are supported across most major regions globally.',
   },
   {
     q: 'I already use another invoicing tool. Do I need to switch?',

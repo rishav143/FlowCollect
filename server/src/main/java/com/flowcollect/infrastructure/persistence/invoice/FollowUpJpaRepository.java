@@ -41,6 +41,11 @@ public interface FollowUpJpaRepository extends JpaRepository<FollowUp, UUID>, Jp
     @Query("UPDATE FollowUp f SET f.reminderRule = null WHERE f.reminderRule.id = :ruleId")
     void detachReminderRule(@Param("ruleId") UUID ruleId);
 
+    /** Nulls reminder_rules.template_id for any system rule referencing this template — used before deleting legacy templates. */
+    @Modifying
+    @Query(value = "UPDATE reminder_rules SET template_id = NULL WHERE template_id = :templateId AND system_defined = true", nativeQuery = true)
+    void detachTemplateFromSystemRules(@Param("templateId") UUID templateId);
+
     /** Count SENT AUTO follow-ups dispatched today for an org (used for Recover KPI). */
     @Query("SELECT COUNT(f) FROM FollowUp f WHERE f.invoice.organization.id = :orgId " +
            "AND f.triggerType = 'AUTOMATED' AND f.reminderRule.mode = 'AUTO' " +

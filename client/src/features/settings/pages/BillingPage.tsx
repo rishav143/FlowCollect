@@ -2,91 +2,112 @@ import { useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Check, MessageSquare, MessageCircle, X, Zap } from 'lucide-react'
 import { useBilling, usePurchaseCredits } from '../hooks/useBilling'
+import { useOrgProfile } from '../hooks/useOrgSettings'
 
 // ---------------------------------------------------------------------------
-// Data
+// Pricing — two regions only: India (INR) and Global (USD)
 // ---------------------------------------------------------------------------
 
-const PLANS = [
-  {
-    id:       'STARTER' as const,
-    name:     'Starter',
-    price:    null,
-    subline:  'Free forever',
-    features: [
-      'Unlimited email reminders',
-      '25 SMS / month',
-      '10 WhatsApp / month',
-      'Up to 25 clients',
-      '1 team member',
-    ],
-  },
-  {
-    id:       'PRO' as const,
-    name:     'Pro',
-    price:    499,
-    subline:  'per month · ₹4,499 / year',
-    features: [
-      'Unlimited email reminders',
-      '200 SMS / month',
-      '100 WhatsApp / month',
-      'Unlimited clients',
-      'Up to 5 team members',
-      'Priority support',
-    ],
-    highlight: true,
-  },
-  {
-    id:       'BUSINESS' as const,
-    name:     'Business',
-    price:    1299,
-    subline:  'per month · ₹11,999 / year',
-    features: [
-      'Unlimited email reminders',
-      '1,000 SMS / month',
-      '500 WhatsApp / month',
-      'Unlimited clients',
-      'Unlimited team members',
-      'Priority support + SLA',
-    ],
-  },
-]
+type Currency = 'INR' | 'USD'
 
-type CreditChannel = 'SMS' | 'WHATSAPP'
-
-const CREDIT_PACKS: Record<CreditChannel, { credits: number; price: number }[]> = {
-  SMS: [
-    { credits: 100,  price:   199 },
-    { credits: 500,  price:   799 },
-    { credits: 1000, price: 1_299 },
-  ],
-  WHATSAPP: [
-    { credits:  50, price:   299 },
-    { credits: 200, price:   999 },
-    { credits: 500, price: 1_999 },
-  ],
+const PLAN_PRICES: Record<Currency, { pro: number; proAnnual: number }> = {
+  INR: { pro: 499, proAnnual: 4_490 },
+  USD: { pro: 12,  proAnnual: 108   },
 }
 
-function fmt(n: number) {
-  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(n)
+// Credit pack pricing
+// Cost basis: SMS US ~$0.012/msg, SMS India ~$0.003/msg, WhatsApp utility ~$0.016/msg globally
+// Target: 5–7x markup for sustainable margin after infra + support
+const CREDIT_PRICES: Record<Currency, {
+  sms:      { credits: number; price: number }[]
+  whatsapp: { credits: number; price: number }[]
+}> = {
+  INR: {
+    sms:      [{ credits: 100, price: 299  }, { credits: 500, price: 999   }, { credits: 1000, price: 1_799 }],
+    whatsapp: [{ credits: 50,  price: 399  }, { credits: 200, price: 1_299 }, { credits: 500,  price: 2_799 }],
+  },
+  USD: {
+    sms:      [{ credits: 100, price: 8  }, { credits: 500, price: 30 }, { credits: 1000, price: 50 }],
+    whatsapp: [{ credits: 50,  price: 5  }, { credits: 200, price: 18 }, { credits: 500,  price: 40 }],
+  },
+}
+
+function useCurrency(): Currency {
+  const { data } = useOrgProfile()
+  return data?.currency === 'INR' ? 'INR' : 'USD'
+}
+
+// For pack totals — whole numbers
+function fmt(amount: number, currency: Currency) {
+  return new Intl.NumberFormat(currency === 'INR' ? 'en-IN' : 'en-US', {
+    style:                 'currency',
+    currency,
+    maximumFractionDigits: 0,
+  }).format(amount)
+}
+
+// For per-message rates — show decimals when amount < 1
+function fmtUnit(amount: number, currency: Currency) {
+  const decimals = amount < 10 && currency === 'USD' ? 2 : 0
+  return new Intl.NumberFormat(currency === 'INR' ? 'en-IN' : 'en-US', {
+    style:                 'currency',
+    currency,
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  }).format(amount)
+}
+
+// ---------------------------------------------------------------------------
+// Plans
+// ---------------------------------------------------------------------------
+
+function getPlans(currency: Currency) {
+  const p = PLAN_PRICES[currency]
+  return [
+    {
+      id:       'STARTER' as const,
+      name:     'Free',
+      price:    null,
+      subline:  'Free forever',
+      features: [
+        'Up to 3 active invoices',
+        'Automated email reminders',
+        'Client payment confirmation',
+        'Basic follow-up templates',
+        'Invoice approval workflows',
+      ],
+    },
+    {
+      id:            'PRO' as const,
+      name:          'Pro',
+      price:         p.pro,
+      originalPrice: currency === 'INR' ? 799 : 19,
+      subline:       `per month · ${fmt(p.proAnnual, currency)} billed yearly`,
+      highlight:     true,
+      features:  [
+        'Unlimited invoices',
+        'Email + SMS + WhatsApp reminders',
+        'AI payment insights',
+        'Trackable follow-up links',
+        'Custom reminder schedules',
+        'Priority support',
+      ],
+    },
+  ]
 }
 
 // ---------------------------------------------------------------------------
 // Purchase modal
 // ---------------------------------------------------------------------------
 
-function PurchaseModal({
-  channel,
-  onClose,
-}: {
-  channel:  CreditChannel
-  onClose:  () => void
-}) {
+type CreditChannel = 'SMS' | 'WHATSAPP'
+
+function PurchaseModal({ channel, currency, onClose }: { channel: CreditChannel; currency: Currency; onClose: () => void }) {
   const [selected, setSelected] = useState<number | null>(null)
   const [success,  setSuccess]  = useState(false)
   const purchase = usePurchaseCredits()
-  const packs = CREDIT_PACKS[channel]
-  const label = channel === 'SMS' ? 'SMS' : 'WhatsApp'
+  const packs    = channel === 'SMS' ? CREDIT_PRICES[currency].sms : CREDIT_PRICES[currency].whatsapp
+  const label    = channel === 'SMS' ? 'SMS' : 'WhatsApp'
 
   async function handleBuy() {
     if (selected === null) return
@@ -128,7 +149,6 @@ function PurchaseModal({
             ) : (
               <div className="space-y-4">
                 <p className="text-sm text-c-muted">Choose a credit pack:</p>
-
                 <div className="space-y-2">
                   {packs.map((pack) => (
                     <button
@@ -144,28 +164,29 @@ function PurchaseModal({
                     >
                       <div>
                         <p className="text-sm font-semibold text-[#0D1B2A] dark:text-white">
-                          {pack.credits.toLocaleString('en-IN')} messages
+                          {pack.credits.toLocaleString()} messages
                         </p>
                         <p className="text-xs text-c-muted mt-0.5">
-                          {fmt(Math.round(pack.price / pack.credits * 100) / 100 * 100)} per message
+                          {fmtUnit(pack.price / pack.credits, currency)} per message
                         </p>
                       </div>
-                      <div className="text-right shrink-0">
-                        <p className={`text-sm font-bold tabular-nums ${selected === pack.credits ? 'text-[#29B6F6]' : 'text-[#0D1B2A] dark:text-white'}`}>
-                          {fmt(pack.price)}
-                        </p>
-                      </div>
+                      <p className={`text-sm font-bold tabular-nums shrink-0 ${selected === pack.credits ? 'text-[#29B6F6]' : 'text-[#0D1B2A] dark:text-white'}`}>
+                        {fmt(pack.price, currency)}
+                      </p>
                     </button>
                   ))}
                 </div>
-
                 <button
                   onClick={handleBuy}
                   disabled={selected === null || purchase.isPending}
                   className="w-full py-2.5 text-sm font-semibold text-white rounded-lg disabled:opacity-40 hover:opacity-90 transition-opacity"
                   style={{ background: 'linear-gradient(90deg, #29B6F6 0%, #4FC3F7 100%)' }}
                 >
-                  {purchase.isPending ? 'Processing…' : selected ? `Pay ${fmt(packs.find(p => p.credits === selected)!.price)}` : 'Select a pack'}
+                  {purchase.isPending
+                    ? 'Processing…'
+                    : selected
+                      ? `Pay ${fmt(packs.find((p) => p.credits === selected)!.price, currency)}`
+                      : 'Select a pack'}
                 </button>
               </div>
             )}
@@ -181,13 +202,7 @@ function PurchaseModal({
 // Plan card
 // ---------------------------------------------------------------------------
 
-function PlanCard({
-  plan,
-  isCurrent,
-}: {
-  plan:      typeof PLANS[number]
-  isCurrent: boolean
-}) {
+function PlanCard({ plan, isCurrent, currency }: { plan: ReturnType<typeof getPlans>[number]; isCurrent: boolean; currency: Currency }) {
   return (
     <div className={[
       'rounded-xl border p-5 flex flex-col gap-4 relative',
@@ -197,19 +212,26 @@ function PlanCard({
     ].join(' ')}>
 
       {plan.highlight && (
-        <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white rounded-full"
-          style={{ background: 'linear-gradient(90deg, #29B6F6 0%, #4FC3F7 100%)' }}>
-          Most Popular
+        <span
+          className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white rounded-full whitespace-nowrap"
+          style={{ background: 'linear-gradient(90deg, #29B6F6 0%, #4FC3F7 100%)' }}
+        >
+          Founding Member Price
         </span>
       )}
 
       <div>
         <p className="text-sm font-semibold text-[#0D1B2A] dark:text-white">{plan.name}</p>
-        <div className="mt-1 flex items-baseline gap-1">
+        <div className="mt-1 flex items-baseline gap-1.5 flex-wrap">
           {plan.price ? (
             <>
+              {'originalPrice' in plan && plan.originalPrice && (
+                <span className="text-sm font-semibold text-c-muted line-through">
+                  {fmt(plan.originalPrice, currency)}
+                </span>
+              )}
               <span className="text-2xl font-bold text-[#0D1B2A] dark:text-white tabular-nums">
-                {fmt(plan.price)}
+                {fmt(plan.price, currency)}
               </span>
               <span className="text-xs text-c-muted">{plan.subline}</span>
             </>
@@ -251,8 +273,9 @@ function PlanCard({
 export default function BillingPage() {
   const [buyChannel, setBuyChannel] = useState<CreditChannel | null>(null)
   const { data: billing, isLoading } = useBilling()
-
+  const currency    = useCurrency()
   const currentPlan = billing?.plan ?? 'STARTER'
+  const plans       = getPlans(currency)
 
   return (
     <>
@@ -323,18 +346,26 @@ export default function BillingPage() {
 
         {/* Plans */}
         <div>
-          <h2 className="text-sm font-semibold text-[#0D1B2A] dark:text-white mb-3">Plans</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {PLANS.map((plan) => (
-              <PlanCard key={plan.id} plan={plan} isCurrent={currentPlan === plan.id} />
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-semibold text-[#0D1B2A] dark:text-white">Plans</h2>
+            <p className="text-xs text-c-muted">
+              {currency === 'INR' ? 'Prices in INR · India' : 'Prices in USD · Global'}
+            </p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
+            {plans.map((plan) => (
+              <PlanCard key={plan.id} plan={plan} isCurrent={currentPlan === plan.id} currency={currency} />
             ))}
           </div>
+          <p className="text-xs text-c-muted mt-4 text-center max-w-2xl mx-auto">
+            Founding member pricing — locked forever. Raises after the first 200 users.
+          </p>
         </div>
 
       </div>
 
       {buyChannel && (
-        <PurchaseModal channel={buyChannel} onClose={() => setBuyChannel(null)} />
+        <PurchaseModal channel={buyChannel} currency={currency} onClose={() => setBuyChannel(null)} />
       )}
     </>
   )

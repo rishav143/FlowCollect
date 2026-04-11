@@ -12,6 +12,8 @@ export interface OrgProfileResponse {
   id:                    string
   name:                  string
   email:                 string
+  phone?:                string
+  address?:              string
   currency:              string
   timezone:              string
   paymentCollectionMode: 'PAYMENT_LINK' | 'CONFIRMATION_FLOW'
@@ -20,6 +22,8 @@ export interface OrgProfileResponse {
 export interface OrgProfileRequest {
   name?:                  string
   email?:                 string
+  phone?:                 string
+  address?:               string
   currency?:              string
   timezone?:              string
   paymentCollectionMode?: 'PAYMENT_LINK' | 'CONFIRMATION_FLOW' | 'SIMPLE'

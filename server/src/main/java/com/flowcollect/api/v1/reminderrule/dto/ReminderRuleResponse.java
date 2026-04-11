@@ -22,6 +22,7 @@ public class ReminderRuleResponse {
     private int maxOccurrences;
     private int cycleIntervalDays;
     private List<UUID> occurrenceTemplateIds;
+    private List<String> occurrenceTemplateNames;
     private LocalDate startDate;
     private RuleMode mode;
     private boolean systemDefined;
@@ -63,6 +64,9 @@ public class ReminderRuleResponse {
 
     public List<UUID> getOccurrenceTemplateIds() { return occurrenceTemplateIds; }
     public void setOccurrenceTemplateIds(List<UUID> occurrenceTemplateIds) { this.occurrenceTemplateIds = occurrenceTemplateIds; }
+
+    public List<String> getOccurrenceTemplateNames() { return occurrenceTemplateNames; }
+    public void setOccurrenceTemplateNames(List<String> occurrenceTemplateNames) { this.occurrenceTemplateNames = occurrenceTemplateNames; }
 
     public LocalDate getStartDate() { return startDate; }
     public void setStartDate(LocalDate startDate) { this.startDate = startDate; }

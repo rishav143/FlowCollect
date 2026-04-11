@@ -14,7 +14,8 @@ export interface ReminderRuleResponse {
   active:           boolean
   maxOccurrences:        number          // >= 1; >1 means cyclic
   cycleIntervalDays:     number         // 0 when maxOccurrences == 1
-  occurrenceTemplateIds: string[]       // per-occurrence overrides; empty = all use templateId
+  occurrenceTemplateIds:   string[]       // per-occurrence overrides; empty = all use templateId
+  occurrenceTemplateNames: (string | null)[] // resolved names parallel to occurrenceTemplateIds
   startDate:             string | null  // YYYY-MM-DD; null = no restriction
   mode:             RuleMode
   systemDefined:    boolean

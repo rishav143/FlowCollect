@@ -75,7 +75,7 @@ export default function HeroSection() {
           <div className="flex-1 min-w-0">
             <p className="text-xs font-semibold text-[#25D366] mb-0.5">FlowCollect · WhatsApp</p>
             <p className="text-xs text-white/70 leading-relaxed">
-              "Hi Rajesh, this is a friendly reminder that Invoice #INV-042 for $2,400 is now 7 days overdue…"
+              "Hi James, Invoice #INV-042 for £2,400 is now 7 days overdue. Could you let me know when to expect payment?"
             </p>
           </div>
           <span className="text-[10px] text-[#4E6478] shrink-0 mt-0.5">Just now</span>

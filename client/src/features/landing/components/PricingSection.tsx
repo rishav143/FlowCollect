@@ -37,8 +37,8 @@ function getPlans(region: Region): Plan[] {
     },
     {
       name: 'Pro',
-      price: isIndia ? '₹499' : '$19',
-      originalPrice: isIndia ? '₹799' : '$29',
+      price: isIndia ? '₹499' : '$12',
+      originalPrice: isIndia ? '₹799' : '$19',
       period: '/mo',
       description: 'For freelancers serious about getting paid on time.',
       cta: 'Start free trial',
@@ -97,7 +97,7 @@ export default function PricingSection({ region }: { region: Region }) {
                       className="px-3 py-1 rounded-full text-xs font-semibold text-white whitespace-nowrap"
                       style={{ background: 'linear-gradient(90deg, #29B6F6 0%, #4FC3F7 100%)' }}
                     >
-                      Early adopter · First 200 users
+                      Founding member · Locks in forever
                     </span>
                   </div>
                 )}
@@ -154,7 +154,7 @@ export default function PricingSection({ region }: { region: Region }) {
         {/* Footer note */}
         <ScrollReveal delay={160}>
           <p className="text-center text-xs text-c-muted mt-8">
-            No credit card required. Lock in this price forever — it goes up after the first 200 users.
+            No credit card required. Founding member price is locked forever — raises to {region === 'IN' ? '₹799' : '$19'} after the first 200 users.
           </p>
         </ScrollReveal>
       </div>

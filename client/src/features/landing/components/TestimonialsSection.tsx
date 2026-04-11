@@ -5,10 +5,10 @@ import ScrollReveal from './ScrollReveal'
 const testimonials = [
   {
     quote:
-      'I used to feel embarrassed chasing clients for money. Now FlowCollect does it for me — professionally and automatically. ₹2L recovered in my first month.',
-    name: 'Priya S.',
-    role: 'Freelance Designer · Bangalore',
-    initials: 'PS',
+      'I used to feel embarrassed chasing clients for money. Now FlowCollect does it for me — professionally and automatically. £8,000 recovered in my first month.',
+    name: 'Sophie R.',
+    role: 'Freelance Designer · London, UK',
+    initials: 'SR',
   },
   {
     quote:
@@ -19,10 +19,10 @@ const testimonials = [
   },
   {
     quote:
-      'The reminder feature is a game-changer for Indian clients — they actually respond. I stopped dreading payment week.',
-    name: 'Riya M.',
-    role: 'Independent Consultant · Mumbai',
-    initials: 'RM',
+      'The WhatsApp reminder is a game-changer — clients respond faster than to any email. I stopped dreading payment week entirely.',
+    name: 'Arjun K.',
+    role: 'Independent Consultant · Singapore',
+    initials: 'AK',
   },
 ]
 

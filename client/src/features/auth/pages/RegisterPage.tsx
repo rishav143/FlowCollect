@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useState, useEffect, type FormEvent } from 'react'
 import type { AxiosError } from 'axios'
 import { Link } from 'react-router-dom'
 import { Eye, EyeOff, MailCheck } from 'lucide-react'
@@ -19,6 +19,25 @@ const inputCls = [
 ].join(' ')
 
 const labelCls = 'block text-xs font-semibold text-c-muted uppercase tracking-wide mb-1.5'
+
+// Map ISO country codes → default billing currency
+const COUNTRY_CURRENCY: Record<string, string> = {
+  IN: 'INR',
+  US: 'USD', CA: 'USD',
+  GB: 'GBP',
+  AU: 'AUD', NZ: 'AUD',
+  SG: 'SGD',
+  AE: 'AED', SA: 'AED', QA: 'AED', BH: 'AED', KW: 'AED', OM: 'AED',
+  DE: 'EUR', FR: 'EUR', IT: 'EUR', ES: 'EUR', NL: 'EUR', PT: 'EUR',
+  BE: 'EUR', AT: 'EUR', IE: 'EUR', FI: 'EUR', GR: 'EUR', PL: 'EUR',
+}
+
+function detectCurrency(): Promise<string> {
+  return fetch('https://ipapi.co/json/')
+    .then((r) => r.json())
+    .then((d) => COUNTRY_CURRENCY[d.country_code as string] ?? 'USD')
+    .catch(() => 'USD')
+}
 
 const CURRENCIES = [
   { value: 'INR', label: 'INR — Indian Rupee' },
@@ -62,11 +81,15 @@ export default function RegisterPage() {
   const [organizationName, setOrganizationName] = useState('')
   const [email,            setEmail]            = useState('')
   const [password,         setPassword]         = useState('')
-  const [currency,         setCurrency]         = useState('INR')
+  const [currency,         setCurrency]         = useState('USD')
   const [showPwd,          setShowPwd]          = useState(false)
   const [loading,          setLoading]          = useState(false)
   const [error,            setError]            = useState<string | null>(null)
   const [result,           setResult]           = useState<RegisterResult | null>(null)
+
+  useEffect(() => {
+    detectCurrency().then(setCurrency)
+  }, [])
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()

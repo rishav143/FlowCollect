@@ -8,6 +8,9 @@ export interface User {
 export interface Org {
   id: string
   name: string
+  email?: string
+  phone?: string
+  address?: string
   /** Drives Approvals nav visibility and page access */
   paymentCollectionMode: 'PAYMENT_LINK' | 'CONFIRMATION_FLOW'
   currency: string

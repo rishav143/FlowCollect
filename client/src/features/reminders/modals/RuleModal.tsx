@@ -53,6 +53,7 @@ const OCCURRENCE_OPTIONS = Array.from({ length: 10 }, (_, i) => i + 1)  // 1–1
 const CYCLE_OPTIONS = [
   { value: '7',  label: '7 days'  },
   { value: '14', label: '14 days' },
+  { value: '21', label: '21 days' },
   { value: '28', label: '28 days' },
   { value: '60', label: '60 days' },
 ]
@@ -225,7 +226,8 @@ export default function RuleModal({ rule, onClose }: Props) {
   const [submitError,        setSubmitError]        = useState<string | null>(null)
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false)
 
-  const isAutoRule = rule?.mode === 'AUTO'
+  const isAutoRule      = rule?.mode === 'AUTO'
+  const isSystemDefined = !!rule?.systemDefined
 
   useEffect(() => {
     if (rule) {
@@ -244,9 +246,12 @@ export default function RuleModal({ rule, onClose }: Props) {
         channel:               rule.channel,
         templateId:            rule.templateId ?? '',
         active:                rule.active,
+        // Always open advanced panel when the rule is cyclic so the templates are visible
         advancedEnabled:       isCyclicRule,
         maxOccurrences:        String(clampedMax),
-        cycleIntervalDays:     snapCycleInterval(rule.cycleIntervalDays),
+        cycleIntervalDays:     isSystemDefined
+          ? String(rule.cycleIntervalDays > 0 ? rule.cycleIntervalDays : 7)
+          : snapCycleInterval(rule.cycleIntervalDays > 0 ? rule.cycleIntervalDays : 7),
         occurrenceTemplateIds: occSlots,
       })
     }
@@ -256,7 +261,9 @@ export default function RuleModal({ rule, onClose }: Props) {
   const update    = useUpdateReminderRule()
   const isPending = create.isPending || update.isPending
 
-  const { data: templatesData } = useTemplates({ channel: form.channel, mode: isAutoRule ? 'AUTO' : 'MANUAL' })
+  // System templates are seeded as MANUAL regardless of the rule mode, so don't filter by mode
+  // for system-defined rules — show all templates on the matching channel instead.
+  const { data: templatesData } = useTemplates({ channel: form.channel, mode: isSystemDefined ? undefined : isAutoRule ? 'AUTO' : 'MANUAL' })
   const templates = templatesData?.content ?? []
 
   function set<K extends keyof FormState>(key: K, value: FormState[K]) {
@@ -412,6 +419,16 @@ export default function RuleModal({ rule, onClose }: Props) {
           {/* ── Scrollable form ──────────────────────────────────── */}
           <form onSubmit={handleSubmit} className="px-6 py-5 space-y-5 overflow-y-auto flex-1">
 
+            {/* System-managed notice */}
+            {isSystemDefined && (
+              <div className="flex items-start gap-2 px-3 py-2.5 rounded-lg bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 -mb-1">
+                <span className="text-amber-500 text-xs mt-px">⚡</span>
+                <p className="text-xs text-amber-700 dark:text-amber-300">
+                  This is a system-managed rule. Timing, channel, and occurrences are locked. You can change templates and toggle it on or off.
+                </p>
+              </div>
+            )}
+
             {/* Timing */}
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wide text-c-muted mb-2">
@@ -420,8 +437,12 @@ export default function RuleModal({ rule, onClose }: Props) {
               <div className="flex items-center gap-2">
                 <select
                   value={form.direction}
+                  disabled={isSystemDefined}
                   onChange={(e) => handleDirectionChange(e.target.value as Direction)}
-                  className="flex-1 text-sm rounded-lg border border-c-border bg-transparent text-[#0D1B2A] dark:text-white px-3 py-2.5 focus:outline-none focus:border-[#8A9BAE]/40 transition-colors"
+                  className={[
+                    'flex-1 text-sm rounded-lg border border-c-border bg-transparent text-[#0D1B2A] dark:text-white px-3 py-2.5 focus:outline-none focus:border-[#8A9BAE]/40 transition-colors',
+                    isSystemDefined ? 'opacity-50 cursor-not-allowed' : '',
+                  ].join(' ')}
                 >
                   <option value="BEFORE">Before due date</option>
                   <option value="ON">On due date</option>
@@ -434,8 +455,12 @@ export default function RuleModal({ rule, onClose }: Props) {
                       min={1}
                       max={90}
                       value={form.days}
-                      onChange={(e) => set('days', e.target.value)}
-                      className="w-16 text-sm rounded-lg border border-c-border bg-transparent text-[#0D1B2A] dark:text-white px-3 py-2.5 text-center focus:outline-none focus:border-[#8A9BAE]/40 transition-colors tabular-nums"
+                      readOnly={isSystemDefined}
+                      onChange={(e) => !isSystemDefined && set('days', e.target.value)}
+                      className={[
+                        'w-16 text-sm rounded-lg border border-c-border bg-transparent text-[#0D1B2A] dark:text-white px-3 py-2.5 text-center focus:outline-none focus:border-[#8A9BAE]/40 transition-colors tabular-nums',
+                        isSystemDefined ? 'opacity-50 cursor-not-allowed' : '',
+                      ].join(' ')}
                     />
                     <span className="text-sm text-c-muted whitespace-nowrap">days</span>
                   </div>
@@ -450,8 +475,8 @@ export default function RuleModal({ rule, onClose }: Props) {
               </label>
               <div className="flex gap-2">
                 {CHANNELS.map((ch) => {
-                  const isSelected  = form.channel === ch
-                  const isDisabled  = isAutoRule && !isSelected
+                  const isSelected = form.channel === ch
+                  const isDisabled = (isAutoRule || isSystemDefined) && !isSelected
                   return (
                     <button
                       key={ch}
@@ -474,8 +499,51 @@ export default function RuleModal({ rule, onClose }: Props) {
               </div>
             </div>
 
-            {/* Template — hidden when cyclic (per-occurrence selectors replace it) */}
-            {!isCyclic && (
+            {/* Template — single select for non-cyclic, per-occurrence selectors for cyclic */}
+            {isCyclic ? (
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wide text-c-muted mb-2">
+                  Template per send
+                </label>
+                <div className="space-y-2">
+                  {Array.from({ length: maxOcc }, (_, i) => {
+                    const effectiveOffset = formToDaysOffset(form) + interval * i
+                    const absOffset = Math.abs(effectiveOffset)
+                    const offsetLabel = effectiveOffset < 0
+                      ? `${absOffset}d before due`
+                      : effectiveOffset === 0
+                        ? 'on due date'
+                        : `+${absOffset}d after due`
+                    return (
+                      <div key={i} className="flex items-center gap-2">
+                        <span className="text-xs text-c-muted whitespace-nowrap w-[88px] shrink-0 tabular-nums">
+                          {offsetLabel}
+                        </span>
+                        <select
+                          value={form.occurrenceTemplateIds[i] ?? ''}
+                          onChange={(e) => {
+                            const next = [...form.occurrenceTemplateIds]
+                            next[i] = e.target.value
+                            set('occurrenceTemplateIds', next)
+                          }}
+                          className={[
+                            'flex-1 text-sm rounded-lg border bg-transparent text-[#0D1B2A] dark:text-white px-3 py-2 focus:outline-none focus:border-[#8A9BAE]/40 transition-colors',
+                            hasAttemptedSubmit && !form.occurrenceTemplateIds[i]
+                              ? 'border-red-400'
+                              : 'border-c-border',
+                          ].join(' ')}
+                        >
+                          <option value="">Select a template…</option>
+                          {templates.map((t) => (
+                            <option key={t.id} value={t.id}>{t.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            ) : (
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wide text-c-muted mb-2">
                   Template
@@ -483,7 +551,10 @@ export default function RuleModal({ rule, onClose }: Props) {
                 <select
                   value={form.templateId}
                   onChange={(e) => set('templateId', e.target.value)}
-                  className="w-full text-sm rounded-lg border border-c-border bg-transparent text-[#0D1B2A] dark:text-white px-3 py-2.5 focus:outline-none focus:border-[#8A9BAE]/40 transition-colors"
+                  className={[
+                    'w-full text-sm rounded-lg border bg-transparent text-[#0D1B2A] dark:text-white px-3 py-2.5 focus:outline-none focus:border-[#8A9BAE]/40 transition-colors',
+                    hasAttemptedSubmit && !form.templateId ? 'border-red-400' : 'border-c-border',
+                  ].join(' ')}
                 >
                   <option value="">Select a template…</option>
                   {templates.map((t) => (
@@ -519,9 +590,12 @@ export default function RuleModal({ rule, onClose }: Props) {
               <div
                 role="button"
                 tabIndex={0}
-                onClick={() => set('advancedEnabled', !form.advancedEnabled)}
-                onKeyDown={(e) => e.key === 'Enter' && set('advancedEnabled', !form.advancedEnabled)}
-                className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-[#F4F7F9] dark:hover:bg-[#243447] transition-colors select-none"
+                onClick={() => !isSystemDefined && set('advancedEnabled', !form.advancedEnabled)}
+                onKeyDown={(e) => e.key === 'Enter' && !isSystemDefined && set('advancedEnabled', !form.advancedEnabled)}
+                className={[
+                  'flex items-center justify-between px-4 py-3 transition-colors select-none',
+                  isSystemDefined ? 'cursor-default' : 'cursor-pointer hover:bg-[#F4F7F9] dark:hover:bg-[#243447]',
+                ].join(' ')}
               >
                 <div className="flex items-center gap-2">
                   {form.advancedEnabled
@@ -558,7 +632,7 @@ export default function RuleModal({ rule, onClose }: Props) {
                       <select
                         value={form.maxOccurrences}
                         onChange={(e) => handleMaxOccurrencesChange(e.target.value)}
-                        disabled={form.direction === 'ON'}
+                        disabled={form.direction === 'ON' || isSystemDefined}
                         className="text-sm rounded-lg border border-c-border bg-white dark:bg-[#1B2838] text-[#0D1B2A] dark:text-white px-3 py-2 focus:outline-none focus:border-[#8A9BAE]/40 transition-colors disabled:opacity-40"
                       >
                         {OCCURRENCE_OPTIONS.filter(occIsValid).map((n) => (
@@ -571,7 +645,8 @@ export default function RuleModal({ rule, onClose }: Props) {
                           <select
                             value={form.cycleIntervalDays}
                             onChange={(e) => set('cycleIntervalDays', e.target.value)}
-                            className="text-sm rounded-lg border border-c-border bg-white dark:bg-[#1B2838] text-[#0D1B2A] dark:text-white px-3 py-2 focus:outline-none focus:border-[#8A9BAE]/40 transition-colors"
+                            disabled={isSystemDefined}
+                            className="text-sm rounded-lg border border-c-border bg-white dark:bg-[#1B2838] text-[#0D1B2A] dark:text-white px-3 py-2 focus:outline-none focus:border-[#8A9BAE]/40 transition-colors disabled:opacity-40"
                           >
                             {CYCLE_OPTIONS.filter((opt) => cycleIsValid(parseInt(opt.value))).map((opt) => (
                               <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -582,38 +657,6 @@ export default function RuleModal({ rule, onClose }: Props) {
                     </div>
                   </div>
 
-
-                  {/* Per-occurrence template selectors — shown only when cyclic */}
-                  {isCyclic && (
-                    <div>
-                      <label className="block text-xs font-semibold uppercase tracking-wide text-c-muted mb-2">
-                        Template per send
-                      </label>
-                      <div className="space-y-2">
-                        {Array.from({ length: maxOcc }, (_, i) => (
-                          <div key={i} className="flex items-center gap-2">
-                            <span className="text-xs text-c-muted whitespace-nowrap w-12 shrink-0">
-                              Send {i + 1}
-                            </span>
-                            <select
-                              value={form.occurrenceTemplateIds[i] ?? ''}
-                              onChange={(e) => {
-                                const next = [...form.occurrenceTemplateIds]
-                                next[i] = e.target.value
-                                set('occurrenceTemplateIds', next)
-                              }}
-                              className="flex-1 text-sm rounded-lg border border-c-border bg-white dark:bg-[#1B2838] text-[#0D1B2A] dark:text-white px-3 py-2 focus:outline-none focus:border-[#8A9BAE]/40 transition-colors"
-                            >
-                              <option value="">Select a template…</option>
-                              {templates.map((t) => (
-                                <option key={t.id} value={t.id}>{t.name}</option>
-                              ))}
-                            </select>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
 
                   {/* Timeline diagram */}
                   {showTimeline && (

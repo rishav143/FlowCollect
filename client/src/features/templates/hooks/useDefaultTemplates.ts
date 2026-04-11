@@ -7,7 +7,7 @@ import type { CreateTemplateRequest } from '@/types/template.types'
 // Bump this number whenever the default template content changes.
 // The hook will update any existing default templates (matched by name) for orgs
 // that were seeded on an older version.
-const SEED_VERSION = 3
+const SEED_VERSION = 4
 
 // ---------------------------------------------------------------------------
 // Default template definitions — mode-aware, one per channel.
@@ -38,17 +38,15 @@ If you have already paid, please disregard this message. Feel free to reach out 
 Regards,
 {{organizationName}}`
   } else if (isConfirmationFlow) {
-    emailSubject = 'Payment reminder: Invoice {{invoiceNumber}}'
+    emailSubject = 'Invoice {{invoiceNumber}} — outstanding balance'
     emailBody = `Hi {{customerName}},
 
-This is a reminder that invoice {{invoiceNumber}} for {{remainingAmount}} was due on {{dueDate}}.
+We wanted to follow up on invoice {{invoiceNumber}} for {{remainingAmount}}, which was due on {{dueDate}}.
 
-If you have already made the payment, please confirm it using the link below so we can update our records:
+The link below includes payment details if you haven't yet settled this, and a way to confirm your payment once it's done — this helps us keep our records accurate and avoids any further reminders:
 {{confirmationLink}}
 
-If you haven't paid yet, please complete your payment and then use the link above to confirm. This helps us keep our records accurate and avoids any further reminders.
-
-Feel free to reach out if you have any questions or need assistance.
+If you have any questions, please don't hesitate to reach out.
 
 Regards,
 {{organizationName}}`
@@ -72,7 +70,7 @@ Regards,
   if (isPaymentLink) {
     smsBody = `Hi {{customerName}}, this is a reminder that invoice {{invoiceNumber}} for {{remainingAmount}} was due on {{dueDate}}. Pay here: {{paymentLink}} - {{organizationName}}`
   } else if (isConfirmationFlow) {
-    smsBody = `Hi {{customerName}}, invoice {{invoiceNumber}} for {{remainingAmount}} was due on {{dueDate}}. Already paid? Please confirm: {{confirmationLink}} - {{organizationName}}`
+    smsBody = `Hi {{customerName}}, invoice {{invoiceNumber}} for {{remainingAmount}} was due on {{dueDate}}. To pay or confirm a payment already made, visit: {{confirmationLink}} - {{organizationName}}`
   } else {
     smsBody = `Hi {{customerName}}, this is a reminder that invoice {{invoiceNumber}} for {{remainingAmount}} was due on {{dueDate}}. Please make your payment at your earliest convenience. - {{organizationName}}`
   }
@@ -95,14 +93,12 @@ Regards,
   } else if (isConfirmationFlow) {
     whatsappBody = `Hi {{customerName}},
 
-This is a reminder that invoice *{{invoiceNumber}}* for *{{remainingAmount}}* was due on {{dueDate}}.
+A quick note regarding invoice *{{invoiceNumber}}* for *{{remainingAmount}}*, which was due on {{dueDate}}.
 
-*Already paid?* Please confirm your payment here so we can update our records:
+The link below includes payment details if you have not yet settled this, and a way to confirm once your payment is done — so we can update our records promptly:
 {{confirmationLink}}
 
-*Haven't paid yet?* Please complete your payment and then confirm using the link above.
-
-Reach out if you have any questions.
+For any questions, please reach out to us.
 
 Regards,
 {{organizationName}}`
