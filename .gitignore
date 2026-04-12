@@ -1,0 +1,35 @@
+# ── macOS ─────────────────────────────────────────────────────────────────────
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# ── IDE ───────────────────────────────────────────────────────────────────────
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/usage.statistics.xml
+.idea/dictionaries
+.idea/shelf
+*.iml
+.vscode/*.log
+
+# ── Client (React / Vite) ─────────────────────────────────────────────────────
+client/node_modules/
+client/dist/
+client/.env.local
+client/.env.*.local
+
+# ── Server (Spring Boot / Maven) ──────────────────────────────────────────────
+server/target/
+target/
+*.jar
+*.war
+*.class
+
+# ── Environment / secrets ─────────────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+
+# ── Logs ──────────────────────────────────────────────────────────────────────
+*.log
+logs/
