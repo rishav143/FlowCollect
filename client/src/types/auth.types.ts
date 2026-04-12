@@ -12,7 +12,7 @@ export interface Org {
   phone?: string
   address?: string
   /** Drives Approvals nav visibility and page access */
-  paymentCollectionMode: 'PAYMENT_LINK' | 'CONFIRMATION_FLOW'
+  paymentCollectionMode: 'PAYMENT_LINK' | 'CONFIRMATION_FLOW' | 'SIMPLE'
   currency: string
   timezone: string
   /** Whether the Recover engine (AUTO rules) is active for this org */
