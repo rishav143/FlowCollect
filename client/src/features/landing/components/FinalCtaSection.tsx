@@ -18,7 +18,7 @@ export default function FinalCtaSection() {
         </h2>
         <p className="text-[#8A9BAE] text-lg mt-4 mb-8 leading-relaxed">
           Stop sending awkward follow-ups.<br className="hidden sm:block" />
-          Start getting paid on time — automatically.
+          Start getting paid on time - automatically.
         </p>
 
         <Link

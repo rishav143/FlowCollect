@@ -4,12 +4,12 @@ const features = [
   {
     icon: <Bell size={22} className="text-[#29B6F6]" />,
     title: 'Automated Reminders',
-    body: 'Email, SMS, and WhatsApp follow-ups on your schedule. Set once, never think about it again.',
+    body: 'Automated email follow-ups on your schedule. Set once and never think about it again.',
   },
   {
     icon: <Sparkles size={22} className="text-violet-400" />,
     title: 'AI Payment Insights',
-    body: 'Flags which clients are likely to delay — before they do. Act early, get paid on time.',
+    body: 'Flags which clients are likely to delay - before they do. Act early, get paid on time.',
   },
   {
     icon: <FileText size={22} className="text-amber-400" />,
@@ -24,7 +24,7 @@ const features = [
   {
     icon: <Globe size={22} className="text-rose-400" />,
     title: 'Multi-currency Support',
-    body: 'USD, EUR, GBP, AUD, SGD, and more. We handle the formatting — you focus on the work.',
+    body: 'USD, EUR, GBP, AUD, SGD, and more. We handle the formatting - you focus on the work.',
   },
 ]
 
@@ -40,7 +40,7 @@ export default function FeaturesSection() {
             Built for freelancers who hate chasing money
           </h2>
           <p className="text-c-muted text-base mt-2 max-w-xl mx-auto">
-            Every feature is designed to get you paid faster — without the awkward conversations.
+            Every feature is designed to get you paid faster - without the awkward conversations.
           </p>
         </div>
 

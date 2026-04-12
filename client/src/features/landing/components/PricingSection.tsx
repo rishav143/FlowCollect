@@ -23,7 +23,7 @@ function getPlans(region: Region): Plan[] {
       name: 'Free',
       price: isIndia ? '₹0' : '$0',
       period: '/mo',
-      description: 'Get started with the basics — no card required.',
+      description: 'Get started with the basics - no card required.',
       cta: 'Get started free',
       ctaTo: '/register',
       highlight: false,
@@ -46,7 +46,7 @@ function getPlans(region: Region): Plan[] {
       highlight: true,
       features: [
         'Unlimited invoices',
-        'Email + SMS + WhatsApp reminders',
+        'Automated email reminders',
         'AI payment insights',
         'Trackable follow-up links',
         'Custom reminder schedules',
@@ -154,7 +154,7 @@ export default function PricingSection({ region }: { region: Region }) {
         {/* Footer note */}
         <ScrollReveal delay={160}>
           <p className="text-center text-xs text-c-muted mt-8">
-            No credit card required. Founding member price is locked forever — raises to {region === 'IN' ? '₹799' : '$19'} after the first 200 users.
+            No credit card required. Founding member pricing is locked in forever - raises to {region === 'IN' ? '₹799' : '$19'} after the first 200 users.
           </p>
         </ScrollReveal>
       </div>

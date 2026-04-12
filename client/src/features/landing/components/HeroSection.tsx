@@ -10,7 +10,7 @@ export default function HeroSection() {
       {/* Trust badge */}
       <div className="animate-fade-up inline-flex items-center gap-2 rounded-full border border-[#29B6F6]/30 bg-[#29B6F6]/10 px-3 py-1 text-xs text-[#4FC3F7] mb-6">
         <Zap size={12} />
-        Works worldwide · Email, SMS &amp; WhatsApp
+        Works worldwide · Automated email reminders
       </div>
 
       {/* Headline */}
@@ -22,8 +22,8 @@ export default function HeroSection() {
 
       {/* Sub-headline — outcome first, not feature list */}
       <p className="animate-fade-up animate-fade-up-delay-2 mt-6 text-lg text-[#8A9BAE] max-w-xl leading-relaxed">
-        Your work is done. The follow-ups shouldn't be yours too.
-        Automated email reminders — until you're paid.
+        Your work is done. The follow-ups don't have to be.
+        Automated email reminders - until you're paid.
       </p>
 
       {/* CTA buttons */}

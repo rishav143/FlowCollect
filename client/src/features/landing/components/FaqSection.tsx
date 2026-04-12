@@ -5,11 +5,11 @@ import ScrollReveal from './ScrollReveal'
 const faqs = [
   {
     q: 'Will my client know the reminders are automated?',
-    a: 'No. Reminders are sent from your name and email address. To your client, it looks like a personal message — because the tone and schedule are yours. FlowCollect stays invisible.',
+    a: 'No. Reminders are sent from your name and email address. To your client, it looks like a personal message - because the tone and schedule are entirely yours. FlowCollect stays invisible.',
   },
   {
     q: 'What if my client gets annoyed by the reminders?',
-    a: 'You control the tone and timing entirely. Start with a gentle nudge and escalate only if the invoice stays overdue. Most clients simply forget — a polite reminder is welcome, not annoying.',
+    a: 'You control the tone and timing. Start with a gentle nudge and escalate only if the invoice remains overdue. Most clients simply forget - a polite reminder is appreciated, not annoying.',
   },
   {
     q: 'Does it work for international clients?',
@@ -17,15 +17,15 @@ const faqs = [
   },
   {
     q: 'I already use another invoicing tool. Do I need to switch?',
-    a: "FlowCollect doesn't replace your invoicing tool — it handles the collection side. Add your invoice details and we take over from there. No migration needed.",
+    a: "FlowCollect does not replace your invoicing tool - it handles the collection side. Add your invoice details and we take over from there. No migration needed.",
   },
   {
     q: 'Is my data safe?',
-    a: 'Your data is encrypted in transit and at rest. We never store payment card details, and we never sell or share your data with third parties.',
+    a: 'Yes. Your data is encrypted in transit and at rest. We never store payment card details, and we never sell or share your data with third parties.',
   },
   {
     q: 'What happens when I reach the free plan limit?',
-    a: 'The Free plan supports up to 3 active invoices. Once you hit that, you can upgrade to Pro for unlimited invoices. No automatic charges — you choose when to upgrade.',
+    a: 'The Free plan supports up to 3 active invoices. Once you reach that limit, you can upgrade to Pro for unlimited invoices. There are no automatic charges - you choose when to upgrade.',
   },
 ]
 
