@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import com.flowcollect.api.v1.organization.dto.BillingResponse;
 import com.flowcollect.api.v1.organization.dto.OrganizationCreateRequest;
 import com.flowcollect.api.v1.organization.dto.OrganizationResponse;
 import com.flowcollect.api.v1.organization.dto.OrganizationUpdateRequest;
@@ -112,6 +113,14 @@ public class OrganizationController {
         organizationService.getAuthorizedById(organizationId); // authorization check
         OrgPaymentDetailsResponse response = paymentDetailsService.saveForOrg(organizationId, request);
         return ResponseEntity.ok(response);
+    }
+
+    // Get billing info (plan + credits) for an org.
+    @GetMapping("/{organizationId}/billing")
+    @RequireRole({ UserRole.ADMIN, UserRole.STAFF })
+    public ResponseEntity<BillingResponse> getBilling(@PathVariable UUID organizationId) {
+        Organization org = organizationService.getAuthorizedById(organizationId);
+        return ResponseEntity.ok(new BillingResponse(org.getPlan()));
     }
 
     // Hard-delete an organization by id.

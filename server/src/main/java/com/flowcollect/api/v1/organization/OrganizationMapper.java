@@ -24,6 +24,7 @@ public final class OrganizationMapper {
         response.setStatus(organization.getStatus());
         response.setPaymentCollectionMode(organization.getPaymentCollectionMode());
         response.setAutoRecoveryEnabled(organization.isAutoRecoveryEnabled());
+        response.setPlan(organization.getPlan());
         response.setCreatedAt(organization.getCreatedAt());
         response.setUpdatedAt(organization.getUpdatedAt());
         return response;

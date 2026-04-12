@@ -17,6 +17,7 @@ export interface OrgProfileResponse {
   currency:              string
   timezone:              string
   paymentCollectionMode: 'PAYMENT_LINK' | 'CONFIRMATION_FLOW'
+  plan:                  'STARTER' | 'PRO' | 'BUSINESS'
 }
 
 export interface OrgProfileRequest {
@@ -132,14 +133,7 @@ export async function removeMember(orgId: string, userId: string): Promise<void>
 // ---------------------------------------------------------------------------
 
 export interface BillingResponse {
-  plan:       'STARTER' | 'PRO' | 'BUSINESS'
-  smsCredits: number
-  waCredits:  number
-}
-
-export interface PurchaseRequest {
-  channel: 'SMS' | 'WHATSAPP'
-  pack:    number   // number of credits to add
+  plan: 'STARTER' | 'PRO' | 'BUSINESS'
 }
 
 export async function getBilling(orgId: string): Promise<BillingResponse> {
@@ -147,7 +141,3 @@ export async function getBilling(orgId: string): Promise<BillingResponse> {
   return data
 }
 
-export async function purchaseCredits(orgId: string, body: PurchaseRequest): Promise<BillingResponse> {
-  const { data } = await api.post<BillingResponse>(`${base(orgId)}/billing/credits/purchase`, body)
-  return data
-}

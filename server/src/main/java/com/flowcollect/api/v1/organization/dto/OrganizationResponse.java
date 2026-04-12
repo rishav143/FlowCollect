@@ -3,6 +3,7 @@ package com.flowcollect.api.v1.organization.dto;
 import java.time.Instant;
 import java.util.UUID;
 
+import com.flowcollect.domain.organization.OrgPlan;
 import com.flowcollect.domain.organization.OrganizationStatus;
 import com.flowcollect.domain.organization.PaymentCollectionMode;
 
@@ -19,6 +20,7 @@ public class OrganizationResponse {
     private OrganizationStatus status;
     private PaymentCollectionMode paymentCollectionMode;
     private boolean autoRecoveryEnabled;
+    private OrgPlan plan;
     private Instant createdAt;
     private Instant updatedAt;
 
@@ -124,4 +126,7 @@ public class OrganizationResponse {
 
     public boolean isAutoRecoveryEnabled() { return autoRecoveryEnabled; }
     public void setAutoRecoveryEnabled(boolean autoRecoveryEnabled) { this.autoRecoveryEnabled = autoRecoveryEnabled; }
+
+    public OrgPlan getPlan() { return plan; }
+    public void setPlan(OrgPlan plan) { this.plan = plan; }
 }

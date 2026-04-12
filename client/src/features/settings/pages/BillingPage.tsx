@@ -107,7 +107,12 @@ function PlanCard({ plan, isCurrent, currency }: {
               <span className="text-xs text-c-muted">{plan.subline}</span>
             </>
           ) : (
-            <span className="text-2xl font-bold text-[#0D1B2A] dark:text-white">Free</span>
+            <>
+              <span className="text-2xl font-bold text-[#0D1B2A] dark:text-white tabular-nums">
+                {fmt(0, currency)}
+              </span>
+              <span className="text-xs text-c-muted">{plan.subline}</span>
+            </>
           )}
         </div>
       </div>

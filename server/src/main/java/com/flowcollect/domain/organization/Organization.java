@@ -5,6 +5,7 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import org.hibernate.annotations.ColumnDefault;
 
 import java.time.Instant;
 import java.time.ZoneId;
@@ -80,6 +81,13 @@ public class Organization {
      */
     @Column(name = "auto_recovery_enabled", nullable = false)
     private boolean autoRecoveryEnabled = false;
+
+    // Billing
+    @NotNull
+    @Enumerated(EnumType.STRING)
+    @ColumnDefault("'STARTER'")
+    @Column(name = "plan", nullable = false, length = 20)
+    private OrgPlan plan = OrgPlan.STARTER;
 
     // Audit
     @Column(nullable = false, updatable = false)
@@ -200,6 +208,15 @@ public class Organization {
     public void setAutoRecoveryEnabled(boolean autoRecoveryEnabled) {
         this.autoRecoveryEnabled = autoRecoveryEnabled;
     }
+
+    public OrgPlan getPlan() {
+        return plan;
+    }
+
+    public void setPlan(OrgPlan plan) {
+        this.plan = plan;
+    }
+
 
     // Setters
     public void setName(String name) {
