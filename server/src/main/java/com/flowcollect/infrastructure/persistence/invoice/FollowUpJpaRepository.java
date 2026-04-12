@@ -11,7 +11,9 @@ import com.flowcollect.domain.invoice.followup.FollowUp;
 import com.flowcollect.domain.invoice.followup.FollowUpStatus;
 import com.flowcollect.domain.invoice.followup.FollowUpTriggerType;
 
+import java.time.Instant;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Repository
@@ -30,6 +32,13 @@ public interface FollowUpJpaRepository extends JpaRepository<FollowUp, UUID>, Jp
     List<FollowUp> findByInvoiceIdAndStatus(UUID invoiceId, FollowUpStatus status);
 
     List<FollowUp> findByStatusAndInvoiceOrganizationId(FollowUpStatus status, UUID organizationId);
+
+    /** Returns invoice IDs that had a follow-up with the given status sent after {@code cutoff} — avoids N+1 lazy-loading invoice entities. */
+    @Query("SELECT f.invoice.id FROM FollowUp f WHERE f.status = :status AND f.invoice.organization.id = :orgId AND f.sentAt > :cutoff")
+    Set<UUID> findInvoiceIdsByStatusAndOrgAndSentAfter(
+            @Param("status") FollowUpStatus status,
+            @Param("orgId") UUID orgId,
+            @Param("cutoff") Instant cutoff);
 
     java.util.Optional<FollowUp> findByResendEmailId(String resendEmailId);
 

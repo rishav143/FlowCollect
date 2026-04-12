@@ -8,7 +8,6 @@ import com.flowcollect.domain.invoice.TimeStatus;
 import com.flowcollect.domain.invoice.followup.FollowUpStatus;
 import com.flowcollect.infrastructure.persistence.invoice.FollowUpJpaRepository;
 import com.flowcollect.infrastructure.persistence.invoice.InvoiceJpaRepository;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -17,7 +16,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 public class DashboardService {
@@ -42,22 +40,17 @@ public class DashboardService {
      * follow-up in the last 48 hours, sorted by dueDate ascending (most overdue first), limited to 4.
      */
     public DashboardStatsResponse getStats(UUID organizationId) {
-        // Fetch all OVERDUE invoices (ISSUED or PARTIALLY_PAID)
-        Specification<Invoice> overdueSpec = (root, query, cb) -> cb.and(
-                cb.equal(root.get("organization").get("id"), organizationId),
-                cb.equal(root.get("timeStatus"), TimeStatus.OVERDUE),
-                root.get("lifeCycleStatus").in(List.of(LifeCycleStatus.ISSUED, LifeCycleStatus.PARTIALLY_PAID))
+        // Fetch all OVERDUE invoices (ISSUED or PARTIALLY_PAID) — customer eagerly loaded to avoid N+1
+        List<Invoice> overdueInvoices = invoiceRepository.findByOrgAndTimeStatusAndLifeCycleStatusInWithCustomer(
+                organizationId,
+                TimeStatus.OVERDUE,
+                List.of(LifeCycleStatus.ISSUED, LifeCycleStatus.PARTIALLY_PAID)
         );
-        List<Invoice> overdueInvoices = invoiceRepository.findAll(overdueSpec);
 
-        // Collect invoice IDs that had a SENT follow-up in the last 48 hours
+        // Collect invoice IDs that had a SENT follow-up in the last 48 hours — projection query, no entity loading
         Instant cutoff = Instant.now().minus(FOLLOW_UP_SILENCE_HOURS, ChronoUnit.HOURS);
         Set<UUID> recentlySentInvoiceIds = followUpRepository
-                .findByStatusAndInvoiceOrganizationId(FollowUpStatus.SENT, organizationId)
-                .stream()
-                .filter(f -> f.getSentAt() != null && f.getSentAt().isAfter(cutoff))
-                .map(f -> f.getInvoice().getId())
-                .collect(Collectors.toSet());
+                .findInvoiceIdsByStatusAndOrgAndSentAfter(FollowUpStatus.SENT, organizationId, cutoff);
 
         LocalDate today = LocalDate.now();
 
