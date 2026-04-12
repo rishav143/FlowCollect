@@ -56,6 +56,9 @@ public class VerificationService {
     @Value("${app.base-url:http://localhost:8080}")
     private String appBaseUrl;
 
+    @Value("${app.frontend-url:http://localhost:3000}")
+    private String appFrontendUrl;
+
     public VerificationService(
             EmailVerificationTokenJpaRepository emailTokenRepository,
             PasswordResetTokenJpaRepository resetTokenRepository,
@@ -188,7 +191,7 @@ public class VerificationService {
             return;
         }
 
-        String verifyUrl = appBaseUrl + "/api/v1/auth/verify-email?token=" + token;
+        String verifyUrl = appFrontendUrl + "/verify-email?token=" + token;
         String html = buildVerificationEmailHtml(name, verifyUrl, fromName);
 
         try {
@@ -211,7 +214,7 @@ public class VerificationService {
             return;
         }
 
-        String resetUrl = appBaseUrl + "/api/v1/auth/reset-password?token=" + token;
+        String resetUrl = appFrontendUrl + "/reset-password?token=" + token;
         String html = buildPasswordResetEmailHtml(name, resetUrl, fromName);
 
         try {

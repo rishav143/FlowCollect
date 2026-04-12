@@ -93,3 +93,36 @@ export async function register(params: {
   const { data } = await api.post<RegisterResult>('/api/v1/auth/register', params)
   return data
 }
+
+/**
+ * Verify email — exchanges the token from the email link for a JWT.
+ * On success, the user is immediately logged in.
+ */
+export async function verifyEmail(token: string): Promise<AuthResponse> {
+  const { data: lr } = await api.get<BackendLoginResponse>('/api/v1/auth/verify-email', {
+    params: { token },
+  })
+
+  const { data: org } = await axios.get<BackendOrgResponse>(
+    `${apiBase()}/api/v1/organizations/${lr.organizationId}`,
+    { headers: { Authorization: `Bearer ${lr.token}` } },
+  )
+
+  return {
+    token: lr.token,
+    user: { id: String(lr.id), name: lr.name, email: lr.email, role: lr.role },
+    org: {
+      id:                    String(org.id),
+      name:                  org.name,
+      currency:              org.currency,
+      timezone:              org.timezone,
+      paymentCollectionMode: org.paymentCollectionMode,
+      autoRecoveryEnabled:   org.autoRecoveryEnabled ?? false,
+    },
+  }
+}
+
+/** Resend verification email for a given email address. */
+export async function resendVerificationEmail(email: string): Promise<void> {
+  await api.post('/api/v1/auth/resend-verification-email', { email })
+}
