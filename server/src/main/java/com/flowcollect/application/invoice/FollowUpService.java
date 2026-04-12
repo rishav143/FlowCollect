@@ -485,13 +485,20 @@ public class FollowUpService {
             Template template = requireDispatchableTemplate(fresh);
             String subject = templateRenderer.renderSubject(template, fresh.getInvoice(), customer);
 
+            // Determine which variables the template uses before fetching any URLs,
+            // so we only create confirmation links when the template actually needs one.
+            String rawBody = template.getBody() != null ? template.getBody() : "";
+            boolean templateHasConfirmationLink = rawBody.contains("{{confirmationLink}}");
+            boolean templateHasPaymentLink      = rawBody.contains("{{paymentLink}}");
+
             String paymentLinkUrl = fresh.getPaymentLink() != null
                     ? fresh.getPaymentLink().getPublicUrl()
                     : null;
 
+            // Fetch the confirmation link whenever the template uses {{confirmationLink}},
+            // regardless of payment collection mode — the variable should always resolve.
             String confirmationLinkUrl = null;
-            if (fresh.getInvoice().getOrganization().getPaymentCollectionMode()
-                    == PaymentCollectionMode.CONFIRMATION_FLOW) {
+            if (templateHasConfirmationLink) {
                 ConfirmationLink confirmationLink =
                         confirmationLinkService.getOrCreateForInvoice(fresh.getInvoice());
                 confirmationLinkUrl = confirmationLink.getPublicUrl();
@@ -499,13 +506,6 @@ public class FollowUpService {
 
             // Wrap the relevant link through our tracking redirect (works for all channels)
             String trackingUrl = appBaseUrl + "/track/" + fresh.getId();
-
-            // Only track links that the template actually uses — a template without
-            // {{confirmationLink}} / {{paymentLink}} has nothing to click, so it must
-            // not count towards click-rate metrics.
-            String rawBody = template.getBody() != null ? template.getBody() : "";
-            boolean templateHasConfirmationLink = rawBody.contains("{{confirmationLink}}");
-            boolean templateHasPaymentLink      = rawBody.contains("{{paymentLink}}");
 
             if (confirmationLinkUrl != null && templateHasConfirmationLink) {
                 fresh.setTrackedLinkUrl(confirmationLinkUrl);

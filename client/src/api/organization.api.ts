@@ -27,7 +27,7 @@ export interface OrgProfileRequest {
   address?:               string
   currency?:              string
   timezone?:              string
-  paymentCollectionMode?: 'PAYMENT_LINK' | 'CONFIRMATION_FLOW' | 'SIMPLE'
+  paymentCollectionMode?: 'PAYMENT_LINK' | 'CONFIRMATION_FLOW'
 }
 
 export async function getOrgProfile(orgId: string): Promise<OrgProfileResponse> {

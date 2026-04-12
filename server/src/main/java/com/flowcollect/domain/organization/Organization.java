@@ -67,13 +67,13 @@ public class Organization {
 
     /**
      * How this organization collects payment from customers.
-     * Defaults to {@link PaymentCollectionMode#PAYMENT_LINK} for backward compatibility
+     * Defaults to {@link PaymentCollectionMode#CONFIRMATION_FLOW}
      * with organizations created before this field existed.
      */
     @NotNull
     @Enumerated(EnumType.STRING)
     @Column(name = "payment_collection_mode", nullable = false, length = 20)
-    private PaymentCollectionMode paymentCollectionMode = PaymentCollectionMode.PAYMENT_LINK;
+    private PaymentCollectionMode paymentCollectionMode = PaymentCollectionMode.CONFIRMATION_FLOW;
 
     /**
      * When true, the Recover engine automatically fires all AUTO-mode reminder rules

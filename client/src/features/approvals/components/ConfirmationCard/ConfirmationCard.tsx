@@ -75,9 +75,9 @@ const ConfirmationCard = memo(function ConfirmationCard({
         </span>
         <span className="text-xs text-c-muted">
           claimed
-          {claimType === 'FULL'    && ' · full payment'}
-          {claimType === 'PARTIAL' && ` · ${formatCurrency(c.invoiceRemainingAmount - c.amountClaimed, currency, { decimals: false })} still remaining`}
-          {claimType === 'OVER'    && ' · exceeds balance'}
+          {isPending && claimType === 'FULL'    && ' · full payment'}
+          {isPending && claimType === 'PARTIAL' && ` · ${formatCurrency(c.invoiceRemainingAmount - c.amountClaimed, currency, { decimals: false })} still remaining`}
+          {isPending && claimType === 'OVER'    && ' · exceeds balance'}
         </span>
       </div>
 

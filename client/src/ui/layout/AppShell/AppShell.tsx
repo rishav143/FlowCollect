@@ -5,8 +5,6 @@ import PageTransition   from '@/ui/components/PageTransition'
 import TopLoadingBar    from '@/ui/loading/TopLoadingBar'
 import { useNavProgress } from '@/ui/loading/useNavProgress'
 import { useUIStore } from '@/store/ui.store'
-import { useDefaultTemplates } from '@/features/templates/hooks/useDefaultTemplates'
-
 // Both values must appear as complete literals so Tailwind includes them in the build:
 const MAIN_ML_EXPANDED  = 'lg:ml-[220px]'
 const MAIN_ML_COLLAPSED = 'lg:ml-14'
@@ -43,9 +41,6 @@ const MAIN_ML_COLLAPSED = 'lg:ml-14'
 export default function AppShell() {
   const { sidebarOpen, closeSidebar, sidebarCollapsed } = useUIStore()
   const navActive = useNavProgress()
-
-  // Seed default templates (EMAIL, SMS, WhatsApp) once per session if none exist
-  useDefaultTemplates()
 
   return (
     <div className="min-h-screen bg-white dark:bg-[#0D1B2A]">
