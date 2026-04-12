@@ -1,4 +1,19 @@
 {
+    "files.watcherExclude": {
+        "**/client/node_modules/**": true,
+        "**/client/dist/**": true,
+        "**/server/target/**": true
+    },
+    "files.exclude": {
+        "**/client/node_modules": true,
+        "**/client/dist": true,
+        "**/server/target": true
+    },
+    "search.exclude": {
+        "**/client/node_modules": true,
+        "**/client/dist": true,
+        "**/server/target": true
+    },
     "java.compile.nullAnalysis.mode": "automatic",
     "java.jdt.ls.java.home": "/Library/Java/JavaVirtualMachines/temurin-21.jdk/Contents/Home",
     "java.configuration.runtimes": [
