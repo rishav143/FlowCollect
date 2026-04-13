@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import type { AxiosError } from 'axios'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { Eye, EyeOff } from 'lucide-react'
 import { login } from '@/api/auth.api'
 import { useAuthStore } from '@/store/auth.store'
@@ -26,8 +26,11 @@ const labelCls = 'block text-xs font-semibold text-c-muted uppercase tracking-wi
 // ---------------------------------------------------------------------------
 
 export default function LoginPage() {
-  const navigate = useNavigate()
-  const setAuth  = useAuthStore((s) => s.setAuth)
+  const navigate  = useNavigate()
+  const location  = useLocation()
+  const setAuth   = useAuthStore((s) => s.setAuth)
+
+  const successMessage = (location.state as { message?: string } | null)?.message ?? null
 
   const [email,    setEmail]    = useState('')
   const [password, setPassword] = useState('')
@@ -60,6 +63,12 @@ export default function LoginPage() {
         <p className="text-sm text-c-muted mt-1">Sign in to your FlowCollect account</p>
       </div>
 
+      {successMessage && (
+        <p className="text-sm text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-500/10 px-3 py-2 rounded-lg mb-4">
+          {successMessage}
+        </p>
+      )}
+
       {/* Form */}
       <form onSubmit={handleSubmit} className="space-y-4">
 
@@ -79,13 +88,13 @@ export default function LoginPage() {
         <div>
           <div className="flex items-center justify-between mb-1.5">
             <span className={labelCls} style={{ marginBottom: 0 }}>Password</span>
-            <button
-              type="button"
+            <Link
+              to="/forgot-password"
               className="text-xs text-[#29B6F6] hover:underline"
               tabIndex={-1}
             >
               Forgot password?
-            </button>
+            </Link>
           </div>
           <div className="relative">
             <input

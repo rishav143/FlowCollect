@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Plus, Search, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Search, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useSearchParams, useLocation } from 'react-router-dom'
 import { useAuthStore } from '@/store/auth.store'
@@ -126,12 +126,13 @@ export default function InvoiceListPage() {
   const [created,      setCreated]      = useState<DateRangeValue>({})
   const [due,          setDue]          = useState<DateRangeValue>({})
 
+  const createParam = searchParams.get('create')
   useEffect(() => {
-    if (searchParams.get('create') === 'true') {
+    if (createParam === 'true') {
       setShowCreate(true)
       setSearchParams({}, { replace: true })
     }
-  }, [])
+  }, [createParam])
 
   const deleteMutation = useDeleteInvoice()
 
@@ -200,17 +201,7 @@ export default function InvoiceListPage() {
               <p className="text-sm text-c-muted mt-0.5">{totalItems} invoice{totalItems !== 1 ? 's' : ''}</p>
             )}
           </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <ViewToggle value={view} onChange={setView} />
-            <button
-              onClick={() => setShowCreate(true)}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white hover:opacity-90 transition-opacity"
-              style={{ background: 'linear-gradient(90deg, #29B6F6 0%, #4FC3F7 100%)' }}
-            >
-              <Plus size={15} strokeWidth={2.5} />
-              New Invoice
-            </button>
-          </div>
+          <ViewToggle value={view} onChange={setView} />
         </div>
 
         {/* ── Status tabs ─────────────────────────────────────────────── */}

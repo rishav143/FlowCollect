@@ -126,3 +126,13 @@ export async function verifyEmail(token: string): Promise<AuthResponse> {
 export async function resendVerificationEmail(email: string): Promise<void> {
   await api.post('/api/v1/auth/resend-verification-email', { email })
 }
+
+/** Send a password reset email. Always returns void — backend never reveals if email exists. */
+export async function forgotPassword(email: string): Promise<void> {
+  await api.post('/api/v1/auth/forgot-password', { email })
+}
+
+/** Reset password using the token from the reset email. */
+export async function resetPassword(token: string, newPassword: string): Promise<void> {
+  await api.post('/api/v1/auth/reset-password', { token, newPassword })
+}

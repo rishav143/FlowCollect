@@ -5,6 +5,7 @@ import { listCustomers } from '@/api/customer.api'
 import LineItemsField, { type LineItem } from './LineItemsField'
 import { formatCurrency } from '@/lib/format'
 import Select from '@/components/ui/Select'
+import DatePicker from '@/ui/components/DatePicker/DatePicker'
 
 const inputCls = [
   'w-full px-3 py-2 text-sm bg-[#F4F7F9] dark:bg-[#243447] rounded-lg',
@@ -92,12 +93,7 @@ export default function InvoiceForm({ initial, onChange, currency }: Props) {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className={labelCls}>Due Date</label>
-          <input
-            type="date"
-            value={dueDate}
-            onChange={(e) => setDueDate(e.target.value)}
-            className={inputCls}
-          />
+          <DatePicker label="Pick a date" value={dueDate} onChange={setDueDate} />
         </div>
         <div>
           <label className={labelCls}>Discount (%)</label>

@@ -98,9 +98,10 @@ const router = createBrowserRouter([
   {
     element: <GuestRoute />,
     children: [
-      { path: '/login',        lazy: routeLazy(() => import('@/features/auth/pages/LoginPage')) },
-      { path: '/register',     lazy: routeLazy(() => import('@/features/auth/pages/RegisterPage')) },
-      { path: '/verify-email', lazy: routeLazy(() => import('@/features/auth/pages/VerifyEmailPage')) },
+      { path: '/login',            lazy: routeLazy(() => import('@/features/auth/pages/LoginPage')) },
+      { path: '/register',         lazy: routeLazy(() => import('@/features/auth/pages/RegisterPage')) },
+      { path: '/verify-email',     lazy: routeLazy(() => import('@/features/auth/pages/VerifyEmailPage')) },
+      { path: '/forgot-password',  lazy: routeLazy(() => import('@/features/auth/pages/ForgotPasswordPage')) },
     ],
   },
 
@@ -127,8 +128,9 @@ const router = createBrowserRouter([
     ],
   },
 
-  { path: '/confirm/:token',       lazy: routeLazy(() => import('@/features/confirm/pages/ConfirmPaymentPage')) },
-  { path: '/accept-invite/:token', lazy: routeLazy(() => import('@/features/invite/pages/AcceptInvitePage')) },
+  { path: '/reset-password',        lazy: routeLazy(() => import('@/features/auth/pages/ResetPasswordPage')) },
+  { path: '/confirm/:token',        lazy: routeLazy(() => import('@/features/confirm/pages/ConfirmPaymentPage')) },
+  { path: '/accept-invite/:token',  lazy: routeLazy(() => import('@/features/invite/pages/AcceptInvitePage')) },
 
   { path: '*', element: <Navigate to="/dashboard" replace /> },
 

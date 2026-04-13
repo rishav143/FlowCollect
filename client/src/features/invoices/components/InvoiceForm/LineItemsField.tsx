@@ -70,7 +70,8 @@ export default function LineItemsField({ items, onChange, currency }: Props) {
             type="number"
             min={0}
             step={1}
-            value={item.unitPrice}
+            placeholder="0"
+            value={item.unitPrice || ''}
             onChange={(e) => update(idx, 'unitPrice', Math.round(parseFloat(e.target.value) || 0))}
             className={inputCls}
           />
