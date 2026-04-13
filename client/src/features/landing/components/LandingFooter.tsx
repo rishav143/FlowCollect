@@ -13,19 +13,14 @@ export default function LandingFooter() {
 
         {/* Right */}
         <div className="flex items-center gap-5">
-          {[
-            { label: 'Privacy Policy', href: '#' },
-            { label: 'Terms of Service', href: '#' },
-            { label: 'Contact', href: '#' },
-          ].map((link) => (
-            <a
-              key={link.label}
-              href={link.href}
-              className="text-sm text-[#4E6478] hover:text-white transition-colors"
-            >
-              {link.label}
-            </a>
-          ))}
+          <a
+            href="mailto:hello@flowcollect.io"
+            className="text-sm text-[#4E6478] hover:text-white transition-colors"
+          >
+            Contact
+          </a>
+          <span className="text-sm text-[#4E6478]/50 cursor-default" title="Coming soon">Privacy Policy</span>
+          <span className="text-sm text-[#4E6478]/50 cursor-default" title="Coming soon">Terms of Service</span>
         </div>
       </div>
     </footer>

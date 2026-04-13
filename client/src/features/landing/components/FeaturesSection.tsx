@@ -14,12 +14,12 @@ const features = [
   {
     icon: <Sparkles size={22} className="text-violet-400" />,
     title: 'AI Payment Insights',
-    body: 'Flags which clients are likely to delay - before they do. Act early, get paid on time.',
+    body: 'Spots payment patterns across your invoices and flags risks before they become problems.',
   },
   {
     icon: <FileText size={22} className="text-amber-400" />,
     title: 'Follow-up Templates',
-    body: 'Your tone, your words. Trackable links tell you the moment your client opens the message.',
+    body: 'Your tone, your words. Craft the exact message your clients receive — professional every time.',
   },
   {
     icon: <CheckSquare size={22} className="text-green-400" />,

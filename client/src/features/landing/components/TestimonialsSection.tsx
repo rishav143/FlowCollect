@@ -1,28 +1,20 @@
-import { Star } from 'lucide-react'
 import ScrollReveal from './ScrollReveal'
 
-/* TODO: Replace with real user quotes before public launch */
-const testimonials = [
+const stats = [
   {
-    quote:
-      'I used to feel embarrassed chasing clients for money. Now FlowCollect does it for me — professionally and automatically. £8,000 recovered in my first month.',
-    name: 'Sophie R.',
-    role: 'Freelance Designer · London, UK',
-    initials: 'SR',
+    value: '87%',
+    label: 'of freelancers experience late payments every year',
+    sub:   'Federation of Small Businesses',
   },
   {
-    quote:
-      'Our average collection time dropped from 45 days to 12 days. The ROI on a free plan is insane. Every agency needs this.',
-    name: 'Marcus T.',
-    role: 'Agency Owner · Austin, TX',
-    initials: 'MT',
+    value: '20 days',
+    label: 'spent annually chasing invoices — instead of doing real work',
+    sub:   'Freelancer.com Research',
   },
   {
-    quote:
-      'The automated email reminders are a game-changer — I stopped chasing clients manually and payment week stopped feeling like a nightmare.',
-    name: 'Arjun K.',
-    role: 'Independent Consultant · Singapore',
-    initials: 'AK',
+    value: '8+ days',
+    label: 'is how long the average invoice sits unpaid past its due date',
+    sub:   'Xero Global Small Business Insights',
   },
 ]
 
@@ -30,41 +22,27 @@ export default function TestimonialsSection() {
   return (
     <section id="testimonials" className="bg-[#F4F7F9] py-20 px-4">
       <div className="max-w-6xl mx-auto">
-        {/* Header */}
         <ScrollReveal>
           <div className="text-center mb-12">
             <p className="text-xs font-semibold uppercase tracking-widest text-c-muted mb-3">
-              Early users
+              The reality
             </p>
-            <h2 className="text-3xl font-bold text-[#0D1B2A]">What early users say</h2>
+            <h2 className="text-3xl font-bold text-[#0D1B2A]">
+              Late payments are a freelancer epidemic
+            </h2>
+            <p className="text-c-muted text-base mt-2 max-w-xl mx-auto">
+              You're not alone. And you shouldn't have to keep chasing.
+            </p>
           </div>
         </ScrollReveal>
 
-        {/* Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {testimonials.map((t, i) => (
-            <ScrollReveal key={t.name} delay={i * 80}>
-              <div className="h-full rounded-xl border border-c-border bg-white p-6 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
-                {/* Stars */}
-                <div className="flex gap-0.5 mb-4">
-                  {Array.from({ length: 5 }).map((_, j) => (
-                    <Star key={j} size={14} className="text-amber-400 fill-amber-400" />
-                  ))}
-                </div>
-
-                {/* Quote */}
-                <p className="text-sm text-[#0D1B2A] leading-relaxed italic mb-5">"{t.quote}"</p>
-
-                {/* Author */}
-                <div className="flex items-center gap-3 mt-auto">
-                  <div className="w-9 h-9 rounded-full bg-[#2E7A8E] flex items-center justify-center text-xs font-bold text-white shrink-0">
-                    {t.initials}
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-[#0D1B2A]">{t.name}</p>
-                    <p className="text-xs text-c-muted">{t.role}</p>
-                  </div>
-                </div>
+          {stats.map((s, i) => (
+            <ScrollReveal key={s.value} delay={i * 80}>
+              <div className="h-full rounded-xl border border-c-border bg-white p-8 shadow-sm text-center">
+                <p className="text-5xl font-black text-[#29B6F6] mb-3">{s.value}</p>
+                <p className="text-sm font-medium text-[#0D1B2A] leading-relaxed mb-3">{s.label}</p>
+                <p className="text-xs text-c-muted">{s.sub}</p>
               </div>
             </ScrollReveal>
           ))}

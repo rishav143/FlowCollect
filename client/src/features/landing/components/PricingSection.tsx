@@ -48,7 +48,7 @@ function getPlans(region: Region): Plan[] {
         'Unlimited invoices',
         'Automated email reminders',
         'AI payment insights',
-        'Trackable follow-up links',
+        'Recovery dashboard & activity feed',
         'Custom reminder schedules',
         'Priority support',
       ],

@@ -5,7 +5,7 @@ import ScrollReveal from './ScrollReveal'
 const faqs = [
   {
     q: 'Will my client know the reminders are automated?',
-    a: 'No. Reminders are sent from your name and email address. To your client, it looks like a personal message - because the tone and schedule are entirely yours. FlowCollect stays invisible.',
+    a: 'Reminders are sent professionally on your behalf via FlowCollect. The tone, schedule, and content are entirely yours — so every message still sounds like you, not a robot.',
   },
   {
     q: 'What if my client gets annoyed by the reminders?',
