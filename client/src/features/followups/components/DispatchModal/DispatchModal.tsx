@@ -1,61 +1,10 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Send, X, AlertCircle, Mail } from 'lucide-react'
 import { useDispatchFollowup } from '../../hooks/useFollowups'
 import { useToast } from '@/store/toast.store'
 import { useTemplates } from '@/features/templates/hooks/useTemplates'
+import Select from '@/components/ui/Select'
 import type { InvoiceResponse } from '@/types/invoice.types'
-import type { TemplateResponse } from '@/types/template.types'
-
-// ---------------------------------------------------------------------------
-// Template selector
-// ---------------------------------------------------------------------------
-
-function TemplateSelect({
-  templates,
-  value,
-  loading,
-  onChange,
-}: {
-  templates: TemplateResponse[]
-  value:     string
-  loading:   boolean
-  onChange:  (id: string) => void
-}) {
-  if (loading) {
-    return <div className="h-9 rounded-lg bg-[#F4F7F9] dark:bg-white/10 animate-pulse" />
-  }
-
-  const active = templates.filter((t) => t.active)
-
-  if (active.length === 0) {
-    return (
-      <div className="flex items-start gap-2 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/40 px-3 py-2.5">
-        <AlertCircle size={14} className="text-amber-500 mt-0.5 shrink-0" />
-        <p className="text-xs text-amber-700 dark:text-amber-400">
-          No email template found.{' '}
-          <a href="/templates" className="underline font-medium">Create one in Templates.</a>
-        </p>
-      </div>
-    )
-  }
-
-  return (
-    <select
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className="w-full rounded-xl border border-c-border bg-white dark:bg-[#243447] text-sm text-[#0D1B2A] dark:text-white px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#29B6F6]/40"
-    >
-      <option value="">— Select template —</option>
-      {active.map((t) => (
-        <option key={t.id} value={t.id}>{t.name}</option>
-      ))}
-    </select>
-  )
-}
-
-// ---------------------------------------------------------------------------
-// Dispatch modal
-// ---------------------------------------------------------------------------
 
 interface Props {
   invoice: InvoiceResponse
@@ -73,8 +22,15 @@ export default function DispatchModal({ invoice, onClose }: Props) {
 
   const { data: templatesData, isLoading, isFetching } = useTemplates({ size: 100, mode: 'MANUAL' })
   const templatesLoading = isLoading || isFetching
-  const emailTemplates   = (templatesData?.content ?? []).filter((t) => t.channel === 'EMAIL')
-  const hasTemplates     = emailTemplates.filter((t) => t.active).length > 0
+  const activeTemplates  = (templatesData?.content ?? []).filter((t) => t.channel === 'EMAIL' && t.active)
+  const hasTemplates     = activeTemplates.length > 0
+
+  // Auto-select default template once templates load
+  useEffect(() => {
+    if (templatesLoading || templateId || activeTemplates.length === 0) return
+    const defaultTpl = activeTemplates.find((t) => t.name === 'Default Email Reminder') ?? activeTemplates[0]
+    setTemplateId(defaultTpl.id)
+  }, [templatesLoading, activeTemplates.length]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const canSend = !dispatch.isPending && !hasNoClient && hasTemplates && !!templateId
 
@@ -121,7 +77,7 @@ export default function DispatchModal({ invoice, onClose }: Props) {
 
           {/* No-client warning */}
           {hasNoClient && (
-            <div className="flex items-start gap-2 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/40 px-3 py-2.5">
+            <div className="flex items-start gap-2 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/40 px-3 py-2.5">
               <AlertCircle size={14} className="text-amber-500 mt-0.5 shrink-0" />
               <p className="text-xs text-amber-700 dark:text-amber-400">
                 No client assigned. Please assign a client before sending.
@@ -129,29 +85,40 @@ export default function DispatchModal({ invoice, onClose }: Props) {
             </div>
           )}
 
-          {/* Channel badge — email only */}
-          <div className="flex items-center gap-2">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[#29B6F6]/40 bg-[#29B6F6]/8 text-[#29B6F6] text-xs font-semibold">
-              <Mail size={12} strokeWidth={2} />
-              Email
-            </div>
+          {/* Channel badge */}
+          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#29B6F6]/40 bg-[#29B6F6]/8 text-[#29B6F6] text-xs font-semibold">
+            <Mail size={12} strokeWidth={2} />
+            Email
           </div>
 
           {/* Template selector */}
           <div className="space-y-1.5">
-            <p className="text-xs font-medium text-[#0D1B2A] dark:text-white/80">Template</p>
-            <TemplateSelect
-              templates={emailTemplates}
-              value={templateId}
-              loading={templatesLoading}
-              onChange={setTemplateId}
-            />
+            <p className="text-xs font-semibold uppercase tracking-wide text-c-muted">Template</p>
+            {templatesLoading ? (
+              <div className="h-9 rounded-lg bg-[#F4F7F9] dark:bg-white/10 animate-pulse" />
+            ) : !hasTemplates ? (
+              <div className="flex items-start gap-2 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/40 px-3 py-2.5">
+                <AlertCircle size={14} className="text-amber-500 mt-0.5 shrink-0" />
+                <p className="text-xs text-amber-700 dark:text-amber-400">
+                  No email template found.{' '}
+                  <a href="/templates" className="underline font-medium">Create one in Templates.</a>
+                </p>
+              </div>
+            ) : (
+              <Select
+                value={templateId}
+                onChange={setTemplateId}
+                placeholder="Select template…"
+                options={activeTemplates.map((t) => ({ value: t.id, label: t.name }))}
+              />
+            )}
           </div>
 
           {/* Attach PDF toggle */}
           <label className="flex items-center justify-between gap-3 cursor-pointer">
             <span className="text-sm text-[#0D1B2A] dark:text-white">Attach invoice PDF</span>
             <button
+              type="button"
               role="switch"
               aria-checked={attachPdf}
               onClick={() => setAttachPdf(!attachPdf)}
@@ -169,7 +136,7 @@ export default function DispatchModal({ invoice, onClose }: Props) {
 
           {/* Error */}
           {sendError && (
-            <div className="flex items-start gap-2 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700/40 px-3 py-2.5">
+            <div className="flex items-start gap-2 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700/40 px-3 py-2.5">
               <AlertCircle size={14} className="text-red-500 mt-0.5 shrink-0" />
               <p className="text-xs text-red-600 dark:text-red-400">{sendError}</p>
             </div>
@@ -180,14 +147,14 @@ export default function DispatchModal({ invoice, onClose }: Props) {
         <div className="px-6 pb-5 pt-2 flex gap-3">
           <button
             onClick={onClose}
-            className="flex-1 py-2.5 rounded-xl text-sm font-medium text-c-muted hover:bg-[#F4F7F9] dark:hover:bg-[#243447] transition-colors"
+            className="flex-1 py-2.5 rounded-lg text-sm font-medium text-c-muted hover:bg-[#F4F7F9] dark:hover:bg-[#243447] transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={handleSend}
             disabled={!canSend}
-            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-50 hover:opacity-90 transition-opacity"
+            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold text-white disabled:opacity-50 hover:opacity-90 transition-opacity"
             style={{ background: 'linear-gradient(90deg, #29B6F6 0%, #4FC3F7 100%)' }}
           >
             <Send size={13} strokeWidth={2.5} />

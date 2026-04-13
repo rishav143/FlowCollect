@@ -5,8 +5,9 @@ import { useAuthStore } from '@/store/auth.store'
 import { recordPayment } from '@/api/payment.api'
 import type { PaymentMode } from '@/types/payment.types'
 import { formatCurrency } from '@/lib/format'
+import Select from '@/components/ui/Select'
 
-const MODES: { value: PaymentMode; label: string }[] = [
+const MODES = [
   { value: 'UPI',           label: 'UPI' },
   { value: 'BANK_TRANSFER', label: 'Bank Transfer' },
   { value: 'CASH',          label: 'Cash' },
@@ -84,9 +85,11 @@ export default function RecordPaymentModal({ invoiceId, remainingAmount, currenc
 
           <div>
             <label className={labelCls}>Payment Mode</label>
-            <select value={mode} onChange={(e) => setMode(e.target.value as PaymentMode)} className={inputCls}>
-              {MODES.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
-            </select>
+            <Select
+              value={mode}
+              onChange={(v) => setMode(v as PaymentMode)}
+              options={MODES}
+            />
           </div>
 
           <div>

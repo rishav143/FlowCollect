@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useOrgProfile, useUpdateOrgProfile } from '../hooks/useOrgSettings'
+import Select from '@/components/ui/Select'
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -135,27 +136,19 @@ export default function OrgSettingsPage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="Currency">
-              <select
+              <Select
                 value={currency}
-                onChange={(e) => setCurrency(e.target.value)}
-                className={inputCls}
-              >
-                {CURRENCIES.map((c) => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
+                onChange={setCurrency}
+                options={CURRENCIES.map((c) => ({ value: c, label: c }))}
+              />
             </Field>
 
             <Field label="Timezone">
-              <select
+              <Select
                 value={timezone}
-                onChange={(e) => setTimezone(e.target.value)}
-                className={inputCls}
-              >
-                {TIMEZONES.map((tz) => (
-                  <option key={tz.value} value={tz.value}>{tz.label}</option>
-                ))}
-              </select>
+                onChange={setTimezone}
+                options={TIMEZONES}
+              />
             </Field>
           </div>
 

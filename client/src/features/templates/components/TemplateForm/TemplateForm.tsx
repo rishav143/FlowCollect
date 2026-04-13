@@ -5,6 +5,7 @@ import { Sparkles, RefreshCw, Loader2, Check, X, ChevronDown } from 'lucide-reac
 import { templateSchema, type TemplateFormValues } from '@/features/templates/schemas/template.schema'
 import { useAuthStore } from '@/store/auth.store'
 import { generateTemplate, enhanceTemplate } from '@/api/ai.api'
+import Select from '@/components/ui/Select'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -488,17 +489,23 @@ export default function TemplateForm({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <label className={labelClass}>Channel</label>
-          <select {...register('channel')} className={inputClass}>
-            <option value="EMAIL">Email</option>
-          </select>
+          <Select
+            value={channel}
+            onChange={(v) => setValue('channel', v as TemplateFormValues['channel'])}
+            options={[{ value: 'EMAIL', label: 'Email' }]}
+          />
         </div>
         <div>
           <label className={labelClass}>Tone</label>
-          <select {...register('tone')} className={inputClass}>
-            <option value="POLITE">Polite</option>
-            <option value="NEUTRAL">Neutral</option>
-            <option value="FIRM">Firm</option>
-          </select>
+          <Select
+            value={tone}
+            onChange={(v) => setValue('tone', v as Tone, { shouldDirty: true })}
+            options={[
+              { value: 'POLITE',  label: 'Polite'  },
+              { value: 'NEUTRAL', label: 'Neutral' },
+              { value: 'FIRM',    label: 'Firm'    },
+            ]}
+          />
         </div>
       </div>
 

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { X, ChevronDown, ChevronUp, AlertTriangle } from 'lucide-react'
+import Select from '@/components/ui/Select'
 import { useCreateReminderRule, useUpdateReminderRule } from '../hooks/useReminders'
 import { useTemplates } from '@/features/templates/hooks/useTemplates'
 import { useAuthStore } from '@/store/auth.store'
@@ -448,19 +449,17 @@ export default function RuleModal({ rule, onClose }: Props) {
                 When to send
               </label>
               <div className="flex items-center gap-2">
-                <select
+                <Select
                   value={form.direction}
+                  onChange={(v) => handleDirectionChange(v as Direction)}
                   disabled={isSystemDefined}
-                  onChange={(e) => handleDirectionChange(e.target.value as Direction)}
-                  className={[
-                    'flex-1 text-sm rounded-lg border border-c-border bg-transparent text-[#0D1B2A] dark:text-white px-3 py-2.5 focus:outline-none focus:border-[#8A9BAE]/40 transition-colors',
-                    isSystemDefined ? 'opacity-50 cursor-not-allowed' : '',
-                  ].join(' ')}
-                >
-                  <option value="BEFORE">Before due date</option>
-                  <option value="ON">On due date</option>
-                  <option value="AFTER">After due date</option>
-                </select>
+                  className="flex-1"
+                  options={[
+                    { value: 'BEFORE', label: 'Before due date' },
+                    { value: 'ON',     label: 'On due date'     },
+                    { value: 'AFTER',  label: 'After due date'  },
+                  ]}
+                />
                 {form.direction !== 'ON' && (
                   <div className="flex items-center gap-1.5 shrink-0">
                     <input
@@ -532,25 +531,18 @@ export default function RuleModal({ rule, onClose }: Props) {
                         <span className="text-xs text-c-muted whitespace-nowrap w-[88px] shrink-0 tabular-nums">
                           {offsetLabel}
                         </span>
-                        <select
+                        <Select
                           value={form.occurrenceTemplateIds[i] ?? ''}
-                          onChange={(e) => {
+                          onChange={(v) => {
                             const next = [...form.occurrenceTemplateIds]
-                            next[i] = e.target.value
+                            next[i] = v
                             set('occurrenceTemplateIds', next)
                           }}
-                          className={[
-                            'flex-1 text-sm rounded-lg border bg-transparent text-[#0D1B2A] dark:text-white px-3 py-2 focus:outline-none focus:border-[#8A9BAE]/40 transition-colors',
-                            hasAttemptedSubmit && !form.occurrenceTemplateIds[i]
-                              ? 'border-red-400'
-                              : 'border-c-border',
-                          ].join(' ')}
-                        >
-                          <option value="">Select a template…</option>
-                          {templates.map((t) => (
-                            <option key={t.id} value={t.id}>{t.name}</option>
-                          ))}
-                        </select>
+                          placeholder="Select a template…"
+                          error={hasAttemptedSubmit && !form.occurrenceTemplateIds[i]}
+                          options={templates.map((t) => ({ value: t.id, label: t.name }))}
+                          className="flex-1"
+                        />
                       </div>
                     )
                   })}
@@ -561,19 +553,13 @@ export default function RuleModal({ rule, onClose }: Props) {
                 <label className="block text-xs font-semibold uppercase tracking-wide text-c-muted mb-2">
                   Template
                 </label>
-                <select
+                <Select
                   value={form.templateId}
-                  onChange={(e) => set('templateId', e.target.value)}
-                  className={[
-                    'w-full text-sm rounded-lg border bg-transparent text-[#0D1B2A] dark:text-white px-3 py-2.5 focus:outline-none focus:border-[#8A9BAE]/40 transition-colors',
-                    hasAttemptedSubmit && !form.templateId ? 'border-red-400' : 'border-c-border',
-                  ].join(' ')}
-                >
-                  <option value="">Select a template…</option>
-                  {templates.map((t) => (
-                    <option key={t.id} value={t.id}>{t.name}</option>
-                  ))}
-                </select>
+                  onChange={(v) => set('templateId', v)}
+                  placeholder="Select a template…"
+                  error={hasAttemptedSubmit && !form.templateId}
+                  options={templates.map((t) => ({ value: t.id, label: t.name }))}
+                />
               </div>
             )}
 
@@ -642,29 +628,24 @@ export default function RuleModal({ rule, onClose }: Props) {
                     </label>
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-sm text-c-muted whitespace-nowrap">Send</span>
-                      <select
+                      <Select
                         value={form.maxOccurrences}
-                        onChange={(e) => handleMaxOccurrencesChange(e.target.value)}
+                        onChange={handleMaxOccurrencesChange}
                         disabled={form.direction === 'ON' || isSystemDefined}
-                        className="text-sm rounded-lg border border-c-border bg-white dark:bg-[#1B2838] text-[#0D1B2A] dark:text-white px-3 py-2 focus:outline-none focus:border-[#8A9BAE]/40 transition-colors disabled:opacity-40"
-                      >
-                        {OCCURRENCE_OPTIONS.filter(occIsValid).map((n) => (
-                          <option key={n} value={String(n)}>{n} {n === 1 ? 'time' : 'times'}</option>
-                        ))}
-                      </select>
+                        options={OCCURRENCE_OPTIONS.filter(occIsValid).map((n) => ({
+                          value: String(n),
+                          label: `${n} ${n === 1 ? 'time' : 'times'}`,
+                        }))}
+                      />
                       {isCyclic && (
                         <>
                           <span className="text-sm text-c-muted whitespace-nowrap">repeat every</span>
-                          <select
+                          <Select
                             value={form.cycleIntervalDays}
-                            onChange={(e) => set('cycleIntervalDays', e.target.value)}
+                            onChange={(v) => set('cycleIntervalDays', v)}
                             disabled={isSystemDefined}
-                            className="text-sm rounded-lg border border-c-border bg-white dark:bg-[#1B2838] text-[#0D1B2A] dark:text-white px-3 py-2 focus:outline-none focus:border-[#8A9BAE]/40 transition-colors disabled:opacity-40"
-                          >
-                            {CYCLE_OPTIONS.filter((opt) => cycleIsValid(parseInt(opt.value))).map((opt) => (
-                              <option key={opt.value} value={opt.value}>{opt.label}</option>
-                            ))}
-                          </select>
+                            options={CYCLE_OPTIONS.filter((opt) => cycleIsValid(parseInt(opt.value)))}
+                          />
                         </>
                       )}
                     </div>

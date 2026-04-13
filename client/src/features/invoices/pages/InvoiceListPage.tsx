@@ -213,30 +213,27 @@ export default function InvoiceListPage() {
           </div>
         </div>
 
-        {/* ── Status tabs + Date filters ───────────────────────────────
-             Mobile:  stacked (tabs row, then date pickers row)
-             sm+:     single row — tabs flex-1, date pickers shrink-0    */}
+        {/* ── Status tabs ─────────────────────────────────────────────── */}
+        <InvoiceStatusTabs active={filter} onChange={handleFilterChange} />
+
+        {/* ── Search + Date filters ────────────────────────────────────── */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-          {/* Tabs scroll independently; no overflow wrapper needed here */}
-          <div className="flex-1 min-w-0">
-            <InvoiceStatusTabs active={filter} onChange={handleFilterChange} />
+          {/* Search — full width on mobile, fixed on desktop */}
+          <div className="relative w-full sm:w-52 shrink-0">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-c-muted pointer-events-none" />
+            <input
+              type="text"
+              placeholder="Search invoice number…"
+              value={search}
+              onChange={(e) => handleSearch(e.target.value)}
+              className="w-full pl-8 pr-4 py-2 text-sm bg-white dark:bg-[#1B2838] border border-c-border rounded-lg focus:outline-none focus:border-[#8A9BAE]/40 text-[#0D1B2A] dark:text-white placeholder:text-c-muted transition-colors"
+            />
           </div>
-          <div className="flex items-center gap-2 shrink-0">
+          {/* Date pickers — side by side on mobile too */}
+          <div className="flex items-center gap-2">
             <DateRangePicker label="Created"  value={created} onChange={handleCreatedChange} />
             <DateRangePicker label="Due date" value={due}     onChange={handleDueChange}     />
           </div>
-        </div>
-
-        {/* ── Search ──────────────────────────────────────────────────── */}
-        <div className="relative">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-c-muted pointer-events-none" />
-          <input
-            type="text"
-            placeholder="Search invoice number…"
-            value={search}
-            onChange={(e) => handleSearch(e.target.value)}
-            className="w-52 pl-8 pr-4 py-2 text-sm bg-white dark:bg-[#1B2838] border border-c-border rounded-lg focus:outline-none focus:border-[#8A9BAE]/40 text-[#0D1B2A] dark:text-white placeholder:text-c-muted transition-colors"
-          />
         </div>
 
         {/* ── Content ──────────────────────────────────────────────────── */}

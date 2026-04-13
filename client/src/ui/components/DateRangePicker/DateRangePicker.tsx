@@ -130,7 +130,7 @@ export default function DateRangePicker({ label, value, onChange }: Props) {
       </div>
 
       {/* Calendar */}
-      <div className="p-3 flex justify-center">
+      <div className="p-2 flex justify-center">
         <DayPicker
           mode="range"
           selected={selected}
@@ -140,6 +140,14 @@ export default function DateRangePicker({ label, value, onChange }: Props) {
             '--rdp-accent-color':            '#29B6F6',
             '--rdp-accent-background-color': 'rgba(41,182,246,0.12)',
             '--rdp-day_button-border-radius': '999px',
+            '--rdp-day_button-width':         '30px',
+            '--rdp-day_button-height':        '30px',
+            '--rdp-day-width':                '30px',
+            '--rdp-day-height':               '30px',
+            '--rdp-weekday-padding':          '0 0 4px 0',
+            '--rdp-month-caption-font':       '500 13px/1.2 inherit',
+            '--rdp-weekday-font':             '500 11px/1 inherit',
+            '--rdp-day-font':                 '13px/1 inherit',
           } as React.CSSProperties}
         />
       </div>
@@ -171,7 +179,6 @@ export default function DateRangePicker({ label, value, onChange }: Props) {
         ].join(' ')}
       >
         <CalendarDays size={13} strokeWidth={1.8} className="shrink-0" />
-        <span className="font-medium whitespace-nowrap">{label}</span>
         {displayRange ? (
           <>
             <span className="font-semibold whitespace-nowrap">{displayRange}</span>
@@ -183,7 +190,7 @@ export default function DateRangePicker({ label, value, onChange }: Props) {
           </>
         ) : (
           <>
-            <span className="opacity-60 whitespace-nowrap">Any</span>
+            <span className="font-medium whitespace-nowrap">{label}</span>
             <ChevronDown
               size={12}
               className={`shrink-0 transition-transform duration-150 ${open ? 'rotate-180' : ''}`}
@@ -222,7 +229,7 @@ export default function DateRangePicker({ label, value, onChange }: Props) {
           </div>
 
           {/* ── Desktop: absolute dropdown ────────────────────── */}
-          <div className="hidden sm:block absolute top-full mt-2 right-0 z-50 bg-white dark:bg-[#1B2838] border border-c-border rounded-2xl shadow-2xl overflow-hidden min-w-[300px]">
+          <div className="hidden sm:block absolute top-full mt-2 right-0 z-50 bg-white dark:bg-[#1B2838] border border-c-border rounded-xl shadow-2xl overflow-hidden min-w-[260px]">
             {panelContent}
           </div>
         </>

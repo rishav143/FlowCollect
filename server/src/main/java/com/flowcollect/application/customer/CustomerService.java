@@ -14,6 +14,7 @@ import com.flowcollect.domain.organization.Organization;
 import com.flowcollect.exception.http.ConflictException;
 import com.flowcollect.exception.http.ValidationException;
 import com.flowcollect.infrastructure.persistence.customer.CustomerJpaRepository;
+import com.flowcollect.infrastructure.persistence.invoice.InvoiceJpaRepository;
 
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,14 +23,17 @@ import org.springframework.transaction.annotation.Transactional;
 public class CustomerService {
     private final OrganizationService organizationService;
     private final CustomerJpaRepository customerRepository;
+    private final InvoiceJpaRepository invoiceRepository;
 
     public CustomerService
     (
-        OrganizationService organizationService, 
-        CustomerJpaRepository customerRepository
+        OrganizationService organizationService,
+        CustomerJpaRepository customerRepository,
+        InvoiceJpaRepository invoiceRepository
     ) {
         this.organizationService = organizationService;
-        this.customerRepository = customerRepository;
+        this.customerRepository  = customerRepository;
+        this.invoiceRepository   = invoiceRepository;
     }
 
     public Customer createCustomer
@@ -194,20 +198,20 @@ public class CustomerService {
 
     public void deleteCustomer
     (
-        UUID organizationId, 
+        UUID organizationId,
         UUID id
     ) {
-        if(id == null) {
+        if (id == null) {
             throw new ValidationException("Customer id cannot be null");
         }
-        // validate organization from organization service
         organizationService.getById(organizationId);
-        CustomerUtil.validateCustomerWithOrganization
-        (
-            id, 
-            organizationId,
-            customerRepository
-        );
+        CustomerUtil.validateCustomerWithOrganization(id, organizationId, customerRepository);
+
+        if (invoiceRepository.existsByCustomer_Id(id)) {
+            throw new ConflictException(
+                "This client has invoices and cannot be deleted. Archive the client instead to preserve invoice history."
+            );
+        }
         customerRepository.deleteById(id);
     }
 

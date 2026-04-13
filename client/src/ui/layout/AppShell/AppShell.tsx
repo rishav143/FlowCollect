@@ -39,14 +39,14 @@ const MAIN_ML_COLLAPSED = 'lg:ml-14'
  *  • Content padding is responsive: tighter on mobile, comfortable on desktop.
  */
 export default function AppShell() {
-  const { sidebarOpen, closeSidebar, sidebarCollapsed } = useUIStore()
+  const { sidebarOpen, closeSidebar, sidebarCollapsed, mutationDepth } = useUIStore()
   const navActive = useNavProgress()
 
   return (
     <div className="min-h-screen bg-white dark:bg-[#0D1B2A]">
 
       {/* Route navigation progress bar — above everything */}
-      <TopLoadingBar active={navActive} />
+      <TopLoadingBar active={navActive || mutationDepth > 0} />
 
       {/* Sidebar */}
       <Sidebar />

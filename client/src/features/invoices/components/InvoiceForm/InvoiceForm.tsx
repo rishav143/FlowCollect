@@ -4,6 +4,7 @@ import { useAuthStore } from '@/store/auth.store'
 import { listCustomers } from '@/api/customer.api'
 import LineItemsField, { type LineItem } from './LineItemsField'
 import { formatCurrency } from '@/lib/format'
+import Select from '@/components/ui/Select'
 
 const inputCls = [
   'w-full px-3 py-2 text-sm bg-[#F4F7F9] dark:bg-[#243447] rounded-lg',
@@ -75,18 +76,15 @@ export default function InvoiceForm({ initial, onChange, currency }: Props) {
         </div>
         <div>
           <label className={labelCls}>Customer</label>
-          <select
+          <Select
             value={customerId}
-            onChange={(e) => setCustomerId(e.target.value)}
-            className={inputCls}
-          >
-            <option value="">— No customer —</option>
-            {customers.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}{c.companyName ? ` (${c.companyName})` : ''}
-              </option>
-            ))}
-          </select>
+            onChange={setCustomerId}
+            placeholder="— No customer —"
+            options={customers.map((c) => ({
+              value: c.id,
+              label: c.name + (c.companyName ? ` (${c.companyName})` : ''),
+            }))}
+          />
         </div>
       </div>
 

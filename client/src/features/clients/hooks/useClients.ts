@@ -5,6 +5,7 @@ import {
   createCustomer,
   updateCustomer,
   deleteCustomer,
+  deactivateCustomer,
   enableAutomation,
   disableAutomation,
 } from '@/api/customer.api'
@@ -63,6 +64,16 @@ export function useDeleteClient() {
 
   return useMutation({
     mutationFn: (id: string) => deleteCustomer(orgId, id),
+    onSuccess:  () => invalidateAll(qc, orgId),
+  })
+}
+
+export function useArchiveClient() {
+  const orgId = useAuthStore((s) => s.org?.id ?? '')
+  const qc    = useQueryClient()
+
+  return useMutation({
+    mutationFn: (id: string) => deactivateCustomer(orgId, id),
     onSuccess:  () => invalidateAll(qc, orgId),
   })
 }

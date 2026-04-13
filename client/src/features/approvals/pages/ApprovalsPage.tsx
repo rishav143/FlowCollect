@@ -13,7 +13,6 @@ import {
 } from '../hooks/useConfirmations'
 import ConfirmationFilterTabs from '../components/ConfirmationFilterTabs/ConfirmationFilterTabs'
 import ConfirmationCard from '../components/ConfirmationCard/ConfirmationCard'
-import DateRangePicker, { type DateRangeValue } from '@/ui/components/DateRangePicker/DateRangePicker'
 import NoteModal from '@/ui/components/NoteModal/NoteModal'
 import type { PaymentConfirmationResponse } from '@/types/confirmation.types'
 
@@ -46,7 +45,6 @@ export default function ApprovalsPage() {
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null)
   const [view,          setView]          = useViewPreference('approvals', 'list')
   const [actionError,   setActionError]   = useState<string | null>(null)
-  const [dateRange,     setDateRange]     = useState<DateRangeValue>({})
 
   const { data, isLoading, isFetching } = useConfirmations(filter)
   const { data: pendingCount } = usePendingConfirmationCount()
@@ -55,13 +53,7 @@ export default function ApprovalsPage() {
   const rejectMut           = useRejectConfirmation()
   const requestRemainingMut = useRequestRemainingConfirmation()
 
-  // Client-side date filter — API already returns up to 100 records sorted desc
-  const confirmations = (data?.content ?? []).filter((c) => {
-    const ts = new Date(c.createdAt).getTime()
-    if (dateRange.from && ts < new Date(dateRange.from + 'T00:00:00').getTime()) return false
-    if (dateRange.to   && ts > new Date(dateRange.to   + 'T23:59:59').getTime()) return false
-    return true
-  })
+  const confirmations = data?.content ?? []
 
   // Which card is currently being acted on
   function isActingOn(id: string) {
@@ -143,19 +135,12 @@ export default function ApprovalsPage() {
           </div>
         )}
 
-        {/* Filter tabs + date range — stacked on mobile, inline on sm+ */}
-        <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-          <div className="flex-1 min-w-0">
-            <ConfirmationFilterTabs
-              active={filter}
-              onChange={setFilter}
-              pendingCount={pendingCount}
-            />
-          </div>
-          <div className="shrink-0">
-            <DateRangePicker label="Date" value={dateRange} onChange={setDateRange} />
-          </div>
-        </div>
+        {/* Filter tabs */}
+        <ConfirmationFilterTabs
+          active={filter}
+          onChange={setFilter}
+          pendingCount={pendingCount}
+        />
 
         {/* Content */}
         <div className={`transition-opacity duration-200 ${isFetching && !isLoading ? 'opacity-60' : 'opacity-100'}`}>

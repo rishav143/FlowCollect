@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import { Eye, EyeOff, MailCheck } from 'lucide-react'
 import { register, type RegisterResult } from '@/api/auth.api'
 import AuthLayout from '../components/AuthLayout'
+import Select from '@/components/ui/Select'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -196,15 +197,11 @@ export default function RegisterPage() {
 
         <div>
           <label className={labelCls}>Currency</label>
-          <select
+          <Select
             value={currency}
-            onChange={(e) => setCurrency(e.target.value)}
-            className={inputCls}
-          >
-            {CURRENCIES.map((c) => (
-              <option key={c.value} value={c.value}>{c.label}</option>
-            ))}
-          </select>
+            onChange={setCurrency}
+            options={CURRENCIES}
+          />
         </div>
 
         {error && (

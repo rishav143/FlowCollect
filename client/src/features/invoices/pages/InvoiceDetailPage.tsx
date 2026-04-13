@@ -184,7 +184,21 @@ export default function InvoiceDetailPage() {
               {activeTab === 'details' && (
                 <div className="space-y-5">
                   <div>
-                    <InfoRow label="Customer"   value={customer ? `${customer.name}${customer.companyName ? ` - ${customer.companyName}` : ''}` : '—'} />
+                    <InfoRow
+                      label="Customer"
+                      value={
+                        customer ? (
+                          <span className="flex items-center gap-1.5 justify-end flex-wrap">
+                            <span>{customer.name}{customer.companyName ? ` - ${customer.companyName}` : ''}</span>
+                            {!customer.active && (
+                              <span className="text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded bg-[#F4F7F9] dark:bg-white/10 text-c-muted">
+                                Archived
+                              </span>
+                            )}
+                          </span>
+                        ) : '—'
+                      }
+                    />
                     <InfoRow label="Issue Date" value={formatDate(invoice.issueDate)} />
                     <InfoRow label="Due Date"   value={formatDate(invoice.dueDate)} />
                   </div>

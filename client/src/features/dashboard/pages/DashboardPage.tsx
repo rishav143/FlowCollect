@@ -42,8 +42,8 @@ function AutoAgentBanner() {
 
   // ── Stats pills ──────────────────────────────────────────────────────────
   const pills: { value: string; label: string }[] = [
-    { value: String(data.activeRules),  label: 'active rules'   },
-    { value: String(data.sentThisWeek), label: 'sent this week' },
+    { value: String(data.pendingToday), label: 'upcoming follow-ups' },
+    { value: String(data.sentThisWeek), label: 'sent this week'      },
   ]
 
   return (

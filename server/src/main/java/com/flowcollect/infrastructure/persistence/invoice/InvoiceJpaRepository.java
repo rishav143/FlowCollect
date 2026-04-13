@@ -20,6 +20,8 @@ public interface InvoiceJpaRepository extends JpaRepository<Invoice, UUID>, JpaS
 
     boolean existsByInvoiceNumberAndOrganizationId(String invoiceNumber, UUID organizationId);
 
+    boolean existsByCustomer_Id(UUID customerId);
+
     List<Invoice> findAllByOrganizationIdAndLifeCycleStatusInAndDueDate(UUID organizationId, List<LifeCycleStatus> statuses, LocalDate dueDate);
 
     List<Invoice> findAllByOrganizationIdAndLifeCycleStatusInAndDueDateIsNotNull(UUID organizationId, List<LifeCycleStatus> statuses);
