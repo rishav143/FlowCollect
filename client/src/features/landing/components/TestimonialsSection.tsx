@@ -19,7 +19,7 @@ const testimonials = [
   },
   {
     quote:
-      'The WhatsApp reminder is a game-changer — clients respond faster than to any email. I stopped dreading payment week entirely.',
+      'The automated email reminders are a game-changer — I stopped chasing clients manually and payment week stopped feeling like a nightmare.',
     name: 'Arjun K.',
     role: 'Independent Consultant · Singapore',
     initials: 'AK',
