@@ -46,13 +46,13 @@ export default function LandingNavbar() {
           ) : (
             <>
               <a
-                href="https://app.flowcollect.io/login"
+                href={`${import.meta.env.VITE_APP_URL}/login`}
                 className="hidden sm:block text-sm text-white/70 hover:text-white transition-colors"
               >
                 Login
               </a>
               <a
-                href="https://app.flowcollect.io/register"
+                href={`${import.meta.env.VITE_APP_URL}/register`}
                 className="px-4 py-2 rounded-lg text-sm font-semibold text-white hover:opacity-90 transition-opacity"
                 style={{ background: 'linear-gradient(90deg, #29B6F6 0%, #4FC3F7 100%)' }}
               >

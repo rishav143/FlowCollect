@@ -293,12 +293,14 @@ public class InvoicePdfGenerator {
 
         // data rows: subtotal + tax lines + optional discount
         int dataRows   = 1 + taxLines.size() + (hasDiscount ? 1 : 0);
-        final float totalsWidth  = 220f;
-        final float topPad       = 18f;
-        final float rowSpacing   = 22f;
-        final float sepHeight    = rowSpacing * 0.6f;
-        final float totalRowHeight = rowSpacing * 0.8f;
-        float boxHeight = topPad + (dataRows * rowSpacing) + sepHeight + totalRowHeight + 10f;
+        final float totalsWidth    = 220f;
+        final float topPad         = 18f;
+        final float rowSpacing     = 22f;
+        final float totalRowHeight = 20f;
+        final float sepGap         = 10f;   // gap between last row text and separator
+        final float bottomPad      = 12f;
+        // (dataRows-1) inter-row gaps + sepGap + totalRowHeight + bottomPad
+        float boxHeight = topPad + (dataRows - 1) * rowSpacing + rowSpacing * 0.5f + sepGap + totalRowHeight + bottomPad;
 
         float totalsX = PAGE_WIDTH - MARGIN - totalsWidth;
         float labelX  = totalsX + 14f;
@@ -331,8 +333,8 @@ public class InvoicePdfGenerator {
             rowY -= rowSpacing;
         }
 
-        // Separator
-        float sepY = rowY - sepHeight * 0.4f;
+        // Separator — rowY already moved one rowSpacing past last text, step back to close the gap
+        float sepY = rowY + rowSpacing - sepGap;
         page.stream.setStrokingColor(COLOR_BORDER);
         page.stream.moveTo(totalsX + 6f, sepY);
         page.stream.lineTo(PAGE_WIDTH - MARGIN - 6f, sepY);

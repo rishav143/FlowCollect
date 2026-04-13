@@ -21,8 +21,9 @@ export default function AddInvoiceModal({ onClose }: Props) {
     invoiceNumber:  '',
     customerId:     '',
     dueDate:        '',
-    taxLines:       [],
-    discountAmount: 0,
+    taxLabel:          '',
+    taxPercentage:     0,
+    discountPercentage: 0,
     items:          [{ description: '', quantity: 1, unitPrice: 0 }],
   })
   const [error, setError] = useState<string | null>(null)
@@ -40,15 +41,19 @@ export default function AddInvoiceModal({ onClose }: Props) {
       return
     }
 
+    // Convert percentage-based tax to a labelled tax line for the backend
+    const subtotal        = Math.round(values.items.reduce((s, it) => s + it.quantity * it.unitPrice, 0))
+    const taxAmount       = values.taxPercentage > 0 ? Math.round(subtotal * values.taxPercentage / 100) : 0
+    const discountAmount  = values.discountPercentage > 0 ? Math.round(subtotal * values.discountPercentage / 100) : 0
+    const taxLabel        = values.taxLabel.trim() || 'Tax'
+
     try {
       await create.mutateAsync({
         invoiceNumber:  values.invoiceNumber.trim(),
-        customerId:     values.customerId     || undefined,
-        dueDate:        values.dueDate        || undefined,
-        taxLines:       values.taxLines.filter((t) => t.label.trim() && t.amount > 0).length > 0
-                          ? values.taxLines.filter((t) => t.label.trim() && t.amount > 0)
-                          : undefined,
-        discountAmount: values.discountAmount > 0  ? values.discountAmount : undefined,
+        customerId:     values.customerId || undefined,
+        dueDate:        values.dueDate    || undefined,
+        taxLines:       taxAmount > 0 ? [{ label: `${taxLabel} (${values.taxPercentage}%)`, amount: taxAmount }] : undefined,
+        discountAmount: discountAmount > 0 ? discountAmount : undefined,
         items:          values.items,
       })
       onClose()
