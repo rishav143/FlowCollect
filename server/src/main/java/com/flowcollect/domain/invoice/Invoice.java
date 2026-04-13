@@ -260,7 +260,10 @@ public class Invoice {
         if (lifeCycleStatus != LifeCycleStatus.DRAFT) {
             throw new IllegalStateException("Only draft invoices can be issued. Current status: " + lifeCycleStatus);
         }
-        if(totalAmount.compareTo(BigDecimal.ZERO) <= 0){
+        if (this.dueDate == null) {
+            throw new IllegalStateException("A due date is required before issuing an invoice");
+        }
+        if (totalAmount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("Total amount cannot be zero or negative");
         }
         this.issueDate = issueDate;
@@ -271,7 +274,10 @@ public class Invoice {
         if (lifeCycleStatus != LifeCycleStatus.DRAFT) {
             throw new IllegalStateException("Only draft invoices can be issued. Current status: " + lifeCycleStatus);
         }
-        if(totalAmount.compareTo(BigDecimal.ZERO) <= 0){
+        if (this.dueDate == null) {
+            throw new IllegalStateException("A due date is required before issuing an invoice");
+        }
+        if (totalAmount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("Total amount cannot be zero or negative");
         }
         this.issueDate = LocalDate.now(timezone);

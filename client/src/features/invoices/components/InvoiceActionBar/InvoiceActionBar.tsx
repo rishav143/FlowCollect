@@ -3,6 +3,7 @@ import type { LifeCycleStatus } from '@/types/invoice.types'
 
 interface Props {
   lifeCycleStatus: LifeCycleStatus
+  dueDate:         string | null
   onIssue:         () => void
   onDelete:        () => void
   onDownloadPdf:   () => void
@@ -16,6 +17,7 @@ const btnBase = 'flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-med
 
 export default function InvoiceActionBar({
   lifeCycleStatus,
+  dueDate,
   onIssue,
   onDelete,
   onDownloadPdf,
@@ -33,18 +35,20 @@ export default function InvoiceActionBar({
     <div className="flex flex-wrap items-center gap-2">
       {/* Issue invoice — draft only */}
       {isDraft && (
-        <button
-          onClick={onIssue}
-          disabled={isIssuing}
-          className={`${btnBase} text-white hover:opacity-90 disabled:opacity-50`}
-          style={{ background: 'linear-gradient(90deg, #29B6F6 0%, #4FC3F7 100%)' }}
-        >
-          {isIssuing
-            ? <Loader2 size={15} className="animate-spin" />
-            : <Send size={15} strokeWidth={2} />
-          }
-          Issue Invoice
-        </button>
+        <div title={!dueDate ? 'Set a due date before issuing' : undefined}>
+          <button
+            onClick={onIssue}
+            disabled={isIssuing || !dueDate}
+            className={`${btnBase} text-white hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed`}
+            style={{ background: 'linear-gradient(90deg, #29B6F6 0%, #4FC3F7 100%)' }}
+          >
+            {isIssuing
+              ? <Loader2 size={15} className="animate-spin" />
+              : <Send size={15} strokeWidth={2} />
+            }
+            Issue Invoice
+          </button>
+        </div>
       )}
 
       {/* Download PDF — any non-draft */}

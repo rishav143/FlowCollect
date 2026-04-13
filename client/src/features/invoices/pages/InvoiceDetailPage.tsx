@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Pencil } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/store/auth.store'
 import { useInvoiceDetail } from '../hooks/useInvoiceDetail'
@@ -11,6 +11,7 @@ import InvoiceStatusBadge from '../components/InvoiceStatusBadge/InvoiceStatusBa
 import PaymentsTab from '../components/PaymentsTab/PaymentsTab'
 import FollowupsTab from '../components/FollowupsTab/FollowupsTab'
 import DispatchModal from '@/features/followups/components/DispatchModal/DispatchModal'
+import EditInvoiceModal from '../modals/EditInvoiceModal'
 import { formatCurrency, formatDate } from '@/lib/format'
 
 // ---------------------------------------------------------------------------
@@ -69,6 +70,7 @@ export default function InvoiceDetailPage() {
   const currency = useAuthStore((s) => s.org?.currency ?? 'INR')
 
   const [activeTab,     setActiveTab]     = useState<Tab>('details')
+  const [showEdit,      setShowEdit]      = useState(false)
   const [showFollowup,  setShowFollowup]  = useState(false)
   const [showDeleteDlg, setShowDeleteDlg] = useState(false)
   const [showCancelDlg, setShowCancelDlg] = useState(false)
@@ -140,12 +142,24 @@ export default function InvoiceDetailPage() {
                 Created {formatDate(invoice.createdAt)}
               </p>
             </div>
-            <InvoiceStatusBadge lifecycle={invoice.lifeCycleStatus} time={invoice.timeStatus} className="text-sm" />
+            <div className="flex items-center gap-2">
+              <InvoiceStatusBadge lifecycle={invoice.lifeCycleStatus} time={invoice.timeStatus} className="text-sm" />
+              {invoice.lifeCycleStatus === 'DRAFT' && (
+                <button
+                  onClick={() => setShowEdit(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-c-muted border border-c-border hover:bg-[#F4F7F9] dark:hover:bg-[#243447] transition-colors"
+                >
+                  <Pencil size={13} />
+                  Edit
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Action bar */}
           <InvoiceActionBar
             lifeCycleStatus={invoice.lifeCycleStatus}
+            dueDate={invoice.dueDate}
             onIssue={() => issueMut.mutate(undefined)}
             onDelete={() => setShowDeleteDlg(true)}
             onDownloadPdf={() => downloadMut.mutate({ id: id!, invoiceNumber: invoice.invoiceNumber })}
@@ -170,7 +184,7 @@ export default function InvoiceDetailPage() {
               {activeTab === 'details' && (
                 <div className="space-y-5">
                   <div>
-                    <InfoRow label="Customer"   value={customer ? `${customer.name}${customer.companyName ? ` — ${customer.companyName}` : ''}` : '—'} />
+                    <InfoRow label="Customer"   value={customer ? `${customer.name}${customer.companyName ? ` - ${customer.companyName}` : ''}` : '—'} />
                     <InfoRow label="Issue Date" value={formatDate(invoice.issueDate)} />
                     <InfoRow label="Due Date"   value={formatDate(invoice.dueDate)} />
                   </div>
@@ -221,7 +235,7 @@ export default function InvoiceDetailPage() {
               {invoice.discountAmount > 0 && (
                 <InfoRow
                   label="Discount"
-                  value={<span className="text-red-500">-{formatCurrency(invoice.discountAmount, currency, { decimals: false })}</span>}
+                  value={`-${formatCurrency(invoice.discountAmount, currency, { decimals: false })}`}
                 />
               )}
               <div className="py-2 border-b border-c-border flex justify-between">
@@ -239,6 +253,11 @@ export default function InvoiceDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Edit modal — draft only */}
+      {showEdit && invoice && (
+        <EditInvoiceModal invoice={invoice} onClose={() => setShowEdit(false)} />
+      )}
 
       {/* Follow-up modal */}
       {showFollowup && (

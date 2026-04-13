@@ -163,7 +163,7 @@ export default function InvoiceForm({ initial, onChange, currency }: Props) {
           {discountAmount > 0 && (
             <div className="flex justify-between text-c-muted">
               <span>Discount ({discountPercentage}%)</span>
-              <span className="text-red-500">-{formatCurrency(discountAmount, currency, { decimals: false })}</span>
+              <span>-{formatCurrency(discountAmount, currency, { decimals: false })}</span>
             </div>
           )}
           <div className="flex justify-between font-semibold text-[#0D1B2A] dark:text-white border-t border-[#8A9BAE]/20 pt-1 mt-1">

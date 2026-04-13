@@ -1,7 +1,9 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { X } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/store/auth.store'
 import { useCreateInvoice } from '../hooks/useInvoiceMutations'
+import { listInvoices } from '@/api/invoice.api'
 import InvoiceForm, { type InvoiceFormValues } from '../components/InvoiceForm/InvoiceForm'
 
 interface Props {
@@ -13,18 +15,44 @@ const btnPrimary = [
   'hover:opacity-90 transition-opacity disabled:opacity-50',
 ].join(' ')
 
+function useNextInvoiceNumber(orgId: string): { suggested: string; isLoading: boolean } {
+  const year = new Date().getFullYear()
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['invoices', orgId, 'sequence', year],
+    queryFn:  () => listInvoices(orgId, { invoiceNumber: `INV-${year}`, size: 500 }),
+    enabled:  !!orgId,
+    staleTime: 0,
+  })
+
+  const suggested = useMemo(() => {
+    const pattern = new RegExp(`^INV-${year}-(\\d+)$`, 'i')
+    let max = 0
+    for (const inv of data?.content ?? []) {
+      const m = inv.invoiceNumber.match(pattern)
+      if (m) max = Math.max(max, parseInt(m[1], 10))
+    }
+    return `INV-${year}-${String(max + 1).padStart(3, '0')}`
+  }, [data, year])
+
+  return { suggested, isLoading }
+}
+
 export default function AddInvoiceModal({ onClose }: Props) {
+  const orgId    = useAuthStore((s) => s.org?.id ?? '')
   const currency = useAuthStore((s) => s.org?.currency ?? 'INR')
   const create   = useCreateInvoice()
 
+  const { suggested, isLoading: loadingNumber } = useNextInvoiceNumber(orgId)
+
   const [values, setValues] = useState<InvoiceFormValues>({
-    invoiceNumber:  '',
-    customerId:     '',
-    dueDate:        '',
-    taxLabel:          '',
-    taxPercentage:     0,
+    invoiceNumber:      '',
+    customerId:         '',
+    dueDate:            '',
+    taxLabel:           '',
+    taxPercentage:      0,
     discountPercentage: 0,
-    items:          [{ description: '', quantity: 1, unitPrice: 0 }],
+    items:              [{ description: '', quantity: 1, unitPrice: 0 }],
   })
   const [error, setError] = useState<string | null>(null)
 
@@ -41,11 +69,10 @@ export default function AddInvoiceModal({ onClose }: Props) {
       return
     }
 
-    // Convert percentage-based tax to a labelled tax line for the backend
-    const subtotal        = Math.round(values.items.reduce((s, it) => s + it.quantity * it.unitPrice, 0))
-    const taxAmount       = values.taxPercentage > 0 ? Math.round(subtotal * values.taxPercentage / 100) : 0
-    const discountAmount  = values.discountPercentage > 0 ? Math.round(subtotal * values.discountPercentage / 100) : 0
-    const taxLabel        = values.taxLabel.trim() || 'Tax'
+    const subtotal       = Math.round(values.items.reduce((s, it) => s + it.quantity * it.unitPrice, 0))
+    const taxAmount      = values.taxPercentage > 0 ? Math.round(subtotal * values.taxPercentage / 100) : 0
+    const discountAmount = values.discountPercentage > 0 ? Math.round(subtotal * values.discountPercentage / 100) : 0
+    const taxLabel       = values.taxLabel.trim() || 'Tax'
 
     try {
       await create.mutateAsync({
@@ -64,10 +91,8 @@ export default function AddInvoiceModal({ onClose }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop */}
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
 
-      {/* Modal */}
       <form
         onSubmit={handleSubmit}
         className="relative w-full max-w-2xl bg-white dark:bg-[#1B2838] rounded-2xl shadow-xl overflow-hidden max-h-[90vh] flex flex-col"
@@ -86,10 +111,22 @@ export default function AddInvoiceModal({ onClose }: Props) {
 
         {/* Body */}
         <div className="flex-1 overflow-y-auto px-6 py-5">
-          <InvoiceForm currency={currency} onChange={setValues} />
-          {error && (
-            <p className="mt-3 text-sm text-red-500">{error}</p>
+          {loadingNumber ? (
+            <div className="space-y-4 animate-pulse">
+              <div className="h-9 rounded-lg bg-[#F4F7F9] dark:bg-white/10" />
+              <div className="h-9 rounded-lg bg-[#F4F7F9] dark:bg-white/10" />
+              <div className="h-9 rounded-lg bg-[#F4F7F9] dark:bg-white/10" />
+            </div>
+          ) : (
+            // key forces re-mount with the correct initial value once suggestion is ready
+            <InvoiceForm
+              key={suggested}
+              currency={currency}
+              initial={{ invoiceNumber: suggested }}
+              onChange={setValues}
+            />
           )}
+          {error && <p className="mt-3 text-sm text-red-500">{error}</p>}
         </div>
 
         {/* Footer */}
@@ -103,7 +140,7 @@ export default function AddInvoiceModal({ onClose }: Props) {
           </button>
           <button
             type="submit"
-            disabled={create.isPending}
+            disabled={create.isPending || loadingNumber}
             className={btnPrimary}
             style={{ background: 'linear-gradient(90deg, #29B6F6 0%, #4FC3F7 100%)' }}
           >
