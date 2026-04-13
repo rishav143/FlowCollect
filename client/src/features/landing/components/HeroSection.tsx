@@ -9,7 +9,7 @@ export default function HeroSection() {
       {/* Trust badge */}
       <div className="animate-fade-up inline-flex items-center gap-2 rounded-full border border-[#29B6F6]/30 bg-[#29B6F6]/10 px-3 py-1 text-xs text-[#4FC3F7] mb-6">
         <Zap size={12} />
-        Works worldwide · Automated email reminders
+        Built for freelancers & small businesses
       </div>
 
       {/* Headline */}
