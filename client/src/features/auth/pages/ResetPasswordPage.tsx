@@ -59,7 +59,7 @@ export default function ResetPasswordPage() {
     setError(null)
     setLoading(true)
     try {
-      await resetPassword(token, password)
+      await resetPassword(token!, password)
       navigate('/login', { state: { message: 'Password reset successfully. Sign in with your new password.' }, replace: true })
     } catch (err) {
       const ax = err as AxiosError<{ message?: string }>
