@@ -12,7 +12,7 @@ import { useToggleAutoRecovery } from '@/features/recover/hooks/useRecover'
 import DispatchModal         from '@/features/followups/components/DispatchModal/DispatchModal'
 import type { NeedsAttentionItem } from '@/api/dashboard.api'
 import { formatCurrency, formatDate } from '@/lib/format'
-import { useRecoverStats } from '@/features/recover/hooks/useRecover'
+import { useRecoverStats, useQueueActivity } from '@/features/recover/hooks/useRecover'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -35,15 +35,16 @@ function todayLabel(): string {
 
 function AutoAgentBanner() {
   const enabled  = useAuthStore((s) => s.org?.autoRecoveryEnabled ?? false)
-  const { data, isLoading } = useRecoverStats()
+  const { data, isLoading }              = useRecoverStats()
+  const { data: queueData, isLoading: queueLoading } = useQueueActivity()
 
   if (!enabled) return null
-  if (isLoading || !data) return null
+  if (isLoading || queueLoading || !data) return null
 
   // ── Stats pills ──────────────────────────────────────────────────────────
   const pills: { value: string; label: string }[] = [
-    { value: String(data.pendingToday), label: 'upcoming follow-ups' },
-    { value: String(data.sentThisWeek), label: 'sent this week'      },
+    { value: String(queueData?.totalUpcoming ?? 0), label: 'upcoming follow-ups' },
+    { value: String(data.sentThisWeek),             label: 'sent this week'       },
   ]
 
   return (

@@ -1,17 +1,18 @@
-import { createBrowserRouter, RouterProvider, Navigate, Outlet } from 'react-router-dom'
+import { createBrowserRouter, RouterProvider, Navigate, Outlet, useLocation } from 'react-router-dom'
+import { useEffect } from 'react'
 import AppShell      from '@/ui/layout/AppShell/AppShell'
 import SettingsLayout from '@/features/settings/layout/SettingsLayout'
 import { useAuthStore } from '@/store/auth.store'
 
 // ---------------------------------------------------------------------------
 // Domain guard
-//  www.flowcollect.io  → marketing only  (app paths → app.flowcollect.io)
-//  app.flowcollect.io  → app only        (/ → www.flowcollect.io)
-//  localhost           → no redirect (dev)
+//  MARKETING_HOST  → marketing only  (app paths → APP_HOST)
+//  APP_HOST        → app only        (/ → MARKETING_HOST)
+//  localhost       → no redirect (dev)
 // ---------------------------------------------------------------------------
 
-const APP_HOST       = 'app.flowcollect.io'
-const MARKETING_HOST = 'www.flowcollect.io'
+const APP_HOST       = new URL(import.meta.env.VITE_APP_URL       ?? 'http://localhost:3000').hostname
+const MARKETING_HOST = new URL(import.meta.env.VITE_MARKETING_URL ?? 'http://localhost:3000').hostname
 
 function isAppPath(pathname: string) {
   const marketingOnly = ['/', '/confirm', '/accept-invite']
@@ -22,7 +23,9 @@ function isAppPath(pathname: string) {
   const { hostname, pathname, search } = window.location
   if (hostname === 'localhost' || hostname === '127.0.0.1') return
 
-  if ((hostname === MARKETING_HOST || hostname === 'flowcollect.io') && isAppPath(pathname))
+  // Also match the apex domain (flowcollect.io without www) as a marketing host
+  const isMarketingHost = hostname === MARKETING_HOST || hostname === MARKETING_HOST.replace(/^www\./, '')
+  if (isMarketingHost && isAppPath(pathname))
     window.location.replace(`https://${APP_HOST}${pathname}${search}`)
 
   if (hostname === APP_HOST && pathname === '/')
@@ -38,6 +41,26 @@ function routeLazy(fn: () => Promise<{ default: React.ComponentType }>) {
     const { default: Component } = await fn()
     return { Component }
   }
+}
+
+// Watches every client-side navigation and redirects to the correct domain.
+// The IIFE above handles the initial hard load; this handles SPA route changes.
+function DomainGuard() {
+  const { pathname, search } = useLocation()
+
+  useEffect(() => {
+    const { hostname } = window.location
+    if (hostname === 'localhost' || hostname === '127.0.0.1') return
+
+    const isMarketingHost = hostname === MARKETING_HOST || hostname === MARKETING_HOST.replace(/^www\./, '')
+    if (isMarketingHost && isAppPath(pathname))
+      window.location.replace(`https://${APP_HOST}${pathname}${search}`)
+
+    if (hostname === APP_HOST && pathname === '/')
+      window.location.replace(`https://${MARKETING_HOST}`)
+  }, [pathname, search])
+
+  return null
 }
 
 function ProtectedRoute() {
@@ -56,7 +79,20 @@ function GuestRoute() {
 // Router
 // ---------------------------------------------------------------------------
 
+function RootLayout() {
+  return (
+    <>
+      <DomainGuard />
+      <Outlet />
+    </>
+  )
+}
+
 const router = createBrowserRouter([
+  {
+    element: <RootLayout />,
+    children: [
+
   { path: '/', lazy: routeLazy(() => import('@/features/landing/pages/LandingPage')) },
 
   {
@@ -95,6 +131,9 @@ const router = createBrowserRouter([
   { path: '/accept-invite/:token', lazy: routeLazy(() => import('@/features/invite/pages/AcceptInvitePage')) },
 
   { path: '*', element: <Navigate to="/dashboard" replace /> },
+
+    ],
+  },
 ])
 
 export default function Router() {
