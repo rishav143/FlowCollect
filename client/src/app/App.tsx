@@ -1,8 +1,9 @@
 import { useEffect } from 'react'
-import Providers      from './Providers'
-import Router         from './Router'
-import ToastContainer from '@/ui/components/Toast/Toast'
-import { useUIStore } from '@/store/ui.store'
+import Providers           from './Providers'
+import Router              from './Router'
+import ToastContainer      from '@/ui/components/Toast/Toast'
+import ChunkErrorBoundary  from './ChunkErrorBoundary'
+import { useUIStore }      from '@/store/ui.store'
 
 function ThemeApplier() {
   const theme = useUIStore((s) => s.theme)
@@ -16,7 +17,9 @@ export default function App() {
   return (
     <Providers>
       <ThemeApplier />
-      <Router />
+      <ChunkErrorBoundary>
+        <Router />
+      </ChunkErrorBoundary>
       <ToastContainer />
     </Providers>
   )
