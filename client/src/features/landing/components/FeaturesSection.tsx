@@ -1,6 +1,11 @@
-import { Bell, Sparkles, FileText, CheckSquare, Globe } from 'lucide-react'
+import { Bell, Sparkles, FileText, CheckSquare, Globe, ReceiptText } from 'lucide-react'
 
 const features = [
+  {
+    icon: <ReceiptText size={22} className="text-[#29B6F6]" />,
+    title: 'Invoice Management',
+    body: 'Create and send professional invoices in minutes - then let FlowCollect handle the rest.',
+  },
   {
     icon: <Bell size={22} className="text-[#29B6F6]" />,
     title: 'Automated Reminders',
