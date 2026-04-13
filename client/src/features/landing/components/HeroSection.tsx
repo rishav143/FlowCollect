@@ -1,4 +1,3 @@
-import { Link } from 'react-router-dom'
 import { Zap } from 'lucide-react'
 
 export default function HeroSection() {
@@ -28,13 +27,13 @@ export default function HeroSection() {
 
       {/* CTA buttons */}
       <div className="animate-fade-up animate-fade-up-delay-3 mt-8 flex flex-col sm:flex-row items-center gap-3">
-        <Link
-          to="/register"
+        <a
+          href="https://app.flowcollect.io/register"
           className="px-8 py-3.5 rounded-xl text-white font-semibold text-base hover:opacity-90 active:scale-95 transition-all shadow-lg shadow-[#29B6F6]/25"
           style={{ background: 'linear-gradient(90deg, #29B6F6 0%, #4FC3F7 100%)' }}
         >
           Get started free →
-        </Link>
+        </a>
         <a
           href="#how-it-works"
           className="px-8 py-3.5 rounded-xl border border-white/20 text-white/80 hover:text-white hover:border-white/40 transition-colors font-medium text-base"
@@ -55,7 +54,7 @@ export default function HeroSection() {
           <span className="w-3 h-3 rounded-full bg-red-400/70" />
           <span className="w-3 h-3 rounded-full bg-amber-400/70" />
           <span className="w-3 h-3 rounded-full bg-green-400/70" />
-          <span className="ml-3 text-xs text-white/30 font-mono">flowcollect.app</span>
+          <span className="ml-3 text-xs text-white/30 font-mono">app.flowcollect.io</span>
         </div>
 
         {/* Invoice rows */}

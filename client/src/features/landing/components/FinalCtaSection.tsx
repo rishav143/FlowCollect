@@ -1,4 +1,3 @@
-import { Link } from 'react-router-dom'
 import { ShieldCheck, Lock, Zap } from 'lucide-react'
 
 export default function FinalCtaSection() {
@@ -21,13 +20,13 @@ export default function FinalCtaSection() {
           Start getting paid on time - automatically.
         </p>
 
-        <Link
-          to="/register"
+        <a
+          href="https://app.flowcollect.io/register"
           className="inline-block w-full max-w-xs mx-auto px-8 py-4 rounded-xl text-white font-semibold text-base hover:opacity-90 active:scale-95 transition-all shadow-lg shadow-[#29B6F6]/25"
           style={{ background: 'linear-gradient(90deg, #29B6F6 0%, #4FC3F7 100%)' }}
         >
           Get started free →
-        </Link>
+        </a>
 
         {/* Trust icons */}
         <div className="flex justify-center gap-6 mt-6 text-xs text-[#4E6478]">
