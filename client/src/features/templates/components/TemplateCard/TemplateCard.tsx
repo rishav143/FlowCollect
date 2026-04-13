@@ -75,24 +75,26 @@ const TemplateCard = memo(function TemplateCard({ template, onEdit, onDelete, on
               <ToneBadge tone={template.tone} />
             )}
 
-            {/* Active toggle */}
-            <button
-              onClick={() => onToggle(template)}
-              aria-label={template.active ? 'Deactivate' : 'Activate'}
-              className={[
-                'relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent',
-                'transition-colors duration-200 ease-in-out focus:outline-none',
-                template.active ? 'bg-[#29B6F6]' : 'bg-[#8A9BAE]/30',
-              ].join(' ')}
-            >
-              <span
+            {/* Active toggle — hidden for system/default templates */}
+            {!isSystem && (
+              <button
+                onClick={() => onToggle(template)}
+                aria-label={template.active ? 'Deactivate' : 'Activate'}
                 className={[
-                  'pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow',
-                  'transition duration-200 ease-in-out',
-                  template.active ? 'translate-x-4' : 'translate-x-0',
+                  'relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent',
+                  'transition-colors duration-200 ease-in-out focus:outline-none',
+                  template.active ? 'bg-[#29B6F6]' : 'bg-[#8A9BAE]/30',
                 ].join(' ')}
-              />
-            </button>
+              >
+                <span
+                  className={[
+                    'pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow',
+                    'transition duration-200 ease-in-out',
+                    template.active ? 'translate-x-4' : 'translate-x-0',
+                  ].join(' ')}
+                />
+              </button>
+            )}
           </div>
         </div>
 
