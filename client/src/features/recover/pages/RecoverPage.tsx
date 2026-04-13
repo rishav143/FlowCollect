@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import {
-  Zap, TrendingUp, Send, Clock, Shield,
+  Zap, TrendingUp, Send, Shield,
   Mail, MessageSquare, MessageCircle, Pencil,
   AlertCircle, RefreshCw, Loader2, RotateCcw,
 } from 'lucide-react'
@@ -556,11 +556,11 @@ export default function RecoverPage() {
         {statsError ? (
           <StatsError onRetry={refetchStats} />
         ) : statsLoading ? (
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {[...Array(4)].map((_, i) => <KpiCardSkeleton key={i} />)}
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+            {[...Array(3)].map((_, i) => <KpiCardSkeleton key={i} />)}
           </div>
         ) : (
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
             <KpiCard
               label="Total Recovered"
               value={formatCurrency(stats?.totalRecovered ?? 0, currency, { decimals: false })}
@@ -585,14 +585,6 @@ export default function RecoverPage() {
               icon={<Send size={16} strokeWidth={2} />}
               iconBg="bg-[#29B6F6]/10 dark:bg-[#29B6F6]/15"
               iconColor="text-[#29B6F6]"
-            />
-            <KpiCard
-              label="Pending Today"
-              value={String(stats?.pendingToday ?? 0)}
-              sub="queued to dispatch"
-              icon={<Clock size={16} strokeWidth={2} />}
-              iconBg="bg-[#8A9BAE]/10 dark:bg-white/5"
-              iconColor="text-c-muted"
             />
           </div>
         )}
