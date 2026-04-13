@@ -18,11 +18,12 @@ export default function AddInvoiceModal({ onClose }: Props) {
   const create   = useCreateInvoice()
 
   const [values, setValues] = useState<InvoiceFormValues>({
-    invoiceNumber: '',
-    customerId:    '',
-    dueDate:       '',
-    taxPercentage: 0,
-    items:         [{ description: '', quantity: 1, unitPrice: 0 }],
+    invoiceNumber:  '',
+    customerId:     '',
+    dueDate:        '',
+    taxLines:       [],
+    discountAmount: 0,
+    items:          [{ description: '', quantity: 1, unitPrice: 0 }],
   })
   const [error, setError] = useState<string | null>(null)
 
@@ -41,11 +42,14 @@ export default function AddInvoiceModal({ onClose }: Props) {
 
     try {
       await create.mutateAsync({
-        invoiceNumber: values.invoiceNumber.trim(),
-        customerId:    values.customerId  || undefined,
-        dueDate:       values.dueDate     || undefined,
-        taxPercentage: values.taxPercentage || undefined,
-        items:         values.items,
+        invoiceNumber:  values.invoiceNumber.trim(),
+        customerId:     values.customerId     || undefined,
+        dueDate:        values.dueDate        || undefined,
+        taxLines:       values.taxLines.filter((t) => t.label.trim() && t.amount > 0).length > 0
+                          ? values.taxLines.filter((t) => t.label.trim() && t.amount > 0)
+                          : undefined,
+        discountAmount: values.discountAmount > 0  ? values.discountAmount : undefined,
+        items:          values.items,
       })
       onClose()
     } catch {

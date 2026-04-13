@@ -9,6 +9,11 @@ export interface InvoiceItem {
   amount:      number
 }
 
+export interface TaxLine {
+  label:  string
+  amount: number
+}
+
 export interface InvoiceResponse {
   id:               string
   organizationId:   string
@@ -20,7 +25,8 @@ export interface InvoiceResponse {
   issueDate:        string | null  // "YYYY-MM-DD"
   dueDate:          string | null  // "YYYY-MM-DD"
   subtotal:         number
-  taxPercentage:    number
+  discountAmount:   number
+  taxLines:         TaxLine[]
   totalAmount:      number
   totalPaid:        number
   remainingAmount:  number

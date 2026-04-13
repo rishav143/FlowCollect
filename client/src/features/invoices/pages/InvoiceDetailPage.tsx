@@ -215,8 +215,14 @@ export default function InvoiceDetailPage() {
             <p className="text-xs font-semibold uppercase tracking-wide text-c-muted mb-4">Payment Summary</p>
             <div className="space-y-1">
               <InfoRow label="Subtotal"  value={formatCurrency(invoice.subtotal, currency, { decimals: false })} />
-              {invoice.taxPercentage > 0 && (
-                <InfoRow label={`Tax (${invoice.taxPercentage}%)`} value={formatCurrency(invoice.totalAmount - invoice.subtotal, currency, { decimals: false })} />
+              {invoice.taxLines?.map((tl) => (
+                <InfoRow key={tl.label} label={tl.label} value={formatCurrency(tl.amount, currency, { decimals: false })} />
+              ))}
+              {invoice.discountAmount > 0 && (
+                <InfoRow
+                  label="Discount"
+                  value={<span className="text-red-500">-{formatCurrency(invoice.discountAmount, currency, { decimals: false })}</span>}
+                />
               )}
               <div className="py-2 border-b border-c-border flex justify-between">
                 <span className="text-sm font-semibold text-[#0D1B2A] dark:text-white">Total</span>

@@ -9,12 +9,14 @@ import org.springframework.transaction.annotation.Transactional;
 import com.flowcollect.api.v1.invoice.dto.InvoiceRequest;
 import com.flowcollect.api.v1.invoice.dto.InvoiceUpdateRequest;
 import com.flowcollect.api.v1.invoice.dto.IssueInvoiceRequest;
+import com.flowcollect.api.v1.invoice.dto.TaxLineRequest;
 import com.flowcollect.application.customer.CustomerService;
 import com.flowcollect.application.organization.OrganizationService;
 import com.flowcollect.application.user.UserService;
 import com.flowcollect.domain.customer.Customer;
 import com.flowcollect.domain.invoice.Invoice;
 import com.flowcollect.domain.invoice.InvoiceItem;
+import com.flowcollect.domain.invoice.InvoiceTaxLine;
 import com.flowcollect.domain.invoice.LifeCycleStatus;
 import com.flowcollect.domain.invoice.TimeStatus;
 import com.flowcollect.domain.organization.Organization;
@@ -79,8 +81,11 @@ public class InvoiceService {
                 organization,
                 normalizedInvoiceNumber
         );
-        if (request.getTaxPercentage() != null) {
-            invoice.setTaxPercentage(request.getTaxPercentage());
+        if (request.getTaxLines() != null && !request.getTaxLines().isEmpty()) {
+            invoice.setTaxLines(buildTaxLines(invoice, request.getTaxLines()));
+        }
+        if (request.getDiscountAmount() != null) {
+            invoice.setDiscountAmount(request.getDiscountAmount());
         }
         if(request.getCreatedByUserId() != null) {
             User user = userService.getById(organizationId, request.getCreatedByUserId());
@@ -202,8 +207,11 @@ public class InvoiceService {
             invoice.setInvoiceNumber(normalized);
         }
 
-        if (request.getTaxPercentage() != null) {
-            invoice.setTaxPercentage(request.getTaxPercentage());
+        if (request.getTaxLines() != null) {
+            invoice.setTaxLines(buildTaxLines(invoice, request.getTaxLines()));
+        }
+        if (request.getDiscountAmount() != null) {
+            invoice.setDiscountAmount(request.getDiscountAmount());
         }
         if (request.getCreatedByUserId() != null) {
             User user = userService.getById(organizationId, request.getCreatedByUserId());
@@ -268,6 +276,15 @@ public class InvoiceService {
 
         // Hard delete - JPA will cascade delete items due to orphanRemoval/cascade settings
         invoiceRepository.delete(invoice);
+    }
+
+    private List<InvoiceTaxLine> buildTaxLines(Invoice invoice, List<TaxLineRequest> requests) {
+        List<InvoiceTaxLine> lines = new ArrayList<>();
+        for (int i = 0; i < requests.size(); i++) {
+            TaxLineRequest r = requests.get(i);
+            lines.add(InvoiceTaxLine.of(invoice, r.getLabel(), r.getAmount(), i));
+        }
+        return lines;
     }
 
     // Return paginated invoices for an organization with optional filters.

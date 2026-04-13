@@ -6,6 +6,7 @@ import com.flowcollect.api.v1.invoice.dto.InvoiceItemResponse;
 import com.flowcollect.api.v1.invoice.dto.InvoiceResponse;
 import com.flowcollect.domain.invoice.Invoice;
 import com.flowcollect.domain.invoice.InvoiceItem;
+import com.flowcollect.domain.invoice.InvoiceTaxLine;
 
 public final class InvoiceMapper {
 
@@ -24,7 +25,8 @@ public final class InvoiceMapper {
         response.setIssueDate(invoice.getIssueDate());
         response.setDueDate(invoice.getDueDate());
         response.setSubtotal(invoice.getSubtotal());
-        response.setTaxPercentage(invoice.getTaxInPercentage());
+        response.setDiscountAmount(invoice.getDiscountAmount());
+        response.setTaxLines(toTaxLineResponses(invoice.getTaxLines()));
         response.setTotalAmount(invoice.getTotalAmount());
         response.setTotalPaid(invoice.getTotalPaid());
         response.setRemainingAmount(invoice.getRemainingAmount());
@@ -32,6 +34,15 @@ public final class InvoiceMapper {
         response.setCreatedAt(invoice.getCreatedAt());
         response.setUpdatedAt(invoice.getUpdatedAt());
         return response;
+    }
+
+    private static List<InvoiceResponse.TaxLineResponse> toTaxLineResponses(List<InvoiceTaxLine> taxLines) {
+        return taxLines.stream().map(tl -> {
+            InvoiceResponse.TaxLineResponse r = new InvoiceResponse.TaxLineResponse();
+            r.setLabel(tl.getLabel());
+            r.setAmount(tl.getAmount());
+            return r;
+        }).toList();
     }
 
     private static List<InvoiceItemResponse> toItemResponses(List<InvoiceItem> items) {

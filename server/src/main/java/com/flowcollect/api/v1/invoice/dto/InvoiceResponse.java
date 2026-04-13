@@ -22,7 +22,8 @@ public class InvoiceResponse {
     private LocalDate issueDate;
     private LocalDate dueDate;
     private BigDecimal subtotal;
-    private BigDecimal taxPercentage;
+    private BigDecimal discountAmount;
+    private List<TaxLineResponse> taxLines = new ArrayList<>();
     private BigDecimal totalAmount;
     private BigDecimal totalPaid;
     private BigDecimal remainingAmount;
@@ -30,135 +31,50 @@ public class InvoiceResponse {
     private Instant createdAt;
     private Instant updatedAt;
 
-    public UUID getId() {
-        return id;
+    public static class TaxLineResponse {
+        private String label;
+        private BigDecimal amount;
+
+        public String getLabel()              { return label; }
+        public void setLabel(String label)    { this.label = label; }
+        public BigDecimal getAmount()         { return amount; }
+        public void setAmount(BigDecimal a)   { this.amount = a; }
     }
 
-    public void setId(UUID id) {
-        this.id = id;
-    }
-
-    public UUID getOrganizationId() {
-        return organizationId;
-    }
-
-    public void setOrganizationId(UUID organizationId) {
-        this.organizationId = organizationId;
-    }
-
-    public UUID getCustomerId() {
-        return customerId;
-    }
-
-    public void setCustomerId(UUID customerId) {
-        this.customerId = customerId;
-    }
-
-    public UUID getCreatedByUserId() {
-        return createdByUserId;
-    }
-
-    public void setCreatedByUserId(UUID createdByUserId) {
-        this.createdByUserId = createdByUserId;
-    }
-
-    public String getInvoiceNumber() {
-        return invoiceNumber;
-    }
-
-    public void setInvoiceNumber(String invoiceNumber) {
-        this.invoiceNumber = invoiceNumber;
-    }
-
-    public TimeStatus getTimeStatus() {
-        return timeStatus;
-    }
-
-    public void setTimeStatus(TimeStatus status) {
-        this.timeStatus = status;
-    }
-
-    public LifeCycleStatus getLifeCycleStatus() { return lifeCycleStatus; }
-
-    public void setLifeCycleStatus(LifeCycleStatus lifeCycleStatus) {this.lifeCycleStatus = lifeCycleStatus;}
-
-    public LocalDate getIssueDate() {
-        return issueDate;
-    }
-
-    public void setIssueDate(LocalDate issueDate) {
-        this.issueDate = issueDate;
-    }
-
-    public LocalDate getDueDate() {
-        return dueDate;
-    }
-
-    public void setDueDate(LocalDate dueDate) {
-        this.dueDate = dueDate;
-    }
-
-    public BigDecimal getSubtotal() {
-        return subtotal;
-    }
-
-    public void setSubtotal(BigDecimal subtotal) {
-        this.subtotal = subtotal;
-    }
-
-    public BigDecimal getTaxPercentage() {
-        return taxPercentage;
-    }
-
-    public void setTaxPercentage(BigDecimal taxPercentage) {
-        this.taxPercentage = taxPercentage;
-    }
-
-    public BigDecimal getTotalAmount() {
-        return totalAmount;
-    }
-
-    public void setTotalAmount(BigDecimal totalAmount) {
-        this.totalAmount = totalAmount;
-    }
-
-    public BigDecimal getTotalPaid() {
-        return totalPaid;
-    }
-
-    public void setTotalPaid(BigDecimal totalPaid) {
-        this.totalPaid = totalPaid;
-    }
-
-    public BigDecimal getRemainingAmount() {
-        return remainingAmount;
-    }
-
-    public void setRemainingAmount(BigDecimal remainingAmount) {
-        this.remainingAmount = remainingAmount;
-    }
-
-    public List<InvoiceItemResponse> getItems() {
-        return items;
-    }
-
-    public void setItems(List<InvoiceItemResponse> items) {
-        this.items = items;
-    }
-
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public Instant getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(Instant updatedAt) {
-        this.updatedAt = updatedAt;
-    }
+    public UUID getId()                                         { return id; }
+    public void setId(UUID id)                                  { this.id = id; }
+    public UUID getOrganizationId()                             { return organizationId; }
+    public void setOrganizationId(UUID organizationId)          { this.organizationId = organizationId; }
+    public UUID getCustomerId()                                 { return customerId; }
+    public void setCustomerId(UUID customerId)                  { this.customerId = customerId; }
+    public UUID getCreatedByUserId()                            { return createdByUserId; }
+    public void setCreatedByUserId(UUID createdByUserId)        { this.createdByUserId = createdByUserId; }
+    public String getInvoiceNumber()                            { return invoiceNumber; }
+    public void setInvoiceNumber(String invoiceNumber)          { this.invoiceNumber = invoiceNumber; }
+    public TimeStatus getTimeStatus()                           { return timeStatus; }
+    public void setTimeStatus(TimeStatus timeStatus)            { this.timeStatus = timeStatus; }
+    public LifeCycleStatus getLifeCycleStatus()                 { return lifeCycleStatus; }
+    public void setLifeCycleStatus(LifeCycleStatus s)           { this.lifeCycleStatus = s; }
+    public LocalDate getIssueDate()                             { return issueDate; }
+    public void setIssueDate(LocalDate issueDate)               { this.issueDate = issueDate; }
+    public LocalDate getDueDate()                               { return dueDate; }
+    public void setDueDate(LocalDate dueDate)                   { this.dueDate = dueDate; }
+    public BigDecimal getSubtotal()                             { return subtotal; }
+    public void setSubtotal(BigDecimal subtotal)                { this.subtotal = subtotal; }
+    public BigDecimal getDiscountAmount()                       { return discountAmount; }
+    public void setDiscountAmount(BigDecimal discountAmount)    { this.discountAmount = discountAmount; }
+    public List<TaxLineResponse> getTaxLines()                  { return taxLines; }
+    public void setTaxLines(List<TaxLineResponse> taxLines)     { this.taxLines = taxLines; }
+    public BigDecimal getTotalAmount()                          { return totalAmount; }
+    public void setTotalAmount(BigDecimal totalAmount)          { this.totalAmount = totalAmount; }
+    public BigDecimal getTotalPaid()                            { return totalPaid; }
+    public void setTotalPaid(BigDecimal totalPaid)              { this.totalPaid = totalPaid; }
+    public BigDecimal getRemainingAmount()                      { return remainingAmount; }
+    public void setRemainingAmount(BigDecimal remainingAmount)  { this.remainingAmount = remainingAmount; }
+    public List<InvoiceItemResponse> getItems()                 { return items; }
+    public void setItems(List<InvoiceItemResponse> items)       { this.items = items; }
+    public Instant getCreatedAt()                               { return createdAt; }
+    public void setCreatedAt(Instant createdAt)                 { this.createdAt = createdAt; }
+    public Instant getUpdatedAt()                               { return updatedAt; }
+    public void setUpdatedAt(Instant updatedAt)                 { this.updatedAt = updatedAt; }
 }

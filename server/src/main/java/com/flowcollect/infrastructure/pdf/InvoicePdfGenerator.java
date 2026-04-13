@@ -25,6 +25,7 @@ import org.springframework.stereotype.Component;
 import com.flowcollect.domain.customer.Customer;
 import com.flowcollect.domain.invoice.Invoice;
 import com.flowcollect.domain.invoice.InvoiceItem;
+import com.flowcollect.domain.invoice.InvoiceTaxLine;
 import com.flowcollect.domain.organization.Organization;
 import com.flowcollect.exception.http.InternalException;
 import com.flowcollect.exception.http.ValidationException;
@@ -286,10 +287,18 @@ public class InvoicePdfGenerator {
             page = startContinuationPage(document);
         }
 
-        final float totalsWidth = 220f;
-        final float boxHeight   = 88f;
-        final float topPad      = 18f;
-        final float rowSpacing  = 22f;
+        List<InvoiceTaxLine> taxLines  = invoice.getTaxLines();
+        java.math.BigDecimal discount  = invoice.getDiscountAmount();
+        boolean hasDiscount = discount != null && discount.compareTo(java.math.BigDecimal.ZERO) > 0;
+
+        // data rows: subtotal + tax lines + optional discount
+        int dataRows   = 1 + taxLines.size() + (hasDiscount ? 1 : 0);
+        final float totalsWidth  = 220f;
+        final float topPad       = 18f;
+        final float rowSpacing   = 22f;
+        final float sepHeight    = rowSpacing * 0.6f;
+        final float totalRowHeight = rowSpacing * 0.8f;
+        float boxHeight = topPad + (dataRows * rowSpacing) + sepHeight + totalRowHeight + 10f;
 
         float totalsX = PAGE_WIDTH - MARGIN - totalsWidth;
         float labelX  = totalsX + 14f;
@@ -301,24 +310,38 @@ public class InvoicePdfGenerator {
         page.stream.fill();
         strokeRect(page, totalsX, boxTop - boxHeight, totalsWidth, boxHeight);
 
-        float row1Y = boxTop - topPad;
-        drawText(page, fonts.regular, FONT_NORMAL, labelX, row1Y, "Subtotal", COLOR_TEXT);
-        drawRightAlignedText(page, fonts.regular, FONT_NORMAL, valueX, row1Y, formatMoney(invoice, invoice.getSubtotal()), COLOR_TEXT);
+        float rowY = boxTop - topPad;
 
-        float row2Y = row1Y - rowSpacing;
-        drawText(page, fonts.regular, FONT_NORMAL, labelX, row2Y,
-                "Tax (" + formatPercentage(invoice.getTaxInPercentage()) + ")", COLOR_TEXT);
-        drawRightAlignedText(page, fonts.regular, FONT_NORMAL, valueX, row2Y, formatMoney(invoice, calculateTaxAmount(invoice)), COLOR_TEXT);
+        // Subtotal
+        drawText(page, fonts.regular, FONT_NORMAL, labelX, rowY, "Subtotal", COLOR_TEXT);
+        drawRightAlignedText(page, fonts.regular, FONT_NORMAL, valueX, rowY, formatMoney(invoice, invoice.getSubtotal()), COLOR_TEXT);
+        rowY -= rowSpacing;
 
-        float sepY = row2Y - rowSpacing * 0.6f;
+        // Tax lines
+        for (InvoiceTaxLine tl : taxLines) {
+            drawText(page, fonts.regular, FONT_NORMAL, labelX, rowY, safe(tl.getLabel()), COLOR_TEXT);
+            drawRightAlignedText(page, fonts.regular, FONT_NORMAL, valueX, rowY, formatMoney(invoice, tl.getAmount()), COLOR_TEXT);
+            rowY -= rowSpacing;
+        }
+
+        // Discount
+        if (hasDiscount) {
+            drawText(page, fonts.regular, FONT_NORMAL, labelX, rowY, "Discount", COLOR_TEXT);
+            drawRightAlignedText(page, fonts.regular, FONT_NORMAL, valueX, rowY, "-" + formatMoney(invoice, discount), COLOR_TEXT);
+            rowY -= rowSpacing;
+        }
+
+        // Separator
+        float sepY = rowY - sepHeight * 0.4f;
         page.stream.setStrokingColor(COLOR_BORDER);
         page.stream.moveTo(totalsX + 6f, sepY);
         page.stream.lineTo(PAGE_WIDTH - MARGIN - 6f, sepY);
         page.stream.stroke();
 
-        float row3Y = sepY - rowSpacing * 0.8f;
-        drawText(page, fonts.bold, FONT_SECTION, labelX, row3Y, "Total", COLOR_TEXT);
-        drawRightAlignedText(page, fonts.bold, FONT_SECTION, valueX, row3Y, formatMoney(invoice, invoice.getTotalAmount()), COLOR_TEXT);
+        // Total
+        float totalRowY = sepY - totalRowHeight;
+        drawText(page, fonts.bold, FONT_SECTION, labelX, totalRowY, "Total", COLOR_TEXT);
+        drawRightAlignedText(page, fonts.bold, FONT_SECTION, valueX, totalRowY, formatMoney(invoice, invoice.getTotalAmount()), COLOR_TEXT);
 
         page.y = boxTop - boxHeight - SECTION_GAP;
         return page;
@@ -507,17 +530,6 @@ public class InvoicePdfGenerator {
         Currency currency = invoice.getOrganization().getCurrency();
         String code = currency != null ? currency.getCurrencyCode() : "USD";
         return CurrencyFormatter.format(amount == null ? BigDecimal.ZERO : amount, code);
-    }
-
-    private String formatPercentage(BigDecimal percentage) {
-        BigDecimal val = percentage == null ? BigDecimal.ZERO : percentage;
-        return val.stripTrailingZeros().toPlainString() + "%";
-    }
-
-    private BigDecimal calculateTaxAmount(Invoice invoice) {
-        BigDecimal subtotal = invoice.getSubtotal()    == null ? BigDecimal.ZERO : invoice.getSubtotal();
-        BigDecimal total    = invoice.getTotalAmount() == null ? BigDecimal.ZERO : invoice.getTotalAmount();
-        return total.subtract(subtotal).max(BigDecimal.ZERO);
     }
 
     private String safe(String value) {

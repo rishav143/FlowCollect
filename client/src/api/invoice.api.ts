@@ -26,19 +26,26 @@ export async function getInvoice(orgId: string, id: string): Promise<InvoiceResp
   return data
 }
 
+export interface TaxLineInput {
+  label:  string
+  amount: number
+}
+
 export interface CreateInvoiceBody {
-  invoiceNumber:  string
-  customerId?:    string
-  dueDate?:       string
-  taxPercentage?: number
-  items:          { description: string; quantity: number; unitPrice: number }[]
+  invoiceNumber:   string
+  customerId?:     string
+  dueDate?:        string
+  taxLines?:       TaxLineInput[]
+  discountAmount?: number
+  items:           { description: string; quantity: number; unitPrice: number }[]
 }
 
 export interface UpdateInvoiceBody {
   invoiceNumber?:  string
   customerId?:     string
   dueDate?:        string
-  taxPercentage?:  number
+  taxLines?:       TaxLineInput[]
+  discountAmount?: number
   items?:          { description: string; quantity: number; unitPrice: number }[]
 }
 

@@ -47,7 +47,7 @@ const INVOICES: Record<string, unknown>[] = [
     invoiceNumber: 'INV-2025-001',
     lifeCycleStatus: 'ISSUED', timeStatus: 'OVERDUE',
     issueDate: PAST7, dueDate: PAST3,
-    subtotal: 45000, taxPercentage: 18, totalAmount: 53100,
+    subtotal: 45000, taxLines: [{ label: 'GST 18%', amount: 8100 }], discountAmount: 0, totalAmount: 53100,
     totalPaid: 0, remainingAmount: 53100,
     items: [
       { id: 'li1', description: 'Brand Identity Design', quantity: 1, unitPrice: 30000, amount: 30000 },
@@ -60,7 +60,7 @@ const INVOICES: Record<string, unknown>[] = [
     invoiceNumber: 'INV-2025-002',
     lifeCycleStatus: 'PARTIALLY_PAID', timeStatus: 'DUE_TODAY',
     issueDate: PAST7, dueDate: TODAY,
-    subtotal: 80000, taxPercentage: 18, totalAmount: 94400,
+    subtotal: 80000, taxLines: [{ label: 'GST 18%', amount: 14400 }], discountAmount: 0, totalAmount: 94400,
     totalPaid: 40000, remainingAmount: 54400,
     items: [
       { id: 'li3', description: 'Web App Development — Phase 1', quantity: 1, unitPrice: 80000, amount: 80000 },
@@ -72,7 +72,7 @@ const INVOICES: Record<string, unknown>[] = [
     invoiceNumber: 'INV-2025-003',
     lifeCycleStatus: 'DRAFT', timeStatus: 'NOT_DUE',
     issueDate: null, dueDate: FUT14,
-    subtotal: 12000, taxPercentage: 0, totalAmount: 12000,
+    subtotal: 12000, taxLines: [], discountAmount: 0, totalAmount: 12000,
     totalPaid: 0, remainingAmount: 12000,
     items: [
       { id: 'li4', description: 'Logo Design',       quantity: 1, unitPrice: 8000, amount: 8000 },
@@ -231,7 +231,7 @@ const ROUTES = [
   }),
   route('GET',    /\/invoices\/([^/]+)$/,       (p) => INVOICES.find((i) => i.id === p.match(/\/invoices\/([^/]+)$/)?.[1]) ?? null),
   route('POST',   /\/invoices$/,                (_, __, b) => {
-    const inv = { id: makeId(), organizationId: ORG, lifeCycleStatus: 'DRAFT', timeStatus: 'NOT_DUE', issueDate: null, subtotal: 0, taxPercentage: 0, totalAmount: 0, totalPaid: 0, remainingAmount: 0, createdAt: NOW, updatedAt: NOW, items: [], ...(b as object) }
+    const inv = { id: makeId(), organizationId: ORG, lifeCycleStatus: 'DRAFT', timeStatus: 'NOT_DUE', issueDate: null, subtotal: 0, taxLines: [], discountAmount: 0, totalAmount: 0, totalPaid: 0, remainingAmount: 0, createdAt: NOW, updatedAt: NOW, items: [], ...(b as object) }
     INVOICES.push(inv)
     return inv
   }),

@@ -69,13 +69,13 @@ public class Invoice {
     // Financials
 
     @Column(precision = 15, scale = 2)
-    private BigDecimal subtotal =  BigDecimal.ZERO;
+    private BigDecimal subtotal = BigDecimal.ZERO;
 
-    @Column(precision = 15, scale = 2)
-    private BigDecimal taxInPercentage =  BigDecimal.ZERO;
+    @Column(name = "discount_amount", precision = 15, scale = 2)
+    private BigDecimal discountAmount = BigDecimal.ZERO;
 
     @Column(name = "total_amount", precision = 15, scale = 2)
-    private BigDecimal totalAmount =  BigDecimal.ZERO;
+    private BigDecimal totalAmount = BigDecimal.ZERO;
 
     @Column(name = "total_paid", precision = 15, scale = 2)
     private BigDecimal totalPaid = BigDecimal.ZERO;
@@ -88,6 +88,14 @@ public class Invoice {
             orphanRemoval = true
     )
     private List<InvoiceItem> items = new ArrayList<>();
+
+    @OneToMany(
+            mappedBy = "invoice",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
+    @OrderBy("sortOrder ASC")
+    private List<InvoiceTaxLine> taxLines = new ArrayList<>();
 
     // Audit
 
@@ -175,8 +183,12 @@ public class Invoice {
         return subtotal;
     }
 
-    public BigDecimal getTaxInPercentage() {
-        return taxInPercentage;
+    public List<InvoiceTaxLine> getTaxLines() {
+        return taxLines;
+    }
+
+    public BigDecimal getDiscountAmount() {
+        return discountAmount != null ? discountAmount : BigDecimal.ZERO;
     }
 
     public BigDecimal getTotalAmount() {
@@ -350,24 +362,36 @@ public class Invoice {
         }
     }
 
-    // Sets the tax percentage and recalculates total amount.
-    public void setTaxPercentage(BigDecimal taxInPercentage) {
-        if (taxInPercentage == null) {
-            throw new IllegalArgumentException("Tax percentage cannot be null");
-        }
-        if (taxInPercentage.compareTo(BigDecimal.ZERO) < 0 || taxInPercentage.compareTo(BigDecimal.valueOf(100)) > 0) {
-            throw new IllegalArgumentException("Tax percentage must be between 0 and 100");
-        }
-        this.taxInPercentage = taxInPercentage.setScale(2, RoundingMode.HALF_UP);
+    /**
+     * Replaces all tax lines. Clears existing lines and adds the new ones in order.
+     * Triggers a total recalculation.
+     */
+    public void setTaxLines(List<InvoiceTaxLine> newLines) {
+        this.taxLines.clear();
+        this.taxLines.addAll(newLines);
         calculateTotal();
     }
 
-    // Calculates the total amount of the invoice — rounded to the nearest whole unit.
+    /**
+     * Sets a flat discount amount (must be >= 0). Triggers a total recalculation.
+     */
+    public void setDiscountAmount(BigDecimal discount) {
+        if (discount == null || discount.compareTo(BigDecimal.ZERO) < 0) {
+            throw new IllegalArgumentException("Discount cannot be negative");
+        }
+        this.discountAmount = discount.setScale(0, RoundingMode.HALF_UP);
+        calculateTotal();
+    }
+
+    // Calculates the total: subtotal + sum(taxLines) - discount, floored at 0.
     public void calculateTotal() {
-        BigDecimal taxAmount = this.subtotal.multiply(this.taxInPercentage)
-                .divide(BigDecimal.valueOf(100), 0, RoundingMode.HALF_UP);
+        BigDecimal taxTotal = taxLines.stream()
+                .map(InvoiceTaxLine::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal discount = discountAmount != null ? discountAmount : BigDecimal.ZERO;
         this.totalAmount = this.subtotal
-                .add(taxAmount)
+                .add(taxTotal)
+                .subtract(discount)
                 .max(BigDecimal.ZERO)
                 .setScale(0, RoundingMode.HALF_UP);
     }
