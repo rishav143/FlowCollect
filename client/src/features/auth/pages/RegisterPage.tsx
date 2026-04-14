@@ -4,7 +4,6 @@ import { Link } from 'react-router-dom'
 import { Eye, EyeOff, MailCheck } from 'lucide-react'
 import { register, type RegisterResult } from '@/api/auth.api'
 import AuthLayout from '../components/AuthLayout'
-import Select from '@/components/ui/Select'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -20,6 +19,54 @@ const inputCls = [
 ].join(' ')
 
 const labelCls = 'block text-xs font-semibold text-c-muted uppercase tracking-wide mb-1.5'
+
+// ---------------------------------------------------------------------------
+// Password strength
+// ---------------------------------------------------------------------------
+
+function getStrength(pwd: string): { score: number; label: string; color: string } {
+  if (!pwd) return { score: 0, label: '', color: '' }
+  let score = 0
+  if (pwd.length >= 8)          score++
+  if (/[a-z]/.test(pwd))        score++
+  if (/[A-Z]/.test(pwd))        score++
+  if (/[0-9]/.test(pwd))        score++
+  if (/[^a-zA-Z0-9]/.test(pwd)) score++
+
+  if (score <= 2) return { score, label: 'Weak',   color: 'bg-red-500'    }
+  if (score === 3) return { score, label: 'Fair',   color: 'bg-amber-400'  }
+  if (score === 4) return { score, label: 'Good',   color: 'bg-yellow-400' }
+  return               { score, label: 'Strong', color: 'bg-green-500'  }
+}
+
+function StrengthBar({ password }: { password: string }) {
+  if (!password) return null
+  const { score, label, color } = getStrength(password)
+  const filled = Math.max(1, Math.ceil(score / 5 * 4))   // 1–4 bars
+
+  return (
+    <div className="mt-2 space-y-1">
+      <div className="flex gap-1">
+        {[1, 2, 3, 4].map((i) => (
+          <div
+            key={i}
+            className={`h-1 flex-1 rounded-full transition-all duration-300 ${
+              i <= filled ? color : 'bg-[#E2EAF0] dark:bg-white/10'
+            }`}
+          />
+        ))}
+      </div>
+      <p className={`text-xs font-medium ${
+        score <= 2 ? 'text-red-500' :
+        score === 3 ? 'text-amber-500' :
+        score === 4 ? 'text-yellow-500' :
+        'text-green-500'
+      }`}>
+        {label}
+      </p>
+    </div>
+  )
+}
 
 // Map ISO country codes → default billing currency
 const COUNTRY_CURRENCY: Record<string, string> = {
@@ -39,16 +86,6 @@ function detectCurrency(): Promise<string> {
     .then((d) => COUNTRY_CURRENCY[d.country_code as string] ?? 'USD')
     .catch(() => 'USD')
 }
-
-const CURRENCIES = [
-  { value: 'INR', label: 'INR — Indian Rupee' },
-  { value: 'USD', label: 'USD — US Dollar' },
-  { value: 'EUR', label: 'EUR — Euro' },
-  { value: 'GBP', label: 'GBP — British Pound' },
-  { value: 'AED', label: 'AED — UAE Dirham' },
-  { value: 'SGD', label: 'SGD — Singapore Dollar' },
-  { value: 'AUD', label: 'AUD — Australian Dollar' },
-]
 
 // ---------------------------------------------------------------------------
 // Verification success state
@@ -125,8 +162,8 @@ export default function RegisterPage() {
     <AuthLayout>
       {/* Heading */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-[#0D1B2A] dark:text-white">Create account</h1>
-        <p className="text-sm text-c-muted mt-1">Start collecting payments smarter</p>
+        <h1 className="text-2xl font-bold text-[#0D1B2A] dark:text-white">Start getting paid on time</h1>
+        <p className="text-sm text-c-muted mt-1">Up and running in 2 minutes.</p>
       </div>
 
       {/* Form */}
@@ -137,7 +174,7 @@ export default function RegisterPage() {
             <label className={labelCls}>Your name</label>
             <input
               type="text"
-              placeholder="Rishav"
+              placeholder="Jane Smith"
               required
               autoComplete="given-name"
               value={ownerName}
@@ -159,7 +196,7 @@ export default function RegisterPage() {
         </div>
 
         <div>
-          <label className={labelCls}>Work email</label>
+          <label className={labelCls}>Email</label>
           <input
             type="email"
             placeholder="you@example.com"
@@ -176,7 +213,7 @@ export default function RegisterPage() {
           <div className="relative">
             <input
               type={showPwd ? 'text' : 'password'}
-              placeholder="Min. 8 characters"
+              placeholder="Mix of letters, numbers & symbols"
               required
               autoComplete="new-password"
               minLength={8}
@@ -193,15 +230,7 @@ export default function RegisterPage() {
               {showPwd ? <EyeOff size={15} /> : <Eye size={15} />}
             </button>
           </div>
-        </div>
-
-        <div>
-          <label className={labelCls}>Currency</label>
-          <Select
-            value={currency}
-            onChange={setCurrency}
-            options={CURRENCIES}
-          />
+          <StrengthBar password={password} />
         </div>
 
         {error && (
@@ -216,11 +245,11 @@ export default function RegisterPage() {
           className="w-full py-2.5 rounded-lg text-sm font-semibold text-white hover:opacity-90 transition-opacity disabled:opacity-50"
           style={{ background: 'linear-gradient(90deg, #29B6F6 0%, #4FC3F7 100%)' }}
         >
-          {loading ? 'Creating account…' : 'Create account →'}
+          {loading ? 'Setting up your account…' : 'Start Getting Paid →'}
         </button>
 
         <p className="text-xs text-c-muted text-center leading-relaxed">
-          By signing up you agree to our Terms of Service &amp; Privacy Policy.
+          Free to start &middot; No credit card required
         </p>
       </form>
 

@@ -2,10 +2,10 @@ import type { ReactNode } from 'react'
 import { CheckCircle2 } from 'lucide-react'
 import Logo from '@/ui/components/Logo/Logo'
 
-const VALUE_PROPS = [
-  'Smart invoice management for freelancers',
-  'Automated reminders — SMS, WhatsApp & email',
-  'Real-time payment tracking & insights',
+const DAY_ONE = [
+  'Get paid faster with automated invoice reminders',
+  'Never write another "just checking in" email again',
+  'Clients pay on time — without you having to ask',
 ]
 
 /**
@@ -40,14 +40,14 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
         {/* Headline + value props */}
         <div>
           <h2 className="text-4xl font-bold text-white leading-snug mb-4">
-            Get paid faster.<br />
-            <span className="text-[#29B6F6]">Stress less.</span>
+            Never chase<br />
+            <span className="text-[#29B6F6]">a payment again.</span>
           </h2>
           <p className="text-[#8A9BAE] text-base mb-8">
-            The smart invoicing platform built for freelancers &amp; agencies worldwide.
+            Here's what you get on day one:
           </p>
           <ul className="space-y-3.5">
-            {VALUE_PROPS.map((p) => (
+            {DAY_ONE.map((p) => (
               <li key={p} className="flex items-start gap-3">
                 <CheckCircle2 size={16} className="text-[#29B6F6] shrink-0 mt-0.5" strokeWidth={2.5} />
                 <span className="text-[#8A9BAE] text-sm leading-relaxed">{p}</span>
@@ -58,7 +58,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
 
         {/* Footer tagline */}
         <p className="text-xs text-[#4E6478]">
-          Trusted by freelancers &amp; small businesses around the world.
+          Cancel anytime &middot; Your data stays yours
         </p>
       </div>
 
