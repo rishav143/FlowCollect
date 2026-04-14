@@ -78,11 +78,14 @@ public class DodoBillingService {
         String productId = resolveProductId(plan, org.getCurrency());
         Object customer  = buildCustomer(org);
 
+        String billingCurrency = org.getCurrency().getCurrencyCode();
+
         CheckoutSessionRequest body = new CheckoutSessionRequest(
                 List.of(new ProductCartItem(productId, 1)),
                 customer,
                 returnUrl,
                 cancelUrl,
+                billingCurrency,
                 Map.of("organizationId", org.getId().toString())
         );
 
@@ -90,11 +93,12 @@ public class DodoBillingService {
                 org.getId(), plan, org.getCurrency());
 
         CheckoutSessionResponse response = restClient.post()
-                .uri("/checkout-sessions")
+                .uri("/checkouts")
                 .body(body)
                 .retrieve()
                 .onStatus(HttpStatusCode::isError, (req, res) -> {
-                    log.error("Dodo API error: status={}", res.getStatusCode());
+                    String body2 = new String(res.getBody().readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+                    log.error("Dodo API error: status={} body={}", res.getStatusCode(), body2);
                     throw new ServiceUnavailableException(
                             "Billing provider returned an error. Please try again later.");
                 })
@@ -147,11 +151,12 @@ public class DodoBillingService {
     // ------------------------------------------------------------------
 
     record CheckoutSessionRequest(
-            @JsonProperty("product_cart") List<ProductCartItem> productCart,
-            Object                                               customer,
-            @JsonProperty("return_url")   String                returnUrl,
-            @JsonProperty("cancel_url")   String                cancelUrl,
-            Map<String, String>                                  metadata
+            @JsonProperty("product_cart")     List<ProductCartItem> productCart,
+            Object                                                   customer,
+            @JsonProperty("return_url")       String                returnUrl,
+            @JsonProperty("cancel_url")       String                cancelUrl,
+            @JsonProperty("billing_currency") String                billingCurrency,
+            Map<String, String>                                      metadata
     ) {}
 
     record ProductCartItem(
