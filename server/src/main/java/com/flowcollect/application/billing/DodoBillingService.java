@@ -48,7 +48,7 @@ public class DodoBillingService {
     public DodoBillingService(
             @Value("${dodo.enabled:false}")                                    boolean enabled,
             @Value("${dodo.api-key:}")                                         String  apiKey,
-            @Value("${dodo.base-url:https://api.dodopayments.com}")            String  baseUrl,
+            @Value("${dodo.base-url:https://live.dodopayments.com}")            String  baseUrl,
             @Value("${dodo.pro-product-id-inr:}")                              String  proProductIdInr,
             @Value("${dodo.pro-product-id-usd:}")                              String  proProductIdUsd
     ) {
