@@ -133,11 +133,29 @@ export async function removeMember(orgId: string, userId: string): Promise<void>
 // ---------------------------------------------------------------------------
 
 export interface BillingResponse {
-  plan: 'STARTER' | 'PRO' | 'BUSINESS'
+  plan:               'STARTER' | 'PRO' | 'BUSINESS'
+  orgStatus:          'ACTIVE' | 'SUSPENDED' | 'TRIAL' | 'EXPIRED' | 'ARCHIVED'
+  planExpiresAt:      string | null  // ISO-8601; non-null when PRO but subscription cancelled
+  subscriptionActive: boolean        // true = auto-renewing; false = cancelled or never subscribed
+}
+
+export interface CheckoutSessionResponse {
+  checkoutUrl: string
 }
 
 export async function getBilling(orgId: string): Promise<BillingResponse> {
   const { data } = await api.get<BillingResponse>(`${base(orgId)}/billing`)
+  return data
+}
+
+export async function createCheckoutSession(
+  orgId: string,
+  plan: 'PRO',
+): Promise<CheckoutSessionResponse> {
+  const { data } = await api.post<CheckoutSessionResponse>(
+    `${base(orgId)}/billing/checkout`,
+    { plan },
+  )
   return data
 }
 

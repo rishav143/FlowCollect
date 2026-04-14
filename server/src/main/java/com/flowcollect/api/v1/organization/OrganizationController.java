@@ -115,12 +115,17 @@ public class OrganizationController {
         return ResponseEntity.ok(response);
     }
 
-    // Get billing info (plan + credits) for an org.
+    // Get billing info for an org (plan, subscription status, expiry).
     @GetMapping("/{organizationId}/billing")
     @RequireRole({ UserRole.ADMIN, UserRole.STAFF })
     public ResponseEntity<BillingResponse> getBilling(@PathVariable UUID organizationId) {
         Organization org = organizationService.getAuthorizedById(organizationId);
-        return ResponseEntity.ok(new BillingResponse(org.getPlan()));
+        return ResponseEntity.ok(new BillingResponse(
+                org.getPlan(),
+                org.getStatus(),
+                org.getPlanExpiresAt(),
+                org.getDodoSubscriptionId() != null
+        ));
     }
 
     // Hard-delete an organization by id.

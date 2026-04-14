@@ -38,8 +38,19 @@ function isAppPath(pathname: string) {
 
 function routeLazy(fn: () => Promise<{ default: React.ComponentType }>) {
   return async () => {
-    const { default: Component } = await fn()
-    return { Component }
+    try {
+      const { default: Component } = await fn()
+      return { Component }
+    } catch (err) {
+      // Chunk failed to load — stale deployment, new hashes on CDN.
+      // Reload once so the browser picks up the new build.
+      const key = 'chunk_reload_attempted'
+      if (!sessionStorage.getItem(key)) {
+        sessionStorage.setItem(key, '1')
+        window.location.reload()
+      }
+      throw err
+    }
   }
 }
 

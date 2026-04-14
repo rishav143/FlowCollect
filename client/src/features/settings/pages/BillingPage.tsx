@@ -1,9 +1,15 @@
-import { Check } from 'lucide-react'
-import { useBilling } from '../hooks/useBilling'
-import { useOrgProfile } from '../hooks/useOrgSettings'
+import { Check, AlertCircle, Clock } from 'lucide-react'
+import { useEffect, useState }       from 'react'
+import { useSearchParams }           from 'react-router-dom'
+import { useQueryClient }            from '@tanstack/react-query'
+import { useBilling }                from '../hooks/useBilling'
+import { useOrgProfile }             from '../hooks/useOrgSettings'
+import { useAuthStore }              from '@/store/auth.store'
+import { createCheckoutSession }     from '@/api/organization.api'
+import { useToast }                  from '@/store/toast.store'
 
 // ---------------------------------------------------------------------------
-// Pricing — two regions only: India (INR) and Global (USD)
+// Pricing — two regions: India (INR) and Global (USD)
 // ---------------------------------------------------------------------------
 
 type Currency = 'INR' | 'USD'
@@ -26,8 +32,14 @@ function fmt(amount: number, currency: Currency) {
   }).format(amount)
 }
 
+function fmtDate(iso: string) {
+  return new Date(iso).toLocaleDateString(undefined, {
+    year: 'numeric', month: 'long', day: 'numeric',
+  })
+}
+
 // ---------------------------------------------------------------------------
-// Plans
+// Plans definition
 // ---------------------------------------------------------------------------
 
 function getPlans(currency: Currency) {
@@ -66,14 +78,104 @@ function getPlans(currency: Currency) {
 }
 
 // ---------------------------------------------------------------------------
+// Return-URL banner (shown after redirect back from Dodo checkout)
+// ---------------------------------------------------------------------------
+
+function CheckoutBanner({ status, onDismiss }: { status: 'upgraded' | 'cancelled'; onDismiss: () => void }) {
+  if (status === 'upgraded') {
+    return (
+      <div className="flex items-start gap-3 rounded-lg border border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/20 p-4">
+        <Check size={16} className="text-green-600 dark:text-green-400 shrink-0 mt-0.5" strokeWidth={2.5} />
+        <div className="flex-1">
+          <p className="text-sm font-semibold text-green-800 dark:text-green-300">
+            Payment received — your plan is activating
+          </p>
+          <p className="text-xs text-green-700 dark:text-green-400 mt-0.5">
+            It may take a moment for your PRO access to reflect. Refresh if needed.
+          </p>
+        </div>
+        <button onClick={onDismiss} className="text-green-600 dark:text-green-400 hover:opacity-70 text-xs">✕</button>
+      </div>
+    )
+  }
+  return (
+    <div className="flex items-start gap-3 rounded-lg border border-c-border bg-white dark:bg-[#1B2838] p-4">
+      <AlertCircle size={16} className="text-c-muted shrink-0 mt-0.5" />
+      <div className="flex-1">
+        <p className="text-sm text-[#0D1B2A] dark:text-white">Checkout was not completed.</p>
+        <p className="text-xs text-c-muted mt-0.5">You can upgrade any time below.</p>
+      </div>
+      <button onClick={onDismiss} className="text-c-muted hover:opacity-70 text-xs">✕</button>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Subscription status banner (shown when org is suspended or subscription cancelled)
+// ---------------------------------------------------------------------------
+
+function SubscriptionStatusBanner({
+  orgStatus,
+  planExpiresAt,
+}: {
+  orgStatus:     string
+  planExpiresAt: string | null
+}) {
+  if (orgStatus === 'SUSPENDED') {
+    return (
+      <div className="flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20 p-4">
+        <AlertCircle size={16} className="text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
+        <p className="text-sm text-red-800 dark:text-red-300">
+          Your subscription is on hold due to a failed payment. Please update your billing details
+          through the Dodo customer portal, or contact support.
+        </p>
+      </div>
+    )
+  }
+
+  // PRO plan but subscription cancelled — show expiry notice
+  if (planExpiresAt) {
+    return (
+      <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-900/20 p-4">
+        <Clock size={16} className="text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+        <p className="text-sm text-amber-800 dark:text-amber-300">
+          Your PRO subscription was cancelled and will expire on{' '}
+          <span className="font-semibold">{fmtDate(planExpiresAt)}</span>.
+          Resubscribe below to keep your access.
+        </p>
+      </div>
+    )
+  }
+
+  return null
+}
+
+// ---------------------------------------------------------------------------
 // Plan card
 // ---------------------------------------------------------------------------
 
-function PlanCard({ plan, isCurrent, currency }: {
-  plan:      ReturnType<typeof getPlans>[number]
-  isCurrent: boolean
-  currency:  Currency
-}) {
+type PlanCardProps = {
+  plan:              ReturnType<typeof getPlans>[number]
+  isCurrent:         boolean
+  isLoading:         boolean
+  canUpgrade:        boolean    // false when billing is disabled or org is suspended
+  subscriptionActive: boolean
+  onUpgrade:         () => void
+  currency:          Currency
+}
+
+function PlanCard({ plan, isCurrent, isLoading, canUpgrade, subscriptionActive, onUpgrade, currency }: PlanCardProps) {
+  // Determine button label
+  const buttonLabel = (() => {
+    if (isCurrent && plan.id === 'PRO' && !subscriptionActive) return 'Resubscribe'
+    if (isCurrent)                                              return 'Current plan'
+    if (plan.id === 'STARTER')                                  return 'Free plan'
+    return `Upgrade to ${plan.name}`
+  })()
+
+  const isActionable = plan.id !== 'STARTER' && (!isCurrent || (isCurrent && !subscriptionActive))
+  const disabled     = !isActionable || !canUpgrade || isLoading
+
   return (
     <div className={[
       'rounded-xl border p-5 flex flex-col gap-4 relative',
@@ -127,16 +229,18 @@ function PlanCard({ plan, isCurrent, currency }: {
       </ul>
 
       <button
-        disabled={isCurrent}
+        disabled={disabled}
+        onClick={isActionable && canUpgrade ? onUpgrade : undefined}
         className={[
           'w-full py-2 text-sm font-semibold rounded-lg transition-opacity',
-          isCurrent
+          disabled
             ? 'border border-c-border text-c-muted cursor-default'
             : 'text-white hover:opacity-90',
+          isLoading ? 'opacity-60 cursor-wait' : '',
         ].join(' ')}
-        style={!isCurrent ? { background: 'linear-gradient(90deg, #29B6F6 0%, #4FC3F7 100%)' } : undefined}
+        style={!disabled ? { background: 'linear-gradient(90deg, #29B6F6 0%, #4FC3F7 100%)' } : undefined}
       >
-        {isCurrent ? 'Current plan' : `Upgrade to ${plan.name}`}
+        {isLoading && isActionable ? 'Redirecting…' : buttonLabel}
       </button>
     </div>
   )
@@ -147,14 +251,71 @@ function PlanCard({ plan, isCurrent, currency }: {
 // ---------------------------------------------------------------------------
 
 export default function BillingPage() {
-  const { data: billing } = useBilling()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const queryClient                     = useQueryClient()
+  const orgId                           = useAuthStore((s) => s.org?.id ?? '')
+
+  const { data: billing, isLoading: billingLoading } = useBilling()
   const currency    = useCurrency()
-  const currentPlan = billing?.plan ?? 'STARTER'
   const plans       = getPlans(currency)
+  const currentPlan = billing?.plan ?? 'STARTER'
+
+  // Return-URL detection: Dodo redirects back with ?upgraded=true or ?cancelled=true
+  const returnStatus = searchParams.get('upgraded') === 'true'   ? 'upgraded'
+                     : searchParams.get('cancelled') === 'true'  ? 'cancelled'
+                     : null
+
+  const toast = useToast()
+  const [banner, setBanner] = useState<'upgraded' | 'cancelled' | null>(null)
+  const [checkoutLoading, setCheckoutLoading] = useState(false)
+
+  useEffect(() => {
+    if (returnStatus) {
+      setBanner(returnStatus)
+      // Remove query params from URL without a navigation event
+      setSearchParams({}, { replace: true })
+      // Refresh billing data so the plan reflects the new state
+      if (returnStatus === 'upgraded') {
+        queryClient.invalidateQueries({ queryKey: ['billing', orgId] })
+      }
+    }
+  }, [returnStatus]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function handleUpgrade() {
+    if (!orgId || checkoutLoading) return
+    setCheckoutLoading(true)
+    try {
+      const { checkoutUrl } = await createCheckoutSession(orgId, 'PRO')
+      // Full page redirect — Dodo will redirect back to return_url after payment
+      window.location.href = checkoutUrl
+    } catch {
+      setCheckoutLoading(false)
+      toast.error('Could not start checkout. Please try again.')
+    }
+  }
+
+  const orgStatus         = billing?.orgStatus ?? 'ACTIVE'
+  const isSuspended       = orgStatus === 'SUSPENDED'
+  const hasCancelledPro   = currentPlan === 'PRO' && billing != null && !billing.subscriptionActive
+  const canUpgrade        = !billingLoading && !isSuspended && !checkoutLoading
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
 
+      {/* Return-URL banner */}
+      {banner && (
+        <CheckoutBanner status={banner} onDismiss={() => setBanner(null)} />
+      )}
+
+      {/* Subscription status banner (on_hold or cancelled-but-active) */}
+      {billing && (isSuspended || hasCancelledPro) && (
+        <SubscriptionStatusBanner
+          orgStatus={orgStatus}
+          planExpiresAt={billing.planExpiresAt ?? null}
+        />
+      )}
+
+      {/* Plans */}
       <div>
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-sm font-semibold text-[#0D1B2A] dark:text-white">Plans</h2>
@@ -162,11 +323,22 @@ export default function BillingPage() {
             {currency === 'INR' ? 'Prices in INR · India' : 'Prices in USD · Global'}
           </p>
         </div>
+
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
           {plans.map((plan) => (
-            <PlanCard key={plan.id} plan={plan} isCurrent={currentPlan === plan.id} currency={currency} />
+            <PlanCard
+              key={plan.id}
+              plan={plan}
+              isCurrent={currentPlan === plan.id}
+              isLoading={checkoutLoading}
+              canUpgrade={canUpgrade}
+              subscriptionActive={billing?.subscriptionActive ?? false}
+              onUpgrade={handleUpgrade}
+              currency={currency}
+            />
           ))}
         </div>
+
         <p className="text-xs text-c-muted mt-4 text-center max-w-2xl mx-auto">
           Founding member pricing — locked forever. Raises after the first 200 users.
         </p>

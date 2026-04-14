@@ -82,12 +82,35 @@ public class Organization {
     @Column(name = "auto_recovery_enabled", nullable = false)
     private boolean autoRecoveryEnabled = false;
 
-    // Billing
+    // Billing — PaidPeace subscription plan
     @NotNull
     @Enumerated(EnumType.STRING)
     @ColumnDefault("'STARTER'")
     @Column(name = "plan", nullable = false, length = 20)
     private OrgPlan plan = OrgPlan.STARTER;
+
+    /**
+     * Dodo Payments customer ID (cust_...).
+     * Populated on first successful checkout and reused for subsequent subscriptions.
+     */
+    @Column(name = "dodo_customer_id")
+    private String dodoCustomerId;
+
+    /**
+     * Active Dodo subscription ID (sub_...).
+     * Null when on STARTER plan or after a subscription is cancelled/expired.
+     * Presence indicates the subscription is currently renewing automatically.
+     */
+    @Column(name = "dodo_subscription_id")
+    private String dodoSubscriptionId;
+
+    /**
+     * When the current paid period ends.
+     * Null for STARTER plan.
+     * After cancellation this holds the end-of-term date until subscription.expired fires.
+     */
+    @Column(name = "plan_expires_at")
+    private Instant planExpiresAt;
 
     // Audit
     @Column(nullable = false, updatable = false)
@@ -215,6 +238,69 @@ public class Organization {
 
     public void setPlan(OrgPlan plan) {
         this.plan = plan;
+    }
+
+    public String getDodoCustomerId() {
+        return dodoCustomerId;
+    }
+
+    public String getDodoSubscriptionId() {
+        return dodoSubscriptionId;
+    }
+
+    public Instant getPlanExpiresAt() {
+        return planExpiresAt;
+    }
+
+    // ------------------------------------------------------------------
+    // Billing lifecycle — called by DodoWebhookController
+    // ------------------------------------------------------------------
+
+    /**
+     * subscription.active / first activation after successful checkout.
+     * Sets the plan, marks the org ACTIVE, and stores Dodo identifiers.
+     */
+    public void activatePlan(OrgPlan plan, String subscriptionId, String customerId, Instant periodEnd) {
+        this.plan              = plan;
+        this.status            = OrganizationStatus.ACTIVE;
+        this.dodoSubscriptionId = subscriptionId;
+        this.dodoCustomerId     = customerId;
+        this.planExpiresAt      = periodEnd;
+    }
+
+    /**
+     * subscription.renewed — auto-renewal succeeded; push the expiry date forward.
+     */
+    public void renewPlan(Instant newPeriodEnd) {
+        this.status        = OrganizationStatus.ACTIVE;
+        this.planExpiresAt = newPeriodEnd;
+    }
+
+    /**
+     * subscription.cancelled — user cancelled but is still within their paid period.
+     * Clears the subscription ID (no longer auto-renewing) while keeping the plan
+     * active until planExpiresAt. subscription.expired will downgrade it.
+     */
+    public void markSubscriptionCancelled() {
+        this.dodoSubscriptionId = null;
+        // plan and planExpiresAt intentionally unchanged
+    }
+
+    /**
+     * subscription.expired — paid period ended; downgrade to STARTER.
+     */
+    public void expirePlan() {
+        this.plan               = OrgPlan.STARTER;
+        this.status             = OrganizationStatus.ACTIVE;
+        this.dodoSubscriptionId = null;
+        this.planExpiresAt      = null;
+    }
+
+    /**
+     * subscription.on_hold — payment failed; suspend access until resolved.
+     */
+    public void holdPlan() {
+        this.status = OrganizationStatus.SUSPENDED;
     }
 
 

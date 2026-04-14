@@ -22,4 +22,6 @@ public interface OrganizationJpaRepository extends JpaRepository<Organization, U
     boolean existsByEmailAndIdNot(String email, UUID id);
 
     List<Organization> findAllByDeletedAtIsNullAndStatusIn(Collection<OrganizationStatus> statuses);
+
+    Optional<Organization> findByDodoSubscriptionId(String dodoSubscriptionId);
 }
