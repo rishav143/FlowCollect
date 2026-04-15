@@ -15,6 +15,7 @@ public class ReminderRuleRequest {
     private ReminderTriggerType triggerType;
     private ReminderChannel channel;
     private UUID templateId;
+    private Boolean attachPdf;
     private Boolean active;
 
     // Cycle & Recurrence
@@ -81,6 +82,14 @@ public class ReminderRuleRequest {
 
     public void setTemplateId(UUID templateId) {
         this.templateId = templateId;
+    }
+
+    public Boolean getAttachPdf() {
+        return attachPdf;
+    }
+
+    public void setAttachPdf(Boolean attachPdf) {
+        this.attachPdf = attachPdf;
     }
 
     public void setActive(Boolean active) {

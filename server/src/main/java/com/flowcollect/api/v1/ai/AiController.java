@@ -7,7 +7,11 @@ import com.flowcollect.api.v1.ai.dto.EnhanceTemplateRequest;
 import com.flowcollect.api.v1.ai.dto.GenerateTemplateRequest;
 import com.flowcollect.application.ai.AiInsightService;
 import com.flowcollect.application.ai.AiTemplateService;
+import com.flowcollect.application.organization.OrganizationService;
+import com.flowcollect.domain.organization.OrgPlan;
+import com.flowcollect.domain.organization.Organization;
 import com.flowcollect.domain.user.UserRole;
+import com.flowcollect.exception.http.PlanLimitException;
 import com.flowcollect.security.RequireRole;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -26,12 +30,25 @@ import java.util.UUID;
 @RequireRole({ UserRole.ADMIN, UserRole.STAFF })
 public class AiController {
 
-    private final AiTemplateService aiTemplateService;
-    private final AiInsightService aiInsightService;
+    private final AiTemplateService  aiTemplateService;
+    private final AiInsightService   aiInsightService;
+    private final OrganizationService organizationService;
 
-    public AiController(AiTemplateService aiTemplateService, AiInsightService aiInsightService) {
-        this.aiTemplateService = aiTemplateService;
-        this.aiInsightService = aiInsightService;
+    public AiController(
+            AiTemplateService   aiTemplateService,
+            AiInsightService    aiInsightService,
+            OrganizationService organizationService
+    ) {
+        this.aiTemplateService   = aiTemplateService;
+        this.aiInsightService    = aiInsightService;
+        this.organizationService = organizationService;
+    }
+
+    private void requirePro(UUID organizationId) {
+        Organization org = organizationService.getAuthorizedById(organizationId);
+        if (org.getPlan() != OrgPlan.PRO) {
+            throw new PlanLimitException("AI features require a PRO plan. Upgrade to continue.");
+        }
     }
 
     /**
@@ -48,6 +65,7 @@ public class AiController {
             @PathVariable UUID organizationId,
             @RequestBody @Valid GenerateTemplateRequest request
     ) {
+        requirePro(organizationId);
         AiTemplateService.AiTemplateResult result = aiTemplateService.generateTemplate(
                 organizationId,
                 request.getChannel(),
@@ -70,6 +88,7 @@ public class AiController {
             @PathVariable UUID organizationId,
             @RequestBody @Valid EnhanceTemplateRequest request
     ) {
+        requirePro(organizationId);
         AiTemplateService.AiTemplateResult result = aiTemplateService.enhanceTemplate(
                 organizationId,
                 request.getChannel(),
@@ -99,6 +118,7 @@ public class AiController {
             @PathVariable UUID organizationId,
             @RequestBody @Valid AskInsightRequest request
     ) {
+        requirePro(organizationId);
         String insights = aiInsightService.ask(organizationId, request);
         return ResponseEntity.ok(new AiInsightResponse(insights, false, java.time.Instant.now()));
     }
@@ -115,6 +135,7 @@ public class AiController {
             @PathVariable UUID organizationId,
             @RequestParam(defaultValue = "false") boolean forceRefresh
     ) {
+        requirePro(organizationId);
         AiInsightService.OverviewInsightResult result = aiInsightService.getOverviewInsights(organizationId, forceRefresh);
         return ResponseEntity.ok(new AiInsightResponse(result.insights(), result.cached(), result.generatedAt()));
     }
@@ -130,6 +151,7 @@ public class AiController {
             @PathVariable UUID organizationId,
             @PathVariable UUID customerId
     ) {
+        requirePro(organizationId);
         String insights = aiInsightService.generateCustomerInsights(organizationId, customerId);
         return ResponseEntity.ok(new AiInsightResponse(insights, false, java.time.Instant.now()));
     }

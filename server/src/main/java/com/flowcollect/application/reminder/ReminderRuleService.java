@@ -110,6 +110,7 @@ public class ReminderRuleService {
         rule.setTriggerType(request.getTriggerType());
         rule.setChannel(request.getChannel());
         rule.setTemplate(templateService.getTemplateById(primaryTemplateId));
+        rule.setAttachPdf(request.getAttachPdf() != null ? request.getAttachPdf() : true);
         rule.setMaxOccurrences(maxOccurrences);
         rule.setCycleIntervalDays(cycleIntervalDays);
         rule.setOccurrenceTemplateIds(resolvedOccurrenceIds);
@@ -185,6 +186,9 @@ public class ReminderRuleService {
         }
         if (request.getTemplateId() != null) {
             rule.setTemplate(templateService.getTemplateById(request.getTemplateId()));
+        }
+        if (request.getAttachPdf() != null) {
+            rule.setAttachPdf(request.getAttachPdf());
         }
 
         // Per-occurrence template overrides: only applied when field is explicitly provided

@@ -29,6 +29,7 @@ export interface ReminderRuleRequest {
   triggerType:       ReminderTriggerType
   channel:           ReminderChannel
   templateId?:       string | null
+  attachPdf?:        boolean
   active?:           boolean
   maxOccurrences?:        number
   cycleIntervalDays?:     number

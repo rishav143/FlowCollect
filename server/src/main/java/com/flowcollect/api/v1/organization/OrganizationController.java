@@ -18,6 +18,7 @@ import com.flowcollect.application.organization.OrganizationService;
 import com.flowcollect.application.organization.OrgPaymentDetailsService;
 import com.flowcollect.domain.organization.Organization;
 import com.flowcollect.domain.user.UserRole;
+import com.flowcollect.infrastructure.persistence.invoice.InvoiceJpaRepository;
 import com.flowcollect.security.RequireRole;
 import java.net.URI;
 import java.time.LocalDate;
@@ -27,15 +28,18 @@ import java.util.UUID;
 @RequestMapping("/api/v1/organizations")
 public class OrganizationController {
 
-    private final OrganizationService organizationService;
+    private final OrganizationService    organizationService;
     private final OrgPaymentDetailsService paymentDetailsService;
+    private final InvoiceJpaRepository   invoiceRepository;
 
     public OrganizationController(
-            OrganizationService organizationService,
-            OrgPaymentDetailsService paymentDetailsService
+            OrganizationService      organizationService,
+            OrgPaymentDetailsService paymentDetailsService,
+            InvoiceJpaRepository     invoiceRepository
     ) {
-        this.organizationService = organizationService;
+        this.organizationService  = organizationService;
         this.paymentDetailsService = paymentDetailsService;
+        this.invoiceRepository    = invoiceRepository;
     }
 
     // Create a new organization.
@@ -119,12 +123,14 @@ public class OrganizationController {
     @GetMapping("/{organizationId}/billing")
     @RequireRole({ UserRole.ADMIN, UserRole.STAFF })
     public ResponseEntity<BillingResponse> getBilling(@PathVariable UUID organizationId) {
-        Organization org = organizationService.getAuthorizedById(organizationId);
+        Organization org         = organizationService.getAuthorizedById(organizationId);
+        long         activeCount = invoiceRepository.countActiveByOrganizationId(organizationId);
         return ResponseEntity.ok(new BillingResponse(
                 org.getPlan(),
                 org.getStatus(),
                 org.getPlanExpiresAt(),
-                org.getDodoSubscriptionId() != null
+                org.getDodoSubscriptionId() != null,
+                activeCount
         ));
     }
 

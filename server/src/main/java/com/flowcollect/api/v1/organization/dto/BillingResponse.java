@@ -9,5 +9,6 @@ public record BillingResponse(
     OrgPlan            plan,
     OrganizationStatus orgStatus,
     Instant            planExpiresAt,
-    boolean            subscriptionActive
+    boolean            subscriptionActive,
+    long               activeInvoiceCount
 ) {}

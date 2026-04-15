@@ -76,7 +76,7 @@ public class ReminderRule {
     private Template template;
 
     @Column(name = "attach_pdf", nullable = false)
-    private boolean attachPdf = false;
+    private boolean attachPdf = true;
 
     // Cycle & Recurrence
 

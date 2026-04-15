@@ -4,6 +4,7 @@ import { Sparkles, RefreshCw } from 'lucide-react'
 import { useAuthStore } from '@/store/auth.store'
 import { getAiOverviewInsights } from '@/api/ai.api'
 import { formatCurrency } from '@/lib/format'
+import { usePlan } from '@/hooks/usePlan'
 
 // Parse "- bullet\n- bullet" into a string array
 function parseBullets(raw: string): string[] {
@@ -47,6 +48,7 @@ function timeAgo(isoString: string): string {
 }
 
 export default function AiInsightBanner() {
+  const { isPro } = usePlan()
   const orgId    = useAuthStore((s) => s.org?.id ?? '')
   const currency = useAuthStore((s) => s.org?.currency ?? 'USD')
   const qc       = useQueryClient()
@@ -57,7 +59,7 @@ export default function AiInsightBanner() {
   const { data, isLoading, isError } = useQuery({
     queryKey,
     queryFn:   () => getAiOverviewInsights(orgId),
-    enabled:   !!orgId,
+    enabled:   !!orgId && isPro,
     // Never auto-refetch — backend cache handles staleness (48h TTL).
     staleTime: Infinity,
     retry:     false,
@@ -89,6 +91,9 @@ export default function AiInsightBanner() {
       </div>
     )
   }
+
+  // Not on PRO — don't render the banner at all
+  if (!isPro) return null
 
   // Silent failure — don't break the dashboard if AI is unavailable
   if (isError || !data) return null

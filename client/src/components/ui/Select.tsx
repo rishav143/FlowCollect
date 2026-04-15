@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { Check, ChevronDown } from 'lucide-react'
 
 export interface SelectOption {
@@ -7,13 +8,21 @@ export interface SelectOption {
 }
 
 interface Props {
-  value:       string
-  onChange:    (value: string) => void
-  options:     SelectOption[]
+  value:        string
+  onChange:     (value: string) => void
+  options:      SelectOption[]
   placeholder?: string
-  disabled?:   boolean
-  error?:      boolean
-  className?:  string
+  disabled?:    boolean
+  error?:       boolean
+  className?:   string
+}
+
+interface DropPos {
+  top:       number
+  left:      number
+  width:     number
+  maxHeight: number
+  openUp:    boolean
 }
 
 export default function Select({
@@ -25,30 +34,75 @@ export default function Select({
   error       = false,
   className   = '',
 }: Props) {
-  const [open, setOpen] = useState(false)
-  const ref             = useRef<HTMLDivElement>(null)
+  const [open, setOpen]       = useState(false)
+  const [dropPos, setDropPos] = useState<DropPos>({ top: 0, left: 0, width: 0, maxHeight: 240, openUp: false })
+
+  const triggerRef = useRef<HTMLButtonElement>(null)
+  const listRef    = useRef<HTMLUListElement>(null)
+
+  const recalcPos = useCallback(() => {
+    if (!triggerRef.current) return
+    const r          = triggerRef.current.getBoundingClientRect()
+    const GAP        = 6
+    const MARGIN     = 8
+    const MAX        = 240
+    const MIN_FLIP   = 120  // flip upward only if space below drops under this
+
+    const spaceBelow = window.innerHeight - r.bottom - GAP - MARGIN
+    const spaceAbove = r.top - GAP - MARGIN
+    const openUp     = spaceBelow < MIN_FLIP && spaceAbove > spaceBelow
+
+    setDropPos({
+      top:       openUp ? r.top - GAP : r.bottom + GAP,
+      left:      r.left,
+      width:     r.width,
+      maxHeight: Math.min(MAX, openUp ? spaceAbove : spaceBelow),
+      openUp,
+    })
+  }, [])
 
   useEffect(() => {
+    if (!open) return
+    recalcPos()
+
     function onPointerDown(e: PointerEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+      const t = e.target as Node
+      if (
+        !(triggerRef.current?.contains(t)) &&
+        !(listRef.current?.contains(t))
+      ) setOpen(false)
     }
+    function onScroll(e: Event) {
+      // Scrolling inside the list itself is fine — only close on external scroll
+      if (listRef.current && listRef.current.contains(e.target as Node)) return
+      setOpen(false)
+    }
+    function onResize()  { recalcPos() }
+
     document.addEventListener('pointerdown', onPointerDown)
-    return () => document.removeEventListener('pointerdown', onPointerDown)
-  }, [])
+    window.addEventListener('scroll', onScroll, true)
+    window.addEventListener('resize', onResize)
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown)
+      window.removeEventListener('scroll', onScroll, true)
+      window.removeEventListener('resize', onResize)
+    }
+  }, [open, recalcPos])
 
   const selected = options.find((o) => o.value === value)
 
   const triggerCls = [
-    'w-full flex items-center justify-between px-3 py-2 text-sm rounded-lg',
-    'bg-[#F4F7F9] dark:bg-[#243447] transition-colors',
-    'border focus:outline-none',
-    error    ? 'border-red-400'          : 'border-transparent focus:border-[#8A9BAE]/40',
-    disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer',
+    'w-full flex items-center justify-between px-3 py-2 text-sm rounded-lg border transition-colors focus:outline-none',
+    'bg-[#F4F7F9] dark:bg-[#243447]',
+    selected  ? 'border-[#8A9BAE]/50 dark:border-[#8A9BAE]/40'  : 'border-transparent',
+    error     ? '!border-red-400'               : '',
+    disabled  ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer',
   ].join(' ')
 
   return (
-    <div ref={ref} className={`relative ${className}`}>
+    <div className={`relative ${className}`}>
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => !disabled && setOpen((o) => !o)}
         className={triggerCls}
@@ -65,24 +119,45 @@ export default function Select({
         />
       </button>
 
-      {open && (
+      {open && createPortal(
         <ul
+          ref={listRef}
           role="listbox"
-          className="absolute z-20 mt-1 w-full bg-white dark:bg-[#1B2838] border border-c-border rounded-lg shadow-lg overflow-hidden max-h-60 overflow-y-auto"
+          style={{
+            position:  'fixed',
+            top:       dropPos.openUp ? undefined : dropPos.top,
+            bottom:    dropPos.openUp ? window.innerHeight - dropPos.top : undefined,
+            left:      dropPos.left,
+            width:     dropPos.width,
+            zIndex:    9999,
+            maxHeight: dropPos.maxHeight,
+            overflowY: 'auto',
+          }}
+          className="bg-white dark:bg-[#1B2838] border border-c-border rounded-lg shadow-xl"
         >
           {options.map((opt) => (
             <li
               key={opt.value}
               role="option"
               aria-selected={opt.value === value}
-              onClick={() => { onChange(opt.value); setOpen(false) }}
-              className="flex items-center justify-between px-3 py-2.5 text-sm text-[#0D1B2A] dark:text-white hover:bg-[#F4F7F9] dark:hover:bg-[#243447] cursor-pointer transition-colors"
+              onPointerDown={(e) => {
+                e.preventDefault()
+                onChange(opt.value)
+                setOpen(false)
+              }}
+              className={[
+                'flex items-center justify-between px-3 py-2.5 text-sm cursor-pointer transition-colors',
+                opt.value === value
+                  ? 'bg-[#29B6F6]/10 text-[#0D1B2A] dark:text-white font-medium'
+                  : 'text-[#0D1B2A] dark:text-white hover:bg-[#F4F7F9] dark:hover:bg-[#243447]',
+              ].join(' ')}
             >
               {opt.label}
               {opt.value === value && <Check size={13} strokeWidth={2.5} className="text-[#29B6F6] shrink-0 ml-2" />}
             </li>
           ))}
-        </ul>
+        </ul>,
+        document.body,
       )}
     </div>
   )

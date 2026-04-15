@@ -137,6 +137,7 @@ export interface BillingResponse {
   orgStatus:          'ACTIVE' | 'SUSPENDED' | 'TRIAL' | 'EXPIRED' | 'ARCHIVED'
   planExpiresAt:      string | null  // ISO-8601; non-null when PRO but subscription cancelled
   subscriptionActive: boolean        // true = auto-renewing; false = cancelled or never subscribed
+  activeInvoiceCount: number         // DRAFT + ISSUED + PARTIALLY_PAID
 }
 
 export interface CheckoutSessionResponse {

@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Sparkles, RefreshCw, Loader2, Check, X, ChevronDown } from 'lucide-react'
@@ -412,8 +413,9 @@ export default function TemplateForm({
   const subjectReg = register('subject')
 
   // AI state
-  const [aiLoading,  setAiLoading]  = useState(false)
-  const [aiError,    setAiError]    = useState<string | null>(null)
+  const [aiLoading,     setAiLoading]     = useState(false)
+  const [aiError,       setAiError]       = useState<string | null>(null)
+  const [aiPlanLimit,   setAiPlanLimit]   = useState(false)
   const [aiPreview,  setAiPreview]  = useState<AiPreview | null>(null)
 
   function insertIntoBody(variable: string) {
@@ -441,6 +443,7 @@ export default function TemplateForm({
   async function runAi(action: 'polish' | 'generate' | 'tone', targetTone?: Tone) {
     if (!orgId || aiLoading) return
     setAiError(null)
+    setAiPlanLimit(false)
     setAiPreview(null)
     setAiLoading(true)
     try {
@@ -462,8 +465,13 @@ export default function TemplateForm({
       }
 
       setAiPreview({ subject: result.subject, body: result.body, label })
-    } catch {
-      setAiError('AI request failed. Please try again.')
+    } catch (err: unknown) {
+      const status = (err as { response?: { status?: number } })?.response?.status
+      if (status === 402) {
+        setAiPlanLimit(true)
+      } else {
+        setAiError('AI request failed. Please try again.')
+      }
     } finally {
       setAiLoading(false)
     }
@@ -605,6 +613,12 @@ export default function TemplateForm({
             {!smsTooLong && (smsTemplate?.isUnicode || smsRupeeWarning) && (
               <p className="text-xs text-c-muted">
                 Contains characters that require Unicode encoding (70 chars/segment).
+              </p>
+            )}
+            {aiPlanLimit && (
+              <p className="text-xs text-amber-600 dark:text-amber-400">
+                AI features require a PRO plan.{' '}
+                <Link to="/settings/billing" className="underline hover:opacity-70">Upgrade now</Link>
               </p>
             )}
             {aiError && (

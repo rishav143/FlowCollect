@@ -1,4 +1,4 @@
-import { Check, AlertCircle, Clock } from 'lucide-react'
+import { Check, AlertCircle, Clock, RefreshCw } from 'lucide-react'
 import { useEffect, useState }       from 'react'
 import { useSearchParams }           from 'react-router-dom'
 import { useQueryClient }            from '@tanstack/react-query'
@@ -81,18 +81,29 @@ function getPlans(currency: Currency) {
 // Return-URL banner (shown after redirect back from Dodo checkout)
 // ---------------------------------------------------------------------------
 
-function CheckoutBanner({ status, onDismiss }: { status: 'upgraded' | 'cancelled'; onDismiss: () => void }) {
+function CheckoutBanner({ status, onDismiss, onRefresh }: {
+  status:    'upgraded' | 'cancelled'
+  onDismiss: () => void
+  onRefresh: () => void
+}) {
   if (status === 'upgraded') {
     return (
       <div className="flex items-start gap-3 rounded-lg border border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/20 p-4">
         <Check size={16} className="text-green-600 dark:text-green-400 shrink-0 mt-0.5" strokeWidth={2.5} />
         <div className="flex-1">
           <p className="text-sm font-semibold text-green-800 dark:text-green-300">
-            Payment received — your plan is activating
+            Payment received. Your plan is activating
           </p>
           <p className="text-xs text-green-700 dark:text-green-400 mt-0.5">
-            It may take a moment for your PRO access to reflect. Refresh if needed.
+            If your plan has not updated yet, click refresh below.
           </p>
+          <button
+            onClick={onRefresh}
+            className="mt-1.5 flex items-center gap-1 text-xs font-medium text-green-700 dark:text-green-400 hover:opacity-70"
+          >
+            <RefreshCw size={11} />
+            Refresh plan status
+          </button>
         </div>
         <button onClick={onDismiss} className="text-green-600 dark:text-green-400 hover:opacity-70 text-xs">✕</button>
       </div>
@@ -266,15 +277,14 @@ export default function BillingPage() {
                      : null
 
   const toast = useToast()
-  const [banner, setBanner] = useState<'upgraded' | 'cancelled' | null>(null)
+  const [banner, setBanner]               = useState<'upgraded' | 'cancelled' | null>(null)
   const [checkoutLoading, setCheckoutLoading] = useState(false)
 
+  // On redirect back from Dodo checkout
   useEffect(() => {
     if (returnStatus) {
       setBanner(returnStatus)
-      // Remove query params from URL without a navigation event
       setSearchParams({}, { replace: true })
-      // Refresh billing data so the plan reflects the new state
       if (returnStatus === 'upgraded') {
         queryClient.invalidateQueries({ queryKey: ['billing', orgId] })
       }
@@ -298,13 +308,19 @@ export default function BillingPage() {
   const isSuspended       = orgStatus === 'SUSPENDED'
   const hasCancelledPro   = currentPlan === 'PRO' && billing != null && !billing.subscriptionActive
   const canUpgrade        = !billingLoading && !isSuspended && !checkoutLoading
+  const activeInvoices    = billing?.activeInvoiceCount ?? 0
+  const atInvoiceLimit    = currentPlan === 'STARTER' && activeInvoices >= 3
 
   return (
     <div className="space-y-5">
 
       {/* Return-URL banner */}
       {banner && (
-        <CheckoutBanner status={banner} onDismiss={() => setBanner(null)} />
+        <CheckoutBanner
+          status={banner}
+          onDismiss={() => setBanner(null)}
+          onRefresh={() => queryClient.invalidateQueries({ queryKey: ['billing', orgId] })}
+        />
       )}
 
       {/* Subscription status banner (on_hold or cancelled-but-active) */}
@@ -313,6 +329,29 @@ export default function BillingPage() {
           orgStatus={orgStatus}
           planExpiresAt={billing.planExpiresAt ?? null}
         />
+      )}
+
+      {/* STARTER invoice usage bar */}
+      {currentPlan === 'STARTER' && !billingLoading && (
+        <div className="rounded-lg border border-c-border bg-white dark:bg-[#1B2838] p-4">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs font-medium text-[#0D1B2A] dark:text-white">Active invoices</p>
+            <p className={`text-xs font-semibold ${atInvoiceLimit ? 'text-amber-500 dark:text-amber-400' : 'text-c-muted'}`}>
+              {activeInvoices} / 3
+            </p>
+          </div>
+          <div className="h-1.5 rounded-full bg-[#F4F7F9] dark:bg-white/10 overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all ${atInvoiceLimit ? 'bg-amber-400' : 'bg-[#29B6F6]'}`}
+              style={{ width: `${Math.min((activeInvoices / 3) * 100, 100)}%` }}
+            />
+          </div>
+          {atInvoiceLimit && (
+            <p className="text-xs text-amber-600 dark:text-amber-400 mt-1.5">
+              Limit reached. Upgrade to Pro for unlimited invoices.
+            </p>
+          )}
+        </div>
       )}
 
       {/* Plans */}
@@ -340,7 +379,7 @@ export default function BillingPage() {
         </div>
 
         <p className="text-xs text-c-muted mt-4 text-center max-w-2xl mx-auto">
-          Founding member pricing — locked forever. Raises after the first 200 users.
+          Founding member pricing, locked forever. Raises after the first 200 users.
         </p>
       </div>
 

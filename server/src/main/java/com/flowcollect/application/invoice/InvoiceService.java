@@ -21,7 +21,9 @@ import com.flowcollect.domain.invoice.LifeCycleStatus;
 import com.flowcollect.domain.invoice.TimeStatus;
 import com.flowcollect.domain.organization.Organization;
 import com.flowcollect.domain.user.User;
+import com.flowcollect.domain.organization.OrgPlan;
 import com.flowcollect.exception.http.NotFoundException;
+import com.flowcollect.exception.http.PlanLimitException;
 import com.flowcollect.exception.http.ValidationException;
 import com.flowcollect.infrastructure.pdf.InvoicePdfGenerator;
 import com.flowcollect.infrastructure.persistence.invoice.InvoiceJpaRepository;
@@ -70,6 +72,16 @@ public class InvoiceService {
             throw new ValidationException("Request must not be null");
         }
         Organization organization = organizationService.getById(organizationId);
+
+        // STARTER plan: max 3 active invoices (DRAFT + ISSUED + PARTIALLY_PAID)
+        if (organization.getPlan() == OrgPlan.STARTER) {
+            long active = invoiceRepository.countActiveByOrganizationId(organizationId);
+            if (active >= 3) {
+                throw new PlanLimitException(
+                    "STARTER plan is limited to 3 active invoices. Upgrade to PRO for unlimited invoices.");
+            }
+        }
+
         String normalizedInvoiceNumber = request.getInvoiceNumber().trim();
         if (invoiceRepository.existsByInvoiceNumberAndOrganizationId(normalizedInvoiceNumber, organizationId)) {
             throw new ValidationException(

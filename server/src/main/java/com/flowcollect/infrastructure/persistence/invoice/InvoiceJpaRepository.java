@@ -28,6 +28,10 @@ public interface InvoiceJpaRepository extends JpaRepository<Invoice, UUID>, JpaS
 
     Optional<Invoice> findByIdAndOrganizationId(UUID invoiceId, UUID orgId);
 
+    /** Counts active (non-terminal) invoices for an org — used to enforce STARTER plan limit. */
+    @Query("SELECT COUNT(i) FROM Invoice i WHERE i.organization.id = :orgId AND i.lifeCycleStatus IN ('DRAFT', 'ISSUED', 'PARTIALLY_PAID')")
+    long countActiveByOrganizationId(@Param("orgId") UUID orgId);
+
     /** Fetches overdue invoices with customer eagerly loaded — avoids N+1 when mapping customer fields. */
     @Query("SELECT i FROM Invoice i LEFT JOIN FETCH i.customer WHERE i.organization.id = :orgId AND i.timeStatus = :timeStatus AND i.lifeCycleStatus IN :statuses")
     List<Invoice> findByOrgAndTimeStatusAndLifeCycleStatusInWithCustomer(

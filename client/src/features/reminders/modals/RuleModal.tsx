@@ -25,6 +25,7 @@ interface FormState {
   channel:               ReminderChannel
   templateId:            string
   active:                boolean
+  attachPdf:             boolean
   // Advanced
   advancedEnabled:       boolean
   maxOccurrences:        string
@@ -66,6 +67,7 @@ const EMPTY: FormState = {
   direction:             'BEFORE',
   channel:               'EMAIL',
   templateId:            '',
+  attachPdf:             true,
   active:                true,
   advancedEnabled:       false,
   maxOccurrences:        '1',
@@ -248,6 +250,7 @@ export default function RuleModal({ rule, onClose }: Props) {
         direction:             TRIGGER_TO_DIRECTION[rule.triggerType],
         channel:               rule.channel,
         templateId:            rule.templateId ?? '',
+        attachPdf:             rule.attachPdf ?? true,
         active:                rule.active,
         // Always open advanced panel when the rule is cyclic so the templates are visible
         advancedEnabled:       isCyclicRule,
@@ -365,6 +368,7 @@ export default function RuleModal({ rule, onClose }: Props) {
       triggerType:           DIRECTION_TO_TRIGGER[form.direction],
       channel:               form.channel,
       templateId:            isCyclic ? form.occurrenceTemplateIds[0] : (form.templateId || null),
+      attachPdf:             form.attachPdf,
       active:                form.active,
       maxOccurrences:        maxOcc,
       cycleIntervalDays:     isCyclic ? interval : 0,
@@ -661,6 +665,18 @@ export default function RuleModal({ rule, onClose }: Props) {
                       interval={interval}
                     />
                   )}
+
+                  {/* Attach PDF */}
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-[#0D1B2A] dark:text-white">Attach PDF</p>
+                      <p className="text-xs text-c-muted mt-0.5">Include the invoice PDF in the reminder email</p>
+                    </div>
+                    <Toggle
+                      on={form.attachPdf}
+                      onToggle={() => !isSystemDefined && set('attachPdf', !form.attachPdf)}
+                    />
+                  </div>
                 </div>
               )}
             </div>

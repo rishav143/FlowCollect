@@ -6,6 +6,7 @@ import { useAuthStore } from '@/store/auth.store'
 import { useUIStore  } from '@/store/ui.store'
 import { useNotifications, type AppNotification } from '@/hooks/useNotifications'
 import { useNotificationStore } from '@/store/notification.store'
+import { usePlan } from '@/hooks/usePlan'
 
 const TOPBAR_LEFT_EXPANDED  = 'lg:left-[220px]'
 const TOPBAR_LEFT_COLLAPSED = 'lg:left-14'
@@ -217,6 +218,8 @@ export default function Topbar() {
   const { toggleSidebar, sidebarCollapsed, theme, toggleTheme } = useUIStore()
   const { unreadCount } = useNotifications()
 
+  const { atInvoiceLimit, activeInvoiceCount, invoiceLimit } = usePlan()
+
   const [profileOpen, setProfileOpen] = useState(false)
   const [notifOpen,   setNotifOpen]   = useState(false)
 
@@ -286,20 +289,32 @@ export default function Topbar() {
       <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
 
         {/* Add Invoice */}
-        <button
-          onClick={() => navigate('/invoices?create=true')}
-          aria-label="Add invoice"
-          className={[
-            'flex items-center justify-center text-white font-semibold',
-            'hover:opacity-90 transition-opacity',
-            'w-8 h-8 rounded-full',
-            'sm:w-auto sm:h-auto sm:rounded-lg sm:px-3 sm:py-1.5 sm:gap-1.5 sm:text-sm',
-          ].join(' ')}
-          style={{ background: 'linear-gradient(90deg, #29B6F6 0%, #4FC3F7 100%)' }}
-        >
-          <Plus size={14} strokeWidth={2.5} />
-          <span className="hidden sm:inline">Add Invoice</span>
-        </button>
+        <div className="relative group">
+          <button
+            onClick={() => atInvoiceLimit ? navigate('/settings/billing') : navigate('/invoices?create=true')}
+            aria-label={atInvoiceLimit ? 'Upgrade to add more invoices' : 'Add invoice'}
+            className={[
+              'flex items-center justify-center font-semibold',
+              'transition-opacity',
+              'w-8 h-8 rounded-full',
+              'sm:w-auto sm:h-auto sm:rounded-lg sm:px-3 sm:py-1.5 sm:gap-1.5 sm:text-sm',
+              atInvoiceLimit
+                ? 'text-c-muted border border-c-border bg-white dark:bg-[#1B2838] hover:border-[#29B6F6] hover:text-[#29B6F6]'
+                : 'text-white hover:opacity-90',
+            ].join(' ')}
+            style={!atInvoiceLimit ? { background: 'linear-gradient(90deg, #29B6F6 0%, #4FC3F7 100%)' } : undefined}
+          >
+            <Plus size={14} strokeWidth={2.5} />
+            <span className="hidden sm:inline">
+              {atInvoiceLimit ? 'Upgrade' : 'Add Invoice'}
+            </span>
+          </button>
+          {atInvoiceLimit && (
+            <div className="absolute right-0 top-full mt-2 w-52 bg-[#0D1B2A] text-white text-xs rounded-lg px-3 py-2 shadow-lg z-50 hidden group-hover:block pointer-events-none">
+              {activeInvoiceCount}/{invoiceLimit} active invoices used. Upgrade to PRO for unlimited.
+            </div>
+          )}
+        </div>
 
         {/* Theme toggle */}
         <button

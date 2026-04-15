@@ -612,6 +612,7 @@ public class RecoverSystemDataSeeder implements ApplicationRunner {
                 existing.setOccurrenceTemplateIds(new ArrayList<>(occurrenceTemplateIds));                               dirty = true;
             }
             if (existing.getMode() != RuleMode.AUTO)                       { existing.setMode(RuleMode.AUTO);          dirty = true; }
+            if (!existing.isAttachPdf())                                   { existing.setAttachPdf(true);              dirty = true; }
             if (dirty) {
                 reminderRuleRepository.save(existing);
                 log.info("[Seed] Synced system rule '{}' (id={})", name, existing.getId());
@@ -629,6 +630,7 @@ public class RecoverSystemDataSeeder implements ApplicationRunner {
             rule.setMode(RuleMode.AUTO);
             rule.setSystemDefined(true);
             rule.setActive(true);
+            rule.setAttachPdf(true);
             // organization stays null — platform-level, applies to all orgs via findActiveAutoRulesForOrg
             ReminderRule saved = reminderRuleRepository.save(rule);
             log.info("[Seed] Created system rule '{}' (id={})", name, saved.getId());

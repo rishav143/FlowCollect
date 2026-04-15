@@ -6,6 +6,8 @@ import {
 } from 'lucide-react'
 import { useAuthStore } from '@/store/auth.store'
 import { formatCurrency } from '@/lib/format'
+import { usePlan } from '@/hooks/usePlan'
+import UpgradeGate from '@/ui/components/UpgradeGate/UpgradeGate'
 import { useRecoverStats, useAutoRules, useToggleAutoRecovery, useQueueActivity } from '../hooks/useRecover'
 import type { UpcomingItem, ActivityItem } from '@/api/recover.api'
 import { useToggleReminderRule } from '@/features/reminders/hooks/useReminders'
@@ -454,6 +456,7 @@ function RecoveryToggle({ enabled, isPending, onToggle }: RecoveryToggleProps) {
 // ---------------------------------------------------------------------------
 
 export default function RecoverPage() {
+  const { isPro } = usePlan()
   const currency           = useAuthStore((s) => s.org?.currency ?? 'USD')
   const autoRecoveryEnabled = useAuthStore((s) => s.org?.autoRecoveryEnabled ?? false)
 
@@ -520,7 +523,11 @@ export default function RecoverPage() {
   }
 
   return (
-    <>
+    <UpgradeGate
+      allowed={isPro}
+      title="Recover is a PRO feature"
+      description="Automated follow-up rules, queue activity, and recovery stats are available on the PRO plan."
+    >
       <div className="space-y-5">
 
         {/* ── Header ──────────────────────────────────────────────────────── */}
@@ -703,6 +710,6 @@ export default function RecoverPage() {
           onClose={() => setEditingTemplate(null)}
         />
       )}
-    </>
+    </UpgradeGate>
   )
 }
