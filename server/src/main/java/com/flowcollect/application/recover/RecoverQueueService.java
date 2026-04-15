@@ -64,8 +64,8 @@ public class RecoverQueueService {
 
                 for (Invoice invoice : invoices) {
                     if (invoice.getDueDate() == null) continue;
-                    // Respect per-customer automation opt-out (same guard as scheduler)
-                    if (invoice.getCustomer() != null && !invoice.getCustomer().isAutomationEnabled()) continue;
+                    // Skip invoices with no customer — same guard as the scheduler
+                    if (invoice.getCustomer() == null || !invoice.getCustomer().isAutomationEnabled()) continue;
 
                     LocalDate scheduledDate = computeScheduledDate(rule.getTriggerType(), effectiveOffset, invoice.getDueDate());
                     if (scheduledDate == null) continue;

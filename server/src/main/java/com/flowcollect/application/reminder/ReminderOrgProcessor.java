@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.flowcollect.application.invoice.FollowUpService;
 import com.flowcollect.application.invoice.InvoiceService;
 import com.flowcollect.application.template.TemplateService;
+import com.flowcollect.domain.customer.Customer;
 import com.flowcollect.domain.invoice.Invoice;
 import com.flowcollect.domain.invoice.LifeCycleStatus;
 import com.flowcollect.domain.invoice.followup.FollowUp;
@@ -22,7 +23,6 @@ import com.flowcollect.domain.invoice.followup.FollowUpTriggerType;
 import com.flowcollect.domain.organization.Organization;
 import com.flowcollect.domain.reminder.ReminderRule;
 import com.flowcollect.domain.reminder.RuleMode;
-import com.flowcollect.domain.reminder.ReminderTriggerType;
 import com.flowcollect.domain.template.TemplateChannel;
 
 /**
@@ -119,7 +119,8 @@ public class ReminderOrgProcessor {
         for (Invoice invoice : invoiceService.getInvoicesForReminders(
                 organization.getId(), ELIGIBLE_INVOICE_STATUSES, targetDueDate)) {
 
-            if (invoice.getCustomer() != null && !invoice.getCustomer().isAutomationEnabled()) {
+            Customer customer = invoice.getCustomer();
+            if (customer == null || !customer.isAutomationEnabled()) {
                 continue;
             }
             if (followUpService.existsByInvoiceIdAndReminderRuleIdAndOccurrenceIndex(
@@ -208,6 +209,13 @@ public class ReminderOrgProcessor {
                         organization.getId(), followUp.getId(),
                         invoice != null ? invoice.getId() : "null",
                         invoice != null ? invoice.getLifeCycleStatus() : "null");
+                followUpService.cancelFollowUp(followUp);
+                cancelled++;
+                continue;
+            }
+            if (invoice.getCustomer() == null) {
+                log.info("[org={}] Cancelling follow-up {} — invoice {} has no customer",
+                        organization.getId(), followUp.getId(), invoice.getId());
                 followUpService.cancelFollowUp(followUp);
                 cancelled++;
                 continue;
