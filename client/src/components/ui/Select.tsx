@@ -92,7 +92,7 @@ export default function Select({
   const selected = options.find((o) => o.value === value)
 
   const triggerCls = [
-    'w-full flex items-center justify-between px-3 py-2 text-sm rounded-lg border transition-colors focus:outline-none',
+    'w-full min-w-[5rem] flex items-center justify-between px-3 py-2 text-sm rounded-lg border transition-colors focus:outline-none',
     'bg-[#F4F7F9] dark:bg-[#243447]',
     selected  ? 'border-[#8A9BAE]/50 dark:border-[#8A9BAE]/40'  : 'border-transparent',
     error     ? '!border-red-400'               : '',
@@ -146,7 +146,7 @@ export default function Select({
                 setOpen(false)
               }}
               className={[
-                'flex items-center justify-between px-3 py-2.5 text-sm cursor-pointer transition-colors',
+                'flex items-center justify-between px-3 py-2.5 text-sm cursor-pointer transition-colors whitespace-nowrap',
                 opt.value === value
                   ? 'bg-[#29B6F6]/10 text-[#0D1B2A] dark:text-white font-medium'
                   : 'text-[#0D1B2A] dark:text-white hover:bg-[#F4F7F9] dark:hover:bg-[#243447]',

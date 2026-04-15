@@ -56,7 +56,8 @@ public class JwtFilter extends OncePerRequestFilter {
             "/track/",             // link click tracking redirect (sets openedAt, then redirects)
             "/api/v1/webhooks/",   // gateway webhook receivers (verified by gateway signature)
             "/api/v1/diagnostics/",// dev/staging diagnostics — remove before production
-            "/api/v1/public/"      // public unauthenticated endpoints (confirmation flow, etc.)
+            "/api/v1/public/",     // public unauthenticated endpoints (confirmation flow, etc.)
+            "/api/v1/dev/"         // dev-only simulation endpoints (@Profile("local") — not registered in production)
     );
 
     private final JwtService jwtService;
