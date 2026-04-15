@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { NavLink, useNavigate } from 'react-router-dom'
+import { NavLink, useNavigate, useLocation } from 'react-router-dom'
+import { useDebounce } from '@/hooks/useDebounce'
 import { Search, Plus, Bell, ChevronDown, Menu, Sun, Moon, CheckCheck, Circle } from 'lucide-react'
 import Logo from '@/ui/components/Logo/Logo'
 import { useAuthStore } from '@/store/auth.store'
@@ -212,6 +213,7 @@ function ProfileDropdown({
 
 export default function Topbar() {
   const navigate    = useNavigate()
+  const location    = useLocation()
   const user        = useAuthStore((s) => s.user)
   const org         = useAuthStore((s) => s.org)
   const clearAuth   = useAuthStore((s) => s.clearAuth)
@@ -220,8 +222,24 @@ export default function Topbar() {
 
   const { atInvoiceLimit, activeInvoiceCount, invoiceLimit } = usePlan()
 
-  const [profileOpen, setProfileOpen] = useState(false)
-  const [notifOpen,   setNotifOpen]   = useState(false)
+  const [profileOpen,  setProfileOpen]  = useState(false)
+  const [notifOpen,    setNotifOpen]    = useState(false)
+  const [searchQuery,  setSearchQuery]  = useState('')
+  const debouncedSearch = useDebounce(searchQuery, 300)
+
+  // Navigate to invoices page with the debounced query
+  useEffect(() => {
+    if (debouncedSearch.trim()) {
+      navigate(`/invoices?q=${encodeURIComponent(debouncedSearch.trim())}`, { replace: true })
+    }
+  }, [debouncedSearch]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Clear search input when navigating away from invoices
+  useEffect(() => {
+    if (!location.pathname.startsWith('/invoices')) {
+      setSearchQuery('')
+    }
+  }, [location.pathname])
 
   const profileRef = useRef<HTMLDivElement>(null!)
   const notifRef   = useRef<HTMLDivElement>(null!)
@@ -277,6 +295,8 @@ export default function Topbar() {
           <input
             type="text"
             placeholder="Search invoices / clients..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-8 pr-4 py-1.5 text-sm bg-[#F4F7F9] dark:bg-[#243447] rounded-lg border border-transparent focus:border-[#8A9BAE]/40 focus:outline-none text-[#0D1B2A] dark:text-white placeholder:text-c-muted transition-colors"
           />
         </div>
