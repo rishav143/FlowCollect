@@ -186,7 +186,7 @@ export default function RegisterPage() {
             <label className={labelCls}>Business name</label>
             <input
               type="text"
-              placeholder="Jane Smith or Jane Smith Design"
+              placeholder="Jane Smith Design"
               required
               value={organizationName}
               onChange={(e) => setOrganizationName(e.target.value)}
