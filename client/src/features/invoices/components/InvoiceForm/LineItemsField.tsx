@@ -51,29 +51,35 @@ export default function LineItemsField({ items, onChange, currency }: Props) {
       {/* Rows */}
       {items.map((item, idx) => (
         <div key={idx}>
-          {/* ── Mobile: stacked card (< sm) ── */}
-          <div className="sm:hidden rounded-lg bg-[#F4F7F9] dark:bg-[#243447] p-3 space-y-2">
-            <input
-              type="text"
-              placeholder="Description"
-              value={item.description}
-              onChange={(e) => update(idx, 'description', e.target.value)}
-              className={inputCls}
-            />
-            <div className="flex items-center gap-2">
-              <div className="flex flex-col gap-0.5">
-                <span className="text-[10px] font-semibold uppercase tracking-wide text-c-muted px-0.5">Qty</span>
-                <input
-                  type="number"
-                  min={1}
-                  step={1}
-                  value={item.quantity}
-                  onChange={(e) => update(idx, 'quantity', Math.max(1, parseInt(e.target.value) || 1))}
-                  className={inputCls + ' w-16 text-center'}
-                />
-              </div>
-              <div className="flex flex-col gap-0.5 flex-1">
-                <span className="text-[10px] font-semibold uppercase tracking-wide text-c-muted px-0.5">Price</span>
+          {/* ── Mobile: fully stacked card (< sm) ── */}
+          <div className="sm:hidden rounded-lg bg-[#F4F7F9] dark:bg-[#243447] p-3 space-y-3">
+            {/* Description */}
+            <div>
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-c-muted">Description</span>
+              <input
+                type="text"
+                placeholder="e.g. Design work"
+                value={item.description}
+                onChange={(e) => update(idx, 'description', e.target.value)}
+                className={inputCls + ' mt-1'}
+              />
+            </div>
+            {/* Quantity */}
+            <div>
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-c-muted">Quantity</span>
+              <input
+                type="number"
+                min={1}
+                step={1}
+                value={item.quantity}
+                onChange={(e) => update(idx, 'quantity', Math.max(1, parseInt(e.target.value) || 1))}
+                className={inputCls + ' mt-1'}
+              />
+            </div>
+            {/* Price + amount + delete */}
+            <div>
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-c-muted">Unit Price</span>
+              <div className="flex items-center gap-2 mt-1">
                 <input
                   type="number"
                   min={0}
@@ -81,23 +87,20 @@ export default function LineItemsField({ items, onChange, currency }: Props) {
                   placeholder="0"
                   value={item.unitPrice || ''}
                   onChange={(e) => update(idx, 'unitPrice', Math.round(parseFloat(e.target.value) || 0))}
-                  className={inputCls}
+                  className={inputCls + ' flex-1'}
                 />
-              </div>
-              <div className="flex flex-col gap-0.5 items-end shrink-0">
-                <span className="text-[10px] font-semibold uppercase tracking-wide text-c-muted px-0.5">Amount</span>
-                <span className="text-sm font-medium text-[#0D1B2A] dark:text-white tabular-nums py-2">
+                <span className="text-sm font-semibold text-[#0D1B2A] dark:text-white tabular-nums shrink-0">
                   {formatCurrency(item.quantity * item.unitPrice, currency, { decimals: false })}
                 </span>
+                <button
+                  type="button"
+                  onClick={() => remove(idx)}
+                  disabled={items.length === 1}
+                  className="p-1.5 rounded text-c-muted hover:text-red-500 disabled:opacity-30 transition-colors shrink-0"
+                >
+                  <Trash2 size={14} strokeWidth={2} />
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => remove(idx)}
-                disabled={items.length === 1}
-                className="p-1.5 rounded text-c-muted hover:text-red-500 disabled:opacity-30 transition-colors self-end mb-0.5"
-              >
-                <Trash2 size={14} strokeWidth={2} />
-              </button>
             </div>
           </div>
 
