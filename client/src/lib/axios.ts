@@ -37,7 +37,7 @@ api.interceptors.response.use(
 
     if (forceLogout) {
       useAuthStore.getState().clearAuth()
-      window.location.href = '/login'
+      window.location.replace('/login')
     }
     return Promise.reject(err)
   },
