@@ -563,11 +563,11 @@ export default function RecoverPage() {
         {statsError ? (
           <StatsError onRetry={refetchStats} />
         ) : statsLoading ? (
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             {[...Array(3)].map((_, i) => <KpiCardSkeleton key={i} />)}
           </div>
         ) : (
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             <KpiCard
               label="Total Recovered"
               value={formatCurrency(stats?.totalRecovered ?? 0, currency, { decimals: false })}
@@ -624,7 +624,7 @@ export default function RecoverPage() {
               <span className="text-sm font-semibold text-[#0D1B2A] dark:text-white">
                 Automation Rules
               </span>
-              <span className="text-xs text-c-muted">System-managed · Edit to customise</span>
+              <span className="hidden sm:inline text-xs text-c-muted">System-managed · Edit to customise</span>
             </div>
 
             {rulesLoading ? (
