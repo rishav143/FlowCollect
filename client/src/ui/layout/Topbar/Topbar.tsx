@@ -236,7 +236,7 @@ export default function Topbar() {
   function handleLogout() {
     clearAuth()
     setProfileOpen(false)
-    navigate('/login')
+    navigate('/login', { replace: true })
   }
 
   const userName = user?.name ?? 'User'

@@ -33,12 +33,15 @@ export default function HeroSection() {
         >
           Get started free →
         </a>
-        <a
-          href="#how-it-works"
+        <button
+          onClick={() => {
+            document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' })
+            window.history.replaceState(null, '', '#how-it-works')
+          }}
           className="px-8 py-3.5 rounded-xl border border-white/20 text-white/80 hover:text-white hover:border-white/40 transition-colors font-medium text-base"
         >
           See how it works
-        </a>
+        </button>
       </div>
 
       {/* Micro trust line */}

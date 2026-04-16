@@ -3,11 +3,18 @@ import Logo from '@/ui/components/Logo/Logo'
 import { useAuthStore } from '@/store/auth.store'
 
 const NAV_LINKS = [
-  { label: 'Features', href: '#features' },
-  { label: 'How it works', href: '#how-it-works' },
-  { label: 'Pricing', href: '#pricing' },
-  { label: 'FAQ', href: '#faq' },
+  { label: 'Features',     id: 'features'     },
+  { label: 'How it works', id: 'how-it-works' },
+  { label: 'Pricing',      id: 'pricing'      },
+  { label: 'FAQ',          id: 'faq'          },
 ]
+
+function scrollToSection(id: string) {
+  document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
+  // replaceState keeps the URL in sync without pushing a new history entry,
+  // so the visitor can leave with a single Back tap.
+  window.history.replaceState(null, '', `#${id}`)
+}
 
 export default function LandingNavbar() {
   const token = useAuthStore((s) => s.token)
@@ -23,13 +30,13 @@ export default function LandingNavbar() {
         {!token && (
           <div className="hidden md:flex items-center gap-6">
             {NAV_LINKS.map((link) => (
-              <a
+              <button
                 key={link.label}
-                href={link.href}
+                onClick={() => scrollToSection(link.id)}
                 className="text-sm text-white/60 hover:text-white transition-colors"
               >
                 {link.label}
-              </a>
+              </button>
             ))}
           </div>
         )}
