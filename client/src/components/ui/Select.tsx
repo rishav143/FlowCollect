@@ -15,7 +15,6 @@ interface Props {
   disabled?:    boolean
   error?:       boolean
   className?:   string
-  variant?:     'app' | 'light'
 }
 
 interface DropPos {
@@ -34,7 +33,6 @@ export default function Select({
   disabled    = false,
   error       = false,
   className   = '',
-  variant     = 'app',
 }: Props) {
   const [open, setOpen]       = useState(false)
   const [dropPos, setDropPos] = useState<DropPos>({ top: 0, left: 0, width: 0, maxHeight: 240, openUp: false })
@@ -92,42 +90,14 @@ export default function Select({
   }, [open, recalcPos])
 
   const selected = options.find((o) => o.value === value)
-  const isLight  = variant === 'light'
 
-  const triggerCls = isLight
-    ? [
-        'w-full min-w-[5rem] flex items-center justify-between px-3.5 py-2.5 text-sm rounded-xl border transition-colors focus:outline-none bg-white',
-        error    ? 'border-red-400'              : open ? 'border-[#29B6F6]' : 'border-gray-200',
-        disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer',
-      ].join(' ')
-    : [
-        'w-full min-w-[5rem] flex items-center justify-between px-3 py-2 text-sm rounded-lg border transition-colors focus:outline-none',
-        'bg-[#F4F7F9] dark:bg-[#243447]',
-        selected  ? 'border-[#8A9BAE]/50 dark:border-[#8A9BAE]/40' : 'border-transparent',
-        error     ? '!border-red-400'               : '',
-        disabled  ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer',
-      ].join(' ')
-
-  const dropdownCls = isLight
-    ? 'bg-white border border-gray-200 rounded-xl shadow-lg'
-    : 'bg-white dark:bg-[#1B2838] border border-c-border rounded-lg shadow-xl'
-
-  function itemCls(opt: SelectOption) {
-    if (isLight) {
-      return [
-        'flex items-center justify-between px-3.5 py-2.5 text-sm cursor-pointer transition-colors whitespace-nowrap',
-        opt.value === value
-          ? 'bg-[#29B6F6]/10 text-gray-900 font-medium'
-          : 'text-gray-700 hover:bg-gray-50',
-      ].join(' ')
-    }
-    return [
-      'flex items-center justify-between px-3 py-2.5 text-sm cursor-pointer transition-colors whitespace-nowrap',
-      opt.value === value
-        ? 'bg-[#29B6F6]/10 text-[#0D1B2A] dark:text-white font-medium'
-        : 'text-[#0D1B2A] dark:text-white hover:bg-[#F4F7F9] dark:hover:bg-[#243447]',
-    ].join(' ')
-  }
+  const triggerCls = [
+    'w-full min-w-[5rem] flex items-center justify-between px-3 py-2 text-sm rounded-lg border transition-colors focus:outline-none',
+    'bg-[#F4F7F9] dark:bg-[#243447]',
+    selected  ? 'border-[#8A9BAE]/50 dark:border-[#8A9BAE]/40'  : 'border-transparent',
+    error     ? '!border-red-400'               : '',
+    disabled  ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer',
+  ].join(' ')
 
   return (
     <div className={`relative ${className}`}>
@@ -139,16 +109,13 @@ export default function Select({
         aria-haspopup="listbox"
         aria-expanded={open}
       >
-        <span className={isLight
-          ? (selected ? 'text-gray-900' : 'text-gray-400')
-          : (selected ? 'text-[#0D1B2A] dark:text-white' : 'text-c-muted')
-        }>
+        <span className={selected ? 'text-[#0D1B2A] dark:text-white' : 'text-c-muted'}>
           {selected ? selected.label : placeholder}
         </span>
         <ChevronDown
           size={14}
           strokeWidth={2}
-          className={`shrink-0 ml-2 transition-transform ${open ? 'rotate-180' : ''} ${isLight ? 'text-gray-400' : 'text-c-muted'}`}
+          className={`shrink-0 ml-2 text-c-muted transition-transform ${open ? 'rotate-180' : ''}`}
         />
       </button>
 
@@ -166,7 +133,7 @@ export default function Select({
             maxHeight: dropPos.maxHeight,
             overflowY: 'auto',
           }}
-          className={dropdownCls}
+          className="bg-white dark:bg-[#1B2838] border border-c-border rounded-lg shadow-xl"
         >
           {options.map((opt) => (
             <li
@@ -178,7 +145,12 @@ export default function Select({
                 onChange(opt.value)
                 setOpen(false)
               }}
-              className={itemCls(opt)}
+              className={[
+                'flex items-center justify-between px-3 py-2.5 text-sm cursor-pointer transition-colors whitespace-nowrap',
+                opt.value === value
+                  ? 'bg-[#29B6F6]/10 text-[#0D1B2A] dark:text-white font-medium'
+                  : 'text-[#0D1B2A] dark:text-white hover:bg-[#F4F7F9] dark:hover:bg-[#243447]',
+              ].join(' ')}
             >
               {opt.label}
               {opt.value === value && <Check size={13} strokeWidth={2.5} className="text-[#29B6F6] shrink-0 ml-2" />}
