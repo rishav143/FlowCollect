@@ -13,7 +13,7 @@ interface Props {
 
 export default function DispatchModal({ invoice, onClose }: Props) {
   const [templateId, setTemplateId] = useState('')
-  const [attachPdf,  setAttachPdf]  = useState(false)
+  const [attachPdf,  setAttachPdf]  = useState(true)
   const [sendError,  setSendError]  = useState<string | null>(null)
 
   const hasNoClient = !invoice.customerId

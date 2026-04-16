@@ -73,7 +73,7 @@ export default function ClientForm({ initial, onSubmit, isLoading }: Props) {
     <form onSubmit={handleSubmit} className="space-y-4">
       {field('name',        'Name *',        'Full name or business name')}
       {field('companyName', 'Company',       'Company name (optional)')}
-      {field('email',       'Email',         'billing@example.com', 'email')}
+      {field('email',       'Email *',        'billing@example.com', 'email')}
       {field('phone',       'Phone',         '+91 98765 43210', 'tel')}
       {field('address',     'Address',       'City, State (optional)')}
       <button

@@ -9,6 +9,7 @@ export interface ClientFormValues {
 export function validateClientForm(v: ClientFormValues): Partial<Record<keyof ClientFormValues, string>> {
   const errors: Partial<Record<keyof ClientFormValues, string>> = {}
   if (!v.name.trim())                                                      errors.name  = 'Name is required'
-  if (v.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.email))            errors.email = 'Enter a valid email'
+  if (!v.email.trim())                                                     errors.email = 'Email is required'
+  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.email))                  errors.email = 'Enter a valid email'
   return errors
 }
