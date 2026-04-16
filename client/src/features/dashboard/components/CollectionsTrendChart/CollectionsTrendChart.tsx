@@ -102,8 +102,8 @@ export default function CollectionsTrendChart({ data, currency, isLoading }: Pro
           <h2 className="text-sm font-semibold text-[#0D1B2A] dark:text-white">Collections Trend</h2>
           <p className="text-xs text-c-muted mt-0.5">Monthly collected · last 6 months + forecast</p>
         </div>
-        {/* Legend */}
-        <div className="flex items-center gap-3 text-xs text-c-muted">
+        {/* Legend — hidden on small screens (tooltip still works) */}
+        <div className="hidden sm:flex items-center gap-3 text-xs text-c-muted">
           <span className="flex items-center gap-1">
             <span className="inline-block w-3 h-2.5 rounded-sm bg-green-500 dark:bg-green-400" />
             Collected

@@ -112,33 +112,62 @@ function OverdueSection({
               return (
                 <li
                   key={inv.invoiceId}
-                  className={`flex items-center gap-3 px-5 py-3 cursor-pointer hover:bg-[#F4F7F9] dark:hover:bg-[#243447] transition-colors ${borderCls}`}
+                  className={`cursor-pointer hover:bg-[#F4F7F9] dark:hover:bg-[#243447] transition-colors ${borderCls}`}
                   onClick={() => navigate(`/invoices/${inv.invoiceId}`)}
                 >
-                  {/* Left — invoice number + customer name inline */}
-                  <div className="min-w-0 flex-1 flex items-center gap-1.5">
-                    <p className="text-sm font-semibold text-[#0D1B2A] dark:text-white shrink-0">{inv.invoiceNumber}</p>
-                    {inv.customerName && (
-                      <span className="text-xs text-c-muted truncate">{inv.customerName}</span>
-                    )}
+                  {/* ── Mobile layout (< sm) — two rows ── */}
+                  <div className="sm:hidden px-5 py-3">
+                    <div className="flex items-center gap-3">
+                      <p className="text-sm font-semibold text-[#0D1B2A] dark:text-white flex-1">{inv.invoiceNumber}</p>
+                      <span className="text-sm font-semibold text-[#0D1B2A] dark:text-white tabular-nums shrink-0">
+                        {formatCurrency(inv.remainingAmount, currency, { decimals: false })}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between mt-1.5">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        {inv.customerName && (
+                          <span className="text-xs text-c-muted truncate">{inv.customerName}</span>
+                        )}
+                        <span className="text-xs font-medium text-red-500 shrink-0">{days}d overdue</span>
+                      </div>
+                      {onFollowup && (
+                        <div onClick={(e) => e.stopPropagation()}>
+                          <button
+                            onClick={() => onFollowup(inv)}
+                            title="Send reminder"
+                            className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium text-[#29B6F6] hover:bg-[#29B6F6]/10 transition-colors"
+                          >
+                            <Bell size={12} strokeWidth={2.5} />
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
-                  {/* Right — overdue badge · amount · reminder button */}
-                  <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
-                    <span className="text-xs font-medium text-red-500">{days}d overdue</span>
-                    <span className="text-sm font-semibold text-[#0D1B2A] dark:text-white tabular-nums">
-                      {formatCurrency(inv.remainingAmount, currency, { decimals: false })}
-                    </span>
-                    {onFollowup && (
-                      <button
-                        onClick={() => onFollowup(inv)}
-                        title="Send reminder"
-                        className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium text-[#29B6F6] hover:bg-[#29B6F6]/10 transition-colors"
-                      >
-                        <Bell size={12} strokeWidth={2.5} />
-                        <span className="hidden sm:inline">Remind</span>
-                      </button>
-                    )}
+                  {/* ── Desktop/tablet layout (sm+) — original single row ── */}
+                  <div className="hidden sm:flex items-center gap-3 px-5 py-3">
+                    <div className="min-w-0 flex-1 flex items-center gap-1.5">
+                      <p className="text-sm font-semibold text-[#0D1B2A] dark:text-white shrink-0">{inv.invoiceNumber}</p>
+                      {inv.customerName && (
+                        <span className="text-xs text-c-muted truncate">{inv.customerName}</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
+                      <span className="text-xs font-medium text-red-500">{days}d overdue</span>
+                      <span className="text-sm font-semibold text-[#0D1B2A] dark:text-white tabular-nums">
+                        {formatCurrency(inv.remainingAmount, currency, { decimals: false })}
+                      </span>
+                      {onFollowup && (
+                        <button
+                          onClick={() => onFollowup(inv)}
+                          title="Send reminder"
+                          className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium text-[#29B6F6] hover:bg-[#29B6F6]/10 transition-colors"
+                        >
+                          <Bell size={12} strokeWidth={2.5} />
+                          <span>Remind</span>
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </li>
               )
