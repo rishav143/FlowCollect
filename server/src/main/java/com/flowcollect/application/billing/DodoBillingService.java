@@ -179,4 +179,40 @@ public class DodoBillingService {
             @JsonProperty("session_id")   String sessionId,
             @JsonProperty("checkout_url") String checkoutUrl
     ) {}
+
+    // ------------------------------------------------------------------
+
+    /**
+     * Cancels an active Dodo subscription immediately.
+     *
+     * The subscription stops auto-renewing; the org retains PRO access until
+     * the current period ends. Dodo will fire a {@code subscription.cancelled}
+     * webhook to confirm — DodoWebhookController.handleCancelled() is
+     * idempotent so the double-update is safe.
+     *
+     * @param subscriptionId the Dodo subscription ID stored on the org (sub_...)
+     */
+    public void cancelSubscription(String subscriptionId) {
+        if (!enabled) {
+            throw new ServiceUnavailableException("Billing is not enabled on this server");
+        }
+
+        log.info("Cancelling Dodo subscription: subscriptionId={}", subscriptionId);
+
+        restClient.patch()
+                .uri("/subscriptions/{id}", subscriptionId)
+                .body(new CancelSubscriptionRequest("cancelled"))
+                .retrieve()
+                .onStatus(HttpStatusCode::isError, (req, res) -> {
+                    String body = new String(res.getBody().readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+                    log.error("Dodo cancel error: status={} body={}", res.getStatusCode(), body);
+                    throw new ServiceUnavailableException(
+                            "Could not cancel subscription. Please try again later.");
+                })
+                .toBodilessEntity();
+
+        log.info("Dodo subscription cancelled: subscriptionId={}", subscriptionId);
+    }
+
+    record CancelSubscriptionRequest(String status) {}
 }

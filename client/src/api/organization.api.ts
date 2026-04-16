@@ -160,3 +160,7 @@ export async function createCheckoutSession(
   return data
 }
 
+export async function cancelSubscription(orgId: string): Promise<void> {
+  await api.post(`${base(orgId)}/billing/cancel`)
+}
+

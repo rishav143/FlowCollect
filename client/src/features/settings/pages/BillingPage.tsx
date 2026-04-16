@@ -5,7 +5,7 @@ import { useQueryClient }            from '@tanstack/react-query'
 import { useBilling }                from '../hooks/useBilling'
 import { useOrgProfile }             from '../hooks/useOrgSettings'
 import { useAuthStore }              from '@/store/auth.store'
-import { createCheckoutSession }     from '@/api/organization.api'
+import { createCheckoutSession, cancelSubscription } from '@/api/organization.api'
 import { useToast }                  from '@/store/toast.store'
 
 // ---------------------------------------------------------------------------
@@ -277,8 +277,10 @@ export default function BillingPage() {
                      : null
 
   const toast = useToast()
-  const [banner, setBanner]               = useState<'upgraded' | 'cancelled' | null>(null)
+  const [banner, setBanner]                   = useState<'upgraded' | 'cancelled' | null>(null)
   const [checkoutLoading, setCheckoutLoading] = useState(false)
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false)
+  const [cancelLoading,     setCancelLoading]     = useState(false)
 
   // On redirect back from Dodo checkout
   useEffect(() => {
@@ -290,6 +292,21 @@ export default function BillingPage() {
       }
     }
   }, [returnStatus]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function handleCancel() {
+    if (!orgId || cancelLoading) return
+    setCancelLoading(true)
+    try {
+      await cancelSubscription(orgId)
+      setShowCancelConfirm(false)
+      queryClient.invalidateQueries({ queryKey: ['billing', orgId] })
+      toast.success('Subscription cancelled. You keep Pro access until the end of your billing period.')
+    } catch {
+      toast.error('Could not cancel subscription. Please try again.')
+    } finally {
+      setCancelLoading(false)
+    }
+  }
 
   async function handleUpgrade() {
     if (!orgId || checkoutLoading) return
@@ -382,6 +399,47 @@ export default function BillingPage() {
           Founding member pricing, locked forever. Raises after the first 200 users.
         </p>
       </div>
+
+      {/* Cancel subscription — only shown when PRO and actively renewing */}
+      {currentPlan === 'PRO' && billing?.subscriptionActive && !isSuspended && (
+        <div className="pt-1">
+          {!showCancelConfirm ? (
+            <button
+              onClick={() => setShowCancelConfirm(true)}
+              className="text-xs text-c-muted hover:text-red-500 transition-colors"
+            >
+              Cancel subscription
+            </button>
+          ) : (
+            <div className="rounded-xl border border-c-border bg-white dark:bg-[#1B2838] p-4 space-y-3 max-w-2xl">
+              <p className="text-sm font-semibold text-[#0D1B2A] dark:text-white">Cancel your subscription?</p>
+              <p className="text-xs text-c-muted leading-relaxed">
+                You'll keep Pro access until{' '}
+                <span className="font-medium text-[#0D1B2A] dark:text-white">
+                  {billing.planExpiresAt ? fmtDate(billing.planExpiresAt) : 'the end of your billing period'}
+                </span>
+                . After that your account moves to the free plan. You can resubscribe any time.
+              </p>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handleCancel}
+                  disabled={cancelLoading}
+                  className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-red-500 hover:bg-red-600 disabled:opacity-50 transition-colors"
+                >
+                  {cancelLoading ? 'Cancelling…' : 'Yes, cancel'}
+                </button>
+                <button
+                  onClick={() => setShowCancelConfirm(false)}
+                  disabled={cancelLoading}
+                  className="text-xs text-c-muted hover:opacity-70 transition-opacity disabled:opacity-30"
+                >
+                  Keep subscription
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
     </div>
   )
