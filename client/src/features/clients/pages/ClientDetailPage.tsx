@@ -163,16 +163,16 @@ export default function ClientDetailPage() {
 
           {/* Stats row */}
           <div className="pt-3 border-t border-c-border">
-            <div className="flex gap-6 items-start">
+            <div className="grid grid-cols-3 gap-4 sm:flex sm:gap-6 sm:items-start">
               <Stat
                 label="Outstanding"
                 value={formatCurrency(outstanding, currency, { decimals: false })}
                 sub="remaining balance"
                 valueColor={outstanding > 0 ? undefined : 'text-green-600 dark:text-green-400'}
               />
-              <div className="w-px bg-c-border self-stretch" />
+              <div className="hidden sm:block w-px bg-c-border self-stretch" />
               <Stat label="Open Invoices"     value={String(openCount)} sub="issued or partial" />
-              <div className="w-px bg-c-border self-stretch" />
+              <div className="hidden sm:block w-px bg-c-border self-stretch" />
               <Stat label="Avg Payment Delay" value={invoices.length > 0 ? `${avgDelay}d` : '—'} sub="days to pay" />
             </div>
           </div>

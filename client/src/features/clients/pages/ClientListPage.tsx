@@ -36,54 +36,59 @@ function DeleteConfirm({
   const hasInvoices = invoiceCount > 0
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex flex-col justify-end sm:items-center sm:justify-center sm:p-4">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onCancel} />
-      <div className="relative w-full max-w-sm bg-white dark:bg-[#1B2838] rounded-2xl shadow-xl p-6">
-        <h2 className="text-base font-semibold text-[#0D1B2A] dark:text-white mb-2">
-          {hasInvoices ? 'Cannot Delete Client' : 'Delete Client'}
-        </h2>
+      <div className="relative w-full sm:max-w-sm bg-white dark:bg-[#1B2838] rounded-t-2xl sm:rounded-2xl shadow-xl">
+        <div className="sm:hidden flex justify-center pt-3 pb-1">
+          <div className="w-10 h-1 rounded-full bg-[#8A9BAE]/30" />
+        </div>
+        <div className="px-6 pt-4 pb-6">
+          <h2 className="text-base font-semibold text-[#0D1B2A] dark:text-white mb-2">
+            {hasInvoices ? 'Cannot Delete Client' : 'Delete Client'}
+          </h2>
 
-        {hasInvoices ? (
-          <>
-            <p className="text-sm text-c-muted mb-1">
-              <span className="font-semibold text-[#0D1B2A] dark:text-white">{client.name}</span> has {invoiceCount} invoice{invoiceCount !== 1 ? 's' : ''}.
-            </p>
-            <p className="text-sm text-c-muted mb-5">
-              Deleting would destroy invoice history. Archive the client instead — they'll be hidden from active lists but all records are preserved.
-            </p>
-            <div className="flex gap-3 justify-end">
-              <button onClick={onCancel} className="px-4 py-2 rounded-lg text-sm font-medium text-c-muted hover:bg-[#F4F7F9] dark:hover:bg-[#243447] transition-colors">
-                Cancel
-              </button>
-              <button
-                onClick={onArchive}
-                disabled={isArchiving}
-                className="px-4 py-2 rounded-lg text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
-                style={{ background: 'linear-gradient(90deg, #29B6F6 0%, #4FC3F7 100%)' }}
-              >
-                {isArchiving ? 'Archiving…' : 'Archive Client'}
-              </button>
-            </div>
-          </>
-        ) : (
-          <>
-            <p className="text-sm text-c-muted mb-5">
-              Delete <span className="font-semibold text-[#0D1B2A] dark:text-white">{client.name}</span>? This cannot be undone.
-            </p>
-            <div className="flex gap-3 justify-end">
-              <button onClick={onCancel} className="px-4 py-2 rounded-lg text-sm font-medium text-c-muted hover:bg-[#F4F7F9] dark:hover:bg-[#243447] transition-colors">
-                Cancel
-              </button>
-              <button
-                onClick={onConfirm}
-                disabled={isDeleting}
-                className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-red-500 hover:bg-red-600 disabled:opacity-50 transition-colors"
-              >
-                {isDeleting ? 'Deleting…' : 'Delete'}
-              </button>
-            </div>
-          </>
-        )}
+          {hasInvoices ? (
+            <>
+              <p className="text-sm text-c-muted mb-1">
+                <span className="font-semibold text-[#0D1B2A] dark:text-white">{client.name}</span> has {invoiceCount} invoice{invoiceCount !== 1 ? 's' : ''}.
+              </p>
+              <p className="text-sm text-c-muted mb-5">
+                Deleting would destroy invoice history. Archive the client instead. They'll be hidden from active lists but all records are preserved.
+              </p>
+              <div className="flex gap-3">
+                <button onClick={onCancel} className="flex-1 py-2.5 rounded-xl text-sm font-medium text-c-muted hover:bg-[#F4F7F9] dark:hover:bg-[#243447] transition-colors">
+                  Cancel
+                </button>
+                <button
+                  onClick={onArchive}
+                  disabled={isArchiving}
+                  className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
+                  style={{ background: 'linear-gradient(90deg, #29B6F6 0%, #4FC3F7 100%)' }}
+                >
+                  {isArchiving ? 'Archiving…' : 'Archive Client'}
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="text-sm text-c-muted mb-5">
+                Delete <span className="font-semibold text-[#0D1B2A] dark:text-white">{client.name}</span>? This cannot be undone.
+              </p>
+              <div className="flex gap-3">
+                <button onClick={onCancel} className="flex-1 py-2.5 rounded-xl text-sm font-medium text-c-muted hover:bg-[#F4F7F9] dark:hover:bg-[#243447] transition-colors">
+                  Cancel
+                </button>
+                <button
+                  onClick={onConfirm}
+                  disabled={isDeleting}
+                  className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white bg-red-500 hover:bg-red-600 disabled:opacity-50 transition-colors"
+                >
+                  {isDeleting ? 'Deleting…' : 'Delete'}
+                </button>
+              </div>
+            </>
+          )}
+        </div>
       </div>
     </div>
   )
@@ -153,7 +158,9 @@ export default function ClientListPage() {
             )}
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <ViewToggle value={view} onChange={setView} />
+            <div className="hidden sm:block">
+              <ViewToggle value={view} onChange={setView} />
+            </div>
             <button
               onClick={() => setShowAdd(true)}
               className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white hover:opacity-90 transition-opacity"
@@ -174,7 +181,7 @@ export default function ClientListPage() {
         />
 
         {/* Search */}
-        <div className="relative max-w-xs">
+        <div className="relative sm:max-w-xs">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-c-muted pointer-events-none" />
           <input
             type="text"
