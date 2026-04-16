@@ -75,66 +75,66 @@ function InvoiceRow({
   const dueToday = invoice.timeStatus === 'DUE_TODAY'
   const opened   = !!lastFollowup?.openedAt
 
-  return (
-    <div className="flex items-center gap-2 px-4 py-2.5 border-t border-c-border hover:bg-[#F4F7F9]/50 dark:hover:bg-white/5 transition-colors group">
-      {/* Invoice number */}
-      <div className="text-xs font-semibold text-[#0D1B2A] dark:text-white min-w-[96px] truncate">
-        {invoice.invoiceNumber}
-      </div>
+  const dueCls = overdue  ? 'text-red-500 font-semibold' :
+                 dueToday ? 'text-amber-600 dark:text-amber-400 font-semibold' :
+                 'text-c-muted'
 
-      {/* Amount */}
-      <div className="text-xs font-bold tabular-nums text-[#0D1B2A] dark:text-white min-w-[60px]">
-        {formatCurrency(invoice.remainingAmount, currency, { decimals: false })}
-      </div>
-
-      {/* Due */}
-      <div
-        className={[
-          'text-[11px] min-w-[80px]',
-          overdue  ? 'text-red-500 font-semibold' :
-          dueToday ? 'text-amber-600 dark:text-amber-400 font-semibold' :
-          'text-c-muted',
-        ].join(' ')}
-      >
-        {dueDateLabel(invoice.dueDate)}
-      </div>
-
-      {/* Last contacted */}
-      <div className="flex-1 flex items-center gap-1.5 min-w-0">
-        {lastFollowup ? (
-          <>
-            <ChannelDot channel={lastFollowup.channel} />
-            <span className="text-[11px] text-c-muted truncate">
-              {lastFollowup.channel === 'EMAIL'
-                ? 'Email'
-                : lastFollowup.channel === 'SMS'
-                ? 'SMS'
-                : 'WhatsApp'}{' '}
-              {timeAgo(lastFollowup.sentAt ?? lastFollowup.createdAt)}
-            </span>
-            {opened && (
-              <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-green-50 text-green-700 dark:bg-green-500/15 dark:text-green-400 shrink-0">
-                {lastFollowup?.clickedLinkType === 'PAYMENT_LINK' ? 'Payment link clicked' : lastFollowup?.clickedLinkType === 'CONFIRMATION_LINK' ? 'Confirmation clicked' : 'Clicked'}
-              </span>
-            )}
-          </>
-        ) : (
-          <span className="text-[11px] text-c-muted italic">Never contacted</span>
-        )}
-      </div>
-
-      {/* Send button */}
-      {canSend ? (
-        <button
-          onClick={onSend}
-          className="text-[11px] text-white px-3 py-1.5 rounded-md font-semibold hover:opacity-90 transition-opacity shrink-0 opacity-0 group-hover:opacity-100"
-          style={{ background: 'linear-gradient(90deg, #29B6F6 0%, #4FC3F7 100%)' }}
-        >
-          Send
-        </button>
-      ) : (
-        <span className="text-[11px] text-c-muted italic shrink-0">No client</span>
+  const contactNode = lastFollowup ? (
+    <div className="flex items-center gap-1.5 min-w-0">
+      <ChannelDot channel={lastFollowup.channel} />
+      <span className="text-[11px] text-c-muted truncate">
+        {lastFollowup.channel === 'EMAIL' ? 'Email' : lastFollowup.channel === 'SMS' ? 'SMS' : 'WhatsApp'}{' '}
+        {timeAgo(lastFollowup.sentAt ?? lastFollowup.createdAt)}
+      </span>
+      {opened && (
+        <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-green-50 text-green-700 dark:bg-green-500/15 dark:text-green-400 shrink-0">
+          {lastFollowup?.clickedLinkType === 'PAYMENT_LINK' ? 'Payment link clicked' : lastFollowup?.clickedLinkType === 'CONFIRMATION_LINK' ? 'Confirmation clicked' : 'Clicked'}
+        </span>
       )}
+    </div>
+  ) : (
+    <span className="text-[11px] text-c-muted italic">Never contacted</span>
+  )
+
+  const sendBtn = canSend ? (
+    <button
+      onClick={onSend}
+      className="text-[11px] text-white px-3 py-1.5 rounded-md font-semibold hover:opacity-90 transition-opacity shrink-0
+                 sm:opacity-0 sm:group-hover:opacity-100"
+      style={{ background: 'linear-gradient(90deg, #29B6F6 0%, #4FC3F7 100%)' }}
+    >
+      Send
+    </button>
+  ) : (
+    <span className="text-[11px] text-c-muted italic shrink-0">No client</span>
+  )
+
+  return (
+    <div className="border-t border-c-border hover:bg-[#F4F7F9]/50 dark:hover:bg-white/5 transition-colors group">
+
+      {/* ── Mobile: two-row layout (< sm) ── */}
+      <div className="sm:hidden px-4 py-2.5 space-y-1.5">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-semibold text-[#0D1B2A] dark:text-white flex-1">{invoice.invoiceNumber}</span>
+          <span className="text-xs font-bold tabular-nums text-[#0D1B2A] dark:text-white">{formatCurrency(invoice.remainingAmount, currency, { decimals: false })}</span>
+          {sendBtn}
+        </div>
+        <div className="flex items-center gap-2">
+          <span className={`text-[11px] shrink-0 ${dueCls}`}>{dueDateLabel(invoice.dueDate)}</span>
+          <span className="text-c-muted/40 text-[10px]">·</span>
+          {contactNode}
+        </div>
+      </div>
+
+      {/* ── Desktop: single-row layout (sm+) ── */}
+      <div className="hidden sm:flex items-center gap-2 px-4 py-2.5">
+        <div className="text-xs font-semibold text-[#0D1B2A] dark:text-white min-w-[96px] truncate">{invoice.invoiceNumber}</div>
+        <div className="text-xs font-bold tabular-nums text-[#0D1B2A] dark:text-white min-w-[60px]">{formatCurrency(invoice.remainingAmount, currency, { decimals: false })}</div>
+        <div className={`text-[11px] min-w-[80px] ${dueCls}`}>{dueDateLabel(invoice.dueDate)}</div>
+        <div className="flex-1 flex items-center gap-1.5 min-w-0">{contactNode}</div>
+        {sendBtn}
+      </div>
+
     </div>
   )
 }
@@ -287,48 +287,54 @@ function ClientGroupCard({
     <div className="bg-white dark:bg-[#1B2838] rounded-xl border border-c-border overflow-hidden">
 
       {/* Client header */}
-      <div className="flex items-center gap-3 px-4 py-3.5 bg-[#F4F7F9]/60 dark:bg-white/[0.03] border-b border-c-border">
-        {/* Avatar */}
-        <div
-          className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold shrink-0 ${avatarStyle}`}
-        >
-          {initials}
-        </div>
-
-        {/* Name + meta */}
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-[#0D1B2A] dark:text-white truncate">
-            {group.customerName}
-          </p>
-          <p className="text-[11px] text-c-muted mt-0.5 truncate">
-            {metaParts.join(' · ')}
-          </p>
-        </div>
-
-        {/* Right side: auto pill + total + action */}
-        <div className="flex items-center gap-3 shrink-0">
-          {autoRecoveryEnabled && (
-            <div className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[10px] font-medium">
-              <Zap size={9} strokeWidth={2} />
-              Auto
-            </div>
-          )}
-          <div className="text-right">
-            <p className="text-sm font-bold tabular-nums text-red-500">
-              {formatCurrency(group.totalRemaining, currency, { decimals: false })}
-            </p>
-            <p className="text-[10px] text-c-muted">
-              {group.invoices.length} invoice{group.invoices.length !== 1 ? 's' : ''}
-            </p>
+      <div className="px-4 py-3.5 bg-[#F4F7F9]/60 dark:bg-white/[0.03] border-b border-c-border">
+        <div className="flex items-center gap-3">
+          {/* Avatar */}
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold shrink-0 ${avatarStyle}`}>
+            {initials}
           </div>
-          <button
-            onClick={() => onConsolidate(group)}
-            className="text-xs px-3 py-1.5 rounded-lg font-semibold text-white hover:opacity-90 transition-opacity"
-            style={{ background: 'linear-gradient(90deg, #29B6F6 0%, #4FC3F7 100%)' }}
-          >
-            Send consolidated
-          </button>
+
+          {/* Name + meta */}
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-[#0D1B2A] dark:text-white truncate">{group.customerName}</p>
+            <p className="text-[11px] text-c-muted mt-0.5 truncate">{metaParts.join(' · ')}</p>
+          </div>
+
+          {/* Right: auto pill + amount (always visible) */}
+          <div className="flex items-center gap-2 shrink-0">
+            {autoRecoveryEnabled && (
+              <div className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[10px] font-medium">
+                <Zap size={9} strokeWidth={2} />
+                Auto
+              </div>
+            )}
+            <div className="text-right">
+              <p className="text-sm font-bold tabular-nums text-red-500">
+                {formatCurrency(group.totalRemaining, currency, { decimals: false })}
+              </p>
+              <p className="text-[10px] text-c-muted">
+                {group.invoices.length} invoice{group.invoices.length !== 1 ? 's' : ''}
+              </p>
+            </div>
+            {/* Desktop: inline button */}
+            <button
+              onClick={() => onConsolidate(group)}
+              className="hidden sm:block text-xs px-3 py-1.5 rounded-lg font-semibold text-white hover:opacity-90 transition-opacity"
+              style={{ background: 'linear-gradient(90deg, #29B6F6 0%, #4FC3F7 100%)' }}
+            >
+              Send consolidated
+            </button>
+          </div>
         </div>
+
+        {/* Mobile: full-width button on second row */}
+        <button
+          onClick={() => onConsolidate(group)}
+          className="sm:hidden mt-2.5 w-full text-xs py-2 rounded-lg font-semibold text-white hover:opacity-90 transition-opacity"
+          style={{ background: 'linear-gradient(90deg, #29B6F6 0%, #4FC3F7 100%)' }}
+        >
+          Send consolidated
+        </button>
       </div>
 
       {/* Invoice rows */}
