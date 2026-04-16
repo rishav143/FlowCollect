@@ -1,5 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useAuthStore } from '@/store/auth.store'
+import { useAuthStore }   from '@/store/auth.store'
+import { useToastStore }  from '@/store/toast.store'
+import { extractApiError } from '@/lib/errors'
 import {
   createInvoice,
   updateInvoice,
@@ -93,21 +95,21 @@ export function useDownloadPdf() {
       URL.revokeObjectURL(url)
     },
     onError: async (err: unknown) => {
+      // PDF errors come back as Blob — parse it before extracting the message
       const res = (err as { response?: { data?: unknown } })?.response
-      let message = 'Failed to download PDF.'
+      let message = 'Failed to download PDF. Please try again.'
       if (res?.data instanceof Blob) {
         try {
           const text = await (res.data as Blob).text()
-          const json = JSON.parse(text)
-          message = json.message ?? json.error ?? text
+          const json = JSON.parse(text) as { message?: string; error?: string }
+          message = json.message ?? json.error ?? message
         } catch {
-          message = await (res.data as Blob).text().catch(() => message)
+          // Blob wasn't JSON — keep the default message
         }
-      } else if (typeof res?.data === 'object' && res?.data !== null) {
-        message = (res.data as { message?: string }).message ?? message
+      } else {
+        message = extractApiError(err, message)
       }
-      console.error('[PDF download error]', message)
-      alert(message)
+      useToastStore.getState().addToast({ type: 'error', message, duration: 5000 })
     },
   })
 }

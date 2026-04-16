@@ -1,5 +1,6 @@
-import { createBrowserRouter, RouterProvider, Navigate, Outlet, useLocation } from 'react-router-dom'
+import { createBrowserRouter, RouterProvider, Navigate, Outlet, useLocation, useRouteError } from 'react-router-dom'
 import { useEffect } from 'react'
+import { RotateCcw, AlertTriangle } from 'lucide-react'
 import AppShell      from '@/ui/layout/AppShell/AppShell'
 import SettingsLayout from '@/features/settings/layout/SettingsLayout'
 import { useAuthStore } from '@/store/auth.store'
@@ -90,6 +91,39 @@ function GuestRoute() {
 }
 
 // ---------------------------------------------------------------------------
+// Route-level error fallback
+// Rendered by React Router when a lazy route fails to load (e.g. stale chunk
+// after a new deployment where the first reload attempt already ran).
+// ---------------------------------------------------------------------------
+
+function RouteErrorPage() {
+  useRouteError() // must call to satisfy React Router's hook requirement
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-[#F4F7F9] dark:bg-[#0D1B2A] px-4">
+      <div className="text-center max-w-xs">
+        <div className="w-14 h-14 rounded-full bg-red-100 dark:bg-red-500/10 flex items-center justify-center mx-auto mb-5">
+          <AlertTriangle size={24} className="text-red-500" strokeWidth={1.5} />
+        </div>
+        <h1 className="text-lg font-semibold text-[#0D1B2A] dark:text-white mb-2">
+          Page failed to load
+        </h1>
+        <p className="text-sm text-c-muted mb-6">
+          Try reloading the page. If the problem persists, come back in a few minutes.
+        </p>
+        <button
+          onClick={() => window.location.reload()}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white hover:opacity-90 transition-opacity"
+          style={{ background: 'linear-gradient(90deg, #29B6F6 0%, #4FC3F7 100%)' }}
+        >
+          <RotateCcw size={14} strokeWidth={2.5} />
+          Reload page
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
 // Router
 // ---------------------------------------------------------------------------
 
@@ -104,7 +138,8 @@ function RootLayout() {
 
 const router = createBrowserRouter([
   {
-    element: <RootLayout />,
+    element:      <RootLayout />,
+    errorElement: <RouteErrorPage />,
     children: [
 
   { path: '/', lazy: routeLazy(() => import('@/features/landing/pages/LandingPage')) },

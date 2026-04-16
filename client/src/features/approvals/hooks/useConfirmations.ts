@@ -43,6 +43,10 @@ function useReviewMutation(
   const queryClient = useQueryClient()
 
   return useMutation({
+    // ApprovalsPage and ActionTable pass onError at the call site and show
+    // inline feedback — mark silent so the global MutationCache handler doesn't
+    // also fire a toast on top of that.
+    meta: { silent: true },
     mutationFn: ({ id, businessNote, newDueDate }: { id: string; businessNote?: string; newDueDate?: string }) => {
       const body = (businessNote || newDueDate)
         ? { ...(businessNote ? { businessNote } : {}), ...(newDueDate ? { newDueDate } : {}) }
