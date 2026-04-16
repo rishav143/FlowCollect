@@ -28,12 +28,15 @@ export default function DeleteTemplateModal({ template, onClose }: Props) {
         aria-hidden="true"
       />
 
-      <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 pointer-events-none">
+      <div className="fixed inset-0 z-[200] flex flex-col justify-end sm:items-center sm:justify-center sm:p-4 pointer-events-none">
         <div
-          className="pointer-events-auto w-full max-w-sm bg-white dark:bg-[#1B2838] rounded-2xl shadow-2xl"
+          className="pointer-events-auto w-full sm:max-w-sm bg-white dark:bg-[#1B2838] rounded-t-2xl sm:rounded-2xl shadow-2xl"
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-c-border">
+          <div className="sm:hidden flex justify-center pt-3 pb-1">
+            <div className="w-10 h-1 rounded-full bg-[#8A9BAE]/30" />
+          </div>
+          <div className="flex items-center justify-between px-6 pt-4 sm:pt-5 pb-4 border-b border-c-border">
             <h2 className="text-base font-semibold text-[#0D1B2A] dark:text-white">Delete template?</h2>
             <button
               onClick={onClose}
@@ -59,17 +62,17 @@ export default function DeleteTemplateModal({ template, onClose }: Props) {
               </div>
             )}
 
-            <div className="flex justify-end gap-2">
+            <div className="flex gap-3">
               <button
                 onClick={onClose}
-                className="px-4 py-2 text-sm font-medium text-[#0D1B2A] dark:text-white hover:bg-[#F4F7F9] dark:hover:bg-[#243447] rounded-lg transition-colors"
+                className="flex-1 py-2.5 text-sm font-medium text-c-muted hover:bg-[#F4F7F9] dark:hover:bg-[#243447] rounded-xl transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleDelete}
                 disabled={isPending}
-                className="px-4 py-2 text-sm font-semibold text-white bg-[#EF4444] hover:opacity-90 rounded-lg transition-opacity disabled:opacity-50"
+                className="flex-1 py-2.5 text-sm font-semibold text-white bg-[#EF4444] hover:opacity-90 rounded-xl transition-opacity disabled:opacity-50"
               >
                 {isPending ? 'Deleting…' : 'Delete'}
               </button>

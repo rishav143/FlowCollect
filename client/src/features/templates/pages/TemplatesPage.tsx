@@ -44,7 +44,9 @@ export default function TemplatesPage() {
           <p className="text-sm text-c-muted mt-0.5">Reusable messages for your follow-ups and reminders</p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <ViewToggle value={view} onChange={setView} />
+          <div className="hidden sm:block">
+            <ViewToggle value={view} onChange={setView} />
+          </div>
           <button
             onClick={() => setShowCreate(true)}
             className="flex items-center gap-1.5 px-3 py-2 text-sm font-semibold text-white rounded-lg hover:opacity-90 transition-opacity"
