@@ -101,6 +101,24 @@ public class PaymentConfirmation {
     }
 
     /**
+     * Approves a partial payment and marks that the remaining balance has been
+     * requested from the customer. Transitions status to
+     * {@link PaymentConfirmationStatus#REMAINING_REQUESTED}.
+     *
+     * @param businessNote optional note from the business user (may be null)
+     * @throws IllegalStateException if not currently in PENDING_APPROVAL state
+     */
+    public void requestRemaining(String businessNote) {
+        if (this.status != PaymentConfirmationStatus.PENDING_APPROVAL) {
+            throw new IllegalStateException(
+                "Cannot request remaining for confirmation " + this.id + " — current status: " + this.status);
+        }
+        this.status = PaymentConfirmationStatus.REMAINING_REQUESTED;
+        this.businessNote = businessNote;
+        this.reviewedAt = Instant.now();
+    }
+
+    /**
      * Rejects this confirmation. Transitions status to {@link PaymentConfirmationStatus#REJECTED}.
      * The confirmation link remains OPEN so the customer may resubmit.
      *
@@ -117,9 +135,10 @@ public class PaymentConfirmation {
         this.reviewedAt = Instant.now();
     }
 
-    public boolean isPendingApproval() { return this.status == PaymentConfirmationStatus.PENDING_APPROVAL; }
-    public boolean isApproved()        { return this.status == PaymentConfirmationStatus.APPROVED; }
-    public boolean isRejected()        { return this.status == PaymentConfirmationStatus.REJECTED; }
+    public boolean isPendingApproval()      { return this.status == PaymentConfirmationStatus.PENDING_APPROVAL; }
+    public boolean isApproved()             { return this.status == PaymentConfirmationStatus.APPROVED; }
+    public boolean isRemainingRequested()   { return this.status == PaymentConfirmationStatus.REMAINING_REQUESTED; }
+    public boolean isRejected()             { return this.status == PaymentConfirmationStatus.REJECTED; }
 
     // Getters
 

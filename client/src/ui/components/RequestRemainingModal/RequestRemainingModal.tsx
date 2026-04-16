@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { X } from 'lucide-react'
+import DatePicker from '@/ui/components/DatePicker/DatePicker'
 
 interface Props {
   invoiceNumber: string
@@ -11,9 +12,6 @@ interface Props {
 export default function RequestRemainingModal({ invoiceNumber, onConfirm, onCancel, isLoading }: Props) {
   const [note,       setNote]       = useState('')
   const [newDueDate, setNewDueDate] = useState('')
-
-  // Min date for the date input — today
-  const today = new Date().toISOString().split('T')[0]
 
   function handleConfirm() {
     onConfirm(note, newDueDate || undefined)
@@ -49,12 +47,10 @@ export default function RequestRemainingModal({ invoiceNumber, onConfirm, onCanc
             <p className="text-[11px] text-c-muted mt-0.5 mb-1.5">
               Set a new deadline for the remaining balance. Leave blank to keep the original due date.
             </p>
-            <input
-              type="date"
+            <DatePicker
+              label="Pick a date"
               value={newDueDate}
-              min={today}
-              onChange={(e) => setNewDueDate(e.target.value)}
-              className="w-full text-sm rounded-lg border border-c-border bg-transparent text-[#0D1B2A] dark:text-white p-2.5 focus:outline-none focus:border-[#8A9BAE]/40 [color-scheme:light] dark:[color-scheme:dark]"
+              onChange={setNewDueDate}
             />
           </div>
 

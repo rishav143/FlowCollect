@@ -270,7 +270,7 @@ public class PaymentConfirmationService {
         }
 
         String note = extractNote(request);
-        confirmation.approve(note);
+        confirmation.requestRemaining(note);
         confirmationRepository.save(confirmation);
 
         paymentService.recordGatewayPayment(

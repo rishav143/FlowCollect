@@ -38,7 +38,7 @@ public class PaymentConfirmationController {
      * Lists payment confirmations for the organization, with optional status filter.
      *
      * @param organizationId the organization
-     * @param status         optional filter: PENDING_APPROVAL | APPROVED | REJECTED
+     * @param status         optional filter: PENDING_APPROVAL | APPROVED | REMAINING_REQUESTED | REJECTED
      * @param pageable       pagination (default page=0, size=20)
      */
     @GetMapping
