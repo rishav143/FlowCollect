@@ -113,7 +113,7 @@ function ConfirmationPagePreview(s: PreviewState) {
                   className="px-4 py-3.5 text-white"
                   style={{ background: 'linear-gradient(135deg, #29B6F6 0%, #0288D1 100%)' }}
                 >
-                  <p className="text-[11px] font-black tracking-tight">PaidPeace</p>
+                  <p className="text-[11px] font-black tracking-tight">FlowCollect</p>
                   <p className="text-[10px] opacity-85 mt-0.5">INV-0042 · {s.orgName || 'Your Business'}</p>
                 </div>
 
@@ -223,7 +223,7 @@ function ConfirmationPagePreview(s: PreviewState) {
                 {/* Footer */}
                 <div className="px-4 pb-4 text-center border-t border-gray-100 pt-3">
                   <p className="text-[8px] text-gray-400">
-                    Sent by <strong className="text-gray-500">{s.orgName || 'Your Business'}</strong> via PaidPeace
+                    Sent by <strong className="text-gray-500">{s.orgName || 'Your Business'}</strong> via FlowCollect
                   </p>
                 </div>
 

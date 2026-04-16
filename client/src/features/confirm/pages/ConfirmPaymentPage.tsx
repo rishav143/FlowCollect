@@ -269,7 +269,7 @@ function AlreadyClosedPage({ view }: { view: CustomerConfirmationView }) {
         </div>
         <div className="px-6 pb-6 text-center">
           <p className="text-xs text-gray-400">
-            Sent by <strong className="text-gray-500">{view.organizationName}</strong> via PaidPeace
+            Sent by <strong className="text-gray-500">{view.organizationName}</strong> via FlowCollect
           </p>
         </div>
       </div>
@@ -301,7 +301,7 @@ function SuccessPage({ view, amountClaimed }: { view: CustomerConfirmationView; 
         </div>
         <div className="px-6 pb-6 text-center">
           <p className="text-xs text-gray-400">
-            Sent by <strong className="text-gray-500">{view.organizationName}</strong> via PaidPeace
+            Sent by <strong className="text-gray-500">{view.organizationName}</strong> via FlowCollect
           </p>
         </div>
       </div>
@@ -475,7 +475,7 @@ function PaymentForm({ view, token }: { view: CustomerConfirmationView; token: s
           {/* Footer */}
           <div className="px-6 pb-5 text-center border-t border-gray-100 pt-4">
             <p className="text-xs text-gray-400">
-              Sent by <strong className="text-gray-500">{view.organizationName}</strong> via PaidPeace
+              Sent by <strong className="text-gray-500">{view.organizationName}</strong> via FlowCollect
             </p>
           </div>
 
