@@ -413,6 +413,7 @@ function PaymentForm({ view, token }: { view: CustomerConfirmationView; token: s
                 value={paymentMethod}
                 onChange={setPaymentMethod}
                 options={PAYMENT_METHODS}
+                variant="light"
               />
             </div>
 
