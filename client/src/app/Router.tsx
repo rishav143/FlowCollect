@@ -48,6 +48,9 @@ function routeLazy(fn: () => Promise<{ default: React.ComponentType }>) {
       if (!sessionStorage.getItem(key)) {
         sessionStorage.setItem(key, '1')
         window.location.reload()
+        // Return nothing while reload is in flight — avoids React Router
+        // flashing "Unexpected Application Error!" before the page refreshes.
+        return { Component: () => null }
       }
       throw err
     }
