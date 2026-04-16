@@ -40,7 +40,7 @@ export default function SettingsLayout() {
       </div>
 
       {/* Tab nav */}
-      <div className="flex gap-1 p-1 bg-[#F4F7F9] dark:bg-[#1B2838] rounded-lg w-fit">
+      <div className="flex gap-1 p-1 bg-[#F4F7F9] dark:bg-[#1B2838] rounded-lg w-fit max-w-full overflow-x-auto scrollbar-hide">
         {TABS.map((tab) => (
           <button
             key={tab.path}
