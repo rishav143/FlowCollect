@@ -49,23 +49,21 @@ const RuleRow = memo(function RuleRow({ rule, isLast, onEdit, onDelete, onToggle
 
       {/* Timing + detail */}
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-[#0D1B2A] dark:text-white">
+        <p className="text-sm font-semibold text-[#0D1B2A] dark:text-white truncate">
           {timingLabel(rule.daysOffset, rule.triggerType)}
           {rule.name && (
             <span className="ml-1.5 text-xs font-normal text-c-muted">· {rule.name}</span>
           )}
         </p>
-        <p className="text-xs text-c-muted mt-0.5 flex items-center gap-1.5">
-          {ch.label}
-          {rule.templateName ? ` · ${rule.templateName}` : ''}
-          {isCyclic && (
-            <>
-              <span>·</span>
-              <RotateCcw size={10} strokeWidth={2} className="inline shrink-0" />
-              <span>{rule.maxOccurrences}× every {rule.cycleIntervalDays}d</span>
-            </>
-          )}
+        <p className="text-xs text-c-muted mt-0.5 truncate">
+          {ch.label}{rule.templateName ? ` · ${rule.templateName}` : ''}
         </p>
+        {isCyclic && (
+          <p className="text-xs text-c-muted flex items-center gap-1 mt-0.5">
+            <RotateCcw size={10} strokeWidth={2} className="shrink-0" />
+            <span>{rule.maxOccurrences}× every {rule.cycleIntervalDays}d</span>
+          </p>
+        )}
       </div>
 
       {/* Active toggle */}

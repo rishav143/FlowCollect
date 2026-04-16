@@ -73,7 +73,7 @@ export default function LineItemsField({ items, onChange, currency }: Props) {
                 />
               </div>
               <div className="flex flex-col gap-0.5 flex-1">
-                <span className="text-[10px] font-semibold uppercase tracking-wide text-c-muted px-0.5">Unit Price</span>
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-c-muted px-0.5">Price</span>
                 <input
                   type="number"
                   min={0}
