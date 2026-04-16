@@ -44,28 +44,33 @@ function DeleteConfirm({
   isDeleting: boolean
 }) {
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[200] flex flex-col justify-end sm:items-center sm:justify-center sm:p-4">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onCancel} />
-      <div className="relative w-full max-w-sm bg-white dark:bg-[#1B2838] rounded-2xl shadow-xl p-6">
-        <h2 className="text-base font-semibold text-[#0D1B2A] dark:text-white mb-2">Delete Rule</h2>
-        <p className="text-sm text-c-muted mb-5">
-          {rule.name ? `Remove "${rule.name}"? ` : 'Remove this reminder rule? '}
-          Automated follow-ups using it will stop.
-        </p>
-        <div className="flex gap-3 justify-end">
-          <button
-            onClick={onCancel}
-            className="px-4 py-2 rounded-lg text-sm font-medium text-c-muted hover:bg-[#F4F7F9] dark:hover:bg-[#243447] transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={onConfirm}
-            disabled={isDeleting}
-            className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-red-500 hover:bg-red-600 disabled:opacity-50 transition-colors"
-          >
-            {isDeleting ? 'Deleting…' : 'Delete'}
-          </button>
+      <div className="relative w-full sm:max-w-sm bg-white dark:bg-[#1B2838] rounded-t-2xl sm:rounded-2xl shadow-xl">
+        <div className="sm:hidden flex justify-center pt-3 pb-1">
+          <div className="w-10 h-1 rounded-full bg-[#8A9BAE]/30" />
+        </div>
+        <div className="px-6 pt-4 pb-6">
+          <h2 className="text-base font-semibold text-[#0D1B2A] dark:text-white mb-2">Delete Rule</h2>
+          <p className="text-sm text-c-muted mb-5">
+            {rule.name ? `Remove "${rule.name}"? ` : 'Remove this reminder rule? '}
+            Automated follow-ups using it will stop.
+          </p>
+          <div className="flex gap-3">
+            <button
+              onClick={onCancel}
+              className="flex-1 py-2.5 rounded-xl text-sm font-medium text-c-muted hover:bg-[#F4F7F9] dark:hover:bg-[#243447] transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={onConfirm}
+              disabled={isDeleting}
+              className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white bg-red-500 hover:bg-red-600 disabled:opacity-50 transition-colors"
+            >
+              {isDeleting ? 'Deleting…' : 'Delete'}
+            </button>
+          </div>
         </div>
       </div>
     </div>
