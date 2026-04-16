@@ -285,9 +285,12 @@ export default function InvoiceDetailPage() {
 
       {/* Cancel confirm */}
       {showCancelDlg && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex flex-col justify-end sm:items-center sm:justify-center sm:p-4">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowCancelDlg(false)} />
-          <div className="relative w-full max-w-sm bg-white dark:bg-[#1B2838] rounded-2xl shadow-xl p-6">
+          <div className="relative w-full sm:max-w-sm bg-white dark:bg-[#1B2838] rounded-t-2xl sm:rounded-2xl shadow-xl p-6">
+            <div className="sm:hidden flex justify-center -mt-2 mb-4">
+              <div className="w-10 h-1 rounded-full bg-[#8A9BAE]/30" />
+            </div>
             <h2 className="text-base font-semibold text-[#0D1B2A] dark:text-white mb-2">Cancel Invoice</h2>
             <p className="text-sm text-c-muted mb-1">
               Cancel <span className="font-semibold text-[#0D1B2A] dark:text-white">{invoice.invoiceNumber}</span>?
@@ -313,9 +316,12 @@ export default function InvoiceDetailPage() {
 
       {/* Delete confirm */}
       {showDeleteDlg && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex flex-col justify-end sm:items-center sm:justify-center sm:p-4">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowDeleteDlg(false)} />
-          <div className="relative w-full max-w-sm bg-white dark:bg-[#1B2838] rounded-2xl shadow-xl p-6">
+          <div className="relative w-full sm:max-w-sm bg-white dark:bg-[#1B2838] rounded-t-2xl sm:rounded-2xl shadow-xl p-6">
+            <div className="sm:hidden flex justify-center -mt-2 mb-4">
+              <div className="w-10 h-1 rounded-full bg-[#8A9BAE]/30" />
+            </div>
             <h2 className="text-base font-semibold text-[#0D1B2A] dark:text-white mb-2">Delete Invoice</h2>
             <p className="text-sm text-c-muted mb-5">
               Delete <span className="font-semibold text-[#0D1B2A] dark:text-white">{invoice.invoiceNumber}</span>? This cannot be undone.

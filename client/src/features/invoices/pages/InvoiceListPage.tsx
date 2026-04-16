@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Search, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Search, ChevronLeft, ChevronRight, FileText } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useSearchParams, useLocation } from 'react-router-dom'
 import { useAuthStore } from '@/store/auth.store'
@@ -9,7 +9,7 @@ import { listCustomers } from '@/api/customer.api'
 import InvoiceStatusTabs, { type InvoiceFilter } from '../components/InvoiceStatusTabs/InvoiceStatusTabs'
 import InvoiceTable from '../components/InvoiceTable/InvoiceTable'
 import AddInvoiceModal from '../modals/AddInvoiceModal'
-import ViewToggle, { useViewPreference, gridClass } from '@/ui/components/ViewToggle'
+import ViewToggle, { useViewPreference } from '@/ui/components/ViewToggle'
 import InvoiceCard from '../components/InvoiceCard/InvoiceCard'
 import DateRangePicker, { type DateRangeValue } from '@/ui/components/DateRangePicker/DateRangePicker'
 import type { InvoiceResponse } from '@/types/invoice.types'
@@ -79,9 +79,12 @@ function DeleteConfirm({
   isDeleting: boolean
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex flex-col justify-end sm:items-center sm:justify-center sm:p-4">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onCancel} />
-      <div className="relative w-full max-w-sm bg-white dark:bg-[#1B2838] rounded-2xl shadow-xl p-6">
+      <div className="relative w-full sm:max-w-sm bg-white dark:bg-[#1B2838] rounded-t-2xl sm:rounded-2xl shadow-xl p-6">
+        <div className="sm:hidden flex justify-center -mt-2 mb-4">
+          <div className="w-10 h-1 rounded-full bg-[#8A9BAE]/30" />
+        </div>
         <h2 className="text-base font-semibold text-[#0D1B2A] dark:text-white mb-2">Delete Invoice</h2>
         <p className="text-sm text-c-muted mb-5">
           Delete <span className="font-semibold text-[#0D1B2A] dark:text-white">{invoice.invoiceNumber}</span>? This cannot be undone.
@@ -201,7 +204,10 @@ export default function InvoiceListPage() {
               <p className="text-sm text-c-muted mt-0.5">{totalItems} invoice{totalItems !== 1 ? 's' : ''}</p>
             )}
           </div>
-          <ViewToggle value={view} onChange={setView} />
+          {/* Hide view toggle on mobile — cards are always shown there */}
+          <div className="hidden sm:block">
+            <ViewToggle value={view} onChange={setView} />
+          </div>
         </div>
 
         {/* ── Status tabs ─────────────────────────────────────────────── */}
@@ -228,32 +234,56 @@ export default function InvoiceListPage() {
         </div>
 
         {/* ── Content ──────────────────────────────────────────────────── */}
-        {view === 'list' ? (
-          <InvoiceTable
-            invoices={invoices}
-            customerMap={customerMap}
-            currency={currency}
-            isLoading={invoicesQuery.isLoading}
-            onDelete={setDeleteTarget}
-          />
-        ) : (
-          <div className={gridClass(view)}>
-            {invoicesQuery.isLoading
-              ? [...Array(6)].map((_, i) => (
-                  <div key={i} className="h-32 rounded-xl bg-[#F4F7F9] dark:bg-white/10 animate-pulse" />
-                ))
-              : invoices.map((inv) => (
-                  <InvoiceCard
-                    key={inv.id}
-                    invoice={inv}
-                    customer={inv.customerId ? customerMap[inv.customerId] : undefined}
-                    currency={currency}
-                    onDelete={setDeleteTarget}
-                  />
-                ))
-            }
+
+        {/* Table — desktop-only, list mode only */}
+        {view === 'list' && (
+          <div className="hidden sm:block">
+            <InvoiceTable
+              invoices={invoices}
+              customerMap={customerMap}
+              currency={currency}
+              isLoading={invoicesQuery.isLoading}
+              onDelete={setDeleteTarget}
+            />
           </div>
         )}
+
+        {/*
+          Cards:
+          - Mobile: always shown (single column), regardless of view preference
+          - Desktop: shown only in grid mode (hidden when list mode shows the table)
+        */}
+        <div className={
+          view === 'list'
+            ? 'sm:hidden grid grid-cols-1 gap-3'
+            : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'
+        }>
+          {invoicesQuery.isLoading ? (
+            [...Array(4)].map((_, i) => (
+              <div key={i} className="h-24 rounded-xl bg-[#F4F7F9] dark:bg-white/10 animate-pulse" />
+            ))
+          ) : invoices.length === 0 ? (
+            <div className="col-span-full flex flex-col items-center justify-center py-16 gap-3 bg-white dark:bg-[#1B2838] rounded-xl border border-c-border">
+              <div className="w-12 h-12 rounded-full bg-[#F4F7F9] dark:bg-white/10 flex items-center justify-center">
+                <FileText size={20} className="text-c-muted" strokeWidth={1.5} />
+              </div>
+              <div className="text-center">
+                <p className="text-sm font-medium text-[#0D1B2A] dark:text-white">No invoices found</p>
+                <p className="text-xs text-c-muted mt-0.5">Try adjusting your filters.</p>
+              </div>
+            </div>
+          ) : (
+            invoices.map((inv) => (
+              <InvoiceCard
+                key={inv.id}
+                invoice={inv}
+                customer={inv.customerId ? customerMap[inv.customerId] : undefined}
+                currency={currency}
+                onDelete={setDeleteTarget}
+              />
+            ))
+          )}
+        </div>
 
         {/* ── Pagination ───────────────────────────────────────────────── */}
         <Pagination page={page} totalPages={totalPages} onChange={setPage} />

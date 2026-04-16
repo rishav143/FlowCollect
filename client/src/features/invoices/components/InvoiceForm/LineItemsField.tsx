@@ -39,8 +39,8 @@ export default function LineItemsField({ items, onChange, currency }: Props) {
 
   return (
     <div className="space-y-2">
-      {/* Header */}
-      <div className="grid grid-cols-[1fr_60px_100px_80px_28px] gap-2 px-1">
+      {/* Header — desktop only */}
+      <div className="hidden sm:grid grid-cols-[1fr_60px_100px_80px_28px] gap-2 px-1">
         {['Description', 'Qty', 'Unit Price', 'Amount', ''].map((h) => (
           <span key={h} className="text-[11px] font-semibold uppercase tracking-wide text-c-muted">
             {h}
@@ -50,42 +50,95 @@ export default function LineItemsField({ items, onChange, currency }: Props) {
 
       {/* Rows */}
       {items.map((item, idx) => (
-        <div key={idx} className="grid grid-cols-[1fr_60px_100px_80px_28px] gap-2 items-center">
-          <input
-            type="text"
-            placeholder="Description"
-            value={item.description}
-            onChange={(e) => update(idx, 'description', e.target.value)}
-            className={inputCls}
-          />
-          <input
-            type="number"
-            min={1}
-            step={1}
-            value={item.quantity}
-            onChange={(e) => update(idx, 'quantity', Math.max(1, parseInt(e.target.value) || 1))}
-            className={inputCls + ' text-center'}
-          />
-          <input
-            type="number"
-            min={0}
-            step={1}
-            placeholder="0"
-            value={item.unitPrice || ''}
-            onChange={(e) => update(idx, 'unitPrice', Math.round(parseFloat(e.target.value) || 0))}
-            className={inputCls}
-          />
-          <span className="text-sm text-right font-medium text-[#0D1B2A] dark:text-white tabular-nums">
-            {formatCurrency(item.quantity * item.unitPrice, currency, { decimals: false })}
-          </span>
-          <button
-            type="button"
-            onClick={() => remove(idx)}
-            disabled={items.length === 1}
-            className="p-1 rounded text-c-muted hover:text-red-500 disabled:opacity-30 transition-colors"
-          >
-            <Trash2 size={14} strokeWidth={2} />
-          </button>
+        <div key={idx}>
+          {/* ── Mobile: stacked card (< sm) ── */}
+          <div className="sm:hidden rounded-lg bg-[#F4F7F9] dark:bg-[#243447] p-3 space-y-2">
+            <input
+              type="text"
+              placeholder="Description"
+              value={item.description}
+              onChange={(e) => update(idx, 'description', e.target.value)}
+              className={inputCls}
+            />
+            <div className="flex items-center gap-2">
+              <div className="flex flex-col gap-0.5">
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-c-muted px-0.5">Qty</span>
+                <input
+                  type="number"
+                  min={1}
+                  step={1}
+                  value={item.quantity}
+                  onChange={(e) => update(idx, 'quantity', Math.max(1, parseInt(e.target.value) || 1))}
+                  className={inputCls + ' w-16 text-center'}
+                />
+              </div>
+              <div className="flex flex-col gap-0.5 flex-1">
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-c-muted px-0.5">Unit Price</span>
+                <input
+                  type="number"
+                  min={0}
+                  step={1}
+                  placeholder="0"
+                  value={item.unitPrice || ''}
+                  onChange={(e) => update(idx, 'unitPrice', Math.round(parseFloat(e.target.value) || 0))}
+                  className={inputCls}
+                />
+              </div>
+              <div className="flex flex-col gap-0.5 items-end shrink-0">
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-c-muted px-0.5">Amount</span>
+                <span className="text-sm font-medium text-[#0D1B2A] dark:text-white tabular-nums py-2">
+                  {formatCurrency(item.quantity * item.unitPrice, currency, { decimals: false })}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => remove(idx)}
+                disabled={items.length === 1}
+                className="p-1.5 rounded text-c-muted hover:text-red-500 disabled:opacity-30 transition-colors self-end mb-0.5"
+              >
+                <Trash2 size={14} strokeWidth={2} />
+              </button>
+            </div>
+          </div>
+
+          {/* ── Desktop: original single row (sm+) ── */}
+          <div className="hidden sm:grid grid-cols-[1fr_60px_100px_80px_28px] gap-2 items-center">
+            <input
+              type="text"
+              placeholder="Description"
+              value={item.description}
+              onChange={(e) => update(idx, 'description', e.target.value)}
+              className={inputCls}
+            />
+            <input
+              type="number"
+              min={1}
+              step={1}
+              value={item.quantity}
+              onChange={(e) => update(idx, 'quantity', Math.max(1, parseInt(e.target.value) || 1))}
+              className={inputCls + ' text-center'}
+            />
+            <input
+              type="number"
+              min={0}
+              step={1}
+              placeholder="0"
+              value={item.unitPrice || ''}
+              onChange={(e) => update(idx, 'unitPrice', Math.round(parseFloat(e.target.value) || 0))}
+              className={inputCls}
+            />
+            <span className="text-sm text-right font-medium text-[#0D1B2A] dark:text-white tabular-nums">
+              {formatCurrency(item.quantity * item.unitPrice, currency, { decimals: false })}
+            </span>
+            <button
+              type="button"
+              onClick={() => remove(idx)}
+              disabled={items.length === 1}
+              className="p-1 rounded text-c-muted hover:text-red-500 disabled:opacity-30 transition-colors"
+            >
+              <Trash2 size={14} strokeWidth={2} />
+            </button>
+          </div>
         </div>
       ))}
 
