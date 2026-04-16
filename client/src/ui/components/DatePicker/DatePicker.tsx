@@ -211,7 +211,9 @@ export default function DatePicker({ label, value, onChange }: Props) {
       </button>
 
       {open && createPortal(
-        <>
+        // Single wrapper ref — covers both mobile sheet and desktop dropdown
+        // so the outside-click handler correctly ignores taps inside either panel.
+        <div ref={panelRef}>
           {/* ── Mobile: bottom sheet — z-[200] clears any modal z-50 ── */}
           <div className="sm:hidden fixed inset-0 z-[200] flex flex-col justify-end">
             <div className="absolute inset-0 bg-black/40" onClick={() => setOpen(false)} />
@@ -235,7 +237,6 @@ export default function DatePicker({ label, value, onChange }: Props) {
 
           {/* ── Desktop/tablet: fixed portal dropdown ──────────────── */}
           <div
-            ref={panelRef}
             className="hidden sm:block fixed z-[200] bg-white dark:bg-[#1B2838] border border-c-border rounded-xl shadow-2xl overflow-hidden"
             style={{
               top:      dropPos?.top  ?? 0,
@@ -245,7 +246,7 @@ export default function DatePicker({ label, value, onChange }: Props) {
           >
             {panelContent}
           </div>
-        </>,
+        </div>,
         document.body,
       )}
     </div>
