@@ -99,7 +99,13 @@ export default function RecordPaymentModal({ invoiceId, remainingAmount, currenc
 
           <div>
             <label className={labelCls}>Notes</label>
-            <input type="text" placeholder="Optional note" value={notes} onChange={(e) => setNotes(e.target.value)} className={inputCls} />
+            <textarea
+              placeholder="Optional note"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={2}
+              className={`${inputCls} resize-none`}
+            />
           </div>
 
           {error && <p className="text-sm text-red-500">{error}</p>}
