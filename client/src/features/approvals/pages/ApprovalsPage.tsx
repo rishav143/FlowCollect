@@ -124,7 +124,9 @@ export default function ApprovalsPage() {
               </p>
             )}
           </div>
-          <ViewToggle value={view} onChange={setView} />
+          <div className="hidden sm:block">
+            <ViewToggle value={view} onChange={setView} />
+          </div>
         </div>
 
         {/* Action error */}
