@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom'
 import { useConfirmationView, useSubmitPaymentClaim } from '../hooks/useConfirmPayment'
 import type { CustomerConfirmationView, PaymentDetails } from '@/api/publicConfirmation.api'
 import { CheckCircle2, AlertCircle, Clock, Copy, Check, CreditCard, Wallet } from 'lucide-react'
+import Select from '@/components/ui/Select'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -41,13 +42,13 @@ function fmtDate(dateStr: string) {
 }
 
 const PAYMENT_METHODS = [
-  'Bank / Wire Transfer',
-  'Card',
-  'UPI',
-  'Cash',
-  'Cheque',
-  'Other',
-] as const
+  { value: 'Bank / Wire Transfer', label: 'Bank / Wire Transfer' },
+  { value: 'Card',                 label: 'Card' },
+  { value: 'UPI',                  label: 'UPI' },
+  { value: 'Cash',                 label: 'Cash' },
+  { value: 'Cheque',               label: 'Cheque' },
+  { value: 'Other',                label: 'Other' },
+]
 
 // ---------------------------------------------------------------------------
 // Shell — consistent wrapper for all states
@@ -408,18 +409,11 @@ function PaymentForm({ view, token }: { view: CustomerConfirmationView; token: s
               <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1.5">
                 Payment method
               </label>
-              <div className="relative">
-                <select
-                  value={paymentMethod}
-                  onChange={(e) => setPaymentMethod(e.target.value)}
-                  className="w-full appearance-none bg-white border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-[#29B6F6] transition-colors pr-8"
-                >
-                  {PAYMENT_METHODS.map((m) => (
-                    <option key={m} value={m}>{m}</option>
-                  ))}
-                </select>
-                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-[10px]">▼</span>
-              </div>
+              <Select
+                value={paymentMethod}
+                onChange={setPaymentMethod}
+                options={PAYMENT_METHODS}
+              />
             </div>
 
             <div>
