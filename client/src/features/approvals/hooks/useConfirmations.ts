@@ -37,14 +37,18 @@ export function usePendingConfirmationCount() {
 }
 
 function useReviewMutation(
-  action: (orgId: string, id: string, body?: { businessNote?: string }) => Promise<unknown>,
+  action: (orgId: string, id: string, body?: { businessNote?: string; newDueDate?: string }) => Promise<unknown>,
 ) {
   const orgId       = useAuthStore((s) => s.org?.id ?? '')
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ id, businessNote }: { id: string; businessNote?: string }) =>
-      action(orgId, id, businessNote ? { businessNote } : undefined),
+    mutationFn: ({ id, businessNote, newDueDate }: { id: string; businessNote?: string; newDueDate?: string }) => {
+      const body = (businessNote || newDueDate)
+        ? { ...(businessNote ? { businessNote } : {}), ...(newDueDate ? { newDueDate } : {}) }
+        : undefined
+      return action(orgId, id, body)
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['confirmations', orgId] })
       queryClient.invalidateQueries({ queryKey: ['confirmations-count', orgId] })

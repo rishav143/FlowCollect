@@ -11,6 +11,7 @@ interface Page<T> {
 
 interface ReviewRequest {
   businessNote?: string
+  newDueDate?:   string   // ISO date YYYY-MM-DD — only used for request-remaining
 }
 
 function base(orgId: string) {

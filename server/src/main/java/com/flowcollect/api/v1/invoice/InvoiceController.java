@@ -128,6 +128,7 @@ public class InvoiceController {
         @RequestParam(required = false) LocalDate createdAtTo,
         @RequestParam(required = false) LocalDate dueDateFrom,
         @RequestParam(required = false) LocalDate dueDateTo,
+        @RequestParam(required = false) Boolean customerActive,
         Pageable pageable
     ){
         Page<Invoice> invoices = invoiceService.list(
@@ -139,6 +140,7 @@ public class InvoiceController {
             createdAtTo,
             dueDateFrom,
             dueDateTo,
+            customerActive,
             pageable
         );
         return ResponseEntity.ok(invoices.map(InvoiceMapper::toResponse));

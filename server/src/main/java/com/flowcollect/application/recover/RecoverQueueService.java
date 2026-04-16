@@ -64,8 +64,10 @@ public class RecoverQueueService {
 
                 for (Invoice invoice : invoices) {
                     if (invoice.getDueDate() == null) continue;
-                    // Skip invoices with no customer — same guard as the scheduler
-                    if (invoice.getCustomer() == null || !invoice.getCustomer().isAutomationEnabled()) continue;
+                    // Skip invoices with no customer, archived customers, or automation-disabled customers
+                    if (invoice.getCustomer() == null
+                            || !invoice.getCustomer().isActive()
+                            || !invoice.getCustomer().isAutomationEnabled()) continue;
 
                     LocalDate scheduledDate = computeScheduledDate(rule.getTriggerType(), effectiveOffset, invoice.getDueDate());
                     if (scheduledDate == null) continue;
@@ -79,7 +81,7 @@ public class RecoverQueueService {
                     allUpcoming.add(new UpcomingItemResponse(
                             invoice.getId(),
                             invoice.getInvoiceNumber(),
-                            invoice.getCustomer() != null ? invoice.getCustomer().getName() : "Unknown",
+                            invoice.getCustomer().getName(),
                             rule.getChannel(),
                             scheduledDate,
                             rule.getName(),
@@ -100,6 +102,10 @@ public class RecoverQueueService {
                 .getContent();
 
         List<ActivityItemResponse> activity = recent.stream()
+                .filter(f -> {
+                    var customer = f.getInvoice().getCustomer();
+                    return customer != null && customer.isActive();
+                })
                 .map(f -> {
                     Instant eventAt = f.getStatus() == FollowUpStatus.SENT
                             ? (f.getSentAt() != null ? f.getSentAt() : f.getUpdatedAt())
@@ -108,7 +114,7 @@ public class RecoverQueueService {
                     return new ActivityItemResponse(
                             f.getId(),
                             f.getInvoice().getInvoiceNumber(),
-                            f.getInvoice().getCustomer() != null ? f.getInvoice().getCustomer().getName() : "Unknown",
+                            f.getInvoice().getCustomer().getName(),
                             f.getChannel(),
                             f.getStatus(),
                             ruleName,

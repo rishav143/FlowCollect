@@ -1,5 +1,6 @@
 package com.flowcollect.api.v1.ai.dto;
 
+import com.flowcollect.application.ai.AiTemplateService;
 import com.flowcollect.domain.template.TemplateChannel;
 import com.flowcollect.domain.template.TemplateTone;
 import jakarta.validation.constraints.NotBlank;
@@ -19,35 +20,23 @@ public class EnhanceTemplateRequest {
     @NotBlank(message = "body is required")
     private String body;
 
-    public TemplateChannel getChannel() {
-        return channel;
-    }
+    // POLISH = improve clarity/spam-safety without changing meaning
+    // REWRITE_TONE = rewrite to match target tone, same facts
+    // Defaults to REWRITE_TONE for backwards compatibility
+    private AiTemplateService.EnhanceAction action = AiTemplateService.EnhanceAction.REWRITE_TONE;
 
-    public void setChannel(TemplateChannel channel) {
-        this.channel = channel;
-    }
+    public TemplateChannel getChannel() { return channel; }
+    public void setChannel(TemplateChannel channel) { this.channel = channel; }
 
-    public TemplateTone getTone() {
-        return tone;
-    }
+    public TemplateTone getTone() { return tone; }
+    public void setTone(TemplateTone tone) { this.tone = tone; }
 
-    public void setTone(TemplateTone tone) {
-        this.tone = tone;
-    }
+    public String getSubject() { return subject; }
+    public void setSubject(String subject) { this.subject = subject; }
 
-    public String getSubject() {
-        return subject;
-    }
+    public String getBody() { return body; }
+    public void setBody(String body) { this.body = body; }
 
-    public void setSubject(String subject) {
-        this.subject = subject;
-    }
-
-    public String getBody() {
-        return body;
-    }
-
-    public void setBody(String body) {
-        this.body = body;
-    }
+    public AiTemplateService.EnhanceAction getAction() { return action; }
+    public void setAction(AiTemplateService.EnhanceAction action) { this.action = action; }
 }

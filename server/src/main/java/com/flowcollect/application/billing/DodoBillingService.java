@@ -78,7 +78,9 @@ public class DodoBillingService {
         String productId = resolveProductId(plan, org.getCurrency());
         Object customer  = buildCustomer(org);
 
-        String billingCurrency = org.getCurrency().getCurrencyCode();
+        // billing_currency must match the product, not the org's invoice currency
+        boolean isInr          = INR.equals(org.getCurrency());
+        String  billingCurrency = isInr ? "INR" : "USD";
 
         CheckoutSessionRequest body = new CheckoutSessionRequest(
                 List.of(new ProductCartItem(productId, 1)),

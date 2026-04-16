@@ -180,7 +180,7 @@ public final class SystemEmailTemplates {
                 + esc(invoiceNumber) + "</strong>. Thank you!</p>"
                 + infoBox(
                         row("Amount received", fmt(amountApproved, currency))
-                        + row("Remaining balance", "<span style=\"font-weight:bold;color:#dc2626;\">"
+                        + row("Remaining balance", "<span style=\"font-weight:bold;color:#374151;\">"
                                 + fmt(remainingBalance, currency) + "</span>")
                   )
                 + "<p style=\"margin:16px 0 0;\">If you have any questions about the remaining balance "
@@ -229,7 +229,7 @@ public final class SystemEmailTemplates {
                 + esc(invoiceNumber) + "</strong>.</p>"
                 + infoBox(
                         row("Amount received", fmt(amountReceived, currency))
-                        + row("Remaining balance", "<span style=\"font-weight:bold;color:#dc2626;\">"
+                        + row("Remaining balance", "<span style=\"font-weight:bold;color:#374151;\">"
                                 + fmt(remainingBalance, currency) + "</span>")
                         + row("Due date", esc(dueDateStr))
                   )

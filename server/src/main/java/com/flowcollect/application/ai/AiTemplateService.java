@@ -27,14 +27,22 @@ public class AiTemplateService {
             - Preserve every {{placeholder}} exactly as written — never alter spelling, case, or braces
             - Never write literal currency amounts (e.g. ₹5,000 or $1,200) — always use {{remainingAmount}} instead
             - Respond with valid JSON only — no markdown, no code fences, no explanation
+            - Never use em dashes (—) anywhere in subject or body; use a comma, period, or rephrase instead
 
-            Anti-spam rules — your output must pass Gmail and business email filters:
-            - Subject lines: never use "Reminder", "Action Required", "URGENT", "Re:", "FWD:", "Past Due Notice", "Payment Request", or any all-caps words
-            - Subject lines: be specific and factual — state the invoice number or business name, not a generic prompt
-            - Body: never use "click the button below", "click here", "this is a reminder", "dear customer", "kindly", or excessive punctuation (!!!)
-            - Body: do not open with "Dear {{customerName}}," — use a natural greeting or go straight to context
-            - Body: avoid hollow filler phrases like "I hope this email finds you well" or "Please do not hesitate to contact us"
-            - Body: every sentence should carry information — cut anything that does not
+            Writing quality rules:
+            - Be concise — every sentence must carry information; cut anything that does not
+            - Use active voice; avoid passive constructions like "has not been settled" when "remains unpaid" is shorter
+            - No filler openers: never start with "I hope this email finds you well", "Just a quick note", or "We wanted to follow up"
+            - No hollow closers: never use "Please do not hesitate to contact us", "Feel free to reach out", or "Best regards" as a standalone line
+            - Sign off with only {{organizationName}} (and {{organizationEmail}} on a second line if needed) — no "Regards," or "Thanks,"
+
+            Anti-spam rules — output must pass Gmail filters for transactional email:
+            - Subject: never use "Reminder", "Action Required", "URGENT", "Re:", "FWD:", "Past Due", "Payment Request", or ALL-CAPS words
+            - Subject: be specific — include the invoice number or amount, not a generic phrase
+            - Subject: avoid excessive punctuation (!!), symbols, or question marks
+            - Body: never use "click the button below", "click here", "dear customer", "kindly", "as soon as possible" (use "promptly" or a deadline instead)
+            - Body: no promotional language — this is a transactional message, not a marketing email
+            - Body: do not open with "Dear {{customerName}}," — "Hi {{customerName}}," is fine
             """;
 
     // Placeholders that the TemplateRenderer understands
@@ -91,16 +99,21 @@ public class AiTemplateService {
      * @param existingBody    existing body text
      * @return improved subject (nullable) and body
      */
+    public enum EnhanceAction { POLISH, REWRITE_TONE }
+
     public AiTemplateResult enhanceTemplate(
             UUID organizationId,
             TemplateChannel channel,
             TemplateTone tone,
             String existingSubject,
-            String existingBody
+            String existingBody,
+            EnhanceAction action
     ) {
         organizationService.getById(organizationId);
 
-        String userPrompt = buildEnhancePrompt(channel, tone, existingSubject, existingBody);
+        String userPrompt = action == EnhanceAction.POLISH
+                ? buildPolishPrompt(channel, tone, existingSubject, existingBody)
+                : buildRewriteTonePrompt(channel, tone, existingSubject, existingBody);
         String rawJson = openAiClient.chat(SYSTEM_PROMPT, userPrompt);
         return parseResult(rawJson, channel);
     }
@@ -124,6 +137,8 @@ public class AiTemplateService {
                 - Use at least {{customerName}}, {{invoiceNumber}}, {{remainingAmount}}, and {{dueDate}}
                 - Include {{confirmationLink}} as the call-to-action
                 - subject must be null for SMS and WHATSAPP; a short factual subject line for EMAIL
+                - Be concise — do not pad the message with filler sentences; every line must carry information
+                - Do not add explanations, marketing language, or content beyond what is needed to inform and prompt payment
 
                 Respond with JSON in this exact shape, no extra fields:
                 {"subject": "<email subject or null>", "body": "<message body>"}
@@ -136,7 +151,7 @@ public class AiTemplateService {
         );
     }
 
-    private String buildEnhancePrompt(
+    private String buildPolishPrompt(
             TemplateChannel channel,
             TemplateTone tone,
             String existingSubject,
@@ -149,7 +164,54 @@ public class AiTemplateService {
                 : "No subject (not an email or subject not provided)";
 
         return """
-                Enhance the following payment reminder template to better match the requested tone and channel best practices.
+                Polish the following payment reminder template. Improve clarity, conciseness, and spam-safety — nothing else.
+
+                Channel: %s
+                Tone to preserve: %s — %s
+
+                %s
+                %s
+
+                === EXISTING TEMPLATE ===
+                %s
+                Body:
+                %s
+                === END OF TEMPLATE ===
+
+                Strict polish rules:
+                - Do NOT add new sentences, ideas, or content that is not already in the original
+                - Do NOT change the meaning or facts of any sentence
+                - Remove filler phrases, em dashes, and spam-trigger words
+                - Keep approximately the same length — do not expand the message
+                - Preserve the original tone; only fix wording, not intent
+                - subject must be null for SMS and WHATSAPP; lightly improve the subject line for EMAIL if present
+
+                Respond with JSON in this exact shape:
+                {"subject": "<email subject or null>", "body": "<polished body>"}
+                """.formatted(
+                channel.name(),
+                tone.name(), toneDescription,
+                PLACEHOLDER_GUIDE,
+                channelInstructions,
+                subjectSection,
+                existingBody != null ? existingBody : ""
+        );
+    }
+
+    private String buildRewriteTonePrompt(
+            TemplateChannel channel,
+            TemplateTone tone,
+            String existingSubject,
+            String existingBody
+    ) {
+        String channelInstructions = channelInstructions(channel);
+        String toneDescription = toneDescription(tone);
+        String subjectSection = existingSubject != null && !existingSubject.isBlank()
+                ? "Current subject: " + existingSubject
+                : "No subject (not an email or subject not provided)";
+
+        return """
+                Rewrite the following payment reminder template in the target tone. Keep the same facts and structure — only the tone and phrasing should change.
 
                 Channel: %s
                 Target tone: %s — %s
@@ -163,13 +225,15 @@ public class AiTemplateService {
                 %s
                 === END OF TEMPLATE ===
 
-                Rules:
-                - Preserve the core intent of the original message
-                - Apply the target tone throughout
-                - subject must be null for SMS and WHATSAPP; improve the subject line for EMAIL if present
+                Strict rewrite rules:
+                - Every piece of information in the original must appear in the rewrite — do not add or remove facts
+                - Do NOT add new content; do NOT drop existing content
+                - Apply the target tone consistently across every sentence
+                - Keep approximately the same length as the original
+                - subject must be null for SMS and WHATSAPP; rewrite the subject line to match the new tone for EMAIL
 
                 Respond with JSON in this exact shape:
-                {"subject": "<email subject or null>", "body": "<improved body>"}
+                {"subject": "<email subject or null>", "body": "<rewritten body>"}
                 """.formatted(
                 channel.name(),
                 tone.name(), toneDescription,

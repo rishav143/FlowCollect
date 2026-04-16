@@ -206,15 +206,12 @@ public class RecoverSystemDataSeeder implements ApplicationRunner {
                 TPL_DEFAULT_EMAIL, TemplateChannel.EMAIL, TemplateTone.POLITE,
                 "Invoice {{invoiceNumber}} from {{organizationName}}",
                 "Hi {{customerName}},\n\n" +
-                "We wanted to follow up on invoice {{invoiceNumber}} for {{remainingAmount}}, " +
-                "which was due on {{dueDate}}.\n\n" +
-                "The link below includes payment details if you have not yet settled this, and a way to confirm " +
-                "your payment once it is done — this helps us keep our records current and avoids any unnecessary follow-up.\n\n" +
+                "Invoice {{invoiceNumber}} for {{remainingAmount}} from {{organizationName}} was due on {{dueDate}}.\n\n" +
+                "If you have already made a payment, please confirm using the link below. " +
+                "Payment details are available there as well.\n\n" +
                 "{{confirmationLink}}\n\n" +
-                "If you have any questions, please don't hesitate to reach out to us at {{organizationEmail}}.\n\n" +
-                "Best regards,\n" +
-                "{{organizationName}}\n" +
-                "{{organizationEmail}}",
+                "For any questions, write to us at {{organizationEmail}}.\n\n" +
+                "{{organizationName}}",
                 RuleMode.MANUAL
         );
 

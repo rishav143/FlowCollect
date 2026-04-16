@@ -259,7 +259,12 @@ export default function InvoiceDetailPage() {
               <InfoRow label="Paid"      value={<span className="text-green-600 dark:text-green-400">{formatCurrency(invoice.totalPaid, currency, { decimals: false })}</span>} />
               <div className="py-2 flex justify-between">
                 <span className="text-sm text-c-muted">Remaining</span>
-                <span className={`text-sm font-bold tabular-nums ${invoice.remainingAmount > 0 ? 'text-red-500' : 'text-green-600 dark:text-green-400'}`}>
+                <span className={`text-sm font-bold tabular-nums ${
+                  invoice.remainingAmount <= 0          ? 'text-green-600 dark:text-green-400' :
+                  invoice.timeStatus === 'OVERDUE'      ? 'text-red-500' :
+                  invoice.timeStatus === 'DUE_TODAY'    ? 'text-amber-500 dark:text-amber-400' :
+                  'text-[#0D1B2A] dark:text-white'
+                }`}>
                   {formatCurrency(invoice.remainingAmount, currency, { decimals: false })}
                 </span>
               </div>

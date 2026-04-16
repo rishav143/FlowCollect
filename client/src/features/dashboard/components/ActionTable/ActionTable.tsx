@@ -15,6 +15,7 @@ import {
 } from '@/features/approvals/hooks/useConfirmations'
 import { useToast } from '@/store/toast.store'
 import NoteModal from '@/ui/components/NoteModal/NoteModal'
+import RequestRemainingModal from '@/ui/components/RequestRemainingModal/RequestRemainingModal'
 
 function daysOverdue(dueDate: string): number {
   const due   = new Date(dueDate)
@@ -230,12 +231,12 @@ function ApprovalsSection({
     )
   }
 
-  function handleRequestRemainingConfirm(note: string) {
+  function handleRequestRemainingConfirm(note: string, newDueDate: string | undefined) {
     if (pendingAction?.type !== 'request-remaining') return
     const { confirmation: c } = pendingAction
     setActionError(null)
     requestRemainingMut.mutate(
-      { id: c.id, businessNote: note || undefined },
+      { id: c.id, businessNote: note || undefined, newDueDate },
       {
         onSuccess: () => {
           setPendingAction(null)
@@ -379,11 +380,8 @@ function ApprovalsSection({
 
       {/* Request Remaining modal */}
       {pendingAction?.type === 'request-remaining' && (
-        <NoteModal
-          title="Approve & Request Remaining"
-          subtitle={`Invoice ${pendingAction.confirmation.invoiceNumber} — partial payment will be recorded and the customer will receive a request for the balance.`}
-          confirmLabel="Approve & Request"
-          confirmStyle="primary"
+        <RequestRemainingModal
+          invoiceNumber={pendingAction.confirmation.invoiceNumber}
           isLoading={requestRemainingMut.isPending}
           onConfirm={handleRequestRemainingConfirm}
           onCancel={() => setPendingAction(null)}

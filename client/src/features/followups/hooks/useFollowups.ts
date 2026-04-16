@@ -23,6 +23,7 @@ export function useFollowupInvoices(filter: FollowupFilter) {
       return listInvoices(orgId, {
         lifeCycleStatus: undefined,
         timeStatus,
+        customerActive: true,
         size: 200,
         sort: 'dueDate,asc',
       }).then((page) =>

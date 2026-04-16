@@ -43,6 +43,7 @@ export interface ListInvoicesParams {
   createdAtTo?:     string   // YYYY-MM-DD
   dueDateFrom?:     string   // YYYY-MM-DD
   dueDateTo?:       string   // YYYY-MM-DD
+  customerActive?:  boolean
   page?:            number
   size?:            number
   sort?:            string

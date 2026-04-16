@@ -118,7 +118,7 @@ export default function InvoiceListPage() {
   const [filter,       setFilter]       = useState<InvoiceFilter>(
     (location.state as InvoiceFilter | null) ?? {},
   )
-  const [search,       setSearch]       = useState(() => searchParams.get('q') ?? '')
+  const [search,       setSearch]       = useState('')
   const [page,         setPage]         = useState(0)
   const [showCreate,   setShowCreate]   = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<InvoiceResponse | null>(null)
@@ -133,13 +133,6 @@ export default function InvoiceListPage() {
       setSearchParams({}, { replace: true })
     }
   }, [createParam])
-
-  // Sync search from topbar navigation (q param)
-  const qParam = searchParams.get('q') ?? ''
-  useEffect(() => {
-    setSearch(qParam)
-    setPage(0)
-  }, [qParam])
 
   const deleteMutation = useDeleteInvoice()
 

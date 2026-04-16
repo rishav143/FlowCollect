@@ -263,6 +263,12 @@ public class PaymentConfirmationService {
                 "The claimed amount covers the full remaining balance — use /approve to confirm this payment in full.");
         }
 
+        // Apply new due date before recording payment so the email reflects the updated deadline
+        if (request != null && request.getNewDueDate() != null) {
+            invoice.setDueDate(request.getNewDueDate());
+            invoiceService.save(invoice);
+        }
+
         String note = extractNote(request);
         confirmation.approve(note);
         confirmationRepository.save(confirmation);
@@ -275,7 +281,7 @@ public class PaymentConfirmationService {
                 "Partial payment approved; remaining balance requested from customer."
         );
 
-        // Reload invoice so the remaining amount in the notification reflects the updated balance
+        // Reload invoice so the remaining amount and due date in the notification are up to date
         Invoice refreshed = invoiceService.getInvoiceById(invoice.getId());
 
         // notifyCustomer defaults true — always send unless caller explicitly opts out

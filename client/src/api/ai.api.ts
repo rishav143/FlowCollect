@@ -44,10 +44,11 @@ export async function enhanceTemplate(
   tone:     string,
   body:     string,
   subject?: string,
+  action:   'POLISH' | 'REWRITE_TONE' = 'REWRITE_TONE',
 ): Promise<AiTemplateResult> {
   const { data } = await api.post<AiTemplateResult>(
     `${base(orgId)}/templates/enhance`,
-    { channel, tone, body, subject: subject ?? null },
+    { channel, tone, body, subject: subject ?? null, action },
   )
   return data
 }

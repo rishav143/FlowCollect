@@ -120,7 +120,7 @@ public class ReminderOrgProcessor {
                 organization.getId(), ELIGIBLE_INVOICE_STATUSES, targetDueDate)) {
 
             Customer customer = invoice.getCustomer();
-            if (customer == null || !customer.isAutomationEnabled()) {
+            if (customer == null || !customer.isActive() || !customer.isAutomationEnabled()) {
                 continue;
             }
             if (followUpService.existsByInvoiceIdAndReminderRuleIdAndOccurrenceIndex(
@@ -216,6 +216,13 @@ public class ReminderOrgProcessor {
             if (invoice.getCustomer() == null) {
                 log.info("[org={}] Cancelling follow-up {} — invoice {} has no customer",
                         organization.getId(), followUp.getId(), invoice.getId());
+                followUpService.cancelFollowUp(followUp);
+                cancelled++;
+                continue;
+            }
+            if (!invoice.getCustomer().isActive()) {
+                log.info("[org={}] Cancelling follow-up {} — customer {} is archived",
+                        organization.getId(), followUp.getId(), invoice.getCustomer().getId());
                 followUpService.cancelFollowUp(followUp);
                 cancelled++;
                 continue;

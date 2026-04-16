@@ -14,6 +14,7 @@ import {
 import ConfirmationFilterTabs from '../components/ConfirmationFilterTabs/ConfirmationFilterTabs'
 import ConfirmationCard from '../components/ConfirmationCard/ConfirmationCard'
 import NoteModal from '@/ui/components/NoteModal/NoteModal'
+import RequestRemainingModal from '@/ui/components/RequestRemainingModal/RequestRemainingModal'
 import type { PaymentConfirmationResponse } from '@/types/confirmation.types'
 
 // ---------------------------------------------------------------------------
@@ -93,11 +94,11 @@ export default function ApprovalsPage() {
     )
   }
 
-  function handleRequestRemainingConfirm(note: string) {
+  function handleRequestRemainingConfirm(note: string, newDueDate: string | undefined) {
     if (pendingAction?.type !== 'request-remaining') return
     setActionError(null)
     requestRemainingMut.mutate(
-      { id: pendingAction.confirmation.id, businessNote: note || undefined },
+      { id: pendingAction.confirmation.id, businessNote: note || undefined, newDueDate },
       {
         onSuccess: () => setPendingAction(null),
         onError: (err) => {
@@ -195,11 +196,8 @@ export default function ApprovalsPage() {
 
       {/* Request Remaining modal */}
       {pendingAction?.type === 'request-remaining' && (
-        <NoteModal
-          title="Approve & Request Remaining"
-          subtitle={`Invoice ${pendingAction.confirmation.invoiceNumber} — partial payment will be recorded and the customer will receive a request for the balance.`}
-          confirmLabel="Approve & Request"
-          confirmStyle="primary"
+        <RequestRemainingModal
+          invoiceNumber={pendingAction.confirmation.invoiceNumber}
           isLoading={requestRemainingMut.isPending}
           onConfirm={handleRequestRemainingConfirm}
           onCancel={() => setPendingAction(null)}

@@ -454,13 +454,13 @@ export default function TemplateForm({
         result = await generateTemplate(orgId, channel, tone)
         label  = `Generated · ${TONE_LABEL[tone]}`
       } else if (action === 'tone' && targetTone) {
-        result = await enhanceTemplate(orgId, channel, targetTone, body, subject || undefined)
+        result = await enhanceTemplate(orgId, channel, targetTone, body, subject || undefined, 'REWRITE_TONE')
         label  = `Rewritten as ${TONE_LABEL[targetTone]}`
         // Also shift the tone selector to match
         setValue('tone', targetTone)
       } else {
-        // polish — enhance with current tone
-        result = await enhanceTemplate(orgId, channel, tone, body, subject || undefined)
+        // polish — improve clarity/spam-safety without changing meaning
+        result = await enhanceTemplate(orgId, channel, tone, body, subject || undefined, 'POLISH')
         label  = `Polished · ${TONE_LABEL[tone]}`
       }
 

@@ -164,6 +164,11 @@ public class InvoiceService {
     }
 
     @Transactional
+    public Invoice save(Invoice invoice) {
+        return invoiceRepository.save(invoice);
+    }
+
+    @Transactional
     public void saveAll(List<Invoice> invoices) {
         invoiceRepository.saveAll(invoices);
     }
@@ -309,6 +314,7 @@ public class InvoiceService {
         LocalDate createdAtTo,
         LocalDate dueDateFrom,
         LocalDate dueDateTo,
+        Boolean customerActive,
         Pageable pageable
     ) {
         Organization organization = organizationService.getById(organizationId);
@@ -337,6 +343,10 @@ public class InvoiceService {
             }
             if (dueDateTo != null) {
                 p = cb.and(p, cb.lessThanOrEqualTo(root.get("dueDate"), dueDateTo));
+            }
+            if (customerActive != null) {
+                var customerJoin = root.join("customer", jakarta.persistence.criteria.JoinType.LEFT);
+                p = cb.and(p, cb.equal(customerJoin.get("active"), customerActive));
             }
             return p;
         };

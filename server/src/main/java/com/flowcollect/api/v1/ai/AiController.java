@@ -94,7 +94,8 @@ public class AiController {
                 request.getChannel(),
                 request.getTone(),
                 request.getSubject(),
-                request.getBody()
+                request.getBody(),
+                request.getAction()
         );
         return ResponseEntity.ok(new AiTemplateResponse(result.subject(), result.body()));
     }

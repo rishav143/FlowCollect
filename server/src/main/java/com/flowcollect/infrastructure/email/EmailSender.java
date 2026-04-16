@@ -159,7 +159,7 @@ public class EmailSender implements NotificationSender {
               .append("style=\"display:inline-block;padding:12px 28px;")
               .append("background:#29B6F6;color:#ffffff;text-decoration:none;")
               .append("border-radius:6px;font-weight:bold;font-size:15px;\">")
-              .append("I&#39;ve Paid")
+              .append("Confirm Payment")
               .append("</a></div>");
             if (!trailer.isEmpty()) sb.append(trailer);
             last = m.end();
