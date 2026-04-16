@@ -8,10 +8,10 @@ import { formatCurrency } from '@/lib/format'
 import Select from '@/components/ui/Select'
 
 const MODES = [
-  { value: 'UPI',           label: 'UPI' },
-  { value: 'BANK_TRANSFER', label: 'Bank Transfer' },
-  { value: 'CASH',          label: 'Cash' },
+  { value: 'BANK_TRANSFER', label: 'Bank / Wire Transfer' },
   { value: 'CARD',          label: 'Card' },
+  { value: 'UPI',           label: 'UPI' },
+  { value: 'CASH',          label: 'Cash' },
   { value: 'CHEQUE',        label: 'Cheque' },
 ]
 
@@ -35,7 +35,7 @@ export default function RecordPaymentModal({ invoiceId, remainingAmount, currenc
   const qc    = useQueryClient()
 
   const [amount,      setAmount]      = useState(Math.round(remainingAmount))
-  const [mode,        setMode]        = useState<PaymentMode>('UPI')
+  const [mode,        setMode]        = useState<PaymentMode>('BANK_TRANSFER')
   const [referenceId, setReferenceId] = useState('')
   const [notes,       setNotes]       = useState('')
   const [error,       setError]       = useState<string | null>(null)

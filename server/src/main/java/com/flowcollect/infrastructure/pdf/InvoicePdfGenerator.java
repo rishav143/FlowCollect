@@ -458,7 +458,6 @@ public class InvoicePdfGenerator {
         lines.add(safe(customer.getName()));
         if (customer.getCompanyName() != null && !customer.getCompanyName().isBlank()) lines.add(customer.getCompanyName().trim());
         if (customer.getAddress()     != null && !customer.getAddress().isBlank())     addAddressLines(lines, customer.getAddress());
-        if (customer.getEmail()       != null && !customer.getEmail().isBlank())       lines.add(customer.getEmail().trim());
         return lines;
     }
 

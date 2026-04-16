@@ -41,11 +41,11 @@ function fmtDate(dateStr: string) {
 }
 
 const PAYMENT_METHODS = [
-  'Bank Transfer',
+  'Bank / Wire Transfer',
+  'Card',
   'UPI',
   'Cash',
   'Cheque',
-  'NEFT / RTGS',
   'Other',
 ] as const
 
@@ -315,7 +315,7 @@ function SuccessPage({ view, amountClaimed }: { view: CustomerConfirmationView; 
 function PaymentForm({ view, token }: { view: CustomerConfirmationView; token: string }) {
   const { mutate, isPending, isError, error } = useSubmitPaymentClaim(token)
 
-  const [paymentMethod, setPaymentMethod] = useState<string>('Bank Transfer')
+  const [paymentMethod, setPaymentMethod] = useState<string>('Bank / Wire Transfer')
   const [reference,     setReference]     = useState('')
   const [amount,        setAmount]        = useState(Math.round(view.remainingAmount))
   const [submitted,     setSubmitted]     = useState(false)

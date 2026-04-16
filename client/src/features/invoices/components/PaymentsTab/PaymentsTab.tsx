@@ -10,7 +10,7 @@ import { formatCurrency, formatDate } from '@/lib/format'
 const MODE_LABEL: Record<PaymentMode, string> = {
   CASH:          'Cash',
   UPI:           'UPI',
-  BANK_TRANSFER: 'Bank Transfer',
+  BANK_TRANSFER: 'Bank / Wire Transfer',
   CARD:          'Card',
   CHEQUE:        'Cheque',
 }
