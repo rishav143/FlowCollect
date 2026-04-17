@@ -5,6 +5,7 @@ import { useAuthStore } from '@/store/auth.store'
 import { recordPayment } from '@/api/payment.api'
 import type { PaymentMode } from '@/types/payment.types'
 import { formatCurrency } from '@/lib/format'
+import AmountInput from '@/components/ui/AmountInput'
 import Select from '@/components/ui/Select'
 
 const MODES = [
@@ -85,7 +86,7 @@ export default function RecordPaymentModal({ invoiceId, remainingAmount, currenc
 
           <div>
             <label className={labelCls}>Amount *</label>
-            <input type="number" min={1} step={1} value={amount} onChange={(e) => setAmount(Math.round(parseFloat(e.target.value) || 0))} className={inputCls} />
+            <AmountInput value={amount} currency={currency} onChange={setAmount} min={1} className={inputCls} />
           </div>
 
           <div>

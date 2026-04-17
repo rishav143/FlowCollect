@@ -65,6 +65,33 @@ export function formatCurrency(
 }
 
 // ---------------------------------------------------------------------------
+// Number-only formatting (for inputs — no currency symbol)
+// ---------------------------------------------------------------------------
+
+/**
+ * Format a number with thousand separators for the given currency's locale.
+ * Used to display values inside amount inputs (no symbol).
+ */
+export function formatNumberInput(value: number, currency: string): string {
+  if (!value && value !== 0) return ''
+  try {
+    return new Intl.NumberFormat(localeFor(currency), {
+      maximumFractionDigits: 0,
+    }).format(value)
+  } catch {
+    return String(value)
+  }
+}
+
+/**
+ * Strip formatting (commas, spaces, non-numeric chars) and parse to integer.
+ */
+export function parseAmountInput(raw: string): number {
+  const digits = raw.replace(/[^0-9]/g, '')
+  return digits ? parseInt(digits, 10) : 0
+}
+
+// ---------------------------------------------------------------------------
 // Date formatting
 // ---------------------------------------------------------------------------
 

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import AmountInput from '@/components/ui/AmountInput'
 import { useParams } from 'react-router-dom'
 import { useConfirmationView, useSubmitPaymentClaim } from '../hooks/useConfirmPayment'
 import type { CustomerConfirmationView, PaymentDetails } from '@/api/publicConfirmation.api'
@@ -444,14 +445,12 @@ function PaymentForm({ view, token }: { view: CustomerConfirmationView; token: s
                 <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-medium select-none">
                   {currencySymbol}
                 </span>
-                <input
-                  type="number"
+                <AmountInput
+                  value={amount}
+                  currency={view.currency}
+                  onChange={setAmount}
                   min={1}
                   max={view.remainingAmount}
-                  step={1}
-                  value={amount}
-                  onChange={(e) => setAmount(Math.round(Number(e.target.value)))}
-                  required
                   className="w-full bg-white border border-gray-200 rounded-xl pl-8 pr-3.5 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-[#29B6F6] transition-colors"
                 />
               </div>

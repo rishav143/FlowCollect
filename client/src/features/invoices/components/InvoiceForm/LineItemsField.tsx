@@ -1,5 +1,6 @@
 import { Plus, Trash2 } from 'lucide-react'
 import { formatCurrency } from '@/lib/format'
+import AmountInput from '@/components/ui/AmountInput'
 
 export interface LineItem {
   description: string
@@ -81,13 +82,11 @@ export default function LineItemsField({ items, onChange, currency }: Props) {
             <div>
               <span className="text-[10px] font-semibold uppercase tracking-wide text-c-muted">Unit Price</span>
               <div className="flex items-center gap-2 mt-1">
-                <input
-                  type="number"
+                <AmountInput
+                  value={item.unitPrice}
+                  currency={currency}
+                  onChange={(n) => update(idx, 'unitPrice', n)}
                   min={0}
-                  step={1}
-                  placeholder="0"
-                  value={item.unitPrice || ''}
-                  onChange={(e) => update(idx, 'unitPrice', Math.round(parseFloat(e.target.value) || 0))}
                   className={inputCls + ' flex-1'}
                 />
                 <span className="text-sm font-semibold text-[#0D1B2A] dark:text-white tabular-nums shrink-0">
@@ -123,13 +122,11 @@ export default function LineItemsField({ items, onChange, currency }: Props) {
               onChange={(e) => update(idx, 'quantity', parseInt(e.target.value) || 0)}
               className={inputCls + ' text-center'}
             />
-            <input
-              type="number"
+            <AmountInput
+              value={item.unitPrice}
+              currency={currency}
+              onChange={(n) => update(idx, 'unitPrice', n)}
               min={0}
-              step={1}
-              placeholder="0"
-              value={item.unitPrice || ''}
-              onChange={(e) => update(idx, 'unitPrice', Math.round(parseFloat(e.target.value) || 0))}
               className={inputCls}
             />
             <span className="text-sm text-right font-medium text-[#0D1B2A] dark:text-white tabular-nums">
