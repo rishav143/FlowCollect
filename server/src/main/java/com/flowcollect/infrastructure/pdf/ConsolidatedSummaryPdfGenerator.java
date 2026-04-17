@@ -400,8 +400,6 @@ public class ConsolidatedSummaryPdfGenerator {
         l.add(safe(customer.getName()));
         if (customer.getCompanyName() != null && !customer.getCompanyName().isBlank()) l.add(customer.getCompanyName().trim());
         if (customer.getAddress()     != null && !customer.getAddress().isBlank())     l.add(customer.getAddress().trim());
-        if (customer.getEmail()       != null && !customer.getEmail().isBlank())       l.add(customer.getEmail().trim());
-        if (customer.getPhone()       != null && !customer.getPhone().isBlank())       l.add(customer.getPhone().trim());
         return l;
     }
 

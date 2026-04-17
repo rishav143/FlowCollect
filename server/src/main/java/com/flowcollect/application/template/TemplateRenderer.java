@@ -210,27 +210,21 @@ public class TemplateRenderer {
     // -----------------------------------------------------------------------
 
     private static final String BUILT_IN_EMAIL_SUBJECT =
-            "Outstanding invoices from {{organizationName}}";
+            "Invoice summary — {{organizationName}}";
 
     private static final String BUILT_IN_EMAIL_BODY =
             "Hi {{customerName}},\n\n" +
-            "I hope this note finds you well. I'm writing to let you know that you have " +
-            "{{invoiceCount}} outstanding invoice{{invoiceCountSuffix}} with {{organizationName}} " +
-            "totalling {{remainingAmount}}.\n\n" +
-            "We've attached a full statement for your reference. When you have a moment, " +
-            "we'd appreciate you looking it over and settling the balance at your convenience.\n\n" +
-            "If you have any questions or would like to discuss the details, please feel free " +
-            "to reach out to us directly at {{organizationEmail}}. We're always happy to help.\n\n" +
-            "Thank you for your time and continued partnership.\n\n" +
-            "Best regards,\n" +
-            "{{organizationName}}\n" +
-            "{{organizationEmail}}";
+            "You have {{invoiceCount}} outstanding invoice{{invoiceCountSuffix}} with " +
+            "{{organizationName}} totalling {{remainingAmount}}. " +
+            "Please find the statement attached.\n\n" +
+            "If you have any questions, reply to this email or reach us at {{organizationEmail}}.\n\n" +
+            "{{organizationName}}";
 
     private static final String BUILT_IN_SMS_WHATSAPP_BODY =
             "Hi {{customerName}}, you have {{invoiceCount}} outstanding " +
             "invoice{{invoiceCountSuffix}} with {{organizationName}} totalling " +
-            "{{remainingAmount}}. A statement has been attached for your reference. " +
-            "Questions? Reach us at {{organizationEmail}}.";
+            "{{remainingAmount}}. Statement attached. " +
+            "Questions? {{organizationEmail}}";
 
     public String renderBuiltInConsolidatedSubject(FollowUpChannel channel,
                                                     List<Invoice> invoices,
