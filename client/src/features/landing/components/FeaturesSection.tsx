@@ -3,33 +3,33 @@ import { Bell, Sparkles, FileText, CheckSquare, Globe, ReceiptText } from 'lucid
 const features = [
   {
     icon: <ReceiptText size={22} className="text-[#29B6F6]" />,
-    title: 'Invoice Management',
-    body: 'Create and send professional invoices in minutes - then let FlowCollect handle the rest.',
+    title: 'Create invoices in seconds',
+    body: 'Send professional invoices in minutes and let FlowCollect handle the follow-ups automatically.',
   },
   {
     icon: <Bell size={22} className="text-[#29B6F6]" />,
-    title: 'Automated Reminders',
-    body: 'Automated email follow-ups on your schedule. Set once and never think about it again.',
+    title: 'Automatic follow-ups',
+    body: 'We follow up with your clients at the right time until you get paid.',
   },
   {
     icon: <Sparkles size={22} className="text-violet-400" />,
-    title: 'AI Payment Insights',
-    body: 'Spots payment patterns across your invoices and flags risks before they become problems.',
+    title: 'Spot late paying clients',
+    body: 'Identify clients who might delay payment so you can act before it becomes a problem.',
   },
   {
     icon: <FileText size={22} className="text-amber-400" />,
-    title: 'Follow-up Templates',
-    body: 'Your tone, your words. Craft the exact message your clients receive — professional every time.',
+    title: 'Professional follow-ups',
+    body: 'Send clear, well-written messages without thinking about what to say.',
   },
   {
     icon: <CheckSquare size={22} className="text-green-400" />,
-    title: 'Approval Workflows',
-    body: 'Clients confirm payment with one tap. No disputes. No "I already sent it" surprises.',
+    title: 'Instant payment confirmation',
+    body: 'Clients confirm payment with one tap. No confusion and no back and forth.',
   },
   {
     icon: <Globe size={22} className="text-rose-400" />,
-    title: 'Multi-currency Support',
-    body: 'USD, EUR, GBP, AUD, SGD, and more. We handle the formatting - you focus on the work.',
+    title: 'Works worldwide',
+    body: 'Send invoices in any currency. We handle everything so you can focus on your work.',
   },
 ]
 
