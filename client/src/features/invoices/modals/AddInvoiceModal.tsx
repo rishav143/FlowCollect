@@ -52,7 +52,7 @@ export default function AddInvoiceModal({ onClose }: Props) {
     taxLabel:           '',
     taxPercentage:      0,
     discountPercentage: 0,
-    items:              [{ description: '', quantity: 1, unitPrice: 0 }],
+    items:              [{ description: '', quantity: 0, unitPrice: 0 }],
   })
   const [error, setError] = useState<string | null>(null)
 

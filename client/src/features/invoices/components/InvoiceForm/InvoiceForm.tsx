@@ -41,7 +41,7 @@ export default function InvoiceForm({ initial, onChange, currency }: Props) {
   const [taxPercentage,  setTaxPercentage]  = useState(initial?.taxPercentage  ?? 0)
   const [discountPercentage, setDiscountPercentage] = useState(initial?.discountPercentage ?? 0)
   const [items,          setItems]          = useState<LineItem[]>(
-    initial?.items ?? [{ description: '', quantity: 1, unitPrice: 0 }],
+    initial?.items ?? [{ description: '', quantity: 0, unitPrice: 0 }],
   )
 
   const { data: customersPage } = useQuery({

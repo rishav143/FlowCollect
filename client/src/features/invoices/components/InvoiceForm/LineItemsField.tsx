@@ -28,7 +28,7 @@ export default function LineItemsField({ items, onChange, currency }: Props) {
   }
 
   function add() {
-    onChange([...items, { description: '', quantity: 1, unitPrice: 0 }])
+    onChange([...items, { description: '', quantity: 0, unitPrice: 0 }])
   }
 
   function remove(idx: number) {
@@ -71,8 +71,9 @@ export default function LineItemsField({ items, onChange, currency }: Props) {
                 type="number"
                 min={1}
                 step={1}
-                value={item.quantity}
-                onChange={(e) => update(idx, 'quantity', Math.max(1, parseInt(e.target.value) || 1))}
+                placeholder="1"
+                value={item.quantity || ''}
+                onChange={(e) => update(idx, 'quantity', parseInt(e.target.value) || 0)}
                 className={inputCls + ' mt-1'}
               />
             </div>
@@ -117,8 +118,9 @@ export default function LineItemsField({ items, onChange, currency }: Props) {
               type="number"
               min={1}
               step={1}
-              value={item.quantity}
-              onChange={(e) => update(idx, 'quantity', Math.max(1, parseInt(e.target.value) || 1))}
+              placeholder="1"
+              value={item.quantity || ''}
+              onChange={(e) => update(idx, 'quantity', parseInt(e.target.value) || 0)}
               className={inputCls + ' text-center'}
             />
             <input
