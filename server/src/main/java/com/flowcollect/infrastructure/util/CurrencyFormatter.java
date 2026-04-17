@@ -97,8 +97,8 @@ public final class CurrencyFormatter {
         // Remaining groups: 2 digits each
         while (pos > 0) {
             int start = Math.max(0, pos - 2);
-            sb.insert(0, digits, start, pos);
-            sb.insert(0, ',');
+            sb.insert(0, ',');                 // comma separator first
+            sb.insert(0, digits, start, pos);  // then the digit group in front of it
             pos = start;
         }
 
