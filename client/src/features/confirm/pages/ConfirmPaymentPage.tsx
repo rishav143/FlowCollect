@@ -178,7 +178,7 @@ function BrandHeader({ subtitle }: { subtitle: string }) {
       style={{ background: 'linear-gradient(135deg, #29B6F6 0%, #0288D1 100%)' }}
     >
       <p className="text-lg font-bold tracking-tight">
-        <span className="font-black">Paid</span>Peace
+        <span className="font-black">Flow</span>Collect
       </p>
       <p className="text-sm opacity-90 mt-0.5">{subtitle}</p>
     </div>

@@ -56,6 +56,7 @@ function useReviewMutation(
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['confirmations', orgId] })
       queryClient.invalidateQueries({ queryKey: ['confirmations-count', orgId] })
+      queryClient.invalidateQueries({ queryKey: ['nav-approvals', orgId] })
     },
   })
 }
