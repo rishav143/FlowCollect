@@ -20,7 +20,7 @@ export default function HowItWorksSection() {
             number="1"
             icon={<FileText size={22} className="text-[#29B6F6]" />}
             title="Add your invoice"
-            body="Enter your client's details and invoice amount. Takes 30 seconds - no complex setup needed."
+            body="Enter your client details and amount. Takes 30 seconds with no complex setup."
           />
 
           {/* Connector */}
@@ -29,8 +29,8 @@ export default function HowItWorksSection() {
           <Step
             number="2"
             icon={<Bell size={22} className="text-[#29B6F6]" />}
-            title="Set your rules"
-            body="Tell FlowCollect when to follow up - Day 1, Day 7, Day 14 - via email. Your tone, your schedule."
+            title="Start Recovery"
+            body="Turn on automatic follow-ups. We handle the timing and messages for you. You can adjust anytime."
           />
 
           {/* Connector */}
@@ -39,8 +39,8 @@ export default function HowItWorksSection() {
           <Step
             number="3"
             icon={<BadgeCheck size={22} className="text-[#29B6F6]" />}
-            title="Collect your money"
-            body="We send the reminders. Clients pay. You get notified. No more awkward messages - ever."
+            title="Get paid"
+            body="We follow up with your clients until payment is received. You stay informed with no awkward chasing."
           />
         </div>
       </div>
