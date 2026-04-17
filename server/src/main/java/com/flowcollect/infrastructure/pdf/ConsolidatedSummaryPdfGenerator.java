@@ -153,25 +153,20 @@ public class ConsolidatedSummaryPdfGenerator {
     private void writeParties(PageContext page, FontSet fonts,
                                Organization org, Customer customer) throws IOException {
         float leftX  = MARGIN;
-        float rightX = MARGIN + CONTENT_WIDTH / 2f;
         float titleY = page.y;
 
-        drawText(page, fonts.bold, FONT_SECTION, leftX,  titleY, "From",    COLOR_TEXT);
-        drawText(page, fonts.bold, FONT_SECTION, rightX, titleY, "Bill To", COLOR_TEXT);
+        // "From" is already shown via the org name + details in the header — no need to repeat.
+        // Show only "Bill To" on the left, matching InvoicePdfGenerator layout.
+        drawText(page, fonts.bold, FONT_SECTION, leftX, titleY, "Bill To", COLOR_TEXT);
 
-        float leftY  = titleY - 18f;
-        float rightY = titleY - 18f;
+        float detailY = titleY - 18f;
 
-        for (String line : buildOrgLines(org)) {
-            drawText(page, fonts.regular, FONT_NORMAL, leftX, leftY, line, COLOR_TEXT);
-            leftY -= LINE_GAP;
-        }
         for (String line : buildCustomerLines(customer)) {
-            drawText(page, fonts.regular, FONT_NORMAL, rightX, rightY, line, COLOR_TEXT);
-            rightY -= LINE_GAP;
+            drawText(page, fonts.regular, FONT_NORMAL, leftX, detailY, line, COLOR_TEXT);
+            detailY -= LINE_GAP;
         }
 
-        page.y = Math.min(leftY, rightY) - SECTION_GAP;
+        page.y = detailY - SECTION_GAP;
     }
 
     private PageContext writeTable(PageContext page, FontSet fonts,
