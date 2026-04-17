@@ -44,7 +44,7 @@ function getPlans(region: Region): Plan[] {
       originalPrice: isIndia ? '₹799' : '$19',
       period: '/mo',
       description: 'For freelancers serious about getting paid on time.',
-      cta: 'Start free trial',
+      cta: 'Get started',
       ctaTo: '/register',
       highlight: true,
       features: [
