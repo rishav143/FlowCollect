@@ -87,7 +87,7 @@ export default function PaymentsTab({ invoiceId, remainingAmount, currency, life
                     {p.referenceId && ` · Ref: ${p.referenceId}`}
                   </p>
                 </div>
-                {p.notes && <p className="text-xs text-c-muted hidden sm:block max-w-[200px] truncate" title={p.notes}>{p.notes}</p>}
+                {p.notes && <p className="text-xs text-c-muted hidden sm:block flex-1 min-w-0 truncate text-right" title={p.notes}>{p.notes}</p>}
                 <button
                   onClick={() => deleteMut.mutate(p.id)}
                   disabled={deleteMut.isPending}
