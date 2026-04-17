@@ -37,18 +37,16 @@ export default function Select({
   const [open, setOpen]       = useState(false)
   const [dropPos, setDropPos] = useState<DropPos>({ top: 0, left: 0, width: 0, maxHeight: 240, openUp: false })
 
-  const triggerRef  = useRef<HTMLButtonElement>(null)
-  const listRef     = useRef<HTMLUListElement>(null)
-  // Track touch start position to distinguish a tap from a scroll gesture
-  const pointerStart = useRef<{ y: number; scrolled: boolean } | null>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
+  const listRef    = useRef<HTMLUListElement>(null)
 
   const recalcPos = useCallback(() => {
     if (!triggerRef.current) return
-    const r          = triggerRef.current.getBoundingClientRect()
-    const GAP        = 6
-    const MARGIN     = 8
-    const MAX        = 240
-    const MIN_FLIP   = 120  // flip upward only if space below drops under this
+    const r        = triggerRef.current.getBoundingClientRect()
+    const GAP      = 6
+    const MARGIN   = 8
+    const MAX      = 240
+    const MIN_FLIP = 120
 
     const spaceBelow = window.innerHeight - r.bottom - GAP - MARGIN
     const spaceAbove = r.top - GAP - MARGIN
@@ -75,11 +73,10 @@ export default function Select({
       ) setOpen(false)
     }
     function onScroll(e: Event) {
-      // Scrolling inside the list itself is fine — only close on external scroll
       if (listRef.current && listRef.current.contains(e.target as Node)) return
       setOpen(false)
     }
-    function onResize()  { recalcPos() }
+    function onResize() { recalcPos() }
 
     document.addEventListener('pointerdown', onPointerDown)
     window.addEventListener('scroll', onScroll, true)
@@ -96,9 +93,9 @@ export default function Select({
   const triggerCls = [
     'w-full min-w-[5rem] flex items-center justify-between px-3 py-2 text-sm rounded-lg border transition-colors focus:outline-none',
     'bg-[#F4F7F9] dark:bg-[#243447]',
-    selected  ? 'border-[#8A9BAE]/50 dark:border-[#8A9BAE]/40'  : 'border-transparent',
-    error     ? '!border-red-400'               : '',
-    disabled  ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer',
+    selected ? 'border-[#8A9BAE]/50 dark:border-[#8A9BAE]/40' : 'border-transparent',
+    error    ? '!border-red-400'               : '',
+    disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer',
   ].join(' ')
 
   return (
@@ -121,6 +118,25 @@ export default function Select({
         />
       </button>
 
+      {/* Native select — mobile only (< sm). Sits invisibly over the trigger so
+          tapping opens the OS picker (wheel on iOS, sheet on Android).
+          Eliminates all scroll-vs-tap bugs on touch devices. */}
+      {!disabled && (
+        <select
+          className="absolute inset-0 w-full h-full opacity-0 sm:hidden cursor-pointer"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          aria-hidden="true"
+          tabIndex={-1}
+        >
+          {!value && <option value="" disabled>{placeholder}</option>}
+          {options.map((o) => (
+            <option key={o.value} value={o.value}>{o.label}</option>
+          ))}
+        </select>
+      )}
+
+      {/* Custom dropdown — desktop only (sm+) */}
       {open && createPortal(
         <ul
           ref={listRef}
@@ -144,19 +160,8 @@ export default function Select({
               aria-selected={opt.value === value}
               onPointerDown={(e) => {
                 e.preventDefault()
-                pointerStart.current = { y: e.clientY, scrolled: false }
-              }}
-              onPointerMove={(e) => {
-                if (pointerStart.current && Math.abs(e.clientY - pointerStart.current.y) > 6) {
-                  pointerStart.current.scrolled = true
-                }
-              }}
-              onPointerUp={() => {
-                if (pointerStart.current && !pointerStart.current.scrolled) {
-                  onChange(opt.value)
-                  setOpen(false)
-                }
-                pointerStart.current = null
+                onChange(opt.value)
+                setOpen(false)
               }}
               className={[
                 'flex items-center justify-between px-3 py-2.5 text-sm cursor-pointer transition-colors whitespace-nowrap',
