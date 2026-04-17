@@ -1,9 +1,9 @@
 import { useState, useMemo } from 'react'
 import { X } from 'lucide-react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@/store/auth.store'
 import { useCreateInvoice } from '../hooks/useInvoiceMutations'
-import { listInvoices } from '@/api/invoice.api'
+import { listInvoices, issueInvoice } from '@/api/invoice.api'
 import { extractApiError } from '@/lib/errors'
 import InvoiceForm, { type InvoiceFormValues } from '../components/InvoiceForm/InvoiceForm'
 
@@ -43,6 +43,7 @@ export default function AddInvoiceModal({ onClose }: Props) {
   const orgId    = useAuthStore((s) => s.org?.id ?? '')
   const currency = useAuthStore((s) => s.org?.currency ?? 'INR')
   const create   = useCreateInvoice()
+  const qc       = useQueryClient()
 
   const { suggested, isLoading: loadingNumber } = useNextInvoiceNumber(orgId)
 
@@ -55,39 +56,70 @@ export default function AddInvoiceModal({ onClose }: Props) {
     discountPercentage: 0,
     items:              [{ description: '', quantity: 0, unitPrice: 0 }],
   })
-  const [error, setError] = useState<string | null>(null)
+  const [error,     setError]     = useState<string | null>(null)
+  const [isIssuing, setIsIssuing] = useState(false)
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setError(null)
-
-    if (!values.invoiceNumber.trim()) {
-      setError('Invoice number is required.')
-      return
-    }
-    if (values.items.some((it) => !it.description.trim() || it.quantity < 1)) {
-      setError('All line items need a description and a quantity ≥ 1.')
-      return
-    }
-
+  function buildPayload() {
     const subtotal       = Math.round(values.items.reduce((s, it) => s + it.quantity * it.unitPrice, 0))
     const taxAmount      = values.taxPercentage > 0 ? Math.round(subtotal * values.taxPercentage / 100) : 0
     const discountAmount = values.discountPercentage > 0 ? Math.round(subtotal * values.discountPercentage / 100) : 0
     const taxLabel       = values.taxLabel.trim() || 'Tax'
+    return {
+      invoiceNumber:  values.invoiceNumber.trim(),
+      customerId:     values.customerId || undefined,
+      dueDate:        values.dueDate    || undefined,
+      taxLines:       taxAmount > 0 ? [{ label: `${taxLabel} (${values.taxPercentage}%)`, amount: taxAmount }] : undefined,
+      discountAmount: discountAmount > 0 ? discountAmount : undefined,
+      items:          values.items,
+    }
+  }
 
+  function validate(): boolean {
+    if (!values.invoiceNumber.trim()) {
+      setError('Invoice number is required.')
+      return false
+    }
+    if (values.items.some((it) => !it.description.trim() || it.quantity < 1)) {
+      setError('All line items need a description and a quantity ≥ 1.')
+      return false
+    }
+    return true
+  }
+
+  async function handleSaveDraft(e: React.FormEvent) {
+    e.preventDefault()
+    setError(null)
+    if (!validate()) return
     try {
-      await create.mutateAsync({
-        invoiceNumber:  values.invoiceNumber.trim(),
-        customerId:     values.customerId || undefined,
-        dueDate:        values.dueDate    || undefined,
-        taxLines:       taxAmount > 0 ? [{ label: `${taxLabel} (${values.taxPercentage}%)`, amount: taxAmount }] : undefined,
-        discountAmount: discountAmount > 0 ? discountAmount : undefined,
-        items:          values.items,
-      })
+      await create.mutateAsync(buildPayload())
       onClose()
     } catch (err) {
       setError(extractApiError(err, 'Failed to create invoice. Please try again.'))
     }
+  }
+
+  async function handleCreateAndIssue(e: React.MouseEvent) {
+    e.preventDefault()
+    setError(null)
+    if (!validate()) return
+    setIsIssuing(true)
+    try {
+      const invoice = await create.mutateAsync(buildPayload())
+      await issueInvoice(orgId, invoice.id)
+      qc.invalidateQueries({ queryKey: ['invoices', orgId] })
+      qc.invalidateQueries({ queryKey: ['dashboard-stats', orgId] })
+      qc.invalidateQueries({ queryKey: ['billing', orgId] })
+      onClose()
+    } catch (err) {
+      setError(extractApiError(err, 'Failed to create invoice. Please try again.'))
+    } finally {
+      setIsIssuing(false)
+    }
+  }
+
+  // keep form's onSubmit tied to Save as Draft so Enter key / implicit submit goes there
+  async function handleSubmit(e: React.FormEvent) {
+    return handleSaveDraft(e)
   }
 
   return (
@@ -136,21 +168,29 @@ export default function AddInvoiceModal({ onClose }: Props) {
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end gap-3 px-6 py-4 border-t border-c-border shrink-0">
+        <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 sm:gap-3 px-6 py-4 border-t border-c-border shrink-0">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 rounded-lg text-sm font-medium text-c-muted hover:text-[#0D1B2A] dark:hover:text-white hover:bg-[#F4F7F9] dark:hover:bg-[#243447] transition-colors"
+            className="w-full sm:w-auto px-4 py-2 rounded-lg text-sm font-medium text-c-muted hover:text-[#0D1B2A] dark:hover:text-white hover:bg-[#F4F7F9] dark:hover:bg-[#243447] transition-colors"
           >
             Cancel
           </button>
           <button
             type="submit"
-            disabled={create.isPending || loadingNumber}
-            className={btnPrimary}
+            disabled={create.isPending || isIssuing || loadingNumber}
+            className="w-full sm:w-auto px-4 py-2 rounded-lg text-sm font-medium text-c-muted hover:text-[#0D1B2A] dark:hover:text-white hover:bg-[#F4F7F9] dark:hover:bg-[#243447] transition-colors disabled:opacity-50"
+          >
+            {create.isPending && !isIssuing ? 'Saving…' : 'Save as Draft'}
+          </button>
+          <button
+            type="button"
+            onClick={handleCreateAndIssue}
+            disabled={create.isPending || isIssuing || loadingNumber}
+            className={`w-full sm:w-auto ${btnPrimary}`}
             style={{ background: 'linear-gradient(90deg, #29B6F6 0%, #4FC3F7 100%)' }}
           >
-            {create.isPending ? 'Creating…' : 'Create Invoice'}
+            {isIssuing ? 'Issuing…' : 'Create & Issue'}
           </button>
         </div>
       </form>
