@@ -37,8 +37,10 @@ export default function Select({
   const [open, setOpen]       = useState(false)
   const [dropPos, setDropPos] = useState<DropPos>({ top: 0, left: 0, width: 0, maxHeight: 240, openUp: false })
 
-  const triggerRef = useRef<HTMLButtonElement>(null)
-  const listRef    = useRef<HTMLUListElement>(null)
+  const triggerRef  = useRef<HTMLButtonElement>(null)
+  const listRef     = useRef<HTMLUListElement>(null)
+  // Track touch start position to distinguish a tap from a scroll gesture
+  const pointerStart = useRef<{ y: number; scrolled: boolean } | null>(null)
 
   const recalcPos = useCallback(() => {
     if (!triggerRef.current) return
@@ -142,8 +144,19 @@ export default function Select({
               aria-selected={opt.value === value}
               onPointerDown={(e) => {
                 e.preventDefault()
-                onChange(opt.value)
-                setOpen(false)
+                pointerStart.current = { y: e.clientY, scrolled: false }
+              }}
+              onPointerMove={(e) => {
+                if (pointerStart.current && Math.abs(e.clientY - pointerStart.current.y) > 6) {
+                  pointerStart.current.scrolled = true
+                }
+              }}
+              onPointerUp={() => {
+                if (pointerStart.current && !pointerStart.current.scrolled) {
+                  onChange(opt.value)
+                  setOpen(false)
+                }
+                pointerStart.current = null
               }}
               className={[
                 'flex items-center justify-between px-3 py-2.5 text-sm cursor-pointer transition-colors whitespace-nowrap',
