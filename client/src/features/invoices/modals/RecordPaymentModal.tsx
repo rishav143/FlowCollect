@@ -110,6 +110,7 @@ export default function RecordPaymentModal({ invoiceId, remainingAmount, currenc
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={2}
+              maxLength={200}
               className={`${inputCls} resize-none`}
             />
           </div>
