@@ -1,8 +1,7 @@
 package com.flowcollect.infrastructure.util;
 
 import java.math.BigDecimal;
-import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
+import java.math.RoundingMode;
 import java.text.NumberFormat;
 import java.util.Currency;
 import java.util.Locale;
@@ -28,6 +27,7 @@ public final class CurrencyFormatter {
      * <p>Examples:
      * <ul>
      *   <li>INR, 77143    → "₹77,143"</li>
+     *   <li>INR, 443000   → "₹4,43,000"   (Indian lakh system)</li>
      *   <li>INR, 1560858  → "₹15,60,858"  (Indian lakh system)</li>
      *   <li>USD, 1200     → "$1,200"</li>
      *   <li>EUR, 1500     → "€1.500"</li>
@@ -42,17 +42,11 @@ public final class CurrencyFormatter {
         if (amount == null || currencyCode == null || currencyCode.isBlank()) return "";
         try {
             if ("INR".equals(currencyCode)) {
-                // Java's NumberFormat for en_IN uses US 3-digit grouping on many JVM versions.
-                // Force the Indian lakh system (groups of 2 after the first 3 from the right:
-                // e.g. 1560858 → 15,60,858) with an explicit DecimalFormat pattern.
-                // Avoid ¤ + setCurrency() which can silently reset the symbol; prepend ₹ directly.
-                DecimalFormatSymbols symbols = new DecimalFormatSymbols(Locale.of("en", "IN"));
-                symbols.setGroupingSeparator(',');
-                symbols.setDecimalSeparator('.');
-                DecimalFormat fmt = new DecimalFormat("#,##,##0", symbols);
-                fmt.setMinimumFractionDigits(0);
-                fmt.setMaximumFractionDigits(0);
-                return "₹" + fmt.format(amount);
+                // Java's NumberFormat for en_IN silently falls back to 3-digit grouping on many
+                // JVM builds, producing ₹443,000 instead of the correct ₹4,43,000 (lakh system).
+                // Use a hand-rolled algorithm that is guaranteed correct on every JVM:
+                //   1,000 → ₹1,000 | 1,00,000 → ₹1,00,000 | 15,60,858 → ₹15,60,858
+                return formatIndianRupees(amount);
             }
             Currency currency = Currency.getInstance(currencyCode);
             NumberFormat fmt  = NumberFormat.getCurrencyInstance(localeFor(currencyCode));
@@ -75,6 +69,43 @@ public final class CurrencyFormatter {
     }
 
     /**
+     * Formats a rupee amount using the Indian lakh/crore grouping system.
+     *
+     * <p>Groups: last 3 digits, then groups of 2 going left.
+     * <pre>
+     *   443000   → ₹4,43,000
+     *   1560858  → ₹15,60,858
+     *   100000   → ₹1,00,000
+     *   10000000 → ₹1,00,00,000
+     * </pre>
+     */
+    private static String formatIndianRupees(BigDecimal amount) {
+        long value = amount.setScale(0, RoundingMode.HALF_UP).longValue();
+        boolean negative = value < 0;
+        String digits = String.valueOf(Math.abs(value));
+        int len = digits.length();
+
+        if (len <= 3) {
+            return (negative ? "-₹" : "₹") + digits;
+        }
+
+        StringBuilder sb = new StringBuilder();
+        // Rightmost group: 3 digits
+        sb.append(digits, len - 3, len);
+        int pos = len - 3;
+
+        // Remaining groups: 2 digits each
+        while (pos > 0) {
+            int start = Math.max(0, pos - 2);
+            sb.insert(0, digits, start, pos);
+            sb.insert(0, ',');
+            pos = start;
+        }
+
+        return (negative ? "-₹" : "₹") + sb;
+    }
+
+    /**
      * Returns the most appropriate {@link Locale} for formatting numbers in the
      * given currency. The locale controls grouping separators and decimal symbols
      * (e.g. comma vs period). The currency symbol itself is set explicitly via
@@ -83,7 +114,7 @@ public final class CurrencyFormatter {
     public static Locale localeFor(String currencyCode) {
         if (currencyCode == null) return Locale.US;
         return switch (currencyCode) {
-            case "INR" -> Locale.of("en", "IN");   // ₹15,60,858 (lakh — handled by explicit DecimalFormat above)
+            case "INR" -> Locale.of("en", "IN");   // ₹15,60,858 (lakh — handled by formatIndianRupees, not this locale)
             case "USD" -> Locale.US;                // $1,000
             case "EUR" -> Locale.GERMANY;           // €1.000
             case "GBP" -> Locale.UK;                // £1,000
