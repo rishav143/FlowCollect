@@ -50,9 +50,9 @@ function getPlans(region: Region): Plan[] {
       features: [
         'Everything in Free',
         'Unlimited active invoices',
-        'Auto Recovery — rules that chase invoices for you',
+        'Auto Recovery Engine',
         'Recovery dashboard & live activity feed',
-        'AI insights — spot late payers early',
+        'AI payment insights',
         'AI-powered follow-up templates',
         'Custom reminder schedules',
         'Priority support',
