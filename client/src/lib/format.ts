@@ -51,13 +51,15 @@ export function formatCurrency(
 ): string {
   const { decimals = true, compact = false } = options
   try {
-    return new Intl.NumberFormat(localeFor(currency), {
+    const formatted = new Intl.NumberFormat(localeFor(currency), {
       style:                 'currency',
       currency:              currency || 'USD',
       minimumFractionDigits: decimals ? 2 : 0,
       maximumFractionDigits: decimals ? 2 : 0,
       ...(compact ? { notation: 'compact' } : {}),
     }).format(amount)
+    // Normalise negative format: "-₹4,52,000" → "- ₹4,52,000"
+    return formatted.replace(/^-(\p{Sc})/u, '- $1')
   } catch {
     // Fallback: plain number with currency code
     return `${currency} ${amount.toFixed(decimals ? 2 : 0)}`
