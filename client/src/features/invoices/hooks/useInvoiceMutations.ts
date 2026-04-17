@@ -22,6 +22,7 @@ export function useCreateInvoice() {
     onSuccess:  () => {
       qc.invalidateQueries({ queryKey: ['invoices', orgId] })
       qc.invalidateQueries({ queryKey: ['dashboard-stats', orgId] })
+      qc.invalidateQueries({ queryKey: ['billing', orgId] })
     },
   })
 }
@@ -48,6 +49,7 @@ export function useDeleteInvoice() {
     onSuccess:  () => {
       qc.invalidateQueries({ queryKey: ['invoices', orgId] })
       qc.invalidateQueries({ queryKey: ['dashboard-stats', orgId] })
+      qc.invalidateQueries({ queryKey: ['billing', orgId] })
     },
   })
 }
@@ -61,6 +63,7 @@ export function useIssueInvoice(invoiceId: string) {
     onSuccess:  () => {
       qc.invalidateQueries({ queryKey: ['invoices', orgId] })
       qc.invalidateQueries({ queryKey: ['dashboard-stats', orgId] })
+      qc.invalidateQueries({ queryKey: ['billing', orgId] })
     },
   })
 }
@@ -74,6 +77,7 @@ export function useCancelInvoice(invoiceId: string) {
     onSuccess:  () => {
       qc.invalidateQueries({ queryKey: ['invoices', orgId] })
       qc.invalidateQueries({ queryKey: ['dashboard-stats', orgId] })
+      qc.invalidateQueries({ queryKey: ['billing', orgId] })
     },
   })
 }

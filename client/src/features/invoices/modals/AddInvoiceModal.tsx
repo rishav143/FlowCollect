@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/store/auth.store'
 import { useCreateInvoice } from '../hooks/useInvoiceMutations'
 import { listInvoices } from '@/api/invoice.api'
+import { extractApiError } from '@/lib/errors'
 import InvoiceForm, { type InvoiceFormValues } from '../components/InvoiceForm/InvoiceForm'
 
 interface Props {
@@ -84,8 +85,8 @@ export default function AddInvoiceModal({ onClose }: Props) {
         items:          values.items,
       })
       onClose()
-    } catch {
-      setError('Failed to create invoice. Please try again.')
+    } catch (err) {
+      setError(extractApiError(err, 'Failed to create invoice. Please try again.'))
     }
   }
 
