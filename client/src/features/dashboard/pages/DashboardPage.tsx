@@ -8,6 +8,8 @@ import ActionTable           from '../components/ActionTable/ActionTable'
 import CollectionsTrendChart from '../components/CollectionsTrendChart/CollectionsTrendChart'
 import AiInsightBanner      from '../components/AiInsightBanner/AiInsightBanner'
 import { useToggleAutoRecovery } from '@/features/recover/hooks/useRecover'
+import { usePlan } from '@/hooks/usePlan'
+import { useNavigate } from 'react-router-dom'
 
 import DispatchModal         from '@/features/followups/components/DispatchModal/DispatchModal'
 import type { NeedsAttentionItem } from '@/api/dashboard.api'
@@ -69,8 +71,18 @@ function AutoAgentBanner() {
 // ---------------------------------------------------------------------------
 
 function AutoRecoveryWidget() {
-  const enabled    = useAuthStore((s) => s.org?.autoRecoveryEnabled ?? false)
-  const toggleMut  = useToggleAutoRecovery()
+  const enabled   = useAuthStore((s) => s.org?.autoRecoveryEnabled ?? false)
+  const toggleMut = useToggleAutoRecovery()
+  const { isPro } = usePlan()
+  const navigate  = useNavigate()
+
+  function handleToggle() {
+    if (!isPro) {
+      navigate('/settings/billing')
+      return
+    }
+    toggleMut.mutate(!enabled)
+  }
 
   return (
     <div className="flex items-center gap-2">
@@ -92,20 +104,23 @@ function AutoRecoveryWidget() {
         </span>
       </Link>
 
-      {/* Toggle */}
+      {/* Toggle — PRO only; free users are redirected to billing */}
       <button
-        onClick={() => toggleMut.mutate(!enabled)}
+        onClick={handleToggle}
         disabled={toggleMut.isPending}
-        aria-label={enabled ? 'Disable auto recovery' : 'Enable auto recovery'}
+        aria-label={isPro
+          ? (enabled ? 'Disable auto recovery' : 'Enable auto recovery')
+          : 'Upgrade to PRO to enable auto recovery'}
+        title={!isPro ? 'PRO feature — upgrade to enable' : undefined}
         className={[
           'relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent',
           'transition-colors duration-200 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed',
-          enabled ? 'bg-amber-400' : 'bg-[#8A9BAE]/30',
+          enabled && isPro ? 'bg-amber-400' : 'bg-[#8A9BAE]/30',
         ].join(' ')}
       >
         <span className={[
           'pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow transition duration-200',
-          enabled ? 'translate-x-4' : 'translate-x-0',
+          enabled && isPro ? 'translate-x-4' : 'translate-x-0',
         ].join(' ')} />
       </button>
     </div>

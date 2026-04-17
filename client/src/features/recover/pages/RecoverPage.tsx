@@ -6,6 +6,8 @@ import {
 } from 'lucide-react'
 import { useAuthStore } from '@/store/auth.store'
 import { formatCurrency } from '@/lib/format'
+import { usePlan } from '@/hooks/usePlan'
+import { useNavigate } from 'react-router-dom'
 import { useRecoverStats, useAutoRules, useToggleAutoRecovery, useQueueActivity } from '../hooks/useRecover'
 import type { UpcomingItem, ActivityItem } from '@/api/recover.api'
 import { useToggleReminderRule } from '@/features/reminders/hooks/useReminders'
@@ -454,6 +456,8 @@ function RecoveryToggle({ enabled, isPending, onToggle }: RecoveryToggleProps) {
 // ---------------------------------------------------------------------------
 
 export default function RecoverPage() {
+  const { isPro }          = usePlan()
+  const navigate           = useNavigate()
   const currency           = useAuthStore((s) => s.org?.currency ?? 'USD')
   const autoRecoveryEnabled = useAuthStore((s) => s.org?.autoRecoveryEnabled ?? false)
 
@@ -501,6 +505,7 @@ export default function RecoverPage() {
   }
 
   function handleToggleAutoRecovery() {
+    if (!isPro) { navigate('/settings/billing'); return }
     toggleAutoRecovery.mutate(!autoRecoveryEnabled)
   }
 
