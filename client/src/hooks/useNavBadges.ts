@@ -10,6 +10,7 @@ export interface NavBadges {
 
 export function useNavBadges(): NavBadges {
   const orgId = useAuthStore((s) => s.org?.id ?? '')
+  const mode  = useAuthStore((s) => s.org?.paymentCollectionMode)
 
   const overdueQuery = useQuery({
     queryKey: ['nav-followups-overdue', orgId],
@@ -28,7 +29,7 @@ export function useNavBadges(): NavBadges {
   const approvalsQuery = useQuery({
     queryKey: ['nav-approvals', orgId],
     queryFn:  () => listConfirmations(orgId, { status: 'PENDING_APPROVAL', size: 1 }),
-    enabled:  !!orgId,
+    enabled:  !!orgId && mode === 'CONFIRMATION_FLOW',
     staleTime: 60_000,
   })
 
