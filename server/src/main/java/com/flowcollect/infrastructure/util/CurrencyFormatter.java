@@ -86,7 +86,7 @@ public final class CurrencyFormatter {
         int len = digits.length();
 
         if (len <= 3) {
-            return (negative ? "- ₹" : "₹") + digits;
+            return (negative ? "-₹" : "₹") + digits;
         }
 
         StringBuilder sb = new StringBuilder();
@@ -102,7 +102,7 @@ public final class CurrencyFormatter {
             pos = start;
         }
 
-        return (negative ? "- ₹" : "₹") + sb;
+        return (negative ? "-₹" : "₹") + sb;
     }
 
     /**
