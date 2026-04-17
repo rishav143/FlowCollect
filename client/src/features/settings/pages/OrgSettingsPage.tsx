@@ -15,9 +15,8 @@ const TIMEZONES = [
   { value: 'Asia/Singapore',      label: 'Singapore (SGT, UTC+8)'        },
   { value: 'Europe/London',       label: 'London (GMT/BST)'              },
   { value: 'America/New_York',    label: 'New York (EST/EDT)'            },
-  { value: 'Australia/Sydney',    label: 'Sydney (AEST, UTC+10/+11)'     },
-  { value: 'Australia/Melbourne', label: 'Melbourne (AEST, UTC+10/+11)'  },
-  { value: 'Australia/Brisbane',  label: 'Brisbane (AEST, UTC+10)'       },
+  { value: 'Australia/Sydney',    label: 'Sydney / Melbourne (AEST, UTC+10/+11)' },
+  { value: 'Australia/Brisbane',  label: 'Brisbane (AEST, UTC+10)'               },
   { value: 'Australia/Perth',     label: 'Perth (AWST, UTC+8)'           },
 ]
 

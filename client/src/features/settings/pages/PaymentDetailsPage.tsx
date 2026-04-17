@@ -67,6 +67,7 @@ function CopyRow({ label, value }: { label: string; value: string }) {
 
 interface PreviewState {
   orgName: string
+  currency: string
   bankName: string; accountHolderName: string; accountNumber: string
   iban: string; swiftCode: string; routingNumber: string
   ifscCode: string; upiId: string
@@ -74,7 +75,16 @@ interface PreviewState {
   additionalNote: string
 }
 
+function fmtSample(currency: string): string {
+  return new Intl.NumberFormat(currency === 'INR' ? 'en-IN' : 'en-US', {
+    style: 'currency',
+    currency: currency || 'USD',
+    maximumFractionDigits: 0,
+  }).format(25000)
+}
+
 function ConfirmationPagePreview(s: PreviewState) {
+  const sampleAmount = fmtSample(s.currency)
   const hasBankWire = s.bankName || s.accountHolderName || s.accountNumber ||
                       s.iban || s.swiftCode || s.routingNumber || s.ifscCode
   const hasUpi     = !!s.upiId
@@ -122,7 +132,7 @@ function ConfirmationPagePreview(s: PreviewState) {
                   {([
                     ['Client',        'Sample Client'      ],
                     ['Due date',      '15 Jan 2025'        ],
-                    ['Invoice total', '₹25,000'            ],
+                    ['Invoice total', sampleAmount          ],
                   ] as const).map(([lbl, val]) => (
                     <div key={lbl} className="flex items-center justify-between">
                       <span className="text-[10px] text-gray-400">{lbl}</span>
@@ -133,7 +143,7 @@ function ConfirmationPagePreview(s: PreviewState) {
 
                 {/* Balance hero */}
                 <div className="mx-4 mb-4 rounded-xl bg-[#F4F7F9] border border-gray-200 px-3 py-2.5 text-center">
-                  <p className="text-lg font-bold text-gray-900 tabular-nums">₹25,000</p>
+                  <p className="text-lg font-bold text-gray-900 tabular-nums">{sampleAmount}</p>
                   <p className="text-[9px] text-gray-500 mt-0.5">
                     Remaining balance <span className="text-red-500 font-medium">· 3 days overdue</span>
                   </p>
@@ -206,7 +216,7 @@ function ConfirmationPagePreview(s: PreviewState) {
                   <div>
                     <p className="text-[8px] font-semibold uppercase tracking-wide text-gray-400 mb-1">Amount paid</p>
                     <div className="w-full border border-gray-200 rounded-lg px-2.5 py-1.5 text-[10px] text-gray-700 bg-white">
-                      ₹25,000
+                      {sampleAmount}
                     </div>
                   </div>
                   <div
@@ -473,6 +483,7 @@ export default function PaymentDetailsPage() {
       <div className="lg:sticky lg:top-6">
         <ConfirmationPagePreview
           orgName={org?.name ?? ''}
+          currency={org?.currency ?? 'USD'}
           bankName={bankName} accountHolderName={accountHolderName}
           accountNumber={accountNumber} iban={iban} swiftCode={swiftCode}
           routingNumber={routingNumber} ifscCode={ifscCode} upiId={upiId}

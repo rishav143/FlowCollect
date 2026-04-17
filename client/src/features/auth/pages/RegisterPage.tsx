@@ -80,11 +80,17 @@ const COUNTRY_CURRENCY: Record<string, string> = {
   BE: 'EUR', AT: 'EUR', IE: 'EUR', FI: 'EUR', GR: 'EUR', PL: 'EUR',
 }
 
-function detectCurrency(): Promise<string> {
+function detectGeo(): Promise<{ currency: string; timezone: string }> {
   return fetch('https://ipapi.co/json/')
     .then((r) => r.json())
-    .then((d) => COUNTRY_CURRENCY[d.country_code as string] ?? 'USD')
-    .catch(() => 'USD')
+    .then((d) => ({
+      currency: COUNTRY_CURRENCY[d.country_code as string] ?? 'USD',
+      timezone: (d.timezone as string) || Intl.DateTimeFormat().resolvedOptions().timeZone,
+    }))
+    .catch(() => ({
+      currency: 'USD',
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    }))
 }
 
 // ---------------------------------------------------------------------------
@@ -120,13 +126,17 @@ export default function RegisterPage() {
   const [email,            setEmail]            = useState('')
   const [password,         setPassword]         = useState('')
   const [currency,         setCurrency]         = useState('USD')
+  const [timezone,         setTimezone]         = useState(() => Intl.DateTimeFormat().resolvedOptions().timeZone)
   const [showPwd,          setShowPwd]          = useState(false)
   const [loading,          setLoading]          = useState(false)
   const [error,            setError]            = useState<string | null>(null)
   const [result,           setResult]           = useState<RegisterResult | null>(null)
 
   useEffect(() => {
-    detectCurrency().then(setCurrency)
+    detectGeo().then(({ currency, timezone }) => {
+      setCurrency(currency)
+      setTimezone(timezone)
+    })
   }, [])
 
   async function handleSubmit(e: FormEvent) {
@@ -138,7 +148,6 @@ export default function RegisterPage() {
     }
     setLoading(true)
     try {
-      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
       const res = await register({ ownerName, organizationName, email, password, currency, timezone })
       setResult(res)
     } catch (err) {
