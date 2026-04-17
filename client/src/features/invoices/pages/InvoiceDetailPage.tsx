@@ -185,7 +185,7 @@ export default function InvoiceDetailPage() {
                 <div className="space-y-5">
                   <div>
                     <InfoRow
-                      label="Customer"
+                      label="Client"
                       value={
                         customer ? (
                           <span className="flex items-center gap-1.5 justify-end flex-wrap">

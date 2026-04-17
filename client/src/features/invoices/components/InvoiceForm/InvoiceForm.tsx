@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@/store/auth.store'
 import { listCustomers } from '@/api/customer.api'
 import LineItemsField, { type LineItem } from './LineItemsField'
 import { formatCurrency } from '@/lib/format'
 import Select from '@/components/ui/Select'
 import DatePicker from '@/ui/components/DatePicker/DatePicker'
+import AddClientModal from '@/features/clients/modals/AddClientModal'
 
 const inputCls = [
   'w-full px-3 py-2 text-sm bg-[#F4F7F9] dark:bg-[#243447] rounded-lg',
@@ -33,9 +34,11 @@ interface Props {
 
 export default function InvoiceForm({ initial, onChange, currency }: Props) {
   const orgId = useAuthStore((s) => s.org?.id ?? '')
+  const qc    = useQueryClient()
 
   const [invoiceNumber,  setInvoiceNumber]  = useState(initial?.invoiceNumber  ?? '')
   const [customerId,     setCustomerId]     = useState(initial?.customerId     ?? '')
+  const [showAddClient,  setShowAddClient]  = useState(false)
   const [dueDate,        setDueDate]        = useState(initial?.dueDate        ?? '')
   const [taxLabel,       setTaxLabel]       = useState(initial?.taxLabel       ?? '')
   const [taxPercentage,  setTaxPercentage]  = useState(initial?.taxPercentage  ?? 0)
@@ -62,7 +65,8 @@ export default function InvoiceForm({ initial, onChange, currency }: Props) {
   const showSummary      = taxPercentage > 0 || discountPercentage > 0
 
   return (
-    <div className="space-y-5">
+    <>
+      <div className="space-y-5">
       {/* Row 1: Invoice number + Customer */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
@@ -76,11 +80,20 @@ export default function InvoiceForm({ initial, onChange, currency }: Props) {
           />
         </div>
         <div>
-          <label className={labelCls}>Customer</label>
+          <div className="flex items-center justify-between mb-1.5">
+            <label className={labelCls.replace('mb-1.5', '')}>Client</label>
+            <button
+              type="button"
+              onClick={() => setShowAddClient(true)}
+              className="text-xs text-[#29B6F6] hover:opacity-80 transition-opacity"
+            >
+              + Add client
+            </button>
+          </div>
           <Select
             value={customerId}
             onChange={setCustomerId}
-            placeholder="— No customer —"
+            placeholder="— No client —"
             options={customers.map((c) => ({
               value: c.id,
               label: c.name + (c.companyName ? ` (${c.companyName})` : ''),
@@ -167,5 +180,16 @@ export default function InvoiceForm({ initial, onChange, currency }: Props) {
         </div>
       )}
     </div>
+
+    {showAddClient && (
+      <AddClientModal
+        onClose={() => setShowAddClient(false)}
+        onCreated={(id) => {
+          qc.invalidateQueries({ queryKey: ['customers', orgId, 'all'] })
+          setCustomerId(id)
+        }}
+      />
+    )}
+    </>
   )
 }

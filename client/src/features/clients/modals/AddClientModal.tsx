@@ -4,20 +4,22 @@ import { useCreateClient } from '../hooks/useClients'
 import type { ClientFormValues } from '../schemas/client.schema'
 
 interface Props {
-  onClose: () => void
+  onClose:    () => void
+  onCreated?: (id: string) => void
 }
 
-export default function AddClientModal({ onClose }: Props) {
+export default function AddClientModal({ onClose, onCreated }: Props) {
   const create = useCreateClient()
 
   async function handleSubmit(values: ClientFormValues) {
-    await create.mutateAsync({
+    const client = await create.mutateAsync({
       name:        values.name.trim(),
       email:       values.email.trim()       || undefined,
       phone:       values.phone.trim()       || undefined,
       companyName: values.companyName.trim() || undefined,
       address:     values.address.trim()     || undefined,
     })
+    onCreated?.(client.id)
     onClose()
   }
 
