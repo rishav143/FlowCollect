@@ -110,8 +110,8 @@ public class TemplateRenderer {
         values.put("invoiceCountSuffix", invoices.size() == 1 ? "" : "s");
         // Multi-invoice context: first invoice number, aggregated amounts
         values.put("invoiceNumber",     first.getInvoiceNumber());
-        values.put("issueDate",         safe(first.getIssueDate()));
-        values.put("dueDate",           safe(first.getDueDate()));
+        values.put("issueDate",         formatDate(first.getIssueDate()));
+        values.put("dueDate",           formatDate(first.getDueDate()));
         values.put("totalAmount",       formatMoney(totalRemaining, currencyCode));
         values.put("remainingAmount",   formatMoney(totalRemaining, currencyCode));
         values.put("totalPaid",         "");
@@ -157,8 +157,8 @@ public class TemplateRenderer {
         values.put("customerName",      safe(customer.getName()));
         values.put("companyName",       safe(customer.getCompanyName()));
         values.put("invoiceNumber",     safe(invoice.getInvoiceNumber()));
-        values.put("issueDate",         safe(invoice.getIssueDate()));
-        values.put("dueDate",           safe(invoice.getDueDate()));
+        values.put("issueDate",         formatDate(invoice.getIssueDate()));
+        values.put("dueDate",           formatDate(invoice.getDueDate()));
         values.put("daysOverdue",       String.valueOf(daysOverdue));
         values.put("totalAmount",       formatMoney(invoice.getTotalAmount(),     currencyCode));
         values.put("totalPaid",         formatMoney(invoice.getTotalPaid(),       currencyCode));
@@ -174,6 +174,21 @@ public class TemplateRenderer {
             rendered = rendered.replace("{{" + entry.getKey() + "}}", entry.getValue());
         }
         return rendered;
+    }
+
+    private static final java.time.format.DateTimeFormatter DATE_FMT =
+            java.time.format.DateTimeFormatter.ofPattern("d MMM yyyy");
+
+    private String formatDate(Object value) {
+        if (value == null) return "";
+        try {
+            LocalDate date = value instanceof LocalDate
+                    ? (LocalDate) value
+                    : LocalDate.parse(String.valueOf(value));
+            return date.format(DATE_FMT);
+        } catch (Exception e) {
+            return String.valueOf(value);
+        }
     }
 
     private String formatMoney(Object value, String currencyCode) {
