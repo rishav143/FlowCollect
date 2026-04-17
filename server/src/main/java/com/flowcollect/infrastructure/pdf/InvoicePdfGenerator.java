@@ -165,7 +165,8 @@ public class InvoicePdfGenerator {
         drawText(page, fonts.bold, FONT_TITLE, MARGIN, page.y, safe(org.getName()), COLOR_ACCENT);
         page.y -= 24f;
 
-        for (String line : buildOrganizationLines(org)) {
+        // Show contact details under the org name — name is already the blue title so skip it
+        for (String line : buildOrganizationDetailLines(org)) {
             drawText(page, fonts.regular, FONT_NORMAL, MARGIN, page.y, line, COLOR_MUTED);
             page.y -= LINE_GAP;
         }
@@ -203,22 +204,18 @@ public class InvoicePdfGenerator {
         float rightX = MARGIN + (CONTENT_WIDTH / 2f);
         float titleY = page.y;
 
-        drawText(page, fonts.bold, FONT_SECTION, leftX,  titleY, "From",    COLOR_TEXT);
-        drawText(page, fonts.bold, FONT_SECTION, rightX, titleY, "Bill To", COLOR_TEXT);
+        // "From" is already shown via the org name + details in the header — no need to repeat.
+        // Show only "Bill To" on the left, customer on the right stays symmetric with the date strip.
+        drawText(page, fonts.bold, FONT_SECTION, leftX,  titleY, "Bill To", COLOR_TEXT);
 
-        float leftY  = titleY - 20f;
-        float rightY = titleY - 20f;
+        float detailY = titleY - 20f;
 
-        for (String line : buildOrganizationLines(invoice.getOrganization())) {
-            drawText(page, fonts.regular, FONT_NORMAL, leftX, leftY, line, COLOR_TEXT);
-            leftY -= LINE_GAP;
-        }
         for (String line : buildCustomerLines(invoice.getCustomer())) {
-            drawText(page, fonts.regular, FONT_NORMAL, rightX, rightY, line, COLOR_TEXT);
-            rightY -= LINE_GAP;
+            drawText(page, fonts.regular, FONT_NORMAL, leftX, detailY, line, COLOR_TEXT);
+            detailY -= LINE_GAP;
         }
 
-        page.y = Math.min(leftY, rightY) - SECTION_GAP;
+        page.y = detailY - SECTION_GAP;
     }
 
     private PageContext writeItemsTable(PageContext page, FontSet fonts, PDDocument document, Invoice invoice) throws IOException {
@@ -443,6 +440,18 @@ public class InvoicePdfGenerator {
     private List<String> buildOrganizationLines(Organization org) {
         List<String> lines = new ArrayList<>();
         lines.add(safe(org.getName()));
+        if (org.getAddress() != null && !org.getAddress().isBlank()) addAddressLines(lines, org.getAddress());
+        if (org.getEmail()   != null && !org.getEmail().isBlank())   lines.add(org.getEmail().trim());
+        if (org.getPhone()   != null && !org.getPhone().isBlank())   lines.add(org.getPhone().trim());
+        return lines;
+    }
+
+    /**
+     * Same as {@link #buildOrganizationLines} but omits the org name — used under the
+     * blue title in the header where the name is already displayed prominently.
+     */
+    private List<String> buildOrganizationDetailLines(Organization org) {
+        List<String> lines = new ArrayList<>();
         if (org.getAddress() != null && !org.getAddress().isBlank()) addAddressLines(lines, org.getAddress());
         if (org.getEmail()   != null && !org.getEmail().isBlank())   lines.add(org.getEmail().trim());
         if (org.getPhone()   != null && !org.getPhone().isBlank())   lines.add(org.getPhone().trim());
