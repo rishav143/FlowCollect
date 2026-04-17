@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
 import ClientForm from '../components/ClientForm/ClientForm'
 import { useCreateClient } from '../hooks/useClients'
@@ -23,7 +24,7 @@ export default function AddClientModal({ onClose, onCreated }: Props) {
     onClose()
   }
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex flex-col justify-end sm:items-center sm:justify-center sm:p-4">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
       <div className="relative w-full sm:max-w-md bg-white dark:bg-[#1B2838] rounded-t-2xl sm:rounded-2xl shadow-xl flex flex-col max-h-[95dvh] sm:max-h-[90vh]">
@@ -40,6 +41,7 @@ export default function AddClientModal({ onClose, onCreated }: Props) {
           <ClientForm onSubmit={handleSubmit} isLoading={create.isPending} />
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
