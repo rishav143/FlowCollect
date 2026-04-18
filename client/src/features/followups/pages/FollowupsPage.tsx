@@ -231,18 +231,20 @@ function ClientGroupCard({
   group,
   currency,
   autoRecoveryEnabled,
+  customerAutomationEnabled,
   lastFollowupMap,
   allFollowupsMap,
   onSend,
   onConsolidate,
 }: {
-  group:                ClientGroupData
-  currency:             string
-  autoRecoveryEnabled:  boolean
-  lastFollowupMap:      Record<string, FollowUpResponse>
-  allFollowupsMap:      Record<string, FollowUpResponse[]>
-  onSend:               (invoice: InvoiceResponse) => void
-  onConsolidate:        (group: ClientGroupData) => void
+  group:                       ClientGroupData
+  currency:                    string
+  autoRecoveryEnabled:         boolean
+  customerAutomationEnabled:   boolean
+  lastFollowupMap:             Record<string, FollowUpResponse>
+  allFollowupsMap:             Record<string, FollowUpResponse[]>
+  onSend:                      (invoice: InvoiceResponse) => void
+  onConsolidate:               (group: ClientGroupData) => void
 }) {
   const [showAll, setShowAll] = useState(false)
 
@@ -302,7 +304,7 @@ function ClientGroupCard({
 
           {/* Right: auto pill + amount (always visible) */}
           <div className="flex items-center gap-2 shrink-0">
-            {autoRecoveryEnabled && (
+            {autoRecoveryEnabled && customerAutomationEnabled && (
               <div className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[10px] font-medium">
                 <Zap size={9} strokeWidth={2} />
                 Auto
@@ -632,6 +634,7 @@ export default function FollowupsPage() {
                   group={group}
                   currency={currency}
                   autoRecoveryEnabled={autoRecoveryEnabled}
+                  customerAutomationEnabled={customerMap[group.customerId]?.automationEnabled ?? true}
                   lastFollowupMap={lastFollowupMap}
                   allFollowupsMap={allFollowupsMap}
                   onSend={setTarget}
