@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.flowcollect.application.reminder.ReminderEngine;
 import com.flowcollect.infrastructure.config.NotificationEmailProperties;
 import com.flowcollect.infrastructure.config.TwilioProperties;
 import com.flowcollect.infrastructure.email.ResendEmailClient;
@@ -30,15 +31,38 @@ public class DiagnosticsController {
     private final ResendEmailClient emailClient;
     private final NotificationEmailProperties emailProperties;
     private final TwilioProperties twilioProperties;
+    private final ReminderEngine reminderEngine;
 
     public DiagnosticsController(
             ResendEmailClient emailClient,
             NotificationEmailProperties emailProperties,
-            TwilioProperties twilioProperties
+            TwilioProperties twilioProperties,
+            ReminderEngine reminderEngine
     ) {
         this.emailClient = emailClient;
         this.emailProperties = emailProperties;
         this.twilioProperties = twilioProperties;
+        this.reminderEngine = reminderEngine;
+    }
+
+    /**
+     * Manually triggers one full reminder engine run (schedule + dispatch).
+     * Useful for testing without waiting for the cron.
+     * Usage: POST /api/v1/diagnostics/trigger-reminders
+     */
+    @PostMapping("/trigger-reminders")
+    public ResponseEntity<Map<String, String>> triggerReminders() {
+        Map<String, String> result = new LinkedHashMap<>();
+        try {
+            reminderEngine.runAutomatedReminders();
+            result.put("status", "ok");
+            result.put("message", "Reminder engine run completed. Check server logs for created/dispatched/cancelled counts.");
+            return ResponseEntity.ok(result);
+        } catch (Exception ex) {
+            result.put("status", "error");
+            result.put("message", ex.getMessage());
+            return ResponseEntity.status(500).body(result);
+        }
     }
 
     /**
