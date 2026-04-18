@@ -184,12 +184,10 @@ function NotificationDropdown({ onClose }: { onClose: () => void }) {
 
 function ProfileDropdown({
   orgName,
-  onAccount,
   onSettings,
   onLogout,
 }: {
   orgName:    string
-  onAccount:  () => void
   onSettings: () => void
   onLogout:   () => void
 }) {
@@ -198,7 +196,6 @@ function ProfileDropdown({
       <div className="px-4 py-2.5 border-b border-c-border">
         <p className="text-[11px] font-semibold text-[#0D1B2A] dark:text-white truncate">{orgName}</p>
       </div>
-      <button onClick={onAccount}  className="w-full text-left px-4 py-2 text-sm text-[#0D1B2A] dark:text-white hover:bg-[#F4F7F9] dark:hover:bg-[#243447] transition-colors">My Account</button>
       <button onClick={onSettings} className="w-full text-left px-4 py-2 text-sm text-[#0D1B2A] dark:text-white hover:bg-[#F4F7F9] dark:hover:bg-[#243447] transition-colors">Settings</button>
       <div className="border-t border-c-border">
         <button onClick={onLogout} className="w-full text-left px-4 py-2 text-sm text-[#EF4444] hover:bg-[#F4F7F9] dark:hover:bg-[#243447] transition-colors">Logout</button>
@@ -350,8 +347,7 @@ export default function Topbar() {
           {profileOpen && (
             <ProfileDropdown
               orgName={orgName}
-              onAccount={() => { navigate('/settings/org');     setProfileOpen(false) }}
-              onSettings={() => { navigate('/settings/org');    setProfileOpen(false) }}
+              onSettings={() => { navigate('/settings/org'); setProfileOpen(false) }}
               onLogout={handleLogout}
             />
           )}
