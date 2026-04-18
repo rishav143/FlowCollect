@@ -535,7 +535,7 @@ export default function RecoverPage() {
               <h1 className="text-xl font-bold text-[#0D1B2A] dark:text-white">Recover</h1>
             </div>
             <p className="text-sm text-c-muted">
-              Autonomous follow-ups for overdue invoices — no manual work needed.
+              Automatically follow up before, on, and after due dates — no manual work needed.
             </p>
           </div>
           <RecoveryToggle
