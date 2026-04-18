@@ -177,22 +177,25 @@ public class ReminderOrgProcessor {
     // =========================================================================
 
     private ReminderResult dispatchPendingFollowUps(Organization organization) {
-        // If auto-recovery is disabled, cancel all previously-queued PENDING automated
-        // follow-ups so they don't fire while the toggle is off.
-        if (!organization.isAutoRecoveryEnabled()) {
-            for (FollowUp followUp : followUpService.getPendingAutomatedFollowUps(organization.getId())) {
-                followUpService.cancelFollowUp(followUp);
-                log.info("[org={}] Auto-recovery disabled — cancelled queued follow-up {}",
-                        organization.getId(), followUp.getId());
-            }
-            return new ReminderResult(0, 0, 0);
-        }
-
         LocalDate today = LocalDate.now(organization.getTimezone());
         int dispatched = 0;
         int cancelled  = 0;
 
         for (FollowUp followUp : followUpService.getPendingAutomatedFollowUps(organization.getId())) {
+            // AUTO rule follow-ups must be cancelled when auto-recovery is disabled.
+            // MANUAL rule follow-ups always proceed — they are independent of the toggle.
+            if (!organization.isAutoRecoveryEnabled()) {
+                ReminderRule rule = followUp.getReminderRule();
+                boolean isAutoRule = rule != null && rule.getMode() == RuleMode.AUTO;
+                if (isAutoRule) {
+                    followUpService.cancelFollowUp(followUp);
+                    log.info("[org={}] Auto-recovery disabled — cancelled queued AUTO follow-up {}",
+                            organization.getId(), followUp.getId());
+                    cancelled++;
+                    continue;
+                }
+            }
+
             if (maxPendingAgeDays > 0 && isStale(followUp, today)) {
                 log.info("[org={}] Cancelling stale follow-up {} (scheduledFor={}, today={})",
                         organization.getId(), followUp.getId(), followUp.getScheduledForDate(), today);
