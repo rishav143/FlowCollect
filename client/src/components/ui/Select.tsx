@@ -78,11 +78,11 @@ export default function Select({
     }
     function onResize() { recalcPos() }
 
-    document.addEventListener('pointerdown', onPointerDown)
+    document.addEventListener('pointerdown', onPointerDown, true)
     window.addEventListener('scroll', onScroll, true)
     window.addEventListener('resize', onResize)
     return () => {
-      document.removeEventListener('pointerdown', onPointerDown)
+      document.removeEventListener('pointerdown', onPointerDown, true)
       window.removeEventListener('scroll', onScroll, true)
       window.removeEventListener('resize', onResize)
     }
