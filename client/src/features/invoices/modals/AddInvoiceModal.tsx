@@ -124,10 +124,11 @@ export default function AddInvoiceModal({ onClose }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col justify-end sm:items-center sm:justify-center sm:p-4">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onPointerDown={onClose} />
 
       <form
         onSubmit={handleSubmit}
+        onPointerDown={(e) => e.stopPropagation()}
         className="relative w-full sm:max-w-2xl bg-white dark:bg-[#1B2838] rounded-t-2xl sm:rounded-2xl shadow-xl overflow-hidden max-h-[95dvh] sm:max-h-[90vh] flex flex-col"
       >
         {/* Drag handle — mobile only */}
