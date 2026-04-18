@@ -195,7 +195,7 @@ export default function OrgSettingsPage() {
         </div>
       </div>
       <p className="text-xs text-c-muted text-center mt-4">
-        For bugs, feedback, or support, reach out to{' '}
+        Questions, feedback, or found a bug? Email us at{' '}
         <a href="mailto:support@flowcollect.io" className="text-[#29B6F6] hover:underline">
           support@flowcollect.io
         </a>
