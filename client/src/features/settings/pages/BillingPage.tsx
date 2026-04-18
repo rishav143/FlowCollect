@@ -401,6 +401,12 @@ export default function BillingPage() {
         <p className="text-xs text-c-muted mt-4 text-center max-w-2xl mx-auto">
           Founding member pricing, locked forever. Raises after the first 200 users.
         </p>
+        <p className="text-xs text-c-muted text-center mt-2">
+          Questions, feedback, or found a bug? Email us at{' '}
+          <a href="mailto:support@flowcollect.io" className="text-[#29B6F6] hover:underline">
+            support@flowcollect.io
+          </a>
+        </p>
       </div>
 
       {/* Cancel subscription — only shown when PRO and actively renewing */}
@@ -443,13 +449,6 @@ export default function BillingPage() {
           )}
         </div>
       )}
-
-      <p className="text-xs text-c-muted text-center">
-        Questions, feedback, or found a bug? Email us at{' '}
-        <a href="mailto:support@flowcollect.io" className="text-[#29B6F6] hover:underline">
-          support@flowcollect.io
-        </a>
-      </p>
 
     </div>
   )
