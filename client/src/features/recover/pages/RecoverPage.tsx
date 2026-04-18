@@ -429,13 +429,13 @@ function RecoveryToggle({ enabled, isPending, onToggle }: RecoveryToggleProps) {
           ? 'bg-amber-100 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400'
           : 'bg-[#F4F7F9] dark:bg-white/5 text-c-muted',
       ].join(' ')}>
-        {enabled ? 'AUTO ON' : 'AUTO OFF'}
+        {enabled ? 'RECOVERY ON' : 'RECOVERY OFF'}
       </span>
 
       <button
         onClick={onToggle}
         disabled={isPending}
-        aria-label={enabled ? 'Disable auto recovery' : 'Enable auto recovery'}
+        aria-label={enabled ? 'Disable Recovery Mode' : 'Enable Recovery Mode'}
         className={[
           'relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent',
           'transition-colors duration-200 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed',
@@ -550,7 +550,7 @@ export default function RecoverPage() {
           <div className="flex items-start gap-3 px-4 py-3.5 rounded-xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20">
             <Shield size={16} className="text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" strokeWidth={1.8} />
             <p className="text-sm text-amber-800 dark:text-amber-300">
-              Auto Recovery is <strong>off</strong>. Toggle it on to let the engine automatically
+              Recovery Mode is <strong>off</strong>. Toggle it on to let the engine automatically
               follow up on overdue invoices using the rules below.
             </p>
           </div>

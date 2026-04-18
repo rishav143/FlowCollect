@@ -109,7 +109,7 @@ function AutoRecoveryWidget() {
         onClick={handleToggle}
         disabled={toggleMut.isPending}
         aria-label={isPro
-          ? (enabled ? 'Disable auto recovery' : 'Enable auto recovery')
+          ? (enabled ? 'Disable Recovery Mode' : 'Enable Recovery Mode')
           : 'Upgrade to PRO to enable auto recovery'}
         title={!isPro ? 'PRO feature — upgrade to enable' : undefined}
         className={[

@@ -445,7 +445,7 @@ export default function RuleModal({ rule, onClose }: Props) {
               <div className="flex items-start gap-2.5 px-3 py-2.5 rounded-lg bg-orange-50 dark:bg-orange-500/10 border border-orange-200 dark:border-orange-500/20 -mb-1">
                 <AlertTriangle size={14} className="text-orange-500 shrink-0 mt-0.5" strokeWidth={2} />
                 <p className="text-xs text-orange-700 dark:text-orange-300">
-                  Auto Recovery is currently <strong>on</strong>. This new rule will run alongside the system recovery rules — clients may receive multiple follow-ups around the same date. Consider your timing carefully.
+                  Recovery Mode is currently <strong>on</strong>. This new rule will run alongside the system recovery rules — clients may receive multiple follow-ups around the same date. Consider your timing carefully.
                 </p>
               </div>
             )}
