@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { Bell, Send, Zap } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/store/auth.store'
@@ -248,6 +249,17 @@ function ClientGroupCard({
 }) {
   const [showAll, setShowAll] = useState(false)
   const [showAutoTooltip, setShowAutoTooltip] = useState(false)
+  const autoPillRef = useRef<HTMLDivElement>(null)
+
+  function handleAutoPillEnter() {
+    if (autoPillRef.current) {
+      const rect = autoPillRef.current.getBoundingClientRect()
+      setAutoTooltipPos({ top: rect.top - 6, left: rect.left + rect.width / 2 })
+    }
+    setShowAutoTooltip(true)
+  }
+
+  const [autoTooltipPos, setAutoTooltipPos] = useState<{ top: number; left: number } | null>(null)
 
   const visibleInvoices = showAll ? group.invoices : group.invoices.slice(0, SHOWN_PER_CLIENT)
   const hiddenCount     = group.invoices.length - SHOWN_PER_CLIENT
@@ -306,24 +318,29 @@ function ClientGroupCard({
           {/* Right: auto pill + amount (always visible) */}
           <div className="flex items-center gap-2 shrink-0">
             {autoRecoveryEnabled && customerAutomationEnabled && (
-              <div className="relative">
+              <>
                 <div
+                  ref={autoPillRef}
                   className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-amber-50 dark:bg-amber-500/10 border border-amber-300 dark:border-amber-500/40 text-amber-700 dark:text-amber-400 text-[10px] font-semibold cursor-default"
-                  onMouseEnter={() => setShowAutoTooltip(true)}
+                  onMouseEnter={handleAutoPillEnter}
                   onMouseLeave={() => setShowAutoTooltip(false)}
                 >
                   <Zap size={9} strokeWidth={2} />
                   Auto
                 </div>
-                {showAutoTooltip && (
-                  <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 z-50
-                    whitespace-nowrap px-2 py-1 rounded-md text-[10px] font-medium
-                    bg-amber-50 dark:bg-[#1B2838] border border-amber-200 dark:border-amber-500/30
-                    text-amber-800 dark:text-amber-300 shadow-sm">
+                {showAutoTooltip && autoTooltipPos && createPortal(
+                  <div
+                    className="fixed z-[9999] pointer-events-none -translate-x-1/2 -translate-y-full
+                      whitespace-nowrap px-2 py-1 rounded-md text-[10px] font-medium
+                      bg-amber-50 dark:bg-[#1B2838] border border-amber-200 dark:border-amber-500/30
+                      text-amber-800 dark:text-amber-300 shadow-sm"
+                    style={{ top: autoTooltipPos.top, left: autoTooltipPos.left }}
+                  >
                     Recovery Mode active. Reminders sent automatically.
-                  </div>
+                  </div>,
+                  document.body
                 )}
-              </div>
+              </>
             )}
             <div className="text-right">
               <p className="text-sm font-bold tabular-nums text-red-500">
