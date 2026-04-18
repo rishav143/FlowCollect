@@ -290,10 +290,11 @@ public class Organization {
      * subscription.expired — paid period ended; downgrade to STARTER.
      */
     public void expirePlan() {
-        this.plan               = OrgPlan.STARTER;
-        this.status             = OrganizationStatus.ACTIVE;
-        this.dodoSubscriptionId = null;
-        this.planExpiresAt      = null;
+        this.plan                 = OrgPlan.STARTER;
+        this.status               = OrganizationStatus.ACTIVE;
+        this.dodoSubscriptionId   = null;
+        this.planExpiresAt        = null;
+        this.autoRecoveryEnabled  = false;
     }
 
     /**

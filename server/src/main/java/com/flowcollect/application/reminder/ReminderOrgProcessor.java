@@ -83,9 +83,9 @@ public class ReminderOrgProcessor {
             }
         }
 
-        // AUTO rules (org-owned + system-defined) only run when Recover is enabled.
+        // AUTO rules (org-owned + system-defined) only run when Recover is enabled on a PRO org.
         // Handled separately to include system-seeded rules (organization = null).
-        if (organization.isAutoRecoveryEnabled()) {
+        if (organization.isAutoRecoveryEnabled() && organization.getPlan() == com.flowcollect.domain.organization.OrgPlan.PRO) {
             for (ReminderRule rule : reminderRuleService.getActiveAutoRulesForOrg(organization.getId())) {
                 created += scheduleFollowUpsForRule(organization, rule, today);
             }
