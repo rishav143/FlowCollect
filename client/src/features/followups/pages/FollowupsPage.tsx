@@ -305,12 +305,18 @@ function ClientGroupCard({
           {/* Right: auto pill + amount (always visible) */}
           <div className="flex items-center gap-2 shrink-0">
             {autoRecoveryEnabled && customerAutomationEnabled && (
-              <div
-                title="Recovery Mode is active — reminders are sent automatically for this client"
-                className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[10px] font-medium cursor-default"
-              >
-                <Zap size={9} strokeWidth={2} />
-                Auto
+              <div className="relative group/auto">
+                <div className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-amber-50 dark:bg-amber-500/10 border border-amber-300 dark:border-amber-500/40 text-amber-700 dark:text-amber-400 text-[10px] font-semibold cursor-default">
+                  <Zap size={9} strokeWidth={2} />
+                  Auto
+                </div>
+                <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 z-50
+                  opacity-0 group-hover/auto:opacity-100 transition-opacity duration-150
+                  whitespace-nowrap px-2 py-1 rounded-md text-[10px] font-medium
+                  bg-amber-50 dark:bg-[#1B2838] border border-amber-200 dark:border-amber-500/30
+                  text-amber-800 dark:text-amber-300 shadow-sm">
+                  Recovery Mode active — reminders sent automatically
+                </div>
               </div>
             )}
             <div className="text-right">
