@@ -305,7 +305,7 @@ function ClientGroupCard({
           {/* Right: auto pill + amount (always visible) */}
           <div className="flex items-center gap-2 shrink-0">
             {autoRecoveryEnabled && customerAutomationEnabled && (
-              <div className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[10px] font-medium">
+              <div className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[10px] font-medium">
                 <Zap size={9} strokeWidth={2} />
                 Auto
               </div>
