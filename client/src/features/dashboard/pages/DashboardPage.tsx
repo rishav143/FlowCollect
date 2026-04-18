@@ -52,7 +52,7 @@ function AutoAgentBanner() {
   return (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 px-3.5 py-2.5 rounded-xl bg-white dark:bg-[#1B2838] border border-amber-200 dark:border-amber-500/30 shadow-sm dark:shadow-[0_0_16px_rgba(245,158,11,0.12)] text-sm">
       <Zap size={14} className="shrink-0 text-amber-500" strokeWidth={2.5} />
-      <span className="text-amber-600 dark:text-amber-400 font-semibold text-xs whitespace-nowrap">Automation engine</span>
+      <span className="text-amber-600 dark:text-amber-400 font-semibold text-xs whitespace-nowrap">Recovery Mode</span>
       <span className="text-[#CBD5DF] dark:text-white/20 select-none">·</span>
       <div className="flex items-center gap-3 flex-wrap">
         {pills.map((p, i) => (
@@ -100,7 +100,7 @@ function AutoRecoveryWidget() {
         )}
         <Zap size={11} className={enabled ? 'text-amber-600 dark:text-amber-400' : 'text-c-muted'} strokeWidth={2.5} />
         <span className={`text-[11px] font-semibold ${enabled ? 'text-amber-700 dark:text-amber-400' : 'text-c-muted'}`}>
-          {enabled ? 'AUTO ON' : 'AUTO OFF'}
+          {enabled ? 'RECOVERY ON' : 'RECOVERY OFF'}
         </span>
       </Link>
 
