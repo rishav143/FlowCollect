@@ -144,9 +144,11 @@ public class GlobalExceptionHandler {
         log.error("Unhandled exception on {} {}", request.getMethod(), request.getRequestURI(), ex);
         HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
 
+        // TODO: remove ex detail before public launch
+        String detail = ex.getClass().getSimpleName() + ": " + ex.getMessage();
         ErrorResponse response = new ErrorResponse(
                 "INTERNAL_SERVER_ERROR",
-                "Something went wrong",
+                detail,
                 status.value(),
                 Instant.now(),
                 request.getRequestURI()
