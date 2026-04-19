@@ -244,7 +244,7 @@ export default function OrgSettingsPage() {
                     )}
                     {curChanged && (
                       <p className="text-sm text-c-muted">
-                        <span className="font-medium text-[#0D1B2A] dark:text-white">Currency</span> — all emails going forward will display amounts in {currency}. Existing invoice amounts are not converted, so clients may see the same number with a different symbol. Only change this if your billing currency has actually changed.
+                        <span className="font-medium text-[#0D1B2A] dark:text-white">Currency</span> — future reminder emails will show amounts in {currency}. Existing invoice amounts are not converted.
                       </p>
                     )}
                   </div>
