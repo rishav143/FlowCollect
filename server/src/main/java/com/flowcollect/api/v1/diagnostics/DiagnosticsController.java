@@ -1,12 +1,15 @@
 package com.flowcollect.api.v1.diagnostics;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.flowcollect.application.confirmation.ConfirmationLinkService;
 import com.flowcollect.application.reminder.ReminderEngine;
+import com.flowcollect.domain.confirmation.ConfirmationLink;
 import com.flowcollect.infrastructure.config.NotificationEmailProperties;
 import com.flowcollect.infrastructure.config.TwilioProperties;
 import com.flowcollect.infrastructure.email.ResendEmailClient;
@@ -16,6 +19,7 @@ import com.twilio.type.PhoneNumber;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * Lightweight diagnostics endpoint for verifying infrastructure integrations
@@ -32,17 +36,20 @@ public class DiagnosticsController {
     private final NotificationEmailProperties emailProperties;
     private final TwilioProperties twilioProperties;
     private final ReminderEngine reminderEngine;
+    private final ConfirmationLinkService confirmationLinkService;
 
     public DiagnosticsController(
             ResendEmailClient emailClient,
             NotificationEmailProperties emailProperties,
             TwilioProperties twilioProperties,
-            ReminderEngine reminderEngine
+            ReminderEngine reminderEngine,
+            ConfirmationLinkService confirmationLinkService
     ) {
         this.emailClient = emailClient;
         this.emailProperties = emailProperties;
         this.twilioProperties = twilioProperties;
         this.reminderEngine = reminderEngine;
+        this.confirmationLinkService = confirmationLinkService;
     }
 
     /**
@@ -108,6 +115,25 @@ public class DiagnosticsController {
             result.put("message", ex.getMessage());
             return ResponseEntity.status(500).body(result);
         }
+    }
+
+    /**
+     * Returns the confirmation link token and public URL for a given invoice.
+     * Used for local testing to simulate the customer-facing confirmation flow.
+     * Usage: GET /api/v1/diagnostics/confirmation-link?invoiceId=UUID
+     */
+    @GetMapping("/confirmation-link")
+    public ResponseEntity<Map<String, String>> confirmationLink(@RequestParam UUID invoiceId) {
+        Map<String, String> result = new LinkedHashMap<>();
+        confirmationLinkService.findByInvoiceId(invoiceId).ifPresentOrElse(
+            link -> {
+                result.put("status", link.getStatus().name());
+                result.put("token", link.getToken());
+                result.put("publicUrl", link.getPublicUrl());
+            },
+            () -> result.put("status", "NOT_FOUND")
+        );
+        return ResponseEntity.ok(result);
     }
 
     /**
