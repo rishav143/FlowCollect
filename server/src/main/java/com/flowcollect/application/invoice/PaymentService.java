@@ -149,7 +149,9 @@ public class PaymentService {
      * rule that drove recovery. Called after both API and gateway payment paths.
      */
     private void tagAutoRecovery(Payment payment, UUID invoiceId) {
-        followUpRepository.findFirstSentAutoFollowUpByInvoiceId(invoiceId)
+        followUpRepository.findSentAutoFollowUpsByInvoiceId(invoiceId)
+                .stream()
+                .findFirst()
                 .map(followUp -> followUp.getReminderRule() != null ? followUp.getReminderRule().getId() : null)
                 .ifPresent(payment::setRecoveredByAutoRuleId);
         // Persist the tag (payment is already managed within the same transaction)

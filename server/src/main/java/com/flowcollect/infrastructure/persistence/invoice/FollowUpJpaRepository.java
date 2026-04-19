@@ -109,10 +109,12 @@ public interface FollowUpJpaRepository extends JpaRepository<FollowUp, UUID>, Jp
         org.springframework.data.domain.Pageable pageable
     );
 
-    /** Any SENT AUTO follow-up for a given invoice — used to tag recovered payments. */
+    /** Most-recent SENT AUTO follow-up for a given invoice — used to tag recovered payments.
+     *  Returns a List so multiple matches (e.g. when both BEFORE and AFTER rules fired) do not
+     *  cause IncorrectResultSizeDataAccessException. The call site takes the first element. */
     @Query("SELECT f FROM FollowUp f WHERE f.invoice.id = :invoiceId " +
            "AND f.triggerType = 'AUTOMATED' AND f.reminderRule.mode = 'AUTO' " +
            "AND f.status = 'SENT' ORDER BY f.sentAt DESC")
-    java.util.Optional<FollowUp> findFirstSentAutoFollowUpByInvoiceId(@Param("invoiceId") UUID invoiceId);
+    java.util.List<FollowUp> findSentAutoFollowUpsByInvoiceId(@Param("invoiceId") UUID invoiceId);
 }
 
