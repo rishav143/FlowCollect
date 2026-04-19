@@ -132,7 +132,7 @@ public class BusinessNotificationService {
         }
         try {
             String fromFormatted = emailProperties.getFromName() + " <" + from + ">";
-            emailClient.send(fromFormatted, to, content.subject(), content.html());
+            emailClient.send(fromFormatted, replyTo, to, content.subject(), content.html());
         } catch (Exception ex) {
             log.warn("Failed to send notification email to {}: {}", to, ex.getMessage());
         }

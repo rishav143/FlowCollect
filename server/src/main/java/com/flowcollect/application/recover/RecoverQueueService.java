@@ -15,6 +15,7 @@ import com.flowcollect.api.v1.recover.dto.ActivityItemResponse;
 import com.flowcollect.api.v1.recover.dto.QueueActivityResponse;
 import com.flowcollect.api.v1.recover.dto.UpcomingItemResponse;
 import com.flowcollect.application.invoice.InvoiceService;
+import com.flowcollect.application.organization.OrganizationService;
 import com.flowcollect.domain.invoice.Invoice;
 import com.flowcollect.domain.invoice.LifeCycleStatus;
 import com.flowcollect.domain.invoice.followup.FollowUp;
@@ -38,19 +39,22 @@ public class RecoverQueueService {
     private final FollowUpJpaRepository    followUpRepository;
     private final ReminderRuleJpaRepository reminderRuleRepository;
     private final InvoiceService            invoiceService;
+    private final OrganizationService       organizationService;
 
     public RecoverQueueService(FollowUpJpaRepository followUpRepository,
                                ReminderRuleJpaRepository reminderRuleRepository,
-                               InvoiceService invoiceService) {
+                               InvoiceService invoiceService,
+                               OrganizationService organizationService) {
         this.followUpRepository    = followUpRepository;
         this.reminderRuleRepository = reminderRuleRepository;
         this.invoiceService         = invoiceService;
+        this.organizationService    = organizationService;
     }
 
     public QueueActivityResponse getQueueAndActivity(UUID organizationId) {
 
         // ── Upcoming follow-ups (next 7 days) ─────────────────────────────────
-        LocalDate today     = LocalDate.now();
+        LocalDate today     = LocalDate.now(organizationService.getById(organizationId).getTimezone());
         LocalDate windowEnd = today.plusDays(UPCOMING_WINDOW_DAYS);
 
         List<ReminderRule> rules    = reminderRuleRepository.findActiveAutoRulesForOrg(organizationId);

@@ -148,7 +148,11 @@ public class TemplateRenderer {
                 LocalDate due = rawDue instanceof LocalDate
                         ? (LocalDate) rawDue
                         : LocalDate.parse(String.valueOf(rawDue));
-                long diff = ChronoUnit.DAYS.between(due, LocalDate.now());
+                java.time.ZoneId tz = invoice.getOrganization() != null
+                        && invoice.getOrganization().getTimezone() != null
+                        ? invoice.getOrganization().getTimezone()
+                        : java.time.ZoneOffset.UTC;
+                long diff = ChronoUnit.DAYS.between(due, LocalDate.now(tz));
                 daysOverdue = Math.max(0, diff);
             }
         } catch (Exception ignored) {}

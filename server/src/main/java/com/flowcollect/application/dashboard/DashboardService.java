@@ -6,6 +6,7 @@ import com.flowcollect.domain.invoice.Invoice;
 import com.flowcollect.domain.invoice.LifeCycleStatus;
 import com.flowcollect.domain.invoice.TimeStatus;
 import com.flowcollect.domain.invoice.followup.FollowUpStatus;
+import com.flowcollect.application.organization.OrganizationService;
 import com.flowcollect.infrastructure.persistence.invoice.FollowUpJpaRepository;
 import com.flowcollect.infrastructure.persistence.invoice.InvoiceJpaRepository;
 import org.springframework.stereotype.Service;
@@ -25,13 +26,16 @@ public class DashboardService {
 
     private final InvoiceJpaRepository invoiceRepository;
     private final FollowUpJpaRepository followUpRepository;
+    private final OrganizationService organizationService;
 
     public DashboardService(
             InvoiceJpaRepository invoiceRepository,
-            FollowUpJpaRepository followUpRepository
+            FollowUpJpaRepository followUpRepository,
+            OrganizationService organizationService
     ) {
         this.invoiceRepository = invoiceRepository;
         this.followUpRepository = followUpRepository;
+        this.organizationService = organizationService;
     }
 
     /**
@@ -52,7 +56,7 @@ public class DashboardService {
         Set<UUID> recentlySentInvoiceIds = followUpRepository
                 .findInvoiceIdsByStatusAndOrgAndSentAfter(FollowUpStatus.SENT, organizationId, cutoff);
 
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(organizationService.getById(organizationId).getTimezone());
 
         List<NeedsAttentionItem> items = overdueInvoices.stream()
                 .filter(i -> !recentlySentInvoiceIds.contains(i.getId()))

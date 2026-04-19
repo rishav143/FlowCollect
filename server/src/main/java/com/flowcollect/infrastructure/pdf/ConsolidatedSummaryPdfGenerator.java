@@ -135,7 +135,7 @@ public class ConsolidatedSummaryPdfGenerator {
                 "INVOICE SUMMARY", COLOR_TEXT);
         drawRightAlignedText(page, fonts.regular, FONT_SMALL,
                 PAGE_WIDTH - MARGIN, PAGE_HEIGHT - MARGIN - 18f,
-                "As of: " + DATE_FMT.format(LocalDate.now()), COLOR_MUTED);
+                "As of: " + DATE_FMT.format(LocalDate.now(org.getTimezone() != null ? org.getTimezone() : java.time.ZoneOffset.UTC)), COLOR_MUTED);
 
         page.y -= 26f;
 

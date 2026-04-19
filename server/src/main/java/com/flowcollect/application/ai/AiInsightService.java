@@ -107,7 +107,7 @@ public class AiInsightService {
         List<FollowUp> followUps = fetchFilteredFollowUps(organizationId, request.getChannel());
 
         // --- Build scoped data summary ---
-        String dataSummary = buildScopedDataSummary(invoices, followUps, request, org.getCurrency());
+        String dataSummary = buildScopedDataSummary(invoices, followUps, request, org.getCurrency(), LocalDate.now(org.getTimezone() != null ? org.getTimezone() : ZoneId.of("UTC")));
 
         // --- Ask AI the question in context ---
         String userPrompt = """
@@ -157,7 +157,7 @@ public class AiInsightService {
 
         // Generate fresh
         List<Invoice> invoices = fetchActiveInvoices(organizationId);
-        OrgStats stats = computeOrgStats(invoices);
+        OrgStats stats = computeOrgStats(invoices, todayInOrgTz);
         String prompt = buildOverviewPrompt(stats, org.getCurrency());
         String rawJson = openAiClient.chat(INSIGHT_SYSTEM_PROMPT, prompt);
         String insights = parseInsights(rawJson);
@@ -184,8 +184,9 @@ public class AiInsightService {
         Customer customer = customerService.getCustomerById(organizationId, customerId);
 
         List<Invoice> invoices = fetchCustomerInvoices(organizationId, customerId);
+        LocalDate todayInOrgTz = LocalDate.now(org.getTimezone() != null ? org.getTimezone() : ZoneId.of("UTC"));
 
-        CustomerStats stats = computeCustomerStats(invoices, customer);
+        CustomerStats stats = computeCustomerStats(invoices, customer, todayInOrgTz);
         String prompt = buildCustomerPrompt(stats, customer, org.getCurrency());
         String rawJson = openAiClient.chat(INSIGHT_SYSTEM_PROMPT, prompt);
         return parseInsights(rawJson);
@@ -231,8 +232,7 @@ public class AiInsightService {
         return followUpRepository.findAll(spec);
     }
 
-    private String buildScopedDataSummary(List<Invoice> invoices, List<FollowUp> followUps, AskInsightRequest request, Currency currency) {
-        LocalDate today = LocalDate.now();
+    private String buildScopedDataSummary(List<Invoice> invoices, List<FollowUp> followUps, AskInsightRequest request, Currency currency, LocalDate today) {
         StringBuilder sb = new StringBuilder();
 
         // Applied filters section
@@ -339,9 +339,8 @@ public class AiInsightService {
 
     // --- Stats computation ---
 
-    private OrgStats computeOrgStats(List<Invoice> invoices) {
+    private OrgStats computeOrgStats(List<Invoice> invoices, LocalDate today) {
         Instant thirtyDaysAgo = Instant.now().minus(RECENT_DAYS, ChronoUnit.DAYS);
-        LocalDate today = LocalDate.now();
 
         List<Invoice> outstanding = invoices.stream()
                 .filter(i -> i.getLifeCycleStatus() == LifeCycleStatus.ISSUED
@@ -403,7 +402,7 @@ public class AiInsightService {
         );
     }
 
-    private CustomerStats computeCustomerStats(List<Invoice> invoices, Customer customer) {
+    private CustomerStats computeCustomerStats(List<Invoice> invoices, Customer customer, LocalDate today) {
         long paid = invoices.stream().filter(i -> i.getLifeCycleStatus() == LifeCycleStatus.PAID).count();
         long partiallyPaid = invoices.stream().filter(i -> i.getLifeCycleStatus() == LifeCycleStatus.PARTIALLY_PAID).count();
         long overdue = invoices.stream()
@@ -430,7 +429,6 @@ public class AiInsightService {
                 .map(Invoice::getRemainingAmount).toList());
 
         // Oldest overdue in days
-        LocalDate today = LocalDate.now();
         int maxDaysOverdue = invoices.stream()
                 .filter(i -> i.getTimeStatus() == TimeStatus.OVERDUE && i.getDueDate() != null)
                 .mapToInt(i -> (int) ChronoUnit.DAYS.between(i.getDueDate(), today))

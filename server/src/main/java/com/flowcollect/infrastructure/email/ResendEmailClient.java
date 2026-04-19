@@ -45,7 +45,12 @@ public class ResendEmailClient {
 
     /** Send a plain HTML email with no attachment. Returns the Resend email ID, or null if not configured. */
     public String send(String from, String to, String subject, String html) {
-        return send(from, to, subject, html, null, null);
+        return sendInternal(from, null, to, subject, html, List.of());
+    }
+
+    /** Send a plain HTML email with a reply-to address. Returns the Resend email ID, or null if not configured. */
+    public String send(String from, String replyTo, String to, String subject, String html) {
+        return sendInternal(from, replyTo, to, subject, html, List.of());
     }
 
     /** Send an HTML email with an optional binary attachment (e.g. a PDF). Returns the Resend email ID, or null if not configured. */
@@ -54,16 +59,22 @@ public class ResendEmailClient {
         List<Attachment> attachments = (attachmentFilename != null && attachmentBytes != null)
                 ? List.of(new Attachment(attachmentFilename, attachmentBytes))
                 : List.of();
-        return send(from, to, subject, html, attachments);
+        return sendInternal(from, null, to, subject, html, attachments);
     }
 
     /**
      * Send an HTML email with multiple binary attachments (e.g. one PDF per invoice).
      * Returns the Resend email ID, or null if not configured.
      */
-    @SuppressWarnings("unchecked")
     public String send(String from, String to, String subject, String html,
                        List<Attachment> attachments) {
+        return sendInternal(from, null, to, subject, html,
+                attachments != null ? attachments : List.of());
+    }
+
+    @SuppressWarnings("unchecked")
+    private String sendInternal(String from, String replyTo, String to, String subject,
+                                String html, List<Attachment> attachments) {
         if (!isConfigured()) {
             log.warn("RESEND_API_KEY not configured — skipping email to {}", to);
             return null;
@@ -79,7 +90,11 @@ public class ResendEmailClient {
         body.put("subject", subject);
         body.put("html", html);
 
-        if (attachments != null && !attachments.isEmpty()) {
+        if (replyTo != null && !replyTo.isBlank()) {
+            body.put("reply_to", replyTo);
+        }
+
+        if (!attachments.isEmpty()) {
             List<Map<String, String>> attachmentList = attachments.stream()
                     .map(a -> {
                         Map<String, String> m = new LinkedHashMap<>();
