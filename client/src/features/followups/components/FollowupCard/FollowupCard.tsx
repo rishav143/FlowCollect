@@ -4,6 +4,7 @@ import type { InvoiceResponse } from '@/types/invoice.types'
 import type { FollowUpResponse } from '@/types/followup.types'
 import { timeAgo, dueDateLabel } from '@/utils/date'
 import { formatCurrency } from '@/lib/format'
+import { useAuthStore } from '@/store/auth.store'
 
 const CHANNEL_LABEL: Record<string, string> = {
   EMAIL: 'Email', SMS: 'SMS', WHATSAPP: 'WhatsApp',
@@ -25,6 +26,7 @@ interface Props {
 }
 
 const FollowupCard = memo(function FollowupCard({ invoice, currency, customerName, lastFollowup, onSend, canSend = true }: Props) {
+  const orgTimezone = useAuthStore((s) => s.org?.timezone)
   const u = URGENCY[invoice.timeStatus] ?? URGENCY.NOT_DUE
 
   return (
@@ -58,7 +60,7 @@ const FollowupCard = memo(function FollowupCard({ invoice, currency, customerNam
             invoice.timeStatus === 'DUE_TODAY' ? 'font-semibold text-amber-600 dark:text-amber-400' :
             'text-[#0D1B2A] dark:text-white'
           }>
-            {dueDateLabel(invoice.dueDate)}
+            {dueDateLabel(invoice.dueDate, orgTimezone)}
           </span>
         </p>
         <p>

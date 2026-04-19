@@ -99,8 +99,9 @@ function DeleteConfirm({
 // ---------------------------------------------------------------------------
 
 export default function ClientListPage() {
-  const orgId    = useAuthStore((s) => s.org?.id ?? '')
-  const currency = useAuthStore((s) => s.org?.currency ?? 'INR')
+  const orgId       = useAuthStore((s) => s.org?.id ?? '')
+  const currency    = useAuthStore((s) => s.org?.currency ?? 'INR')
+  const orgTimezone = useAuthStore((s) => s.org?.timezone)
 
   const [search,       setSearch]       = useState('')
   const [showAdd,      setShowAdd]      = useState(false)
@@ -178,6 +179,7 @@ export default function ClientListPage() {
           invoicesByCustomer={invoicesByCustomer}
           currency={currency}
           isLoading={isLoading}
+          orgTimezone={orgTimezone}
         />
 
         {/* Search */}

@@ -4,22 +4,27 @@ import InvoiceStatusBadge from '../InvoiceStatusBadge/InvoiceStatusBadge'
 import type { InvoiceResponse } from '@/types/invoice.types'
 import type { CustomerResponse } from '@/types/customer.types'
 import { formatCurrency, formatDate } from '@/lib/format'
+import { useAuthStore } from '@/store/auth.store'
 // ---------------------------------------------------------------------------
 // Aging helper
 // ---------------------------------------------------------------------------
 
-function agingLabel(inv: InvoiceResponse): { label: string; overdue: boolean } {
+function agingLabel(inv: InvoiceResponse, orgTimezone?: string): { label: string; overdue: boolean } {
   if (inv.lifeCycleStatus === 'PAID' || inv.lifeCycleStatus === 'CANCELLED' || inv.lifeCycleStatus === 'DRAFT') {
     return { label: '—', overdue: false }
   }
   if (!inv.dueDate) return { label: '—', overdue: false }
 
-  const due  = new Date(inv.dueDate)
-  const today = new Date()
-  // Compare calendar dates only (ignore time)
-  due.setHours(0, 0, 0, 0)
-  today.setHours(0, 0, 0, 0)
-  const days = Math.round((today.getTime() - due.getTime()) / 86_400_000)
+  const tz = orgTimezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone
+  // Get today as YYYY-MM-DD in the org timezone (en-CA locale gives ISO date format)
+  const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: tz })
+  const dueDateStr = inv.dueDate.split('T')[0]
+  // Build local Date objects (not UTC) to compare at day granularity
+  const [ty, tm, td] = todayStr.split('-').map(Number)
+  const [dy, dm, dd] = dueDateStr.split('-').map(Number)
+  const days = Math.round(
+    (new Date(ty, tm - 1, td).getTime() - new Date(dy, dm - 1, dd).getTime()) / 86_400_000
+  )
 
   if (days < 0)   return { label: `Due in ${Math.abs(days)}d`, overdue: false }
   if (days === 0) return { label: 'Due today', overdue: false }
@@ -61,7 +66,8 @@ interface Props {
 const HEADERS = ['Invoice #', 'Client', 'Status', 'Aging', 'Due Date', 'Amount', '']
 
 export default function InvoiceTable({ invoices, customerMap, currency, isLoading, onDelete }: Props) {
-  const navigate = useNavigate()
+  const navigate     = useNavigate()
+  const orgTimezone  = useAuthStore((s) => s.org?.timezone)
 
   return (
     <div className="bg-white dark:bg-[#1B2838] rounded-xl border border-c-border overflow-hidden">
@@ -107,7 +113,7 @@ export default function InvoiceTable({ invoices, customerMap, currency, isLoadin
                 const isPaid      = inv.lifeCycleStatus === 'PAID'
                 const isCancelled = inv.lifeCycleStatus === 'CANCELLED'
                 const isPartial   = inv.lifeCycleStatus === 'PARTIALLY_PAID'
-                const { label: agingText, overdue } = agingLabel(inv)
+                const { label: agingText, overdue } = agingLabel(inv, orgTimezone)
 
                 return (
                   <tr

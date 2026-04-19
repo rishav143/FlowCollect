@@ -72,6 +72,7 @@ function InvoiceRow({
   onSend:        () => void
   canSend:       boolean
 }) {
+  const orgTimezone = useAuthStore((s) => s.org?.timezone)
   const overdue  = invoice.timeStatus === 'OVERDUE'
   const dueToday = invoice.timeStatus === 'DUE_TODAY'
   const opened   = !!lastFollowup?.openedAt
@@ -121,7 +122,7 @@ function InvoiceRow({
           {sendBtn}
         </div>
         <div className="flex items-center gap-2">
-          <span className={`text-[11px] shrink-0 ${dueCls}`}>{dueDateLabel(invoice.dueDate)}</span>
+          <span className={`text-[11px] shrink-0 ${dueCls}`}>{dueDateLabel(invoice.dueDate, orgTimezone)}</span>
           <span className="text-c-muted/40 text-[10px]">·</span>
           {contactNode}
         </div>
@@ -131,7 +132,7 @@ function InvoiceRow({
       <div className="hidden sm:flex items-center gap-2 px-4 py-2.5">
         <div className="text-xs font-semibold text-[#0D1B2A] dark:text-white min-w-[96px] truncate">{invoice.invoiceNumber}</div>
         <div className="text-xs font-bold tabular-nums text-[#0D1B2A] dark:text-white min-w-[60px]">{formatCurrency(invoice.remainingAmount, currency, { decimals: false })}</div>
-        <div className={`text-[11px] min-w-[80px] ${dueCls}`}>{dueDateLabel(invoice.dueDate)}</div>
+        <div className={`text-[11px] min-w-[80px] ${dueCls}`}>{dueDateLabel(invoice.dueDate, orgTimezone)}</div>
         <div className="flex-1 flex items-center gap-1.5 min-w-0">{contactNode}</div>
         {sendBtn}
       </div>

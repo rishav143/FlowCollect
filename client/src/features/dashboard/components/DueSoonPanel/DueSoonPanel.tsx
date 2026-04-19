@@ -2,13 +2,8 @@ import { useNavigate } from 'react-router-dom'
 import { ArrowRight, CalendarClock, Bell } from 'lucide-react'
 import type { InvoiceResponse } from '@/types/invoice.types'
 import { formatCurrency } from '@/lib/format'
-
-function daysUntil(dueDate: string): number {
-  const due   = new Date(dueDate)
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  return Math.max(0, Math.ceil((due.getTime() - today.getTime()) / 86_400_000))
-}
+import { useAuthStore } from '@/store/auth.store'
+import { daysPastDue } from '@/utils/date'
 
 function urgencyLabel(days: number): { label: string; text: string } {
   if (days === 0) return { label: 'Due today', text: 'text-red-600 dark:text-red-400' }
@@ -47,7 +42,8 @@ export default function DueSoonPanel({
   isLoading:   boolean
   onFollowup?: (inv: InvoiceResponse) => void
 }) {
-  const navigate = useNavigate()
+  const navigate    = useNavigate()
+  const orgTimezone = useAuthStore((s) => s.org?.timezone)
 
   return (
     <div className="bg-white dark:bg-[#1B2838] rounded-xl border border-c-border overflow-hidden">
@@ -74,7 +70,7 @@ export default function DueSoonPanel({
       ) : (
         <ul>
           {invoices.map((inv, idx) => {
-            const days  = inv.dueDate ? daysUntil(inv.dueDate) : 0
+            const days  = inv.dueDate ? Math.max(0, -daysPastDue(inv.dueDate, orgTimezone)) : 0
             const badge = urgencyLabel(days)
             return (
               <li

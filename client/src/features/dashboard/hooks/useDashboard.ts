@@ -4,10 +4,12 @@ import { listInvoices } from '@/api/invoice.api'
 import { listConfirmations } from '@/api/confirmation.api'
 import { listCustomers } from '@/api/customer.api'
 import { getDashboardStats } from '@/api/dashboard.api'
+import { daysPastDue, todayInTz } from '@/utils/date'
 
 export function useDashboard() {
-  const orgId             = useAuthStore((s) => s.org?.id ?? '')
-  const currency          = useAuthStore((s) => s.org?.currency ?? 'INR')
+  const orgId              = useAuthStore((s) => s.org?.id ?? '')
+  const orgTimezone        = useAuthStore((s) => s.org?.timezone)
+  const currency           = useAuthStore((s) => s.org?.currency ?? 'INR')
   const isConfirmationFlow = useAuthStore((s) => s.org?.paymentCollectionMode === 'CONFIRMATION_FLOW')
 
   // Broad fetch for KPI computation (latest 200 invoices)
@@ -48,6 +50,11 @@ export function useDashboard() {
 
   const invoices = allQuery.data?.content ?? []
   const now      = new Date()
+  // "Today" evaluated in the org's timezone for all day-level comparisons
+  const orgTodayStr = todayInTz(orgTimezone)
+  const [_ty, _tm, _td] = orgTodayStr.split('-').map(Number)
+  const orgToday = new Date(_ty, _tm - 1, _td)        // midnight local — used for month boundaries
+  const startOfMonth = new Date(orgToday.getFullYear(), orgToday.getMonth(), 1)
 
   // ── KPI computations ───────────────────────────────────────────────────────
 
@@ -79,10 +86,6 @@ export function useDashboard() {
 
   // Collected this month: sum of totalPaid for PAID and PARTIALLY_PAID invoices
   // whose latest payment activity (updatedAt) falls within the current month.
-  // Using totalPaid (not totalAmount) correctly counts only the amount actually
-  // received — for PAID invoices totalPaid === totalAmount; for PARTIALLY_PAID
-  // it is the partial amount collected so far.
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
   const collectedThisMonth = invoices
     .filter(
       (i) =>
@@ -92,21 +95,16 @@ export function useDashboard() {
     .reduce((s, i) => s + i.totalPaid, 0)
 
   // Due soon: unpaid invoices with dueDate in next 14 days, sorted nearest-first
-  const in14Days = new Date(now)
-  in14Days.setDate(in14Days.getDate() + 14)
   const dueSoonInvoices = unpaidInvoices
     .filter((i) => {
       if (!i.dueDate || i.timeStatus === 'OVERDUE') return false
-      const d = new Date(i.dueDate)
-      return d >= now && d <= in14Days
+      const d = daysPastDue(i.dueDate, orgTimezone)
+      return d <= 0 && d >= -14   // today (0) through 14 days in the future (-14)
     })
     .sort((a, b) => new Date(a.dueDate!).getTime() - new Date(b.dueDate!).getTime())
     .slice(0, 6)
 
-  // AR Aging buckets — unpaid invoices grouped by days past due date
-  const todayMidnight = new Date(now)
-  todayMidnight.setHours(0, 0, 0, 0)
-
+  // AR Aging buckets — unpaid invoices grouped by days past due date (org timezone)
   type AgingBucket = { label: string; amount: number; count: number }
   const agingBuckets: { current: AgingBucket; d1_30: AgingBucket; d31_60: AgingBucket; d60plus: AgingBucket } = {
     current:  { label: 'Current',  amount: 0, count: 0 },
@@ -115,13 +113,11 @@ export function useDashboard() {
     d60plus:  { label: '60+ d',    amount: 0, count: 0 },
   }
   for (const inv of unpaidInvoices) {
-    const daysPast = inv.dueDate
-      ? Math.floor((todayMidnight.getTime() - new Date(inv.dueDate).getTime()) / 86_400_000)
-      : -1
-    if (daysPast <= 0)       { agingBuckets.current.amount += inv.remainingAmount; agingBuckets.current.count++ }
-    else if (daysPast <= 30) { agingBuckets.d1_30.amount   += inv.remainingAmount; agingBuckets.d1_30.count++   }
-    else if (daysPast <= 60) { agingBuckets.d31_60.amount  += inv.remainingAmount; agingBuckets.d31_60.count++  }
-    else                     { agingBuckets.d60plus.amount  += inv.remainingAmount; agingBuckets.d60plus.count++ }
+    const d = inv.dueDate ? daysPastDue(inv.dueDate, orgTimezone) : -1
+    if (d <= 0)       { agingBuckets.current.amount += inv.remainingAmount; agingBuckets.current.count++ }
+    else if (d <= 30) { agingBuckets.d1_30.amount   += inv.remainingAmount; agingBuckets.d1_30.count++   }
+    else if (d <= 60) { agingBuckets.d31_60.amount  += inv.remainingAmount; agingBuckets.d31_60.count++  }
+    else              { agingBuckets.d60plus.amount  += inv.remainingAmount; agingBuckets.d60plus.count++ }
   }
 
   const pendingConfirmations = confirmationsQuery.data?.content ?? []
@@ -145,7 +141,7 @@ export function useDashboard() {
   const trendData: TrendPoint[] = []
 
   for (let i = MONTHS_BACK - 1; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+    const d = new Date(orgToday.getFullYear(), orgToday.getMonth() - i, 1)
     const y = d.getFullYear()
     const m = d.getMonth()
     const collected = invoices
@@ -168,7 +164,7 @@ export function useDashboard() {
       )
     : 0
 
-  const nextMonthIdx = (now.getMonth() + 1) % 12
+  const nextMonthIdx = (orgToday.getMonth() + 1) % 12
   trendData.push({ month: SHORT_MONTH[nextMonthIdx], collected: 0, forecast })
 
   return {

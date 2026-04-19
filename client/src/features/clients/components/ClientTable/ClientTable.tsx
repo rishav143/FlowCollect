@@ -9,19 +9,21 @@ import type { ViewMode } from '@/ui/components/ViewToggle'
 import type { CustomerResponse } from '@/types/customer.types'
 import type { InvoiceResponse } from '@/types/invoice.types'
 import { formatCurrency } from '@/lib/format'
+import { useAuthStore } from '@/store/auth.store'
 
 interface ClientRow {
   customer:          CustomerResponse
   invoices:          InvoiceResponse[]
   currency:          string
+  orgTimezone?:      string
   onDelete:          (c: CustomerResponse) => void
 }
 
-function MobileCard({ customer, invoices, currency, onDelete }: ClientRow) {
+function MobileCard({ customer, invoices, currency, orgTimezone, onDelete }: ClientRow) {
   const navigate = useNavigate()
   const outstanding = invoices.filter((i) => i.lifeCycleStatus !== 'PAID' && i.lifeCycleStatus !== 'CANCELLED').reduce((s, i) => s + i.remainingAmount, 0)
   const overdue     = invoices.filter((i) => i.timeStatus === 'OVERDUE' && i.lifeCycleStatus !== 'PAID').reduce((s, i) => s + i.remainingAmount, 0)
-  const avgDelay    = computeAvgDelay(invoices)
+  const avgDelay    = computeAvgDelay(invoices, orgTimezone)
   const risk        = getRisk(avgDelay, invoices.length > 0)
   const meta        = RISK_META[risk]
 
@@ -72,7 +74,8 @@ interface Props {
 }
 
 export default function ClientTable({ customers, invoicesByCustomer, currency, isLoading, view = 'list', onDelete }: Props) {
-  const navigate = useNavigate()
+  const navigate    = useNavigate()
+  const orgTimezone = useAuthStore((s) => s.org?.timezone)
 
   if (isLoading) {
     return (
@@ -111,6 +114,7 @@ export default function ClientTable({ customers, invoicesByCustomer, currency, i
             customer={c}
             invoices={invoicesByCustomer[c.id] ?? []}
             currency={currency}
+            orgTimezone={orgTimezone}
             onDelete={onDelete}
           />
         ))}
@@ -133,7 +137,7 @@ export default function ClientTable({ customers, invoicesByCustomer, currency, i
               const invs        = invoicesByCustomer[c.id] ?? []
               const outstanding = invs.filter((i) => i.lifeCycleStatus !== 'PAID' && i.lifeCycleStatus !== 'CANCELLED').reduce((s, i) => s + i.remainingAmount, 0)
               const overdue     = invs.filter((i) => i.timeStatus === 'OVERDUE' && i.lifeCycleStatus !== 'PAID').reduce((s, i) => s + i.remainingAmount, 0)
-              const avgDelay    = computeAvgDelay(invs)
+              const avgDelay    = computeAvgDelay(invs, orgTimezone)
               const risk        = getRisk(avgDelay, invs.length > 0)
               const meta        = RISK_META[risk]
 

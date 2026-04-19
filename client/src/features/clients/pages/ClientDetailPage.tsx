@@ -60,9 +60,10 @@ function Stat({ label, value, sub, valueColor }: { label: string; value: string;
 export default function ClientDetailPage() {
   const { id }   = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const org      = useAuthStore((s) => s.org)
-  const currency = org?.currency ?? 'INR'
-  const orgId    = org?.id ?? ''
+  const org         = useAuthStore((s) => s.org)
+  const currency    = org?.currency ?? 'INR'
+  const orgId       = org?.id ?? ''
+  const orgTimezone = org?.timezone
 
   const [showEdit, setShowEdit] = useState(false)
 
@@ -101,7 +102,7 @@ export default function ClientDetailPage() {
     (i) => i.lifeCycleStatus === 'ISSUED' || i.lifeCycleStatus === 'PARTIALLY_PAID',
   ).length
 
-  const avgDelay = computeAvgDelay(invoices)
+  const avgDelay = computeAvgDelay(invoices, orgTimezone)
   const risk     = getRisk(avgDelay, invoices.length > 0)
   const riskMeta = RISK_META[risk]
 

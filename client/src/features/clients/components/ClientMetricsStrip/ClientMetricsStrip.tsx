@@ -1,6 +1,7 @@
 import type { CustomerResponse } from '@/types/customer.types'
 import type { InvoiceResponse } from '@/types/invoice.types'
 import { formatCurrency } from '@/lib/format'
+import { daysPastDue } from '@/utils/date'
 
 // ---------------------------------------------------------------------------
 // Risk classification (UI_LAYOUT.md spec)
@@ -12,8 +13,7 @@ import { formatCurrency } from '@/lib/format'
 
 export type RiskLabel = 'GOOD' | 'SLOW' | 'RISK' | 'NONE'
 
-export function computeAvgDelay(invoices: InvoiceResponse[]): number {
-  const today = Date.now()
+export function computeAvgDelay(invoices: InvoiceResponse[], orgTimezone?: string): number {
   const overdue = invoices.filter((i) =>
     i.timeStatus === 'OVERDUE' &&
     i.lifeCycleStatus !== 'PAID' &&
@@ -22,8 +22,7 @@ export function computeAvgDelay(invoices: InvoiceResponse[]): number {
   )
   if (overdue.length === 0) return 0
   const totalDays = overdue.reduce((sum, inv) => {
-    const daysDiff = Math.floor((today - new Date(inv.dueDate!).getTime()) / 86400_000)
-    return sum + Math.max(0, daysDiff)
+    return sum + Math.max(0, daysPastDue(inv.dueDate!, orgTimezone))
   }, 0)
   return Math.round(totalDays / overdue.length)
 }
@@ -51,9 +50,10 @@ interface Props {
   invoicesByCustomer: Record<string, InvoiceResponse[]>
   currency: string
   isLoading: boolean
+  orgTimezone?: string
 }
 
-export default function ClientMetricsStrip({ customers, invoicesByCustomer, currency, isLoading }: Props) {
+export default function ClientMetricsStrip({ customers, invoicesByCustomer, currency, isLoading, orgTimezone }: Props) {
   if (isLoading) {
     return (
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 animate-pulse">
@@ -72,7 +72,7 @@ export default function ClientMetricsStrip({ customers, invoicesByCustomer, curr
 
   for (const c of customers) {
     const invs = invoicesByCustomer[c.id] ?? []
-    const delay = computeAvgDelay(invs)
+    const delay = computeAvgDelay(invs, orgTimezone)
     const risk  = getRisk(delay, invs.length > 0)
     if (risk === 'RISK') highRisk++
     if (risk === 'GOOD') goodPayers++

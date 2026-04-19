@@ -17,13 +17,6 @@ import { useToast } from '@/store/toast.store'
 import NoteModal from '@/ui/components/NoteModal/NoteModal'
 import RequestRemainingModal from '@/ui/components/RequestRemainingModal/RequestRemainingModal'
 
-function daysOverdue(dueDate: string): number {
-  const due   = new Date(dueDate)
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  return Math.max(0, Math.floor((today.getTime() - due.getTime()) / 86_400_000))
-}
-
 import { timeAgoFine as timeAgo } from '@/utils/date'
 
 // ---------------------------------------------------------------------------

@@ -3,6 +3,7 @@ import { useAuthStore } from '@/store/auth.store'
 import { listInvoices } from '@/api/invoice.api'
 import { listConfirmations } from '@/api/confirmation.api'
 import { useNotificationStore } from '@/store/notification.store'
+import { daysPastDue } from '@/utils/date'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -20,22 +21,12 @@ export interface AppNotification {
 }
 
 // ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function daysOverdue(dueDate: string): number {
-  const due   = new Date(dueDate)
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  return Math.max(0, Math.floor((today.getTime() - due.getTime()) / 86_400_000))
-}
-
-// ---------------------------------------------------------------------------
 // Hook
 // ---------------------------------------------------------------------------
 
 export function useNotifications() {
   const orgId              = useAuthStore((s) => s.org?.id ?? '')
+  const orgTimezone        = useAuthStore((s) => s.org?.timezone)
   const currency           = useAuthStore((s) => s.org?.currency ?? 'INR')
   const isConfirmationFlow = useAuthStore((s) => s.org?.paymentCollectionMode === 'CONFIRMATION_FLOW')
   const readIds            = useNotificationStore((s) => s.readIds)
@@ -75,7 +66,7 @@ export function useNotifications() {
   // ── Overdue notifications ──────────────────────────────────────────────────
   for (const inv of overdueQuery.data?.content ?? []) {
     if (!['ISSUED', 'PARTIALLY_PAID'].includes(inv.lifeCycleStatus)) continue
-    const days = inv.dueDate ? daysOverdue(inv.dueDate) : 0
+    const days = inv.dueDate ? Math.max(0, daysPastDue(inv.dueDate, orgTimezone)) : 0
     notifications.push({
       id:        `overdue-${inv.id}`,
       type:      'overdue',
