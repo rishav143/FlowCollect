@@ -50,10 +50,11 @@ export default function OrgSettingsPage() {
   const [address,  setAddress]  = useState('')
   const [currency,      setCurrency]      = useState('INR')
   const [timezone,      setTimezone]      = useState('Asia/Kolkata')
+  const [savedCurrency, setSavedCurrency] = useState('INR')
   const [savedTimezone, setSavedTimezone] = useState('Asia/Kolkata')
   const [mode,          setMode]          = useState<'PAYMENT_LINK' | 'CONFIRMATION_FLOW'>('CONFIRMATION_FLOW')
   const [saved,         setSaved]         = useState(false)
-  const [showTzWarn,    setShowTzWarn]    = useState(false)
+  const [showWarn,      setShowWarn]      = useState(false)
 
   useEffect(() => {
     if (data) {
@@ -63,13 +64,18 @@ export default function OrgSettingsPage() {
       setAddress(data.address ?? '')
       setCurrency(data.currency)
       setTimezone(data.timezone)
+      setSavedCurrency(data.currency)
       setSavedTimezone(data.timezone)
       setMode(data.paymentCollectionMode)
     }
   }, [data])
 
+  const tzChanged  = timezone !== savedTimezone
+  const curChanged = currency !== savedCurrency
+
   async function doSave() {
     await update.mutateAsync({ name, email, phone: phone || undefined, address: address || undefined, currency, timezone, paymentCollectionMode: mode })
+    setSavedCurrency(currency)
     setSavedTimezone(timezone)
     setSaved(true)
     setTimeout(() => setSaved(false), 2500)
@@ -77,8 +83,8 @@ export default function OrgSettingsPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (timezone !== savedTimezone) {
-      setShowTzWarn(true)
+    if (tzChanged || curChanged) {
+      setShowWarn(true)
       return
     }
     await doSave()
@@ -216,9 +222,9 @@ export default function OrgSettingsPage() {
       </p>
     </form>
 
-      {showTzWarn && (
+      {showWarn && (
         <div className="fixed inset-0 z-50 flex flex-col justify-end sm:items-center sm:justify-center sm:p-4">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowTzWarn(false)} />
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowWarn(false)} />
           <div className="relative w-full sm:max-w-sm bg-white dark:bg-[#1B2838] rounded-t-2xl sm:rounded-2xl shadow-xl">
             <div className="sm:hidden flex justify-center pt-3 pb-1">
               <div className="w-10 h-1 rounded-full bg-[#8A9BAE]/30" />
@@ -229,25 +235,34 @@ export default function OrgSettingsPage() {
                   <AlertTriangle size={15} className="text-amber-600 dark:text-amber-400" />
                 </div>
                 <div>
-                  <h2 className="text-base font-semibold text-[#0D1B2A] dark:text-white">Change Timezone?</h2>
-                  <p className="text-sm text-c-muted mt-1">
-                    This affects all invoice due-date calculations and reminder timing for existing invoices. Set this once at setup and avoid changing it later.
-                  </p>
+                  <h2 className="text-base font-semibold text-[#0D1B2A] dark:text-white">Confirm Changes</h2>
+                  <div className="mt-2 space-y-2">
+                    {tzChanged && (
+                      <p className="text-sm text-c-muted">
+                        <span className="font-medium text-[#0D1B2A] dark:text-white">Timezone</span> — affects all invoice due-date calculations and reminder timing. Set this once and avoid changing it later.
+                      </p>
+                    )}
+                    {curChanged && (
+                      <p className="text-sm text-c-muted">
+                        <span className="font-medium text-[#0D1B2A] dark:text-white">Currency</span> — all reminder emails sent to clients will show amounts in the new currency. Existing invoice totals are not recalculated.
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
               <div className="flex gap-3 mt-5">
                 <button
-                  onClick={() => setShowTzWarn(false)}
+                  onClick={() => setShowWarn(false)}
                   className="flex-1 py-2.5 rounded-xl text-sm font-medium text-c-muted hover:bg-[#F4F7F9] dark:hover:bg-[#243447] transition-colors"
                 >
                   Cancel
                 </button>
                 <button
-                  onClick={() => { setShowTzWarn(false); doSave() }}
+                  onClick={() => { setShowWarn(false); doSave() }}
                   disabled={update.isPending}
                   className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white bg-amber-500 hover:bg-amber-600 disabled:opacity-50 transition-colors"
                 >
-                  {update.isPending ? 'Saving…' : 'Yes, Change It'}
+                  {update.isPending ? 'Saving…' : 'Yes, Save Changes'}
                 </button>
               </div>
             </div>
