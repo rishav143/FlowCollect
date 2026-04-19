@@ -102,125 +102,125 @@ export default function OrgSettingsPage() {
 
   return (
     <>
-    <form onSubmit={handleSubmit}>
-      <div className="bg-white dark:bg-[#1B2838] rounded-xl border border-c-border overflow-hidden">
-        <div className="px-5 py-4 border-b border-c-border">
-          <h2 className="text-sm font-semibold text-[#0D1B2A] dark:text-white">Organisation Profile</h2>
-        </div>
-        <div className="p-5 space-y-4">
-
-          <Field label="Organisation Name">
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Your business name"
-              className={inputCls}
-              required
-            />
-          </Field>
-
-          <Field label="Billing Email">
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="billing@yourcompany.com"
-              className={inputCls}
-            />
-          </Field>
-
-          <Field label="Phone (optional)">
-            <input
-              type="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="+1 555 000 0000"
-              className={inputCls}
-            />
-          </Field>
-
-          <Field label="Business Address (optional)">
-            <textarea
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              placeholder={"123 Main St\nCity, State / Province\nCountry"}
-              rows={3}
-              className={inputCls + ' resize-none'}
-            />
-            <p className="text-xs text-c-muted mt-1">Appears on invoices sent to your clients.</p>
-          </Field>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Field label="Currency">
-              <Select
-                value={currency}
-                onChange={setCurrency}
-                options={CURRENCIES.map((c) => ({ value: c, label: c }))}
-              />
-            </Field>
-
-            <Field label="Timezone">
-              <Select
-                value={timezone}
-                onChange={setTimezone}
-                options={TIMEZONES}
-              />
-            </Field>
+      <form onSubmit={handleSubmit}>
+        <div className="bg-white dark:bg-[#1B2838] rounded-xl border border-c-border overflow-hidden">
+          <div className="px-5 py-4 border-b border-c-border">
+            <h2 className="text-sm font-semibold text-[#0D1B2A] dark:text-white">Organisation Profile</h2>
           </div>
+          <div className="p-5 space-y-4">
 
-          <Field label="Payment Collection Mode">
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setMode('CONFIRMATION_FLOW')}
-                className={[
-                  'flex-1 py-2.5 text-sm font-medium rounded-lg border transition-colors',
-                  mode === 'CONFIRMATION_FLOW'
-                    ? 'border-[#29B6F6] text-[#29B6F6] bg-[#29B6F6]/5'
-                    : 'border-c-border text-c-muted hover:text-[#0D1B2A] dark:hover:text-white',
-                ].join(' ')}
-              >
-                Confirmation Flow
-              </button>
-              <button
-                type="button"
-                disabled
-                className="flex-1 py-2.5 text-sm font-medium rounded-lg border border-c-border text-c-muted opacity-50 cursor-not-allowed relative"
-              >
-                Payment Link
-                <span className="ml-1.5 text-[10px] font-semibold uppercase tracking-wide text-[#29B6F6]">
-                  Coming Soon
-                </span>
-              </button>
+            <Field label="Organisation Name">
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Your business name"
+                className={inputCls}
+                required
+              />
+            </Field>
+
+            <Field label="Billing Email">
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="billing@yourcompany.com"
+                className={inputCls}
+              />
+            </Field>
+
+            <Field label="Phone (optional)">
+              <input
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="+1 555 000 0000"
+                className={inputCls}
+              />
+            </Field>
+
+            <Field label="Business Address (optional)">
+              <textarea
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                placeholder={"123 Main St\nCity, State / Province\nCountry"}
+                rows={3}
+                className={inputCls + ' resize-none'}
+              />
+              <p className="text-xs text-c-muted mt-1">Appears on invoices sent to your clients.</p>
+            </Field>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Field label="Currency">
+                <Select
+                  value={currency}
+                  onChange={setCurrency}
+                  options={CURRENCIES.map((c) => ({ value: c, label: c }))}
+                />
+              </Field>
+
+              <Field label="Timezone">
+                <Select
+                  value={timezone}
+                  onChange={setTimezone}
+                  options={TIMEZONES}
+                />
+              </Field>
             </div>
-            <p className="text-xs text-c-muted mt-1.5">
-              {mode === 'CONFIRMATION_FLOW'
-                ? 'Clients submit payment proof and you approve it manually.'
-                : 'Clients pay directly via a payment link you send.'}
-            </p>
-          </Field>
 
+            <Field label="Payment Collection Mode">
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setMode('CONFIRMATION_FLOW')}
+                  className={[
+                    'flex-1 py-2.5 text-sm font-medium rounded-lg border transition-colors',
+                    mode === 'CONFIRMATION_FLOW'
+                      ? 'border-[#29B6F6] text-[#29B6F6] bg-[#29B6F6]/5'
+                      : 'border-c-border text-c-muted hover:text-[#0D1B2A] dark:hover:text-white',
+                  ].join(' ')}
+                >
+                  Confirmation Flow
+                </button>
+                <button
+                  type="button"
+                  disabled
+                  className="flex-1 py-2.5 text-sm font-medium rounded-lg border border-c-border text-c-muted opacity-50 cursor-not-allowed relative"
+                >
+                  Payment Link
+                  <span className="ml-1.5 text-[10px] font-semibold uppercase tracking-wide text-[#29B6F6]">
+                    Coming Soon
+                  </span>
+                </button>
+              </div>
+              <p className="text-xs text-c-muted mt-1.5">
+                {mode === 'CONFIRMATION_FLOW'
+                  ? 'Clients submit payment proof and you approve it manually.'
+                  : 'Clients pay directly via a payment link you send.'}
+              </p>
+            </Field>
+
+          </div>
+          <div className="flex items-center justify-end gap-3 px-5 py-4 border-t border-c-border">
+            {saved && <span className="text-sm text-green-600 dark:text-green-400">Saved</span>}
+            <button
+              type="submit"
+              disabled={update.isPending}
+              className="px-5 py-2 text-sm font-semibold text-white rounded-lg disabled:opacity-50 hover:opacity-90 transition-opacity"
+              style={{ background: 'linear-gradient(90deg, #29B6F6 0%, #4FC3F7 100%)' }}
+            >
+              {update.isPending ? 'Saving…' : 'Save Changes'}
+            </button>
+          </div>
         </div>
-        <div className="flex items-center justify-end gap-3 px-5 py-4 border-t border-c-border">
-          {saved && <span className="text-sm text-green-600 dark:text-green-400">Saved</span>}
-          <button
-            type="submit"
-            disabled={update.isPending}
-            className="px-5 py-2 text-sm font-semibold text-white rounded-lg disabled:opacity-50 hover:opacity-90 transition-opacity"
-            style={{ background: 'linear-gradient(90deg, #29B6F6 0%, #4FC3F7 100%)' }}
-          >
-            {update.isPending ? 'Saving…' : 'Save Changes'}
-          </button>
-        </div>
-      </div>
-      <p className="text-xs text-c-muted text-center mt-4">
-        Questions, feedback, or found a bug? Email us at{' '}
-        <a href="mailto:support@flowcollect.io" className="text-[#29B6F6] hover:underline">
-          support@flowcollect.io
-        </a>
-      </p>
-    </form>
+        <p className="text-xs text-c-muted text-center mt-4">
+          Questions, feedback, or found a bug? Email us at{' '}
+          <a href="mailto:support@flowcollect.io" className="text-[#29B6F6] hover:underline">
+            support@flowcollect.io
+          </a>
+        </p>
+      </form>
 
       {showWarn && (
         <div className="fixed inset-0 z-50 flex flex-col justify-end sm:items-center sm:justify-center sm:p-4">
