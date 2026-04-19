@@ -27,8 +27,8 @@ function greeting(): string {
   return 'Good evening'
 }
 
-function todayLabel(): string {
-  return formatDate(new Date(), { style: 'long' })
+function todayLabel(timezone?: string): string {
+  return formatDate(new Date(), { style: 'long', timezone })
 }
 
 // ---------------------------------------------------------------------------
@@ -192,6 +192,7 @@ function AgingBuckets({
 export default function DashboardPage() {
   const userName            = useAuthStore((s) => s.user?.name?.split(' ')[0] ?? 'there')
   const autoRecoveryEnabled = useAuthStore((s) => s.org?.autoRecoveryEnabled ?? false)
+  const orgTimezone         = useAuthStore((s) => s.org?.timezone)
 
   const [followupTarget, setFollowupTarget] = useState<NeedsAttentionItem | null>(null)
 
@@ -215,7 +216,7 @@ export default function DashboardPage() {
           <h1 className="text-xl font-bold text-[#0D1B2A] dark:text-white">
             {greeting()}, {userName}
           </h1>
-          <p className="text-sm text-c-muted mt-0.5">{todayLabel()}</p>
+          <p className="text-sm text-c-muted mt-0.5">{todayLabel(orgTimezone)}</p>
         </div>
         <div className="shrink-0 mt-0.5">
           <AutoRecoveryWidget />
