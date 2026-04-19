@@ -34,22 +34,20 @@ import com.flowcollect.infrastructure.persistence.template.TemplateJpaRepository
  *       deploy automatically without a migration.</li>
  * </ul>
  *
- * <h2>Recovery sequence</h2>
+ * <h2>Recovery sequence (6 touchpoints)</h2>
  * <pre>
- *   Day  -7   Polite heads-up         Email + SMS
- *   Day   0   Friendly, due today     Email
- *   Day  +7   Benefit of the doubt    Email (cycle 1) + WhatsApp
- *   Day +14   Direct, factual         Email (cycle 2) + SMS
- *   Day +28   Firm, open a dialogue   Email + WhatsApp
- *   Day +42   Consequences implied    Email (cycle 1) + SMS
- *   Day +49   Final notice            Email (cycle 2)
+ *   Day  -3   Friendly heads-up       Email
+ *   Day   0   Due today               Email
+ *   Day  +7   Gentle nudge            Email (cycle 1)
+ *   Day +14   Direct, factual         Email (cycle 2)
+ *   Day +21   Firm, open dialogue     Email (cycle 3)
+ *   Day +28   Final notice            Email (cycle 4)
  * </pre>
  *
  * <h2>Cycling</h2>
- * Two email rules use cycling to cover adjacent touchpoints with different copy:
+ * One email rule covers all four post-due touchpoints with escalating copy:
  * <ul>
- *   <li>"Recovery: Early Overdue Email" — fires at day +7 (occurrence 0) and day +14 (occurrence 1).</li>
- *   <li>"Recovery: Final Notice Email"  — fires at day +42 (occurrence 0) and day +49 (occurrence 1).</li>
+ *   <li>"Email - After Due Date" — fires at +7, +14, +21, +28 (4 occurrences, 7-day cycle).</li>
  * </ul>
  */
 @Component
@@ -126,6 +124,8 @@ public class RecoverSystemDataSeeder implements ApplicationRunner {
     private static final String LEGACY_RULE_EM_SMS_PRE_DUE     = "SMS \u2014 7 Days Before Due";
     private static final String LEGACY_RULE_EM_SMS_AFTER_DUE   = "SMS \u2014 After Due Date";
     private static final String LEGACY_RULE_EM_WA_AFTER_DUE    = "WhatsApp \u2014 After Due Date";
+    // 7-day pre-due rule (replaced with 3-day version)
+    private static final String LEGACY_RULE_R_EMAIL_PRE_DUE_7D = "Email - 7 Days Before Due";
 
     // -------------------------------------------------------------------------
     // Default MANUAL templates (used in the manual reminders template picker)
@@ -160,7 +160,7 @@ public class RecoverSystemDataSeeder implements ApplicationRunner {
     // Recovery rule names — idempotency keys
     // -------------------------------------------------------------------------
 
-    private static final String RULE_R_EMAIL_PRE_DUE   = "Email - 7 Days Before Due";
+    private static final String RULE_R_EMAIL_PRE_DUE   = "Email - 3 Days Before Due";
     private static final String RULE_R_EMAIL_DUE_DAY   = "Email - On Due Date";
     private static final String RULE_R_EMAIL_AFTER_DUE = "Email - After Due Date";
     private static final String RULE_R_SMS_PRE_DUE     = "SMS - 7 Days Before Due";
@@ -247,13 +247,12 @@ public class RecoverSystemDataSeeder implements ApplicationRunner {
 
         Template tEmailPreDue = ensureTemplate(
                 TPL_R_EMAIL_PRE_DUE, TemplateChannel.EMAIL, TemplateTone.POLITE,
-                "Invoice {{invoiceNumber}} from {{organizationName}} - due {{dueDate}}",
+                "Invoice {{invoiceNumber}} from {{organizationName}} - due in 3 days",
                 "Hi {{customerName}},\n\n" +
                 "Invoice {{invoiceNumber}} for {{remainingAmount}} is due on {{dueDate}}. " +
-                "You can view payment details or confirm once paid at the link below.\n\n" +
+                "You can review the details or confirm once settled at the link below.\n\n" +
                 "{{confirmationLink}}\n\n" +
-                "{{organizationName}}\n" +
-                "{{organizationEmail}}",
+                "{{organizationName}}",
                 RuleMode.AUTO
         );
 
@@ -263,8 +262,7 @@ public class RecoverSystemDataSeeder implements ApplicationRunner {
                 "Hi {{customerName}},\n\n" +
                 "Invoice {{invoiceNumber}} for {{remainingAmount}} from {{organizationName}} is due today, {{dueDate}}.\n\n" +
                 "{{confirmationLink}}\n\n" +
-                "{{organizationName}}\n" +
-                "{{organizationEmail}}",
+                "{{organizationName}}",
                 RuleMode.AUTO
         );
 
@@ -273,10 +271,10 @@ public class RecoverSystemDataSeeder implements ApplicationRunner {
                 "Invoice {{invoiceNumber}} from {{organizationName}} - 7 days overdue",
                 "Hi {{customerName}},\n\n" +
                 "Invoice {{invoiceNumber}} for {{remainingAmount}} was due on {{dueDate}} and has not been settled.\n\n" +
-                "If you have already paid, please confirm using the link below. Payment details are also available there.\n\n" +
+                "If you have already paid, please confirm using the link below. " +
+                "Payment details are also available there.\n\n" +
                 "{{confirmationLink}}\n\n" +
-                "{{organizationName}}\n" +
-                "{{organizationEmail}}",
+                "{{organizationName}}",
                 RuleMode.AUTO
         );
 
@@ -286,51 +284,47 @@ public class RecoverSystemDataSeeder implements ApplicationRunner {
                 "Hi {{customerName}},\n\n" +
                 "Invoice {{invoiceNumber}} for {{remainingAmount}} is 14 days past its due date of {{dueDate}} " +
                 "and remains unpaid.\n\n" +
-                "Please arrange payment when you can, or write to us at {{organizationEmail}} if there is " +
-                "something we need to clarify.\n\n" +
+                "Please arrange settlement when you can. If there is anything to clarify, " +
+                "reach us at {{organizationEmail}}.\n\n" +
                 "{{confirmationLink}}\n\n" +
-                "{{organizationName}}\n" +
-                "{{organizationEmail}}",
+                "{{organizationName}}",
                 RuleMode.AUTO
         );
 
         Template tEmailMonth = ensureTemplate(
                 TPL_R_EMAIL_MONTH, TemplateChannel.EMAIL, TemplateTone.FIRM,
-                "Invoice {{invoiceNumber}} from {{organizationName}} - payment overdue",
+                "Invoice {{invoiceNumber}} from {{organizationName}} - still outstanding",
                 "Hi {{customerName}},\n\n" +
-                "Invoice {{invoiceNumber}} for {{remainingAmount}} is still unpaid. It was due on {{dueDate}}.\n\n" +
+                "Invoice {{invoiceNumber}} for {{remainingAmount}} is still outstanding. It was due on {{dueDate}}.\n\n" +
                 "If there is a reason for the delay, please write to us at {{organizationEmail}}. " +
-                "We are glad to help resolve it. Otherwise, we would appreciate payment as soon as possible.\n\n" +
+                "We are happy to help. Otherwise, we would appreciate settlement at your earliest.\n\n" +
                 "{{confirmationLink}}\n\n" +
-                "{{organizationName}}\n" +
-                "{{organizationEmail}}",
+                "{{organizationName}}",
                 RuleMode.AUTO
         );
 
         Template tEmail6Weeks = ensureTemplate(
                 TPL_R_EMAIL_6WEEKS, TemplateChannel.EMAIL, TemplateTone.FIRM,
-                "Invoice {{invoiceNumber}} from {{organizationName}} - overdue",
+                "Invoice {{invoiceNumber}} from {{organizationName}} - 28 days overdue",
                 "Hi {{customerName}},\n\n" +
-                "Invoice {{invoiceNumber}} for {{remainingAmount}} from {{organizationName}} has been unpaid " +
-                "since {{dueDate}}, and we have not received a response to our previous notices.\n\n" +
-                "Please contact us at {{organizationEmail}} or settle the balance directly:\n\n" +
+                "Invoice {{invoiceNumber}} for {{remainingAmount}} from {{organizationName}} has been outstanding " +
+                "since {{dueDate}}, and we have not heard back despite our earlier messages.\n\n" +
+                "Please get in touch at {{organizationEmail}} or settle directly using the link below. " +
+                "We would like to resolve this.\n\n" +
                 "{{confirmationLink}}\n\n" +
-                "{{organizationName}}\n" +
-                "{{organizationEmail}}",
+                "{{organizationName}}",
                 RuleMode.AUTO
         );
 
-        Template tEmailFinal = ensureTemplate(
+        ensureTemplate(
                 TPL_R_EMAIL_FINAL, TemplateChannel.EMAIL, TemplateTone.FIRM,
-                "Invoice {{invoiceNumber}} from {{organizationName}} - 49 days overdue",
+                "Invoice {{invoiceNumber}} from {{organizationName}} - final notice",
                 "Hi {{customerName}},\n\n" +
-                "Invoice {{invoiceNumber}} for {{remainingAmount}} is 49 days past its due date of {{dueDate}}. " +
-                "We have sent several notices without a response.\n\n" +
-                "If we do not hear from you, we will need to proceed accordingly. " +
-                "To pay or get in touch:\n\n" +
+                "Invoice {{invoiceNumber}} for {{remainingAmount}} from {{organizationName}} remains unpaid " +
+                "since {{dueDate}}, and we have not received a response to our messages.\n\n" +
+                "Please reach us at {{organizationEmail}} or settle using the link below.\n\n" +
                 "{{confirmationLink}}\n\n" +
-                "{{organizationName}}\n" +
-                "{{organizationEmail}}",
+                "{{organizationName}}",
                 RuleMode.AUTO
         );
 
@@ -391,42 +385,31 @@ public class RecoverSystemDataSeeder implements ApplicationRunner {
 
         // ── Rules ─────────────────────────────────────────────────────────────
         //
-        // 7 rules total: 3 email, 2 SMS, 2 WhatsApp
+        // 3 email rules — 6 touchpoints total:
         //
-        // EMAIL (3):
-        //   1. Before-due  — single fire, -7 days, polite heads-up
-        //   2. On-due      — single fire, day 0, friendly reminder
-        //   3. After-due   — cyclic, offset +7, every 7 days, 7 occurrences
-        //                    covers +7 +14 +21 +28 +35 +42 +49 with escalating copy
-        //
-        // SMS (2):
-        //   1. Before-due  — single fire, -7 days
-        //   2. After-due   — cyclic, offset +14, every 14 days, 2 occurrences (+14, +28)
-        //
-        // WhatsApp (2):
-        //   1. After-due   — cyclic, offset +7, every 21 days, 2 occurrences (+7, +28)
+        //   1. Before-due  — single fire, -3 days, friendly heads-up
+        //   2. On-due      — single fire, day 0, due today reminder
+        //   3. After-due   — cyclic, offset +7, every 7 days, 4 occurrences
+        //                    covers +7, +14, +21, +28 with escalating tone
 
         ensureRule(RULE_R_EMAIL_PRE_DUE, ReminderChannel.EMAIL,
-                   ReminderTriggerType.BEFORE_DUE_DATE, -7, 1, 0,
+                   ReminderTriggerType.BEFORE_DUE_DATE, -3, 1, 0,
                    tEmailPreDue, List.of());
 
         ensureRule(RULE_R_EMAIL_DUE_DAY, ReminderChannel.EMAIL,
                    ReminderTriggerType.ON_DUE_DATE, 0, 1, 0,
                    tEmailDueDay, List.of());
 
-        // Single rule, 7 occurrences every 7 days → +7, +14, +21, +28, +35, +42, +49
-        // Per-occurrence templates escalate tone: neutral → neutral → firm → firm → firm → firm → final
+        // 4 occurrences every 7 days → +7, +14, +21, +28
+        // Tone escalates: neutral → neutral → firm → firm (final notice)
         ensureRule(RULE_R_EMAIL_AFTER_DUE, ReminderChannel.EMAIL,
-                   ReminderTriggerType.AFTER_DUE_DATE, 7, 7, 7,
+                   ReminderTriggerType.AFTER_DUE_DATE, 7, 4, 7,
                    tEmailWeek,
                    List.of(
-                       tEmailWeek.getId(),   // +7  neutral
-                       tEmail2Weeks.getId(), // +14 neutral
-                       tEmailMonth.getId(),  // +21 firm (early escalation)
-                       tEmailMonth.getId(),  // +28 firm
-                       tEmail6Weeks.getId(), // +35 firm
-                       tEmail6Weeks.getId(), // +42 firm
-                       tEmailFinal.getId()   // +49 final notice
+                       tEmailWeek.getId(),   // +7  gentle nudge
+                       tEmail2Weeks.getId(), // +14 direct, factual
+                       tEmailMonth.getId(),  // +21 firm, opens dialogue
+                       tEmail6Weeks.getId()  // +28 final notice
                    ));
 
         // SMS and WhatsApp rules are disabled for now — kept for future re-activation.
@@ -476,6 +459,8 @@ public class RecoverSystemDataSeeder implements ApplicationRunner {
                 LEGACY_RULE_EM_SMS_PRE_DUE,
                 LEGACY_RULE_EM_SMS_AFTER_DUE,
                 LEGACY_RULE_EM_WA_AFTER_DUE,
+                // 7-day pre-due rule replaced by 3-day version
+                LEGACY_RULE_R_EMAIL_PRE_DUE_7D,
                 // SMS/WhatsApp rules disabled — remove from DB if previously seeded
                 RULE_R_SMS_PRE_DUE,
                 RULE_R_SMS_AFTER_DUE,
