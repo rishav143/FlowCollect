@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.UUID;
 
 /**
@@ -50,6 +51,6 @@ public class InvoiceTaxLine {
 
     public UUID getId()          { return id; }
     public String getLabel()     { return label; }
-    public BigDecimal getAmount(){ return amount; }
+    public BigDecimal getAmount(){ return amount != null ? amount.setScale(0, RoundingMode.HALF_UP) : BigDecimal.ZERO; }
     public int getSortOrder()    { return sortOrder; }
 }

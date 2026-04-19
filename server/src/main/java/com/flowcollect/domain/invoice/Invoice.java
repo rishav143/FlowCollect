@@ -180,7 +180,7 @@ public class Invoice {
     }
 
     public BigDecimal getSubtotal() {
-        return subtotal;
+        return subtotal != null ? subtotal.setScale(0, RoundingMode.HALF_UP) : BigDecimal.ZERO;
     }
 
     public List<InvoiceTaxLine> getTaxLines() {
@@ -188,15 +188,15 @@ public class Invoice {
     }
 
     public BigDecimal getDiscountAmount() {
-        return discountAmount != null ? discountAmount : BigDecimal.ZERO;
+        return discountAmount != null ? discountAmount.setScale(0, RoundingMode.HALF_UP) : BigDecimal.ZERO;
     }
 
     public BigDecimal getTotalAmount() {
-        return totalAmount;
+        return totalAmount != null ? totalAmount.setScale(0, RoundingMode.HALF_UP) : BigDecimal.ZERO;
     }
 
     public BigDecimal getTotalPaid() {
-        return totalPaid != null ? totalPaid : BigDecimal.ZERO;
+        return totalPaid != null ? totalPaid.setScale(0, RoundingMode.HALF_UP) : BigDecimal.ZERO;
     }
 
     public List<InvoiceItem> getItems() {

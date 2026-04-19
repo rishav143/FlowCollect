@@ -98,11 +98,11 @@ public class InvoiceItem {
     }
 
     public BigDecimal getUnitPrice() {
-        return unitPrice;
+        return unitPrice != null ? unitPrice.setScale(0, RoundingMode.HALF_UP) : BigDecimal.ZERO;
     }
 
     public BigDecimal getAmount() {
-        return amount;
+        return amount != null ? amount.setScale(0, RoundingMode.HALF_UP) : BigDecimal.ZERO;
     }
 
     // Setters

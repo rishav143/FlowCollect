@@ -125,14 +125,15 @@ public class DiagnosticsController {
     @GetMapping("/confirmation-link")
     public ResponseEntity<Map<String, String>> confirmationLink(@RequestParam UUID invoiceId) {
         Map<String, String> result = new LinkedHashMap<>();
-        confirmationLinkService.findByInvoiceId(invoiceId).ifPresentOrElse(
-            link -> {
-                result.put("status", link.getStatus().name());
-                result.put("token", link.getToken());
-                result.put("publicUrl", link.getPublicUrl());
-            },
-            () -> result.put("status", "NOT_FOUND")
-        );
+        var opt = confirmationLinkService.findByInvoiceId(invoiceId);
+        if (opt.isEmpty()) {
+            result.put("status", "NOT_FOUND");
+        } else {
+            var link = opt.get();
+            result.put("status", link.getStatus().name());
+            result.put("token", link.getToken());
+            result.put("publicUrl", link.getPublicUrl());
+        }
         return ResponseEntity.ok(result);
     }
 

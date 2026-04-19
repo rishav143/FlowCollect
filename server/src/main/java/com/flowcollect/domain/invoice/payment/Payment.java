@@ -87,7 +87,7 @@ public class Payment {
     }
 
     public BigDecimal getAmount() {
-        return amount;
+        return amount != null ? amount.setScale(0, RoundingMode.HALF_UP) : BigDecimal.ZERO;
     }
 
     public void setAmount(BigDecimal amount) {
