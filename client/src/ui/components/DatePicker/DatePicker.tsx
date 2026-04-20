@@ -124,9 +124,8 @@ export default function DatePicker({ label, value, onChange, timezone = 'UTC' }:
     return () => { document.body.style.overflow = '' }
   }, [open])
 
-  const selected  = parseDate(value)
-  const hasValue  = !!value
-  const orgToday  = todayInTz(timezone)
+  const selected = parseDate(value)
+  const hasValue = !!value
 
   function handleSelect(day: Date | undefined) {
     onChange(day ? toStr(day) : '')
@@ -170,7 +169,7 @@ export default function DatePicker({ label, value, onChange, timezone = 'UTC' }:
           selected={selected}
           onSelect={handleSelect}
           showOutsideDays
-          today={orgToday}
+          timeZone={timezone}
           style={DAY_PICKER_STYLE}
         />
       </div>
