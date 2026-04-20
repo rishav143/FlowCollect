@@ -479,9 +479,11 @@ function MetricsStrip({
           : 'text-[#0D1B2A] dark:text-white',
     },
     {
-      label:  'Avg days to pay',
-      value:  '—',
-      sub:    'after reminder',
+      label:  'Not yet contacted',
+      value:  clientGroups.filter((g) =>
+                g.invoices.every((inv) => !allFollowupsMap[inv.id]?.some((f) => f.status === 'SENT'))
+              ).length.toString(),
+      sub:    'clients with no reminders sent',
       color:  'text-[#0D1B2A] dark:text-white',
     },
   ]
