@@ -33,8 +33,9 @@ interface Props {
 }
 
 export default function InvoiceForm({ initial, onChange, currency }: Props) {
-  const orgId = useAuthStore((s) => s.org?.id ?? '')
-  const qc    = useQueryClient()
+  const orgId    = useAuthStore((s) => s.org?.id       ?? '')
+  const timezone = useAuthStore((s) => s.org?.timezone ?? 'UTC')
+  const qc       = useQueryClient()
 
   const [invoiceNumber,  setInvoiceNumber]  = useState(initial?.invoiceNumber  ?? '')
   const [customerId,     setCustomerId]     = useState(initial?.customerId     ?? '')
@@ -106,7 +107,7 @@ export default function InvoiceForm({ initial, onChange, currency }: Props) {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className={labelCls}>Due Date</label>
-          <DatePicker label="Pick a date" value={dueDate} onChange={setDueDate} />
+          <DatePicker label="Pick a date" value={dueDate} onChange={setDueDate} timezone={timezone} />
         </div>
         <div>
           <label className={labelCls}>Discount (%)</label>

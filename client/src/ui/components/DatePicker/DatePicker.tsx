@@ -9,9 +9,10 @@ import 'react-day-picker/style.css'
 // ---------------------------------------------------------------------------
 
 interface Props {
-  label:    string
-  value:    string        // YYYY-MM-DD or ''
-  onChange: (v: string) => void
+  label:      string
+  value:      string        // YYYY-MM-DD or ''
+  onChange:   (v: string) => void
+  timezone?:  string        // org timezone, e.g. 'Asia/Kolkata' — defaults to 'UTC'
 }
 
 // ---------------------------------------------------------------------------
@@ -29,10 +30,20 @@ function parseDate(s: string): Date | undefined {
   return s ? new Date(s + 'T12:00:00') : undefined
 }
 
-function fmtShort(s: string) {
-  return new Date(s + 'T12:00:00').toLocaleDateString('en-IN', {
+function fmtShort(s: string, tz: string) {
+  return new Date(s + 'T12:00:00').toLocaleDateString('en-GB', {
+    timeZone: tz,
     day: 'numeric', month: 'short', year: 'numeric',
   })
+}
+
+/** Returns today's date (at noon) in the given org timezone. */
+function todayInTz(tz: string): Date {
+  const ymd = new Intl.DateTimeFormat('en-CA', {
+    timeZone: tz,
+    year: 'numeric', month: '2-digit', day: '2-digit',
+  }).format(new Date())       // → "YYYY-MM-DD"
+  return new Date(ymd + 'T12:00:00')
 }
 
 const PRESETS = [
@@ -62,7 +73,7 @@ const DAY_PICKER_STYLE = {
 // Component
 // ---------------------------------------------------------------------------
 
-export default function DatePicker({ label, value, onChange }: Props) {
+export default function DatePicker({ label, value, onChange, timezone = 'UTC' }: Props) {
   const [open, setOpen]         = useState(false)
   const [dropPos, setDropPos]   = useState<{ top: number; left: number; width: number } | null>(null)
   const triggerRef              = useRef<HTMLButtonElement>(null)
@@ -113,8 +124,9 @@ export default function DatePicker({ label, value, onChange }: Props) {
     return () => { document.body.style.overflow = '' }
   }, [open])
 
-  const selected = parseDate(value)
-  const hasValue = !!value
+  const selected  = parseDate(value)
+  const hasValue  = !!value
+  const orgToday  = todayInTz(timezone)
 
   function handleSelect(day: Date | undefined) {
     onChange(day ? toStr(day) : '')
@@ -122,7 +134,7 @@ export default function DatePicker({ label, value, onChange }: Props) {
   }
 
   function applyPreset(offset: number) {
-    const d = new Date()
+    const d = todayInTz(timezone)
     d.setDate(d.getDate() + offset)
     onChange(toStr(d))
     setOpen(false)
@@ -158,6 +170,7 @@ export default function DatePicker({ label, value, onChange }: Props) {
           selected={selected}
           onSelect={handleSelect}
           showOutsideDays
+          today={orgToday}
           style={DAY_PICKER_STYLE}
         />
       </div>
@@ -195,7 +208,7 @@ export default function DatePicker({ label, value, onChange }: Props) {
         {hasValue ? (
           <>
             <span className="flex-1 font-semibold whitespace-nowrap text-[#0D1B2A] dark:text-white text-left">
-              {fmtShort(value)}
+              {fmtShort(value, timezone)}
             </span>
             <X size={12} onClick={clear} className="shrink-0 hover:text-red-500 transition-colors" />
           </>
