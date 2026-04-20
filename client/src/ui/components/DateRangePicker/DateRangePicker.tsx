@@ -14,9 +14,10 @@ export interface DateRangeValue {
 }
 
 interface Props {
-  label:    string
-  value:    DateRangeValue
-  onChange: (v: DateRangeValue) => void
+  label:     string
+  value:     DateRangeValue
+  onChange:  (v: DateRangeValue) => void
+  timezone?: string   // org timezone, e.g. 'Asia/Kolkata' — defaults to 'UTC'
 }
 
 // ---------------------------------------------------------------------------
@@ -34,15 +35,24 @@ function parseDate(s?: string): Date | undefined {
   return s ? new Date(s + 'T12:00:00') : undefined
 }
 
-function fmtShort(s?: string) {
+function fmtShort(s?: string, tz = 'UTC') {
   if (!s) return '…'
-  return new Date(s + 'T12:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
+  return new Date(s + 'T12:00:00').toLocaleDateString('en-GB', { timeZone: tz, day: 'numeric', month: 'short' })
 }
 
-function rangeLabel(v: DateRangeValue) {
+/** Returns today's date (at noon) in the given org timezone. */
+function todayInTz(tz: string): Date {
+  const ymd = new Intl.DateTimeFormat('en-CA', {
+    timeZone: tz,
+    year: 'numeric', month: '2-digit', day: '2-digit',
+  }).format(new Date())
+  return new Date(ymd + 'T12:00:00')
+}
+
+function rangeLabel(v: DateRangeValue, tz: string) {
   if (!v.from && !v.to) return null
-  if (v.from && v.to && v.from === v.to) return fmtShort(v.from)
-  return `${fmtShort(v.from)} – ${fmtShort(v.to)}`
+  if (v.from && v.to && v.from === v.to) return fmtShort(v.from, tz)
+  return `${fmtShort(v.from, tz)} – ${fmtShort(v.to, tz)}`
 }
 
 const PRESETS = [
@@ -56,7 +66,7 @@ const PRESETS = [
 // Component
 // ---------------------------------------------------------------------------
 
-export default function DateRangePicker({ label, value, onChange }: Props) {
+export default function DateRangePicker({ label, value, onChange, timezone = 'UTC' }: Props) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
@@ -87,7 +97,7 @@ export default function DateRangePicker({ label, value, onChange }: Props) {
   }
 
   const hasValue     = !!(value.from || value.to)
-  const displayRange = rangeLabel(value)
+  const displayRange = rangeLabel(value, timezone)
 
   function handleSelect(range: DateRange | undefined) {
     if (!range) { onChange({}); return }
@@ -100,8 +110,8 @@ export default function DateRangePicker({ label, value, onChange }: Props) {
   }
 
   function applyPreset(offset: number) {
-    const to   = new Date()
-    const from = new Date()
+    const to   = todayInTz(timezone)
+    const from = todayInTz(timezone)
     from.setDate(from.getDate() - offset)
     onChange({ from: toStr(from), to: toStr(to) })
     setOpen(false)
@@ -136,6 +146,7 @@ export default function DateRangePicker({ label, value, onChange }: Props) {
           selected={selected}
           onSelect={handleSelect}
           showOutsideDays
+          timeZone={timezone}
           style={{
             '--rdp-accent-color':            '#29B6F6',
             '--rdp-accent-background-color': 'rgba(41,182,246,0.12)',

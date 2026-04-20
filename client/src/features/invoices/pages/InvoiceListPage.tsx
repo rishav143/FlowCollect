@@ -113,8 +113,9 @@ function DeleteConfirm({
 const PAGE_SIZE = 15
 
 export default function InvoiceListPage() {
-  const orgId    = useAuthStore((s) => s.org?.id ?? '')
+  const orgId    = useAuthStore((s) => s.org?.id       ?? '')
   const currency = useAuthStore((s) => s.org?.currency ?? 'INR')
+  const timezone = useAuthStore((s) => s.org?.timezone ?? 'UTC')
 
   const location                         = useLocation()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -228,8 +229,8 @@ export default function InvoiceListPage() {
           </div>
           {/* Date pickers — side by side on mobile too */}
           <div className="flex items-center gap-2">
-            <DateRangePicker label="Created"  value={created} onChange={handleCreatedChange} />
-            <DateRangePicker label="Due date" value={due}     onChange={handleDueChange}     />
+            <DateRangePicker label="Created"  value={created} onChange={handleCreatedChange} timezone={timezone} />
+            <DateRangePicker label="Due date" value={due}     onChange={handleDueChange}     timezone={timezone} />
           </div>
         </div>
 
