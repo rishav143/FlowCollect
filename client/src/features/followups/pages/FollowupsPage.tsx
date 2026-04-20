@@ -478,14 +478,6 @@ function MetricsStrip({
           ? 'text-[#2E7A8E] dark:text-[#29B6F6]'
           : 'text-[#0D1B2A] dark:text-white',
     },
-    {
-      label:  'Not yet contacted',
-      value:  clientGroups.filter((g) =>
-                g.invoices.every((inv) => !allFollowupsMap[inv.id]?.some((f) => f.status === 'SENT'))
-              ).length.toString(),
-      sub:    'clients with no reminders sent',
-      color:  'text-[#0D1B2A] dark:text-white',
-    },
   ]
 
   return (
@@ -542,6 +534,7 @@ export default function FollowupsPage() {
 
   const { data: rawInvoices = [], isLoading, isFetching } = useFollowupInvoices(filter)
   const allFollowupsMap = useAllFollowupsByInvoices(rawInvoices.map((i) => i.id))
+
 
   // Derive last-sent map from allFollowupsMap — no second hook needed
   const lastFollowupMap = useMemo<Record<string, FollowUpResponse>>(() => {
