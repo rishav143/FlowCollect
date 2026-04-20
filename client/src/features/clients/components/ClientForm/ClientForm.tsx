@@ -36,6 +36,7 @@ export default function ClientForm({ initial, onSubmit, isLoading }: Props) {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    e.stopPropagation()
     const errs = validateClientForm(values)
     if (Object.keys(errs).length > 0) {
       setErrors(errs)
