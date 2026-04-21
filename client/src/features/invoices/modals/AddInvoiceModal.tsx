@@ -100,6 +100,7 @@ export default function AddInvoiceModal({ onClose }: Props) {
 
   async function handleCreateAndIssue(e: React.MouseEvent) {
     e.preventDefault()
+    if (create.isPending || isIssuing) return
     setError(null)
     if (!validate()) return
     setIsIssuing(true)
@@ -129,6 +130,12 @@ export default function AddInvoiceModal({ onClose }: Props) {
       <form
         onSubmit={handleSubmit}
         onPointerDown={(e) => e.stopPropagation()}
+        onKeyDown={(e) => {
+          // Prevent Enter from submitting while typing in text/number inputs
+          if (e.key === 'Enter' && (e.target as HTMLElement).tagName === 'INPUT') {
+            e.preventDefault()
+          }
+        }}
         className="relative w-full sm:max-w-2xl bg-white dark:bg-[#1B2838] rounded-t-2xl sm:rounded-2xl shadow-xl overflow-hidden max-h-[95dvh] sm:max-h-[90vh] flex flex-col"
       >
         {/* Drag handle — mobile only */}
