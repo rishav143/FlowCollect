@@ -35,6 +35,10 @@ export function useUpdateOrgProfile() {
         setAuth(token, user, { ...org, ...variables })
       }
       qc.invalidateQueries({ queryKey: qk(orgId) })
+      // If timezone changed, timeStatus on all invoices is now stale — refetch
+      if (variables.timezone && variables.timezone !== org?.timezone) {
+        qc.invalidateQueries({ queryKey: ['invoices', orgId] })
+      }
     },
   })
 }
