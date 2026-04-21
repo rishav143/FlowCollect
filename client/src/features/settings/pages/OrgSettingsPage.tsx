@@ -7,16 +7,19 @@ import Select from '@/components/ui/Select'
 // Constants
 // ---------------------------------------------------------------------------
 
-const CURRENCIES = ['INR', 'USD', 'EUR', 'GBP', 'AED', 'SGD', 'AUD']
+const CURRENCIES = ['INR', 'USD', 'CAD', 'EUR', 'GBP', 'AED', 'SGD', 'AUD']
 
 const TIMEZONES = [
-  { value: 'Asia/Kolkata',        label: 'India (IST, UTC+5:30)'         },
-  { value: 'UTC',                 label: 'UTC'                            },
-  { value: 'Asia/Dubai',          label: 'Dubai (GST, UTC+4)'            },
-  { value: 'Asia/Singapore',      label: 'Singapore (SGT, UTC+8)'        },
-  { value: 'Europe/London',       label: 'London (GMT/BST)'              },
-  { value: 'America/New_York',    label: 'New York (EST/EDT)'            },
-  { value: 'Australia/Sydney',    label: 'Australia (AEST, UTC+10/+11)'          },
+  { value: 'America/Los_Angeles', label: 'Los Angeles (PST/PDT, UTC−8/−7)'  },
+  { value: 'America/Chicago',     label: 'Chicago (CST/CDT, UTC−6/−5)'      },
+  { value: 'America/New_York',    label: 'New York (EST/EDT, UTC−5/−4)'      },
+  { value: 'UTC',                 label: 'UTC'                               },
+  { value: 'Europe/London',       label: 'London (GMT/BST, UTC+0/+1)'        },
+  { value: 'Europe/Berlin',       label: 'Central Europe (CET/CEST, UTC+1/+2)' },
+  { value: 'Asia/Dubai',          label: 'Dubai (GST, UTC+4)'               },
+  { value: 'Asia/Kolkata',        label: 'India (IST, UTC+5:30)'            },
+  { value: 'Asia/Singapore',      label: 'Singapore (SGT, UTC+8)'           },
+  { value: 'Australia/Sydney',    label: 'Australia East (AEST, UTC+10/+11)' },
 ]
 
 // ---------------------------------------------------------------------------

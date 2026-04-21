@@ -13,6 +13,7 @@
 const CURRENCY_LOCALE: Record<string, string> = {
   INR: 'en-IN',
   USD: 'en-US',
+  CAD: 'en-CA',
   EUR: 'de-DE',
   GBP: 'en-GB',
   AED: 'en-AE',

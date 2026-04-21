@@ -71,7 +71,8 @@ function StrengthBar({ password }: { password: string }) {
 // Map ISO country codes → default billing currency
 const COUNTRY_CURRENCY: Record<string, string> = {
   IN: 'INR',
-  US: 'USD', CA: 'USD',
+  US: 'USD',
+  CA: 'CAD',
   GB: 'GBP',
   AU: 'AUD', NZ: 'AUD',
   SG: 'SGD',
