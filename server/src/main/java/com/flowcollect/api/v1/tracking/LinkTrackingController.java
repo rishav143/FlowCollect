@@ -7,7 +7,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
@@ -24,7 +23,7 @@ import java.util.UUID;
  * is replaced with: {appBaseUrl}/track/{followUpId}
  *
  * When the client clicks the link (regardless of channel — EMAIL, SMS, WhatsApp):
- *   1. We record the click by setting followUp.openedAt
+ *   1. We record the click by setting followUp.openedAt (best-effort — never blocks redirect)
  *   2. We redirect the client to the real destination URL (stored in followUp.trackedLinkUrl)
  *
  * This endpoint is excluded from JWT auth via JwtFilter.SKIP_PREFIXES (/track/).
@@ -41,7 +40,6 @@ public class LinkTrackingController {
     }
 
     @GetMapping("/track/{followUpId}")
-    @Transactional
     public ResponseEntity<Void> track(@PathVariable UUID followUpId) {
         Optional<FollowUp> opt = followUpRepository.findById(followUpId);
 
@@ -52,12 +50,17 @@ public class LinkTrackingController {
 
         FollowUp followUp = opt.get();
 
-        // Record the click (idempotent — markOpened won't overwrite if already set)
+        // Record the click — best-effort. A DB hiccup must never block the redirect.
         if (followUp.getOpenedAt() == null) {
-            followUp.markOpened(Instant.now(), followUp.getClickedLinkType());
-            followUpRepository.save(followUp);
-            log.info("Link clicked — marked FollowUp {} as opened (channel={})",
-                    followUp.getId(), followUp.getChannel());
+            try {
+                followUp.markOpened(Instant.now(), followUp.getClickedLinkType());
+                followUpRepository.save(followUp);
+                log.info("Link clicked — marked FollowUp {} as opened (channel={})",
+                        followUp.getId(), followUp.getChannel());
+            } catch (Exception e) {
+                log.warn("Track click — failed to record open for FollowUp {} (will still redirect)",
+                        followUpId, e);
+            }
         }
 
         // Redirect to the real destination
@@ -67,8 +70,13 @@ public class LinkTrackingController {
             return ResponseEntity.notFound().build();
         }
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setLocation(URI.create(destination));
-        return new ResponseEntity<>(headers, HttpStatus.FOUND);
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setLocation(URI.create(destination));
+            return new ResponseEntity<>(headers, HttpStatus.FOUND);
+        } catch (IllegalArgumentException e) {
+            log.warn("Track click — FollowUp {} has malformed trackedLinkUrl: {}", followUpId, destination);
+            return ResponseEntity.notFound().build();
+        }
     }
 }
