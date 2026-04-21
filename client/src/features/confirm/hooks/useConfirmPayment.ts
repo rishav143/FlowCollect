@@ -9,7 +9,7 @@ export function useConfirmationView(token: string) {
   return useQuery({
     queryKey: ['public', 'confirmation', token],
     queryFn:  () => getConfirmationView(token),
-    retry:    false,
+    retry:    2,
     staleTime: 0,
   })
 }
