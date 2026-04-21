@@ -47,7 +47,7 @@ import com.flowcollect.infrastructure.persistence.template.TemplateJpaRepository
  * <h2>Cycling</h2>
  * One email rule covers all four post-due touchpoints with escalating copy:
  * <ul>
- *   <li>"Email - After Due Date" — fires at +7, +14, +21, +28 (4 occurrences, 7-day cycle).</li>
+ *   <li>"After Due Date" — fires at +7, +14, +21, +28 (4 occurrences, 7-day cycle).</li>
  * </ul>
  */
 @Component
@@ -126,6 +126,10 @@ public class RecoverSystemDataSeeder implements ApplicationRunner {
     private static final String LEGACY_RULE_EM_WA_AFTER_DUE    = "WhatsApp \u2014 After Due Date";
     // 7-day pre-due rule (replaced with 3-day version)
     private static final String LEGACY_RULE_R_EMAIL_PRE_DUE_7D = "Email - 7 Days Before Due";
+    // "Email -" prefix rules (replaced with timing-only names to avoid confusion with template names)
+    private static final String LEGACY_RULE_R_EMAIL_PRE_DUE_PREFIXED   = "Email - 3 Days Before Due";
+    private static final String LEGACY_RULE_R_EMAIL_DUE_DAY_PREFIXED   = "Email - On Due Date";
+    private static final String LEGACY_RULE_R_EMAIL_AFTER_DUE_PREFIXED = "Email - After Due Date";
 
     // -------------------------------------------------------------------------
     // Default MANUAL templates (used in the manual reminders template picker)
@@ -160,9 +164,9 @@ public class RecoverSystemDataSeeder implements ApplicationRunner {
     // Recovery rule names — idempotency keys
     // -------------------------------------------------------------------------
 
-    private static final String RULE_R_EMAIL_PRE_DUE   = "Email - 3 Days Before Due";
-    private static final String RULE_R_EMAIL_DUE_DAY   = "Email - On Due Date";
-    private static final String RULE_R_EMAIL_AFTER_DUE = "Email - After Due Date";
+    private static final String RULE_R_EMAIL_PRE_DUE   = "3 Days Before Due";
+    private static final String RULE_R_EMAIL_DUE_DAY   = "On Due Date";
+    private static final String RULE_R_EMAIL_AFTER_DUE = "After Due Date";
     private static final String RULE_R_SMS_PRE_DUE     = "SMS - 7 Days Before Due";
     private static final String RULE_R_SMS_AFTER_DUE   = "SMS - After Due Date";
     private static final String RULE_R_WA_AFTER_DUE    = "WhatsApp - After Due Date";
@@ -461,6 +465,10 @@ public class RecoverSystemDataSeeder implements ApplicationRunner {
                 LEGACY_RULE_EM_WA_AFTER_DUE,
                 // 7-day pre-due rule replaced by 3-day version
                 LEGACY_RULE_R_EMAIL_PRE_DUE_7D,
+                // "Email -" prefix rules replaced by timing-only names
+                LEGACY_RULE_R_EMAIL_PRE_DUE_PREFIXED,
+                LEGACY_RULE_R_EMAIL_DUE_DAY_PREFIXED,
+                LEGACY_RULE_R_EMAIL_AFTER_DUE_PREFIXED,
                 // SMS/WhatsApp rules disabled — remove from DB if previously seeded
                 RULE_R_SMS_PRE_DUE,
                 RULE_R_SMS_AFTER_DUE,
