@@ -1,12 +1,13 @@
-import { useState } from 'react'
+import { useState, lazy, Suspense } from 'react'
 import { Link } from 'react-router-dom'
 import { Zap } from 'lucide-react'
 import { useAuthStore } from '@/store/auth.store'
 import { useDashboard } from '../hooks/useDashboard'
 import KpiStrip              from '../components/KpiStrip/KpiStrip'
 import ActionTable           from '../components/ActionTable/ActionTable'
-import CollectionsTrendChart from '../components/CollectionsTrendChart/CollectionsTrendChart'
 import AiInsightBanner      from '../components/AiInsightBanner/AiInsightBanner'
+
+const CollectionsTrendChart = lazy(() => import('../components/CollectionsTrendChart/CollectionsTrendChart'))
 import { useToggleAutoRecovery } from '@/features/recover/hooks/useRecover'
 import { usePlan } from '@/hooks/usePlan'
 import { useNavigate } from 'react-router-dom'
@@ -258,11 +259,13 @@ export default function DashboardPage() {
       />
 
       {/* ── Collections Trend ───────────────────────────────────────────────── */}
-      <CollectionsTrendChart
-        data={collectionsTrend}
-        currency={currency}
-        isLoading={isLoading}
-      />
+      <Suspense fallback={<div className="h-[268px] rounded-xl bg-[#F4F7F9] dark:bg-white/10 animate-pulse" />}>
+        <CollectionsTrendChart
+          data={collectionsTrend}
+          currency={currency}
+          isLoading={isLoading}
+        />
+      </Suspense>
 
     </div>
 
