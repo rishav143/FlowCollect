@@ -14,14 +14,15 @@ export function useConfirmations(filter: ApprovalFilter) {
   const orgId = useAuthStore((s) => s.org?.id ?? '')
 
   return useQuery({
-    queryKey: ['confirmations', orgId, filter],
-    queryFn:  () =>
+    queryKey:       ['confirmations', orgId, filter],
+    queryFn:        () =>
       listConfirmations(orgId, {
         status: filter === 'ALL' ? undefined : (filter as ConfirmationStatus),
         size: 100,
         sort: 'createdAt,desc',
       }),
-    enabled: !!orgId,
+    enabled:        !!orgId,
+    refetchInterval: 30_000,   // poll every 30s so new claims appear without a reload
   })
 }
 
@@ -29,10 +30,11 @@ export function usePendingConfirmationCount() {
   const orgId = useAuthStore((s) => s.org?.id ?? '')
 
   return useQuery({
-    queryKey: ['confirmations-count', orgId],
-    queryFn:  () => listConfirmations(orgId, { status: 'PENDING_APPROVAL', size: 1 }),
-    enabled:  !!orgId,
-    select: (d) => d.totalElements,
+    queryKey:        ['confirmations-count', orgId],
+    queryFn:         () => listConfirmations(orgId, { status: 'PENDING_APPROVAL', size: 1 }),
+    enabled:         !!orgId,
+    select:          (d) => d.totalElements,
+    refetchInterval: 30_000,   // keep nav badge in sync
   })
 }
 
