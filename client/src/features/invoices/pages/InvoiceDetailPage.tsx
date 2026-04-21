@@ -189,7 +189,7 @@ export default function InvoiceDetailPage() {
                       value={
                         customer ? (
                           <span className="flex items-center gap-1.5 justify-end flex-wrap">
-                            <span>{customer.name}{customer.companyName ? ` - ${customer.companyName}` : ''}</span>
+                            <span>{customer.name}{customer.companyName ? ` · ${customer.companyName}` : ''}</span>
                             {!customer.active && (
                               <span className="text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded bg-[#F4F7F9] dark:bg-white/10 text-c-muted">
                                 Archived
