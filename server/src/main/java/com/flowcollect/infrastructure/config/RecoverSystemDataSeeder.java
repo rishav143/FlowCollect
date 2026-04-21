@@ -195,6 +195,7 @@ public class RecoverSystemDataSeeder implements ApplicationRunner {
     @Override
     @Transactional
     public void run(ApplicationArguments args) {
+        renameSystemRules();   // must run before cleanup/seed so idempotency keys align
         cleanupLegacySystemData();
         seedDefaultTemplates();
         seedRecoveryTemplatesAndRules();
@@ -435,6 +436,29 @@ public class RecoverSystemDataSeeder implements ApplicationRunner {
     }
 
     // =========================================================================
+    // In-place rule renames (preserves UUID and sent-history)
+    // =========================================================================
+
+    /**
+     * Renames system rules in-place so their UUID (and all associated follow-up history)
+     * is preserved. Must run before cleanupLegacySystemData and seedRecoveryTemplatesAndRules
+     * so the idempotency keys used by ensureRule align with the new names.
+     */
+    private void renameSystemRules() {
+        renameSystemRule(LEGACY_RULE_R_EMAIL_PRE_DUE_PREFIXED,   RULE_R_EMAIL_PRE_DUE);
+        renameSystemRule(LEGACY_RULE_R_EMAIL_DUE_DAY_PREFIXED,   RULE_R_EMAIL_DUE_DAY);
+        renameSystemRule(LEGACY_RULE_R_EMAIL_AFTER_DUE_PREFIXED, RULE_R_EMAIL_AFTER_DUE);
+    }
+
+    private void renameSystemRule(String oldName, String newName) {
+        reminderRuleRepository.findByNameAndSystemDefinedTrue(oldName).ifPresent(r -> {
+            r.setName(newName);
+            reminderRuleRepository.save(r);
+            log.info("[Seed] Renamed system rule '{}' → '{}'", oldName, newName);
+        });
+    }
+
+    // =========================================================================
     // One-time cleanup of legacy system data
     // =========================================================================
 
@@ -465,10 +489,8 @@ public class RecoverSystemDataSeeder implements ApplicationRunner {
                 LEGACY_RULE_EM_WA_AFTER_DUE,
                 // 7-day pre-due rule replaced by 3-day version
                 LEGACY_RULE_R_EMAIL_PRE_DUE_7D,
-                // "Email -" prefix rules replaced by timing-only names
-                LEGACY_RULE_R_EMAIL_PRE_DUE_PREFIXED,
-                LEGACY_RULE_R_EMAIL_DUE_DAY_PREFIXED,
-                LEGACY_RULE_R_EMAIL_AFTER_DUE_PREFIXED,
+                // Note: LEGACY_RULE_R_EMAIL_*_PREFIXED rules are handled by renameSystemRules()
+                // (renamed in-place, not deleted) so they are intentionally absent here.
                 // SMS/WhatsApp rules disabled — remove from DB if previously seeded
                 RULE_R_SMS_PRE_DUE,
                 RULE_R_SMS_AFTER_DUE,
