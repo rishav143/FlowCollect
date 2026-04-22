@@ -2,7 +2,8 @@ import { useParams } from 'react-router-dom'
 import { Bell, Mail, MessageSquare, Phone } from 'lucide-react'
 import { useInvoiceFollowups } from '@/features/followups/hooks/useFollowups'
 import type { DeliveryStatus, FollowUpChannel, FollowUpStatus } from '@/types/followup.types'
-import { formatDateTime } from '@/lib/format'
+import { formatDate, formatDateTime } from '@/lib/format'
+import { useAuthStore } from '@/store/auth.store'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -26,14 +27,13 @@ const DELIVERY_BADGE: Record<DeliveryStatus, { text: string; label: string }> = 
   UNDELIVERED: { text: 'text-red-500 dark:text-red-400',      label: 'Undelivered' },
 }
 
-function fmtDate(d: string | null) { return formatDateTime(d) }
-
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
 export default function FollowupsTab() {
   const { id } = useParams<{ id: string }>()
+  const timezone = useAuthStore((s) => s.org?.timezone)
   const { data: followups = [], isLoading } = useInvoiceFollowups(id ?? '')
 
   if (isLoading) {
@@ -85,7 +85,11 @@ export default function FollowupsTab() {
               )}
             </p>
             <p className="text-xs text-c-muted mt-0.5">
-              {fu.sentAt ? `Sent ${fmtDate(fu.sentAt)}` : fu.scheduledForDate ? `Scheduled ${fmtDate(fu.scheduledForDate)}` : `Created ${fmtDate(fu.createdAt)}`}
+              {fu.sentAt
+                ? `Sent ${formatDateTime(fu.sentAt, timezone)}`
+                : fu.scheduledForDate
+                ? `Scheduled ${formatDate(fu.scheduledForDate, { timezone, style: 'medium' })}`
+                : `Created ${formatDateTime(fu.createdAt, timezone)}`}
             </p>
           </div>
 
