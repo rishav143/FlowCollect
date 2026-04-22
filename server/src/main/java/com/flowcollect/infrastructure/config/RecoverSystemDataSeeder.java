@@ -253,10 +253,11 @@ public class RecoverSystemDataSeeder implements ApplicationRunner {
 
         Template tEmailPreDue = ensureTemplate(
                 TPL_R_EMAIL_PRE_DUE, TemplateChannel.EMAIL, TemplateTone.POLITE,
-                "Invoice {{invoiceNumber}} from {{organizationName}} - due in 3 days",
+                "Invoice {{invoiceNumber}} from {{organizationName}}",
                 "Hi {{customerName}},\n\n" +
-                "Invoice {{invoiceNumber}} for {{remainingAmount}} is due on {{dueDate}}. " +
-                "You can review the details or confirm once settled at the link below.\n\n" +
+                "A quick note that invoice {{invoiceNumber}} for {{remainingAmount}} from {{organizationName}} " +
+                "is due on {{dueDate}}.\n\n" +
+                "You can review the details or confirm once payment is made at the link below:\n" +
                 "{{confirmationLink}}\n\n" +
                 "{{organizationName}}",
                 RuleMode.AUTO
@@ -264,9 +265,11 @@ public class RecoverSystemDataSeeder implements ApplicationRunner {
 
         Template tEmailDueDay = ensureTemplate(
                 TPL_R_EMAIL_DUE_DAY, TemplateChannel.EMAIL, TemplateTone.POLITE,
-                "Invoice {{invoiceNumber}} from {{organizationName}} - due today",
+                "Invoice {{invoiceNumber}} from {{organizationName}}",
                 "Hi {{customerName}},\n\n" +
-                "Invoice {{invoiceNumber}} for {{remainingAmount}} from {{organizationName}} is due today, {{dueDate}}.\n\n" +
+                "Invoice {{invoiceNumber}} for {{remainingAmount}} from {{organizationName}} is due today.\n\n" +
+                "If you have already made payment, please use the link below to confirm it so we can update our records. " +
+                "Payment details are also available there:\n" +
                 "{{confirmationLink}}\n\n" +
                 "{{organizationName}}",
                 RuleMode.AUTO
@@ -274,11 +277,12 @@ public class RecoverSystemDataSeeder implements ApplicationRunner {
 
         Template tEmailWeek = ensureTemplate(
                 TPL_R_EMAIL_WEEK, TemplateChannel.EMAIL, TemplateTone.NEUTRAL,
-                "Invoice {{invoiceNumber}} from {{organizationName}} - 7 days overdue",
+                "Payment reminder: Invoice {{invoiceNumber}} from {{organizationName}}",
                 "Hi {{customerName}},\n\n" +
-                "Invoice {{invoiceNumber}} for {{remainingAmount}} was due on {{dueDate}} and has not been settled.\n\n" +
-                "If you have already paid, please confirm using the link below. " +
-                "Payment details are also available there.\n\n" +
+                "This is a reminder that invoice {{invoiceNumber}} for {{remainingAmount}} from {{organizationName}} " +
+                "was due on {{dueDate}}.\n\n" +
+                "If you have already sent the payment, please confirm it at the link below so we can update our records. " +
+                "Payment details are also available there:\n" +
                 "{{confirmationLink}}\n\n" +
                 "{{organizationName}}",
                 RuleMode.AUTO
@@ -286,12 +290,12 @@ public class RecoverSystemDataSeeder implements ApplicationRunner {
 
         Template tEmail2Weeks = ensureTemplate(
                 TPL_R_EMAIL_2WEEKS, TemplateChannel.EMAIL, TemplateTone.NEUTRAL,
-                "Invoice {{invoiceNumber}} from {{organizationName}} - 14 days overdue",
+                "Payment reminder: Invoice {{invoiceNumber}} from {{organizationName}}",
                 "Hi {{customerName}},\n\n" +
-                "Invoice {{invoiceNumber}} for {{remainingAmount}} is 14 days past its due date of {{dueDate}} " +
-                "and remains unpaid.\n\n" +
-                "If you have already sent the payment, please confirm it using the link below so we can update our records. " +
-                "Otherwise, please arrange settlement when you can. For any questions, reach us at {{organizationEmail}}.\n\n" +
+                "Invoice {{invoiceNumber}} for {{remainingAmount}} from {{organizationName}} was due on {{dueDate}} " +
+                "and we have not yet received payment.\n\n" +
+                "If you have already paid, please confirm using the link below. " +
+                "For any questions, write to us at {{organizationEmail}}.\n\n" +
                 "{{confirmationLink}}\n\n" +
                 "{{organizationName}}",
                 RuleMode.AUTO
@@ -299,11 +303,12 @@ public class RecoverSystemDataSeeder implements ApplicationRunner {
 
         Template tEmailMonth = ensureTemplate(
                 TPL_R_EMAIL_MONTH, TemplateChannel.EMAIL, TemplateTone.FIRM,
-                "Invoice {{invoiceNumber}} from {{organizationName}} - still outstanding",
+                "Payment reminder: Invoice {{invoiceNumber}} from {{organizationName}}",
                 "Hi {{customerName}},\n\n" +
-                "Invoice {{invoiceNumber}} for {{remainingAmount}} is still outstanding. It was due on {{dueDate}}.\n\n" +
-                "If you have already sent the payment, please confirm it using the link below so we can update our records. " +
-                "If there is a reason for the delay, please write to us at {{organizationEmail}} — we are happy to help.\n\n" +
+                "Invoice {{invoiceNumber}} for {{remainingAmount}} from {{organizationName}} was due on {{dueDate}}. " +
+                "We have not yet received payment for this invoice.\n\n" +
+                "If you have already paid, please confirm using the link below so we can close this out. " +
+                "If you have any questions or need to discuss this, please write to us at {{organizationEmail}}.\n\n" +
                 "{{confirmationLink}}\n\n" +
                 "{{organizationName}}",
                 RuleMode.AUTO
@@ -311,12 +316,11 @@ public class RecoverSystemDataSeeder implements ApplicationRunner {
 
         Template tEmail6Weeks = ensureTemplate(
                 TPL_R_EMAIL_6WEEKS, TemplateChannel.EMAIL, TemplateTone.FIRM,
-                "Invoice {{invoiceNumber}} from {{organizationName}} - 28 days overdue",
+                "Payment reminder: Invoice {{invoiceNumber}} from {{organizationName}}",
                 "Hi {{customerName}},\n\n" +
-                "Invoice {{invoiceNumber}} for {{remainingAmount}} from {{organizationName}} has been outstanding " +
-                "since {{dueDate}}, and we have not heard back despite our earlier messages.\n\n" +
-                "If you have already sent the payment, please confirm it using the link below so we can close this out. " +
-                "Otherwise, please get in touch at {{organizationEmail}} — we would like to resolve this.\n\n" +
+                "Invoice {{invoiceNumber}} for {{remainingAmount}} from {{organizationName}} has been due since {{dueDate}}. " +
+                "We have not yet received payment or a response to our earlier notes.\n\n" +
+                "Please get in touch at {{organizationEmail}} or use the link below to settle or confirm your payment:\n" +
                 "{{confirmationLink}}\n\n" +
                 "{{organizationName}}",
                 RuleMode.AUTO
@@ -324,11 +328,11 @@ public class RecoverSystemDataSeeder implements ApplicationRunner {
 
         ensureTemplate(
                 TPL_R_EMAIL_FINAL, TemplateChannel.EMAIL, TemplateTone.FIRM,
-                "Invoice {{invoiceNumber}} from {{organizationName}} - final notice",
+                "Payment reminder: Invoice {{invoiceNumber}} from {{organizationName}}",
                 "Hi {{customerName}},\n\n" +
-                "Invoice {{invoiceNumber}} for {{remainingAmount}} from {{organizationName}} remains unpaid " +
-                "since {{dueDate}}, and we have not received a response to our messages.\n\n" +
-                "Please reach us at {{organizationEmail}} or settle using the link below.\n\n" +
+                "Invoice {{invoiceNumber}} for {{remainingAmount}} from {{organizationName}} has been due since {{dueDate}} " +
+                "and we have not yet received payment.\n\n" +
+                "Please reach us at {{organizationEmail}} or use the link below to settle or confirm:\n" +
                 "{{confirmationLink}}\n\n" +
                 "{{organizationName}}",
                 RuleMode.AUTO
