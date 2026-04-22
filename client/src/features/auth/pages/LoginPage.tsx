@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react'
 import type { AxiosError } from 'axios'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { Eye, EyeOff } from 'lucide-react'
-import { login } from '@/api/auth.api'
+import { login, resendVerificationEmail } from '@/api/auth.api'
 import { useAuthStore } from '@/store/auth.store'
 import AuthLayout from '../components/AuthLayout'
 
@@ -32,15 +32,18 @@ export default function LoginPage() {
 
   const successMessage = (location.state as { message?: string } | null)?.message ?? null
 
-  const [email,    setEmail]    = useState('')
-  const [password, setPassword] = useState('')
-  const [showPwd,  setShowPwd]  = useState(false)
-  const [loading,  setLoading]  = useState(false)
-  const [error,    setError]    = useState<string | null>(null)
+  const [email,        setEmail]        = useState('')
+  const [password,     setPassword]     = useState('')
+  const [showPwd,      setShowPwd]      = useState(false)
+  const [loading,      setLoading]      = useState(false)
+  const [error,        setError]        = useState<string | null>(null)
+  const [unverified,   setUnverified]   = useState(false)
+  const [resendState,  setResendState]  = useState<'idle' | 'sending' | 'sent'>('idle')
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     setError(null)
+    setUnverified(false)
     setLoading(true)
     try {
       const { token, user, org } = await login(email, password)
@@ -48,10 +51,25 @@ export default function LoginPage() {
       navigate('/dashboard', { replace: true })
     } catch (err) {
       const ax = err as AxiosError<{ message?: string }>
-      const msg = ax.response?.data?.message
-      setError(msg ?? `Error ${ax.response?.status ?? ''}: Invalid email or password.`)
+      const msg = ax.response?.data?.message ?? `Error ${ax.response?.status ?? ''}: Invalid email or password.`
+      if (msg.toLowerCase().includes('verify your email')) {
+        setUnverified(true)
+      } else {
+        setError(msg)
+      }
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function handleResend() {
+    if (resendState !== 'idle') return
+    setResendState('sending')
+    try {
+      await resendVerificationEmail(email)
+      setResendState('sent')
+    } catch {
+      setResendState('idle')
     }
   }
 
@@ -121,6 +139,27 @@ export default function LoginPage() {
           <p className="text-sm text-red-500 bg-red-50 dark:bg-red-500/10 px-3 py-2 rounded-lg">
             {error}
           </p>
+        )}
+
+        {unverified && (
+          <div className="text-sm bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 px-3 py-2.5 rounded-lg space-y-1.5">
+            <p className="text-amber-800 dark:text-amber-300 font-medium">Email not verified</p>
+            <p className="text-amber-700 dark:text-amber-400 text-xs">
+              Check your inbox for the verification link.
+            </p>
+            {resendState === 'sent' ? (
+              <p className="text-xs text-green-600 dark:text-green-400">Verification email sent. Check your inbox.</p>
+            ) : (
+              <button
+                type="button"
+                onClick={handleResend}
+                disabled={resendState === 'sending'}
+                className="text-xs font-medium text-amber-800 dark:text-amber-300 underline hover:opacity-70 disabled:opacity-50"
+              >
+                {resendState === 'sending' ? 'Sending…' : 'Resend verification email'}
+              </button>
+            )}
+          </div>
         )}
 
         <button
