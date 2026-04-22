@@ -19,6 +19,7 @@ import com.flowcollect.domain.organization.Organization;
 import com.flowcollect.domain.reminder.ReminderRule;
 import com.flowcollect.domain.reminder.RuleMode;
 import com.flowcollect.exception.http.ValidationException;
+import com.flowcollect.infrastructure.persistence.invoice.FollowUpJpaRepository;
 import com.flowcollect.infrastructure.persistence.reminder.ReminderRuleJpaRepository;
 
 @Service
@@ -27,15 +28,18 @@ public class ReminderRuleService {
     private final TemplateService templateService;
     private final OrganizationService organizationService;
     private final ReminderRuleJpaRepository reminderRuleRepository;
+    private final FollowUpJpaRepository followUpRepository;
 
     public ReminderRuleService(
         OrganizationService organizationService,
         ReminderRuleJpaRepository reminderRuleRepository,
-        TemplateService templateService
+        TemplateService templateService,
+        FollowUpJpaRepository followUpRepository
     ) {
         this.organizationService = organizationService;
         this.reminderRuleRepository = reminderRuleRepository;
         this.templateService = templateService;
+        this.followUpRepository = followUpRepository;
     }
 
     @Transactional
@@ -261,6 +265,7 @@ public class ReminderRuleService {
         ReminderRule rule = ReminderUtil.validateReminderRuleAndOrganization(
             reminderRuleId, organizationId, reminderRuleRepository
         );
+        followUpRepository.detachReminderRule(reminderRuleId);
         reminderRuleRepository.delete(rule);
     }
 
