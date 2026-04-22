@@ -73,7 +73,7 @@ function getPlans(currency: Currency) {
         'Smart escalation from polite to firm reminders',
         'Real-time recovery dashboard',
         'AI-written follow-ups with no awkward messages',
-        'Custom reminder timing',
+        'AI payment insights and late payer detection',
         'Priority support',
       ],
     },
