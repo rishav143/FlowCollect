@@ -138,7 +138,13 @@ export function formatDate(
   if (!value) return '—'
   const { timezone, style = 'medium' } = options
   try {
-    const date = typeof value === 'string' ? new Date(value) : value
+    // Date-only strings (YYYY-MM-DD) are treated as UTC midnight by spec.
+    // Append T00:00:00 (no Z) so the browser parses as local midnight, preventing
+    // day-shift in negative-offset timezones like America/Chicago.
+    const normalized = typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)
+      ? value + 'T00:00:00'
+      : value
+    const date = typeof normalized === 'string' ? new Date(normalized) : normalized
     if (isNaN(date.getTime())) return '—'
 
     const dayMonth: Intl.DateTimeFormatOptions =
