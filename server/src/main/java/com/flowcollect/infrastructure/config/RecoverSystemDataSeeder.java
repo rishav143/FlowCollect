@@ -211,7 +211,8 @@ public class RecoverSystemDataSeeder implements ApplicationRunner {
                 TPL_DEFAULT_EMAIL, TemplateChannel.EMAIL, TemplateTone.POLITE,
                 "Invoice {{invoiceNumber}} from {{organizationName}}",
                 "Hi {{customerName}},\n\n" +
-                "Invoice {{invoiceNumber}} for {{remainingAmount}} from {{organizationName}} was due on {{dueDate}}.\n\n" +
+                "This is a reminder for invoice {{invoiceNumber}} from {{organizationName}} " +
+                "for {{remainingAmount}}, due on {{dueDate}}.\n\n" +
                 "If you have already made a payment, please confirm using the link below. " +
                 "Payment details are available there as well.\n\n" +
                 "{{confirmationLink}}\n\n" +
@@ -223,8 +224,8 @@ public class RecoverSystemDataSeeder implements ApplicationRunner {
         ensureTemplate(
                 TPL_DEFAULT_SMS, TemplateChannel.SMS, TemplateTone.POLITE,
                 null,
-                "Hi {{customerName}}, invoice {{invoiceNumber}} for {{remainingAmount}} from {{organizationName}} " +
-                "was due on {{dueDate}}. To pay or confirm a payment already made, visit: {{confirmationLink}}",
+                "Hi {{customerName}}, this is a reminder for invoice {{invoiceNumber}} from {{organizationName}} " +
+                "for {{remainingAmount}}, due on {{dueDate}}. To pay or confirm a payment already made, visit: {{confirmationLink}}",
                 RuleMode.MANUAL
         );
 
