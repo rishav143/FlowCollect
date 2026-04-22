@@ -147,10 +147,13 @@ public class AuthService {
         }
 
         User user = userRepository.findByEmail(email.trim().toLowerCase())
-                .orElseThrow(() -> new NotFoundException("No account found for this email"));
+                .orElse(null);
+
+        // Silently return if email not found — never reveal whether an account exists
+        if (user == null) return;
 
         if (user.getStatus() != UserStatus.PENDING_EMAIL_VERIFICATION) {
-            throw new ValidationException("Email is already verified");
+            return; // Already verified — silently ignore
         }
 
         verificationService.sendVerificationEmail(user);
