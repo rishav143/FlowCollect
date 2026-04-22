@@ -84,34 +84,48 @@ function getPlans(currency: Currency) {
 // Return-URL banner (shown after redirect back from Dodo checkout)
 // ---------------------------------------------------------------------------
 
-function CheckoutBanner({ status, onDismiss, onRefresh }: {
-  status:    'upgraded' | 'cancelled'
-  onDismiss: () => void
-  onRefresh: () => void
+function CheckoutBanner({ status, planConfirmed, onDismiss, onRefresh }: {
+  status:        'upgraded' | 'cancelled'
+  planConfirmed: boolean   // true once billing data loads and plan === PRO
+  onDismiss:     () => void
+  onRefresh:     () => void
 }) {
-  if (status === 'upgraded') {
+  if (status === 'upgraded' && planConfirmed) {
     return (
       <div className="flex items-start gap-3 rounded-lg border border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/20 p-4">
         <Check size={16} className="text-green-600 dark:text-green-400 shrink-0 mt-0.5" strokeWidth={2.5} />
         <div className="flex-1">
           <p className="text-sm font-semibold text-green-800 dark:text-green-300">
-            Payment received. Your plan is activating
+            Payment received. Welcome to Pro.
           </p>
-          <p className="text-xs text-green-700 dark:text-green-400 mt-0.5">
-            If your plan has not updated yet, click refresh below.
-          </p>
-          <button
-            onClick={onRefresh}
-            className="mt-1.5 flex items-center gap-1 text-xs font-medium text-green-700 dark:text-green-400 hover:opacity-70"
-          >
-            <RefreshCw size={11} />
-            Refresh plan status
-          </button>
         </div>
         <button onClick={onDismiss} className="text-green-600 dark:text-green-400 hover:opacity-70 text-xs">✕</button>
       </div>
     )
   }
+
+  if (status === 'upgraded' && !planConfirmed) {
+    return (
+      <div className="flex items-start gap-3 rounded-lg border border-c-border bg-white dark:bg-[#1B2838] p-4">
+        <RefreshCw size={16} className="text-c-muted shrink-0 mt-0.5" />
+        <div className="flex-1">
+          <p className="text-sm text-[#0D1B2A] dark:text-white">Verifying payment status…</p>
+          <p className="text-xs text-c-muted mt-0.5">
+            If your plan has not updated after a few seconds, click refresh.
+          </p>
+          <button
+            onClick={onRefresh}
+            className="mt-1.5 flex items-center gap-1 text-xs font-medium text-c-muted hover:opacity-70"
+          >
+            <RefreshCw size={11} />
+            Refresh plan status
+          </button>
+        </div>
+        <button onClick={onDismiss} className="text-c-muted hover:opacity-70 text-xs">✕</button>
+      </div>
+    )
+  }
+
   return (
     <div className="flex items-start gap-3 rounded-lg border border-c-border bg-white dark:bg-[#1B2838] p-4">
       <AlertCircle size={16} className="text-c-muted shrink-0 mt-0.5" />
@@ -338,6 +352,7 @@ export default function BillingPage() {
       {banner && (
         <CheckoutBanner
           status={banner}
+          planConfirmed={currentPlan === 'PRO'}
           onDismiss={() => setBanner(null)}
           onRefresh={() => queryClient.invalidateQueries({ queryKey: ['billing', orgId] })}
         />
