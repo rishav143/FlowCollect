@@ -162,8 +162,13 @@ public class InvoicePdfGenerator {
     private void writeHeader(PageContext page, FontSet fonts, Invoice invoice) throws IOException {
         Organization org = invoice.getOrganization();
 
-        drawText(page, fonts.bold, FONT_TITLE, MARGIN, page.y, safe(org.getName()), COLOR_ACCENT);
-        page.y -= 24f;
+        // Wrap org name to avoid overlapping the "INVOICE" label on the right
+        float maxOrgNameWidth = CONTENT_WIDTH * 0.55f;
+        List<String> orgNameLines = wrapText(safe(org.getName()), fonts.bold, FONT_TITLE, maxOrgNameWidth);
+        for (String line : orgNameLines) {
+            drawText(page, fonts.bold, FONT_TITLE, MARGIN, page.y, line, COLOR_ACCENT);
+            page.y -= 24f;
+        }
 
         // Show contact details under the org name — name is already the blue title so skip it
         for (String line : buildOrganizationDetailLines(org)) {
