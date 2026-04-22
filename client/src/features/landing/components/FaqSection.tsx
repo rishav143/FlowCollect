@@ -17,11 +17,11 @@ const faqs = [
   },
   {
     q: 'I already use another invoicing tool. Do I need to switch?',
-    a: "FlowCollect does not replace your invoicing tool - it handles the collection side. Add your invoice details and we take over from there. No migration needed.",
+    a: "FlowCollect handles the collection side: reminders, follow-ups, and payment confirmations. Create your invoice here or just use it alongside your existing tool. No migration needed.",
   },
   {
     q: 'Is my data safe?',
-    a: 'Yes. Your data is encrypted in transit and at rest. We never store payment card details, and we never sell or share your data with third parties.',
+    a: 'Yes. Your data is encrypted in transit and at rest. We never store payment card details or sell your data. AI features process data through trusted providers under strict confidentiality agreements.',
   },
   {
     q: 'What happens when I reach the free plan limit?',
