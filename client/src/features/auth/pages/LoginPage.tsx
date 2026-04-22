@@ -142,11 +142,9 @@ export default function LoginPage() {
         )}
 
         {unverified && (
-          <div className="text-sm bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 px-3 py-2.5 rounded-lg space-y-1.5">
-            <p className="text-amber-800 dark:text-amber-300 font-medium">Email not verified</p>
-            <p className="text-amber-700 dark:text-amber-400 text-xs">
-              Check your inbox for the verification link.
-            </p>
+          <div className="text-sm bg-[#F4F7F9] dark:bg-white/5 border border-c-border px-3 py-2.5 rounded-lg space-y-1.5">
+            <p className="text-[#0D1B2A] dark:text-white font-medium">Email not verified</p>
+            <p className="text-c-muted text-xs">Check your inbox for the verification link.</p>
             {resendState === 'sent' ? (
               <p className="text-xs text-green-600 dark:text-green-400">Verification email sent. Check your inbox.</p>
             ) : (
@@ -154,7 +152,7 @@ export default function LoginPage() {
                 type="button"
                 onClick={handleResend}
                 disabled={resendState === 'sending'}
-                className="text-xs font-medium text-amber-800 dark:text-amber-300 underline hover:opacity-70 disabled:opacity-50"
+                className="text-xs font-medium text-[#29B6F6] hover:opacity-70 disabled:opacity-50"
               >
                 {resendState === 'sending' ? 'Sending…' : 'Resend verification email'}
               </button>
