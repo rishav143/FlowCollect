@@ -12,6 +12,7 @@ interface Props {
 export default function RequestRemainingModal({ invoiceNumber, onConfirm, onCancel, isLoading }: Props) {
   const [note,       setNote]       = useState('')
   const [newDueDate, setNewDueDate] = useState('')
+  const MAX = 200
 
   function handleConfirm() {
     onConfirm(note, newDueDate || undefined)
@@ -61,11 +62,13 @@ export default function RequestRemainingModal({ invoiceNumber, onConfirm, onCanc
             </label>
             <textarea
               value={note}
-              onChange={(e) => setNote(e.target.value)}
+              onChange={(e) => setNote(e.target.value.slice(0, MAX))}
               rows={3}
+              maxLength={MAX}
               placeholder="Add a note for the customer..."
               className="mt-1.5 w-full text-sm rounded-lg border border-c-border bg-transparent text-[#0D1B2A] dark:text-white placeholder:text-c-muted p-2.5 focus:outline-none focus:border-[#8A9BAE]/40 resize-none"
             />
+            <p className="text-right text-xs text-c-muted mt-1">{note.length}/{MAX}</p>
           </div>
 
           {/* Actions */}
