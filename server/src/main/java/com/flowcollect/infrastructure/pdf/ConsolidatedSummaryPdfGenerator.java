@@ -294,7 +294,7 @@ public class ConsolidatedSummaryPdfGenerator {
                                  int pageNum, int totalPages) throws IOException {
         float footerY = BOTTOM_MARGIN - 10f;
         drawHRule(page, footerY + 14f, COLOR_BORDER);
-        String left   = safe(org.getName()) + "  |  " + safe(org.getEmail());
+        String left   = safe(org.getName());
         String center = "Page " + pageNum + " of " + totalPages;
         String right  = "Invoice Summary";
         float  cx     = PAGE_WIDTH / 2f - textWidth(center, fonts.regular, FONT_SMALL) / 2f;
