@@ -290,8 +290,8 @@ public class RecoverSystemDataSeeder implements ApplicationRunner {
                 "Hi {{customerName}},\n\n" +
                 "Invoice {{invoiceNumber}} for {{remainingAmount}} is 14 days past its due date of {{dueDate}} " +
                 "and remains unpaid.\n\n" +
-                "Please arrange settlement when you can. If there is anything to clarify, " +
-                "reach us at {{organizationEmail}}.\n\n" +
+                "If you have already sent the payment, please confirm it using the link below so we can update our records. " +
+                "Otherwise, please arrange settlement when you can. For any questions, reach us at {{organizationEmail}}.\n\n" +
                 "{{confirmationLink}}\n\n" +
                 "{{organizationName}}",
                 RuleMode.AUTO
@@ -302,8 +302,8 @@ public class RecoverSystemDataSeeder implements ApplicationRunner {
                 "Invoice {{invoiceNumber}} from {{organizationName}} - still outstanding",
                 "Hi {{customerName}},\n\n" +
                 "Invoice {{invoiceNumber}} for {{remainingAmount}} is still outstanding. It was due on {{dueDate}}.\n\n" +
-                "If there is a reason for the delay, please write to us at {{organizationEmail}}. " +
-                "We are happy to help. Otherwise, we would appreciate settlement at your earliest.\n\n" +
+                "If you have already sent the payment, please confirm it using the link below so we can update our records. " +
+                "If there is a reason for the delay, please write to us at {{organizationEmail}} — we are happy to help.\n\n" +
                 "{{confirmationLink}}\n\n" +
                 "{{organizationName}}",
                 RuleMode.AUTO
@@ -315,8 +315,8 @@ public class RecoverSystemDataSeeder implements ApplicationRunner {
                 "Hi {{customerName}},\n\n" +
                 "Invoice {{invoiceNumber}} for {{remainingAmount}} from {{organizationName}} has been outstanding " +
                 "since {{dueDate}}, and we have not heard back despite our earlier messages.\n\n" +
-                "Please get in touch at {{organizationEmail}} or settle directly using the link below. " +
-                "We would like to resolve this.\n\n" +
+                "If you have already sent the payment, please confirm it using the link below so we can close this out. " +
+                "Otherwise, please get in touch at {{organizationEmail}} — we would like to resolve this.\n\n" +
                 "{{confirmationLink}}\n\n" +
                 "{{organizationName}}",
                 RuleMode.AUTO
