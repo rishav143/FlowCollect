@@ -362,7 +362,7 @@ public class InvoicePdfGenerator {
                                  int pageNum, int totalPages) throws IOException {
         float footerY = BOTTOM_MARGIN - 10f;
         drawHorizontalRule(page, footerY + 14f, COLOR_BORDER);
-        String left   = safe(invoice.getOrganization().getName()) + "  |  " + safe(invoice.getOrganization().getEmail());
+        String left   = safe(invoice.getOrganization().getName());
         String center = "Page " + pageNum + " of " + totalPages;
         String right  = "Invoice " + invoice.getInvoiceNumber();
         float centerX = PAGE_WIDTH / 2f - textWidth(center, fonts.regular, FONT_SMALL) / 2f;
