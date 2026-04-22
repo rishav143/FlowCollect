@@ -216,10 +216,14 @@ public final class SystemEmailTemplates {
             BigDecimal amountReceived,
             BigDecimal remainingBalance,
             LocalDate dueDate,
+            String businessNote,
             String appName
     ) {
         String subject = "Outstanding balance – Invoice #" + invoiceNumber + " from " + orgName;
         String dueDateStr = dueDate != null ? dueDate.format(DATE_FMT) : "as soon as possible";
+        String noteBlock = businessNote != null
+                ? notePanel(esc(orgName), esc(businessNote), "#eff6ff", "#2563eb")
+                : "";
 
         String html = page(
                 header(esc(invoiceNumber), "Remaining Balance Due", "#f59e0b"),
@@ -233,6 +237,7 @@ public final class SystemEmailTemplates {
                                 + fmt(remainingBalance, currency) + "</span>")
                         + row("Due date", esc(dueDateStr))
                   )
+                + noteBlock
                 + "<p style=\"margin:16px 0 0;\">We would appreciate your help in settling the remaining <strong>"
                 + fmt(remainingBalance, currency) + "</strong> by <strong>"
                 + esc(dueDateStr) + "</strong>.</p>"

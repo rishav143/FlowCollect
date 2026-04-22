@@ -94,6 +94,7 @@ public class BusinessNotificationService {
                 confirmation.getAmountClaimed(),
                 invoice.getRemainingAmount(),
                 invoice.getDueDate(),
+                confirmation.getBusinessNote(),
                 emailProperties.getFromName()
         );
         sendEmail(emailProperties.getFromAddress(), invoice.getOrganization().getEmail(), customerEmail, email);
