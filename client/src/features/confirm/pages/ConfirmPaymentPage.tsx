@@ -35,8 +35,9 @@ function daysDiff(dateStr: string): number {
   return Math.floor((now.getTime() - due.getTime()) / 86_400_000)
 }
 
-function fmtDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString('en-IN', {
+function fmtDate(dateStr: string, currency: string) {
+  const normalized = /^\d{4}-\d{2}-\d{2}$/.test(dateStr) ? dateStr + 'T00:00:00' : dateStr
+  return new Date(normalized).toLocaleDateString(CURRENCY_LOCALE[currency] ?? 'en-US', {
     day: 'numeric', month: 'short', year: 'numeric',
   })
 }
@@ -370,7 +371,7 @@ function PaymentForm({ view, token }: { view: CustomerConfirmationView; token: s
           {/* Invoice summary */}
           <div className="px-6 pt-5 pb-4 space-y-2.5">
             <Row label="Client"        value={view.customerName} />
-            <Row label="Due date"      value={fmtDate(view.dueDate)} />
+            <Row label="Due date"      value={fmtDate(view.dueDate, view.currency)} />
             <Row label="Invoice total" value={fmt(view.totalAmount, view.currency)} />
             {view.totalPaid > 0 && (
               <Row
