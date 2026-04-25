@@ -7,15 +7,12 @@ import KpiStrip              from '../components/KpiStrip/KpiStrip'
 import ActionTable           from '../components/ActionTable/ActionTable'
 import AiInsightBanner      from '../components/AiInsightBanner/AiInsightBanner'
 
-const CollectionsTrendChart = lazy(() => import('../components/CollectionsTrendChart/CollectionsTrendChart'))
-import { useToggleAutoRecovery } from '@/features/recover/hooks/useRecover'
-import { usePlan } from '@/hooks/usePlan'
-import { useNavigate } from 'react-router-dom'
-
+import { useToggleAutoRecovery, useRecoverStats, useQueueActivity } from '@/features/recover/hooks/useRecover'
 import DispatchModal         from '@/features/followups/components/DispatchModal/DispatchModal'
 import type { NeedsAttentionItem } from '@/api/dashboard.api'
 import { formatCurrency, formatDate } from '@/lib/format'
-import { useRecoverStats, useQueueActivity } from '@/features/recover/hooks/useRecover'
+
+const CollectionsTrendChart = lazy(() => import('../components/CollectionsTrendChart/CollectionsTrendChart'))
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -74,16 +71,6 @@ function AutoAgentBanner() {
 function AutoRecoveryWidget() {
   const enabled   = useAuthStore((s) => s.org?.autoRecoveryEnabled ?? false)
   const toggleMut = useToggleAutoRecovery()
-  const { isPro } = usePlan()
-  const navigate  = useNavigate()
-
-  function handleToggle() {
-    if (!isPro) {
-      navigate('/settings/billing')
-      return
-    }
-    toggleMut.mutate(!enabled)
-  }
 
   return (
     <div className="flex items-center gap-2">
@@ -105,23 +92,19 @@ function AutoRecoveryWidget() {
         </span>
       </Link>
 
-      {/* Toggle — PRO only; free users are redirected to billing */}
       <button
-        onClick={handleToggle}
+        onClick={() => toggleMut.mutate(!enabled)}
         disabled={toggleMut.isPending}
-        aria-label={isPro
-          ? (enabled ? 'Disable Recovery Mode' : 'Enable Recovery Mode')
-          : 'Upgrade to PRO to enable auto recovery'}
-        title={!isPro ? 'PRO feature — upgrade to enable' : undefined}
+        aria-label={enabled ? 'Disable Recovery Mode' : 'Enable Recovery Mode'}
         className={[
           'relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent',
           'transition-colors duration-200 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed',
-          enabled && isPro ? 'bg-amber-400' : 'bg-[#8A9BAE]/30',
+          enabled ? 'bg-amber-400' : 'bg-[#8A9BAE]/30',
         ].join(' ')}
       >
         <span className={[
           'pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow transition duration-200',
-          enabled && isPro ? 'translate-x-4' : 'translate-x-0',
+          enabled ? 'translate-x-4' : 'translate-x-0',
         ].join(' ')} />
       </button>
     </div>
