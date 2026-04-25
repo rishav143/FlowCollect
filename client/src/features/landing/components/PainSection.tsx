@@ -7,11 +7,11 @@ export default function PainSection() {
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <ScrollReveal>
-          <div className="text-center mb-12">
+          <div className="text-center mb-8 sm:mb-12">
             <p className="text-xs font-semibold uppercase tracking-widest text-c-muted mb-3">
               The problem
             </p>
-            <h2 className="text-3xl font-bold text-[#0D1B2A]">Sound familiar?</h2>
+            <h2 className="text-2xl sm:text-3xl font-bold text-[#0D1B2A]">Sound familiar?</h2>
             <p className="text-c-muted text-base mt-2">Every freelancer knows this feeling.</p>
           </div>
         </ScrollReveal>

@@ -68,11 +68,11 @@ export default function PricingSection({ region }: { region: Region }) {
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <ScrollReveal>
-          <div className="text-center mb-14">
+          <div className="text-center mb-8 sm:mb-14">
             <p className="text-xs font-semibold uppercase tracking-widest text-c-muted mb-3">
               Pricing
             </p>
-            <h2 className="text-3xl font-bold text-[#0D1B2A]">Simple, honest pricing</h2>
+            <h2 className="text-2xl sm:text-3xl font-bold text-[#0D1B2A]">Simple, honest pricing</h2>
             <p className="text-c-muted text-base mt-2">
               {isLoading
                 ? 'Loading pricing for your region…'

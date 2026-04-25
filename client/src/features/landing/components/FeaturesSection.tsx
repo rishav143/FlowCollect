@@ -37,11 +37,11 @@ export default function FeaturesSection() {
   return (
     <section id="features" className="bg-[#F4F7F9] py-12 sm:py-20 px-4">
       <div className="max-w-6xl mx-auto">
-        <div className="text-center mb-14">
+        <div className="text-center mb-8 sm:mb-14">
           <p className="text-xs font-semibold uppercase tracking-widest text-c-muted mb-3">
             What you get
           </p>
-          <h2 className="text-3xl font-bold text-[#0D1B2A]">
+          <h2 className="text-2xl sm:text-3xl font-bold text-[#0D1B2A]">
             Built for freelancers who hate chasing money
           </h2>
           <p className="text-c-muted text-base mt-2 max-w-xl mx-auto">

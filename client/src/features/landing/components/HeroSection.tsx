@@ -50,7 +50,7 @@ export default function HeroSection() {
       </p>
 
       {/* App mockup */}
-      <div className="mt-14 w-full max-w-2xl rounded-2xl border border-white/10 bg-[#1B2838] shadow-2xl shadow-black/40 overflow-hidden">
+      <div className="mt-10 sm:mt-14 w-full max-w-2xl rounded-2xl border border-white/10 bg-[#1B2838] shadow-2xl shadow-black/40 overflow-hidden">
         {/* macOS title bar */}
         <div className="h-9 bg-[#243447] flex items-center gap-2 px-4 border-b border-white/5">
           <span className="w-3 h-3 rounded-full bg-red-400/70" />

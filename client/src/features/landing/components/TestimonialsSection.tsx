@@ -8,7 +8,7 @@ const stats = [
   },
   {
     value: '20 days',
-    label: 'spent annually chasing invoices — instead of doing real work',
+    label: 'spent annually chasing invoices instead of doing real work',
     sub:   'Freelancer.com Research',
   },
   {
@@ -23,11 +23,11 @@ export default function TestimonialsSection() {
     <section id="testimonials" className="bg-[#F4F7F9] py-12 sm:py-20 px-4">
       <div className="max-w-6xl mx-auto">
         <ScrollReveal>
-          <div className="text-center mb-12">
+          <div className="text-center mb-8 sm:mb-12">
             <p className="text-xs font-semibold uppercase tracking-widest text-c-muted mb-3">
               The reality
             </p>
-            <h2 className="text-3xl font-bold text-[#0D1B2A]">
+            <h2 className="text-2xl sm:text-3xl font-bold text-[#0D1B2A]">
               Late payments are a freelancer epidemic
             </h2>
             <p className="text-c-muted text-base mt-2 max-w-xl mx-auto">

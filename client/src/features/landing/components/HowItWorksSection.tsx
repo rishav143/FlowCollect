@@ -5,11 +5,11 @@ export default function HowItWorksSection() {
     <section id="how-it-works" className="bg-[#F4F7F9] py-12 sm:py-20 px-4">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
-        <div className="text-center mb-14">
+        <div className="text-center mb-8 sm:mb-14">
           <p className="text-xs font-semibold uppercase tracking-widest text-c-muted mb-3">
             How it works
           </p>
-          <h2 className="text-3xl font-bold text-[#0D1B2A]">
+          <h2 className="text-2xl sm:text-3xl font-bold text-[#0D1B2A]">
             Three steps to stop chasing clients
           </h2>
         </div>
