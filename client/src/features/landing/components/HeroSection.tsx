@@ -28,10 +28,10 @@ export default function HeroSection() {
       <div className="animate-fade-up animate-fade-up-delay-3 mt-6 sm:mt-8 flex flex-row items-center gap-3">
         <a
           href={`${import.meta.env.VITE_APP_URL}/register`}
-          className="text-center px-5 py-2.5 sm:px-8 sm:py-3.5 rounded-xl text-white font-semibold text-sm sm:text-base hover:opacity-90 active:scale-95 transition-all shadow-lg shadow-[#29B6F6]/25 whitespace-nowrap"
+          className="inline-flex items-center gap-1.5 px-5 py-2.5 sm:px-8 sm:py-3.5 rounded-xl text-white font-semibold text-sm sm:text-base hover:opacity-90 active:scale-95 transition-all shadow-lg shadow-[#29B6F6]/25 whitespace-nowrap"
           style={{ background: 'linear-gradient(90deg, #29B6F6 0%, #4FC3F7 100%)' }}
         >
-          Get started free →
+          Get started free <span className="leading-none">→</span>
         </a>
         <button
           onClick={() => {
