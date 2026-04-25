@@ -14,7 +14,7 @@ export default function HeroSection() {
 
       {/* Headline */}
       <h1 className="animate-fade-up animate-fade-up-delay-1 text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight tracking-tight max-w-3xl">
-        <span className="text-white">Create invoices in seconds.</span>
+        <span className="text-white">Create invoices in 30 seconds.</span>
         <br />
         <span className="text-[#29B6F6]">Get paid automatically.</span>
       </h1>
