@@ -69,11 +69,8 @@ function getPlans(currency: Currency) {
       features: [
         'Everything in Free',
         'Unlimited invoices',
-        'Automatic follow-ups until you get paid',
-        'Smart escalation from polite to firm reminders',
-        'Real-time recovery dashboard',
-        'Professional follow-ups that sound human',
-        'Smart insights to spot late payers early',
+        'AI follow-up templates',
+        'AI late payer insights',
         'Priority support',
       ],
     },
