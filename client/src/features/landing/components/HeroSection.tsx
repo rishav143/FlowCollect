@@ -25,10 +25,10 @@ export default function HeroSection() {
       </p>
 
       {/* CTA buttons */}
-      <div className="animate-fade-up animate-fade-up-delay-3 mt-6 sm:mt-8 flex flex-col sm:flex-row items-center gap-3 w-full max-w-xs sm:max-w-none sm:w-auto">
+      <div className="animate-fade-up animate-fade-up-delay-3 mt-6 sm:mt-8 flex flex-row items-center gap-3">
         <a
           href={`${import.meta.env.VITE_APP_URL}/register`}
-          className="w-full sm:w-auto text-center px-8 py-3.5 rounded-xl text-white font-semibold text-base hover:opacity-90 active:scale-95 transition-all shadow-lg shadow-[#29B6F6]/25"
+          className="text-center px-5 py-2.5 sm:px-8 sm:py-3.5 rounded-xl text-white font-semibold text-sm sm:text-base hover:opacity-90 active:scale-95 transition-all shadow-lg shadow-[#29B6F6]/25 whitespace-nowrap"
           style={{ background: 'linear-gradient(90deg, #29B6F6 0%, #4FC3F7 100%)' }}
         >
           Get started free →
@@ -38,7 +38,7 @@ export default function HeroSection() {
             document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' })
             window.history.replaceState(null, '', '#how-it-works')
           }}
-          className="w-full sm:w-auto px-8 py-3.5 rounded-xl border border-white/20 text-white/80 hover:text-white hover:border-white/40 transition-colors font-medium text-base"
+          className="px-5 py-2.5 sm:px-8 sm:py-3.5 rounded-xl border border-white/20 text-white/80 hover:text-white hover:border-white/40 transition-colors font-medium text-sm sm:text-base whitespace-nowrap"
         >
           See how it works
         </button>
