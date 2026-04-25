@@ -137,6 +137,8 @@ public class RecoverSystemDataSeeder implements ApplicationRunner {
     private static final String LEGACY_RULE_R_EMAIL_AFTER_DUE_CYCLIC   = "After Due Date";
     // "5-6 Weeks Overdue" template renamed to "Final Notice" (last touchpoint)
     private static final String LEGACY_TPL_R_EMAIL_6WEEKS              = "Email - 5-6 Weeks Overdue";
+    // "3-4 Weeks Overdue" template renamed to "3 Weeks Overdue" (+21d = exactly 3 weeks)
+    private static final String LEGACY_TPL_R_EMAIL_MONTH               = "Email - 3-4 Weeks Overdue";
 
     // -------------------------------------------------------------------------
     // Default MANUAL templates (used in the manual reminders template picker)
@@ -154,7 +156,7 @@ public class RecoverSystemDataSeeder implements ApplicationRunner {
     private static final String TPL_R_EMAIL_DUE_DAY = "Email - Due Date";
     private static final String TPL_R_EMAIL_WEEK    = "Email - 1 Week Overdue";
     private static final String TPL_R_EMAIL_2WEEKS  = "Email - 2 Weeks Overdue";
-    private static final String TPL_R_EMAIL_MONTH   = "Email - 3-4 Weeks Overdue";
+    private static final String TPL_R_EMAIL_MONTH   = "Email - 3 Weeks Overdue";
     private static final String TPL_R_EMAIL_FINAL   = "Email - Final Notice";
 
     // Recovery template names — idempotency keys (SMS)
@@ -403,28 +405,29 @@ public class RecoverSystemDataSeeder implements ApplicationRunner {
 
         ensureRule(RULE_R_EMAIL_PRE_DUE, ReminderChannel.EMAIL,
                    ReminderTriggerType.BEFORE_DUE_DATE, -3, 1, 0,
-                   tEmailPreDue, List.of());
+                   tEmailPreDue, List.of(), true);
 
         ensureRule(RULE_R_EMAIL_DUE_DAY, ReminderChannel.EMAIL,
                    ReminderTriggerType.ON_DUE_DATE, 0, 1, 0,
-                   tEmailDueDay, List.of());
+                   tEmailDueDay, List.of(), true);
 
         // 4 individual after-due rules — each fires once at its offset
         ensureRule(RULE_R_EMAIL_7D,  ReminderChannel.EMAIL,
                    ReminderTriggerType.AFTER_DUE_DATE, 7,  1, 0,
-                   tEmailWeek, List.of());
+                   tEmailWeek, List.of(), true);
 
         ensureRule(RULE_R_EMAIL_14D, ReminderChannel.EMAIL,
                    ReminderTriggerType.AFTER_DUE_DATE, 14, 1, 0,
-                   tEmail2Weeks, List.of());
+                   tEmail2Weeks, List.of(), true);
 
+        // Seeded inactive by default — opt-in to avoid being aggressive with clients
         ensureRule(RULE_R_EMAIL_21D, ReminderChannel.EMAIL,
                    ReminderTriggerType.AFTER_DUE_DATE, 21, 1, 0,
-                   tEmailMonth, List.of());
+                   tEmailMonth, List.of(), false);
 
         ensureRule(RULE_R_EMAIL_28D, ReminderChannel.EMAIL,
                    ReminderTriggerType.AFTER_DUE_DATE, 28, 1, 0,
-                   tEmailFinal, List.of());
+                   tEmailFinal, List.of(), true);
 
         // SMS and WhatsApp rules are disabled for now — kept for future re-activation.
         // To re-enable, uncomment the blocks below and remove the rule names from cleanupLegacySystemData().
@@ -554,7 +557,9 @@ public class RecoverSystemDataSeeder implements ApplicationRunner {
                 LEGACY_TPL_PFX_WA_WEEK,
                 LEGACY_TPL_PFX_WA_MONTH,
                 // "5-6 Weeks Overdue" renamed to "Final Notice" — remove old name from DB
-                LEGACY_TPL_R_EMAIL_6WEEKS
+                LEGACY_TPL_R_EMAIL_6WEEKS,
+                // "3-4 Weeks Overdue" renamed to "3 Weeks Overdue" — remove old name from DB
+                LEGACY_TPL_R_EMAIL_MONTH
         )) {
             templateRepository.findByNameAndOrganizationIsNull(tplName).ifPresent(t -> {
                 followUpRepository.detachTemplate(t.getId());
@@ -609,20 +614,23 @@ public class RecoverSystemDataSeeder implements ApplicationRunner {
     }
 
     /**
-     * Upserts a system-scoped AUTO rule (org=null, systemDefined=true, mode=AUTO, active=true).
-     * All fields are synced on every restart — system rules are platform-owned.
+     * Upserts a system-scoped AUTO rule (org=null, systemDefined=true, mode=AUTO).
+     * All fields except {@code active} are synced on every restart — system rules are platform-owned.
      *
-     * <p>Rules are seeded as {@code active=true}. The org-level AUTO ON/OFF master switch
-     * on the Recover page is the user-facing gate; individual rule toggles allow fine-grained
-     * control without the complexity of a separate activation step on first use.
+     * <p>{@code defaultActive} controls the initial state when the rule is first created.
+     * On subsequent restarts the {@code active} flag is intentionally not touched, so user
+     * preferences (enable/disable individual rules) are preserved across deployments.
      *
+     * @param defaultActive         Initial active state on first creation. Use {@code false} for
+     *                              rules that should be opt-in (e.g. to avoid aggressive follow-ups).
      * @param occurrenceTemplateIds Ordered per-occurrence template IDs. Empty = use primary template for all.
      */
     private void ensureRule(
             String name, ReminderChannel channel,
             ReminderTriggerType triggerType, int daysOffset,
             int maxOccurrences, int cycleIntervalDays,
-            Template primaryTemplate, List<UUID> occurrenceTemplateIds) {
+            Template primaryTemplate, List<UUID> occurrenceTemplateIds,
+            boolean defaultActive) {
 
         reminderRuleRepository.findByNameAndSystemDefinedTrue(name).ifPresentOrElse(existing -> {
             boolean dirty = false;
@@ -655,7 +663,7 @@ public class RecoverSystemDataSeeder implements ApplicationRunner {
             rule.setOccurrenceTemplateIds(new ArrayList<>(occurrenceTemplateIds));
             rule.setMode(RuleMode.AUTO);
             rule.setSystemDefined(true);
-            rule.setActive(true);
+            rule.setActive(defaultActive);
             rule.setAttachPdf(true);
             // organization stays null — platform-level, applies to all orgs via findActiveAutoRulesForOrg
             ReminderRule saved = reminderRuleRepository.save(rule);
