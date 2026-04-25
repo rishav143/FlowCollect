@@ -323,7 +323,7 @@ public class RecoverSystemDataSeeder implements ApplicationRunner {
                 RuleMode.AUTO
         );
 
-        Template tEmail6Weeks = ensureTemplate(
+        Template tEmailFinal = ensureTemplate(
                 TPL_R_EMAIL_FINAL, TemplateChannel.EMAIL, TemplateTone.FIRM,
                 "Payment reminder: Invoice {{invoiceNumber}} from {{organizationName}}",
                 "Hi {{customerName}},\n\n" +
@@ -424,7 +424,7 @@ public class RecoverSystemDataSeeder implements ApplicationRunner {
 
         ensureRule(RULE_R_EMAIL_28D, ReminderChannel.EMAIL,
                    ReminderTriggerType.AFTER_DUE_DATE, 28, 1, 0,
-                   tEmail6Weeks, List.of());
+                   tEmailFinal, List.of());
 
         // SMS and WhatsApp rules are disabled for now — kept for future re-activation.
         // To re-enable, uncomment the blocks below and remove the rule names from cleanupLegacySystemData().
