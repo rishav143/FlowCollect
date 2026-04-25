@@ -255,7 +255,7 @@ export default function RegisterPage() {
           className="w-full py-2.5 rounded-lg text-sm font-semibold text-white hover:opacity-90 transition-opacity disabled:opacity-50"
           style={{ background: 'linear-gradient(90deg, #29B6F6 0%, #4FC3F7 100%)' }}
         >
-          {loading ? 'Setting up your account…' : 'Start Getting Paid →'}
+          {loading ? 'Setting up your account…' : 'Create free account →'}
         </button>
 
         <p className="text-xs text-c-muted text-center leading-relaxed">
