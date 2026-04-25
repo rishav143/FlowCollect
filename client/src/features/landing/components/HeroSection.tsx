@@ -31,7 +31,7 @@ export default function HeroSection() {
           className="inline-flex items-center gap-1.5 px-5 py-2.5 sm:px-8 sm:py-3.5 rounded-xl text-white font-semibold text-sm sm:text-base hover:opacity-90 active:scale-95 transition-all shadow-lg shadow-[#29B6F6]/25 whitespace-nowrap"
           style={{ background: 'linear-gradient(90deg, #29B6F6 0%, #4FC3F7 100%)' }}
         >
-          Get started free <span className="leading-none">→</span>
+          Get started free <span className="leading-none relative -top-px">→</span>
         </a>
         <button
           onClick={() => {
