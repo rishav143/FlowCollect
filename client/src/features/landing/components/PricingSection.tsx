@@ -50,6 +50,7 @@ function getPlans(region: Region): Plan[] {
         'Unlimited invoices',
         'AI follow-up templates',
         'AI late payer insights',
+        'Early feature access',
         'Priority support',
       ],
     },
