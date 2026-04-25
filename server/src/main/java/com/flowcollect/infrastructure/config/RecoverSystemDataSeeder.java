@@ -135,10 +135,10 @@ public class RecoverSystemDataSeeder implements ApplicationRunner {
     private static final String LEGACY_RULE_R_EMAIL_AFTER_DUE_PREFIXED = "Email - After Due Date";
     // Cyclic "After Due Date" rule (split into 4 separate rules)
     private static final String LEGACY_RULE_R_EMAIL_AFTER_DUE_CYCLIC   = "After Due Date";
-    // "5-6 Weeks Overdue" template renamed to "Final Notice" (last touchpoint)
-    private static final String LEGACY_TPL_R_EMAIL_6WEEKS              = "Email - 5-6 Weeks Overdue";
-    // "3-4 Weeks Overdue" template renamed to "3 Weeks Overdue" (+21d = exactly 3 weeks)
-    private static final String LEGACY_TPL_R_EMAIL_MONTH               = "Email - 3-4 Weeks Overdue";
+    // Templates renamed in-place via renameSystemTemplates() — not in the delete cleanup list
+    // (deleting a template that a live rule still references would violate the NOT NULL FK constraint)
+    private static final String LEGACY_TPL_R_EMAIL_6WEEKS = "Email - 5-6 Weeks Overdue"; // → "Email - Final Notice"
+    private static final String LEGACY_TPL_R_EMAIL_MONTH  = "Email - 3-4 Weeks Overdue"; // → "Email - 3 Weeks Overdue"
 
     // -------------------------------------------------------------------------
     // Default MANUAL templates (used in the manual reminders template picker)
@@ -206,7 +206,8 @@ public class RecoverSystemDataSeeder implements ApplicationRunner {
     @Override
     @Transactional
     public void run(ApplicationArguments args) {
-        renameSystemRules();   // must run before cleanup/seed so idempotency keys align
+        renameSystemRules();      // must run before cleanup/seed so idempotency keys align
+        renameSystemTemplates();  // rename in-place to avoid nulling live FK references
         cleanupLegacySystemData();
         seedDefaultTemplates();
         seedRecoveryTemplatesAndRules();
@@ -472,6 +473,33 @@ public class RecoverSystemDataSeeder implements ApplicationRunner {
     }
 
     // =========================================================================
+    // In-place template renames (preserves UUID and rule FK references)
+    // =========================================================================
+
+    /**
+     * Renames system templates in-place so their UUID (and all FK references from rules)
+     * is preserved. Must run before cleanupLegacySystemData so that any template whose old
+     * name would otherwise be deleted is already gone from the cleanup path.
+     *
+     * <p>Deleting a template that a live rule still references would violate the NOT NULL
+     * constraint on reminder_rules.template_id. Renaming avoids that entirely.
+     */
+    private void renameSystemTemplates() {
+        // "Email - 5-6 Weeks Overdue" → "Email - Final Notice" (+28d is the final touchpoint)
+        renameSystemTemplate(LEGACY_TPL_R_EMAIL_6WEEKS, TPL_R_EMAIL_FINAL);
+        // "Email - 3-4 Weeks Overdue" → "Email - 3 Weeks Overdue" (+21d = exactly 3 weeks)
+        renameSystemTemplate(LEGACY_TPL_R_EMAIL_MONTH, TPL_R_EMAIL_MONTH);
+    }
+
+    private void renameSystemTemplate(String oldName, String newName) {
+        templateRepository.findByNameAndOrganizationIsNull(oldName).ifPresent(t -> {
+            t.setName(newName);
+            templateRepository.save(t);
+            log.info("[Seed] Renamed system template '{}' → '{}'", oldName, newName);
+        });
+    }
+
+    // =========================================================================
     // One-time cleanup of legacy system data
     // =========================================================================
 
@@ -555,11 +583,7 @@ public class RecoverSystemDataSeeder implements ApplicationRunner {
                 LEGACY_TPL_PFX_SMS_2WEEKS,
                 LEGACY_TPL_PFX_SMS_FINAL,
                 LEGACY_TPL_PFX_WA_WEEK,
-                LEGACY_TPL_PFX_WA_MONTH,
-                // "5-6 Weeks Overdue" renamed to "Final Notice" — remove old name from DB
-                LEGACY_TPL_R_EMAIL_6WEEKS,
-                // "3-4 Weeks Overdue" renamed to "3 Weeks Overdue" — remove old name from DB
-                LEGACY_TPL_R_EMAIL_MONTH
+                LEGACY_TPL_PFX_WA_MONTH
         )) {
             templateRepository.findByNameAndOrganizationIsNull(tplName).ifPresent(t -> {
                 followUpRepository.detachTemplate(t.getId());
