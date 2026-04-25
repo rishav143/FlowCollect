@@ -3,10 +3,10 @@ import ScrollReveal from './ScrollReveal'
 
 export default function SocialProofSection() {
   return (
-    <section id="social-proof" className="bg-white py-24 px-4">
+    <section id="social-proof" className="bg-white py-12 sm:py-24 px-4">
       <div className="max-w-2xl mx-auto">
         <ScrollReveal>
-          <div className="rounded-2xl border border-[#29B6F6]/30 bg-[#29B6F6]/5 px-8 py-10 text-center">
+          <div className="rounded-2xl border border-[#29B6F6]/30 bg-[#29B6F6]/5 px-5 py-7 sm:px-8 sm:py-10 text-center">
             <p className="text-sm font-semibold text-[#29B6F6] uppercase tracking-widest mb-2">
               Early access
             </p>

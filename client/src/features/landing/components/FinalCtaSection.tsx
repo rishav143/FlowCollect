@@ -3,7 +3,7 @@ import { ShieldCheck, Lock, Zap } from 'lucide-react'
 export default function FinalCtaSection() {
   return (
     <section
-      className="py-28 px-4 text-center"
+      className="py-14 sm:py-28 px-4 text-center"
       style={{ background: 'linear-gradient(160deg, #0D1B2A 0%, #1B2838 100%)' }}
     >
       <div className="max-w-2xl mx-auto">
@@ -12,10 +12,10 @@ export default function FinalCtaSection() {
           Stop waiting. Start collecting.
         </p>
 
-        <h2 className="text-4xl font-bold text-white leading-tight">
+        <h2 className="text-3xl sm:text-4xl font-bold text-white leading-tight">
           Your next invoice<br />won't be late.
         </h2>
-        <p className="text-[#8A9BAE] text-lg mt-4 mb-8 leading-relaxed">
+        <p className="text-[#8A9BAE] text-base sm:text-lg mt-4 mb-8 leading-relaxed">
           Stop sending awkward follow-ups.<br className="hidden sm:block" />
           Start getting paid on time - automatically.
         </p>

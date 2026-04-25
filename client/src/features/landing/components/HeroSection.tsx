@@ -3,7 +3,7 @@ import { Zap } from 'lucide-react'
 export default function HeroSection() {
   return (
     <section
-      className="min-h-[88vh] flex flex-col items-center justify-center px-4 py-20 text-center"
+      className="min-h-[70vh] sm:min-h-[88vh] flex flex-col items-center justify-center px-4 py-12 sm:py-20 text-center"
       style={{ background: 'linear-gradient(160deg, #0D1B2A 0%, #122436 60%, #1B2838 100%)' }}
     >
       {/* Trust badge */}
@@ -13,22 +13,22 @@ export default function HeroSection() {
       </div>
 
       {/* Headline */}
-      <h1 className="animate-fade-up animate-fade-up-delay-1 text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight tracking-tight max-w-3xl">
+      <h1 className="animate-fade-up animate-fade-up-delay-1 text-3xl sm:text-5xl lg:text-6xl font-bold leading-tight tracking-tight max-w-3xl">
         <span className="text-white">We chase your clients</span>
         <br />
         <span className="text-[#29B6F6]">until you get paid.</span>
       </h1>
 
       {/* Sub-headline — outcome first, not feature list */}
-      <p className="animate-fade-up animate-fade-up-delay-2 mt-6 text-lg text-[#8A9BAE] max-w-xl leading-relaxed">
+      <p className="animate-fade-up animate-fade-up-delay-2 mt-4 sm:mt-6 text-base sm:text-lg text-[#8A9BAE] max-w-xl leading-relaxed">
         Your work is done. The follow-ups don't have to be.
       </p>
 
       {/* CTA buttons */}
-      <div className="animate-fade-up animate-fade-up-delay-3 mt-8 flex flex-col sm:flex-row items-center gap-3">
+      <div className="animate-fade-up animate-fade-up-delay-3 mt-6 sm:mt-8 flex flex-col sm:flex-row items-center gap-3 w-full max-w-xs sm:max-w-none sm:w-auto">
         <a
           href={`${import.meta.env.VITE_APP_URL}/register`}
-          className="px-8 py-3.5 rounded-xl text-white font-semibold text-base hover:opacity-90 active:scale-95 transition-all shadow-lg shadow-[#29B6F6]/25"
+          className="w-full sm:w-auto text-center px-8 py-3.5 rounded-xl text-white font-semibold text-base hover:opacity-90 active:scale-95 transition-all shadow-lg shadow-[#29B6F6]/25"
           style={{ background: 'linear-gradient(90deg, #29B6F6 0%, #4FC3F7 100%)' }}
         >
           Get started free →
@@ -38,7 +38,7 @@ export default function HeroSection() {
             document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' })
             window.history.replaceState(null, '', '#how-it-works')
           }}
-          className="px-8 py-3.5 rounded-xl border border-white/20 text-white/80 hover:text-white hover:border-white/40 transition-colors font-medium text-base"
+          className="w-full sm:w-auto px-8 py-3.5 rounded-xl border border-white/20 text-white/80 hover:text-white hover:border-white/40 transition-colors font-medium text-base"
         >
           See how it works
         </button>

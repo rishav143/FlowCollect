@@ -54,14 +54,14 @@ function FaqItem({ q, a }: { q: string; a: string }) {
 
 export default function FaqSection() {
   return (
-    <section id="faq" className="bg-[#F4F7F9] py-20 px-4">
+    <section id="faq" className="bg-[#F4F7F9] py-12 sm:py-20 px-4">
       <div className="max-w-2xl mx-auto">
         <ScrollReveal>
           <div className="text-center mb-12">
             <p className="text-xs font-semibold uppercase tracking-widest text-c-muted mb-3">
               FAQ
             </p>
-            <h2 className="text-3xl font-bold text-[#0D1B2A]">Everything you're wondering about</h2>
+            <h2 className="text-2xl sm:text-3xl font-bold text-[#0D1B2A]">Everything you're wondering about</h2>
           </div>
         </ScrollReveal>
 

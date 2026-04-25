@@ -3,7 +3,7 @@ import ScrollReveal from './ScrollReveal'
 
 export default function PainSection() {
   return (
-    <section className="bg-[#F4F7F9] py-20 px-4">
+    <section className="bg-[#F4F7F9] py-12 sm:py-20 px-4">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <ScrollReveal>

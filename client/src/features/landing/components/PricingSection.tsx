@@ -64,7 +64,7 @@ export default function PricingSection({ region }: { region: Region }) {
   const isLoading = region === 'loading'
 
   return (
-    <section id="pricing" className="bg-white py-20 px-4">
+    <section id="pricing" className="bg-white py-12 sm:py-20 px-4">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <ScrollReveal>
@@ -88,7 +88,7 @@ export default function PricingSection({ region }: { region: Region }) {
           {plans.map((plan, i) => (
             <ScrollReveal key={plan.name} delay={i * 80} className="h-full">
               <div
-                className={`h-full flex flex-col rounded-2xl border p-7 transition-all duration-200 ${
+                className={`h-full flex flex-col rounded-2xl border p-5 sm:p-7 transition-all duration-200 ${
                   plan.highlight
                     ? 'border-[#29B6F6] shadow-lg shadow-[#29B6F6]/10 bg-white relative'
                     : 'border-c-border bg-[#F4F7F9] shadow-sm hover:shadow-md hover:-translate-y-0.5'

@@ -2,7 +2,7 @@ import { FileText, Bell, BadgeCheck } from 'lucide-react'
 
 export default function HowItWorksSection() {
   return (
-    <section id="how-it-works" className="bg-[#F4F7F9] py-20 px-4">
+    <section id="how-it-works" className="bg-[#F4F7F9] py-12 sm:py-20 px-4">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="text-center mb-14">
