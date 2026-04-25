@@ -22,7 +22,7 @@ export default function SocialProofSection() {
               className="inline-block px-7 py-3 rounded-xl text-white font-semibold text-sm hover:opacity-90 transition-opacity"
               style={{ background: 'linear-gradient(90deg, #29B6F6 0%, #4FC3F7 100%)' }}
             >
-              Join early access →
+              Join early access <span className="leading-none relative -top-px">→</span>
             </Link>
           </div>
         </ScrollReveal>

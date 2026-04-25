@@ -166,7 +166,7 @@ export default function LoginPage() {
           className="w-full py-2.5 rounded-lg text-sm font-semibold text-white hover:opacity-90 transition-opacity disabled:opacity-50"
           style={{ background: 'linear-gradient(90deg, #29B6F6 0%, #4FC3F7 100%)' }}
         >
-          {loading ? 'Signing in…' : 'Sign in →'}
+          {loading ? 'Signing in…' : <span className="inline-flex items-center gap-1.5">Sign in <span className="leading-none relative -top-px">→</span></span>}
         </button>
       </form>
 

@@ -22,10 +22,10 @@ export default function FinalCtaSection() {
 
         <a
           href={`${import.meta.env.VITE_APP_URL}/register`}
-          className="inline-block w-full max-w-xs mx-auto px-8 py-4 rounded-xl text-white font-semibold text-base hover:opacity-90 active:scale-95 transition-all shadow-lg shadow-[#29B6F6]/25"
+          className="inline-flex items-center justify-center gap-1.5 w-full max-w-xs mx-auto px-8 py-4 rounded-xl text-white font-semibold text-base hover:opacity-90 active:scale-95 transition-all shadow-lg shadow-[#29B6F6]/25"
           style={{ background: 'linear-gradient(90deg, #29B6F6 0%, #4FC3F7 100%)' }}
         >
-          Get started free →
+          Get started free <span className="leading-none relative -top-px">→</span>
         </a>
 
         {/* Trust icons */}

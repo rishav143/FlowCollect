@@ -111,7 +111,7 @@ function VerificationPending({ result }: { result: RegisterResult }) {
         className="inline-block w-full py-2.5 rounded-lg text-sm font-semibold text-white text-center hover:opacity-90 transition-opacity"
         style={{ background: 'linear-gradient(90deg, #29B6F6 0%, #4FC3F7 100%)' }}
       >
-        Go to sign in →
+        Go to sign in <span className="leading-none relative -top-px">→</span>
       </Link>
     </div>
   )
@@ -255,7 +255,7 @@ export default function RegisterPage() {
           className="w-full py-2.5 rounded-lg text-sm font-semibold text-white hover:opacity-90 transition-opacity disabled:opacity-50"
           style={{ background: 'linear-gradient(90deg, #29B6F6 0%, #4FC3F7 100%)' }}
         >
-          {loading ? 'Setting up your account…' : 'Create free account →'}
+          {loading ? 'Setting up your account…' : <span className="inline-flex items-center gap-1.5">Create free account <span className="leading-none relative -top-px">→</span></span>}
         </button>
 
         <p className="text-xs text-c-muted text-center leading-relaxed">
