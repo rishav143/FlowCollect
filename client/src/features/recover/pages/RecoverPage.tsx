@@ -473,7 +473,9 @@ export default function RecoverPage() {
   const sortedRules = [...(autoRules ?? [])].sort((a, b) => {
     const ch = CHANNEL_ORDER[a.channel] - CHANNEL_ORDER[b.channel]
     if (ch !== 0) return ch
-    return (TRIGGER_ORDER[a.triggerType] ?? 3) - (TRIGGER_ORDER[b.triggerType] ?? 3)
+    const tr = (TRIGGER_ORDER[a.triggerType] ?? 3) - (TRIGGER_ORDER[b.triggerType] ?? 3)
+    if (tr !== 0) return tr
+    return a.daysOffset - b.daysOffset
   })
 
   // Collect all unique templates referenced by rules — both primary and per-occurrence overrides.
