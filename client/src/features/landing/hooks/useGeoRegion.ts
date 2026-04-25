@@ -17,11 +17,11 @@ export function useGeoRegion(): Region {
         }
       })
       .catch(() => {
-        // Fallback: ip-api.com
-        fetch('http://ip-api.com/json/?fields=countryCode')
+        // Fallback: ipinfo.io (free, HTTPS)
+        fetch('https://ipinfo.io/json')
           .then((r) => r.json())
           .then((data) => {
-            setRegion(data.countryCode === 'IN' ? 'IN' : 'GLOBAL')
+            setRegion(data.country === 'IN' ? 'IN' : 'GLOBAL')
           })
           .catch(() => setRegion('GLOBAL'))
       })
