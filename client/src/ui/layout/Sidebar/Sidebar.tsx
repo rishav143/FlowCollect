@@ -6,7 +6,6 @@ import {
   Clock,
   CheckCircle2,
   Users,
-  Bell,
   Settings,
   LayoutTemplate,
   Zap,
@@ -253,8 +252,7 @@ export default function Sidebar() {
       >
         <hr className="mb-3 border-[#8A9BAE]/20 dark:border-white/10" />
         <div className="space-y-0.5">
-          <NavItem to="/reminder-rules" icon={Bell}     label="Reminders" collapsed={c} onNavigate={closeSidebar} />
-          <NavItem to="/settings/org"   icon={Settings} label="Settings"  collapsed={c} onNavigate={closeSidebar} />
+          <NavItem to="/settings/org" icon={Settings} label="Settings" collapsed={c} onNavigate={closeSidebar} />
         </div>
       </div>
 
