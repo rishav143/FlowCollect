@@ -29,11 +29,11 @@ function getPlans(region: Region): Plan[] {
       highlight: false,
       features: [
         'Up to 3 active invoices',
-        'Send professional invoices',
-        'Automatic follow-ups until you get paid',
-        'Track when clients open messages',
-        'Client payment confirmations',
-        'Basic follow-up templates',
+        'Professional invoices',
+        'Automatic follow-ups',
+        'Open tracking',
+        'Payment confirmations',
+        'Basic templates',
       ],
     },
     {
