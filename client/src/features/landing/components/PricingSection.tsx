@@ -30,7 +30,7 @@ function getPlans(region: Region): Plan[] {
       features: [
         'Up to 3 active invoices',
         'Send professional invoices',
-        'Manual follow-ups (email)',
+        'Automatic follow-ups until you get paid',
         'Track when clients open messages',
         'Client payment confirmations',
         'Basic follow-up templates',
