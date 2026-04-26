@@ -5,7 +5,7 @@ import Logo from '@/ui/components/Logo/Logo'
 const DAY_ONE = [
   'Get paid faster with automated invoice reminders',
   'Never write another "just checking in" email again',
-  'Clients pay on time — without you having to ask',
+  'Clients pay on time, without you having to ask',
 ]
 
 /**
