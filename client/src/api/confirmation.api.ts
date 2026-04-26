@@ -10,8 +10,8 @@ interface Page<T> {
 }
 
 interface ReviewRequest {
-  businessNote?: string
-  newDueDate?:   string   // ISO date YYYY-MM-DD — only used for request-remaining
+  note?:       string   // matches backend ReviewConfirmationRequest.note
+  newDueDate?: string   // ISO date YYYY-MM-DD — only used for request-remaining
 }
 
 function base(orgId: string) {

@@ -51,7 +51,7 @@ function useReviewMutation(
     meta: { silent: true },
     mutationFn: ({ id, businessNote, newDueDate }: { id: string; businessNote?: string; newDueDate?: string }) => {
       const body = (businessNote || newDueDate)
-        ? { ...(businessNote ? { businessNote } : {}), ...(newDueDate ? { newDueDate } : {}) }
+        ? { ...(businessNote ? { note: businessNote } : {}), ...(newDueDate ? { newDueDate } : {}) }
         : undefined
       return action(orgId, id, body)
     },
