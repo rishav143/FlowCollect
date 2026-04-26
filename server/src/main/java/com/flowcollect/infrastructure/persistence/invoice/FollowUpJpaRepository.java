@@ -93,14 +93,14 @@ public interface FollowUpJpaRepository extends JpaRepository<FollowUp, UUID>, Jp
            "ORDER BY f.scheduledForDate ASC, f.createdAt ASC")
     List<FollowUp> findPendingAutoQueue(@Param("orgId") UUID orgId);
 
-    /** Recent SENT or CANCELLED AUTO follow-ups for org — used for Activity Log panel. */
+    /** Recent SENT, CANCELLED, or FAILED AUTO follow-ups for org — used for Activity Log panel. */
     @Query("SELECT f FROM FollowUp f " +
            "JOIN FETCH f.invoice i " +
            "LEFT JOIN FETCH i.customer " +
            "LEFT JOIN FETCH f.reminderRule " +
            "WHERE i.organization.id = :orgId " +
            "AND f.triggerType = 'AUTOMATED' AND f.reminderRule.mode = 'AUTO' " +
-           "AND f.status IN ('SENT', 'CANCELLED') " +
+           "AND f.status IN ('SENT', 'CANCELLED', 'FAILED') " +
            "AND f.updatedAt >= :since " +
            "ORDER BY f.updatedAt DESC")
     org.springframework.data.domain.Slice<FollowUp> findRecentAutoActivity(

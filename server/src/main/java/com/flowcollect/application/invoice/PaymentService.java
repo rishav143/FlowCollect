@@ -19,6 +19,8 @@ import com.flowcollect.domain.confirmation.PaymentConfirmation;
 import com.flowcollect.domain.confirmation.PaymentConfirmationStatus;
 import com.flowcollect.domain.invoice.Invoice;
 import com.flowcollect.domain.invoice.LifeCycleStatus;
+import com.flowcollect.domain.invoice.followup.FollowUp;
+import com.flowcollect.domain.invoice.followup.FollowUpStatus;
 import com.flowcollect.domain.invoice.payment.Payment;
 import com.flowcollect.domain.invoice.payment.PaymentMode;
 import com.flowcollect.exception.http.ValidationException;
@@ -109,9 +111,18 @@ public class PaymentService {
         invoice.updateLifeCycleStatus(totalPaid);
         invoiceRepository.save(invoice);
 
-        // If the invoice reverted to an unpaid state, reopen the confirmation link so
-        // the customer can resubmit via the same URL that was already sent to them.
-        if (invoice.getLifeCycleStatus() != LifeCycleStatus.PAID) {
+        if (invoice.getLifeCycleStatus() == LifeCycleStatus.PAID) {
+            // Cancel all pending follow-ups — no point chasing a paid invoice.
+            List<FollowUp> pending = followUpRepository.findByInvoiceIdAndStatus(invoiceId, FollowUpStatus.PENDING);
+            for (FollowUp f : pending) {
+                f.cancel();
+            }
+            if (!pending.isEmpty()) {
+                followUpRepository.saveAll(pending);
+            }
+        } else {
+            // Invoice reverted to unpaid — reopen the confirmation link so the customer
+            // can resubmit via the same URL that was already sent to them.
             confirmationLinkService.reopenForInvoice(invoiceId);
         }
     }

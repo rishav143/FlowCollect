@@ -11,9 +11,12 @@ import com.flowcollect.api.v1.organization.dto.OrganizationUpdateRequest;
 import com.flowcollect.domain.organization.Organization;
 import com.flowcollect.domain.organization.OrganizationStatus;
 import com.flowcollect.domain.organization.PaymentCollectionMode;
+import com.flowcollect.domain.invoice.followup.FollowUp;
+import com.flowcollect.domain.invoice.followup.FollowUpStatus;
 import com.flowcollect.exception.http.ConflictException;
 import com.flowcollect.exception.http.ForbiddenException;
 import com.flowcollect.exception.http.ValidationException;
+import com.flowcollect.infrastructure.persistence.invoice.FollowUpJpaRepository;
 import com.flowcollect.infrastructure.persistence.organization.OrganizationJpaRepository;
 import com.flowcollect.security.AuthContext;
 
@@ -30,9 +33,13 @@ import java.util.UUID;
 public class OrganizationService {
 
     private final OrganizationJpaRepository organizationRepository;
+    private final FollowUpJpaRepository followUpRepository;
 
-    public OrganizationService(OrganizationJpaRepository organizationRepository) {
+    public OrganizationService(
+            OrganizationJpaRepository organizationRepository,
+            FollowUpJpaRepository followUpRepository) {
         this.organizationRepository = organizationRepository;
+        this.followUpRepository     = followUpRepository;
     }
 
     // Create a new organization after validating timezone, currency, and email uniqueness.
@@ -380,6 +387,17 @@ public class OrganizationService {
                 request.getAutoRecoveryEnabled() != organization.isAutoRecoveryEnabled()) {
             organization.setAutoRecoveryEnabled(request.getAutoRecoveryEnabled());
             changed = true;
+            // When turning recovery OFF, cancel any pending AUTO follow-ups immediately
+            // rather than waiting for the next scheduler run to clean them up.
+            if (Boolean.FALSE.equals(request.getAutoRecoveryEnabled())) {
+                List<FollowUp> pending = followUpRepository.findPendingAutoQueue(organization.getId());
+                for (FollowUp f : pending) {
+                    f.cancel();
+                }
+                if (!pending.isEmpty()) {
+                    followUpRepository.saveAll(pending);
+                }
+            }
         }
         if (!changed) {
             return organization;

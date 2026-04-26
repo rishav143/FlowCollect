@@ -26,7 +26,7 @@ export async function getRecoverStats(orgId: string): Promise<RecoverStatsRespon
 // ---------------------------------------------------------------------------
 
 export type FollowUpChannel = 'EMAIL' | 'SMS' | 'WHATSAPP'
-export type FollowUpStatus  = 'SENT' | 'CANCELLED'
+export type FollowUpStatus  = 'SENT' | 'CANCELLED' | 'FAILED'
 
 export interface UpcomingItem {
   invoiceId:     string

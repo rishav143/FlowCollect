@@ -251,11 +251,14 @@ function ActivityLogPanel({
         <div className="divide-y divide-c-border">
           {activity.map((item) => {
             const ch = CHANNEL_META[item.channel]
-            const isSent = item.status === 'SENT'
+            const label =
+              item.status === 'SENT'      ? `${ch.label} sent to ${item.customerName}` :
+              item.status === 'FAILED'    ? `Delivery failed for ${item.customerName}` :
+                                            `Follow-up skipped for ${item.customerName}`
             return (
               <div key={item.followUpId} className="px-5 py-3.5">
                 <p className="text-sm font-medium text-[#0D1B2A] dark:text-white">
-                  {isSent ? `${ch.label} sent to ${item.customerName}` : `Rule skipped for ${item.customerName}`}
+                  {label}
                 </p>
                 <p className="text-xs text-c-muted mt-0.5">
                   {item.invoiceNumber}
