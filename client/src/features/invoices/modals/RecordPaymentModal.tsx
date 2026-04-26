@@ -5,6 +5,7 @@ import { useAuthStore } from '@/store/auth.store'
 import { recordPayment } from '@/api/payment.api'
 import type { PaymentMode } from '@/types/payment.types'
 import { formatCurrency } from '@/lib/format'
+import { extractApiError } from '@/lib/errors'
 import AmountInput from '@/components/ui/AmountInput'
 import Select from '@/components/ui/Select'
 
@@ -50,7 +51,7 @@ export default function RecordPaymentModal({ invoiceId, remainingAmount, currenc
       qc.invalidateQueries({ queryKey: ['followups', orgId, invoiceId] })
       onClose()
     },
-    onError: () => setError('Failed to record payment. Please try again.'),
+    onError: (err) => setError(extractApiError(err)),
   })
 
   function handleSubmit(e: React.FormEvent) {
@@ -86,7 +87,7 @@ export default function RecordPaymentModal({ invoiceId, remainingAmount, currenc
 
           <div>
             <label className={labelCls}>Amount *</label>
-            <AmountInput value={amount} currency={currency} onChange={setAmount} min={1} className={inputCls} />
+            <AmountInput value={amount} currency={currency} onChange={setAmount} min={1} max={Math.round(remainingAmount)} className={inputCls} />
           </div>
 
           <div>

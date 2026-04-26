@@ -82,6 +82,10 @@ public class PaymentService {
         if(paymentRequest.getAmount() == null || paymentRequest.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
             throw new ValidationException("Amount must be greater than zero");
         }
+        BigDecimal remaining = invoice.getRemainingAmount();
+        if (paymentRequest.getAmount().compareTo(remaining) > 0) {
+            throw new ValidationException("Payment amount exceeds the remaining balance of " + remaining);
+        }
         payment.setAmount(paymentRequest.getAmount());
         if(paymentRequest.getMode() == null) {
             throw new ValidationException("Payment mode is required");

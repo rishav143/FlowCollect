@@ -10,6 +10,7 @@ import com.flowcollect.exception.http.ConflictException;
 import com.flowcollect.exception.http.ForbiddenException;
 import com.flowcollect.exception.http.NotFoundException;
 import com.flowcollect.exception.http.ValidationException;
+import com.flowcollect.infrastructure.persistence.invoice.FollowUpJpaRepository;
 import com.flowcollect.infrastructure.persistence.organization.OrganizationJpaRepository;
 import com.flowcollect.security.AuthContext;
 import org.junit.jupiter.api.AfterEach;
@@ -40,6 +41,9 @@ class OrganizationServiceTest {
     @Mock
     private OrganizationJpaRepository organizationRepository;
 
+    @Mock
+    private FollowUpJpaRepository followUpRepository;
+
     private OrganizationService organizationService;
 
     private static final UUID ORG_ID = UUID.randomUUID();
@@ -49,7 +53,7 @@ class OrganizationServiceTest {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        organizationService = new OrganizationService(organizationRepository);
+        organizationService = new OrganizationService(organizationRepository, followUpRepository);
         AuthContext.clear();
     }
 
