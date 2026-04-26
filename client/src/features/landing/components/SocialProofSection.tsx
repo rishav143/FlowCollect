@@ -14,7 +14,7 @@ export default function SocialProofSection() {
               We're onboarding our first users now
             </h3>
             <p className="text-sm text-c-muted leading-relaxed mb-6 max-w-md mx-auto">
-              Sign up for free and get direct access to the founders. We personally respond to every
+              Sign up for free and get direct access to the founder. I personally respond to every
               piece of feedback, always.
             </p>
             <Link

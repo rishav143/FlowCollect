@@ -1,6 +1,5 @@
 import LandingNavbar from '../components/LandingNavbar'
 import HeroSection from '../components/HeroSection'
-import PainSection from '../components/PainSection'
 import FeaturesSection from '../components/FeaturesSection'
 import HowItWorksSection from '../components/HowItWorksSection'
 import SocialProofSection from '../components/SocialProofSection'
@@ -18,7 +17,6 @@ export default function LandingPage() {
       <LandingNavbar />
       <main>
         <HeroSection />
-        <PainSection />
         <HowItWorksSection />
         <FeaturesSection />
         <SocialProofSection />

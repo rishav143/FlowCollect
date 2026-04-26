@@ -45,7 +45,7 @@ export default function HeroSection() {
       </div>
 
       {/* Micro trust line */}
-      <p className="mt-4 text-sm text-[#4E6478]">
+      <p className="mt-4 text-xs sm:text-sm text-[#4E6478]">
         No credit card · Cancel anytime · Live in 2 minutes
       </p>
 
@@ -106,12 +106,12 @@ function InvoiceRow({
 }) {
   return (
     <div className="flex items-center justify-between py-3.5">
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 min-w-0">
         <div className="w-8 h-8 rounded-full bg-[#2E7A8E] flex items-center justify-center text-xs font-bold text-white shrink-0">
           {client[0]}
         </div>
-        <div className="text-left">
-          <p className="text-sm font-medium text-white">{client}</p>
+        <div className="text-left min-w-0">
+          <p className="text-sm font-medium text-white truncate">{client}</p>
           <p className="text-xs text-[#4E6478] mt-0.5">{amount}</p>
         </div>
       </div>

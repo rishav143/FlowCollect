@@ -45,7 +45,7 @@ export default function FeaturesSection() {
             Built for freelancers who hate chasing money
           </h2>
           <p className="text-c-muted text-base mt-2 max-w-xl mx-auto">
-            Every feature is designed to get you paid faster - without the awkward conversations.
+            Every feature is designed to get you paid faster, without the awkward conversations.
           </p>
         </div>
 
