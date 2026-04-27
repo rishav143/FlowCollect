@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
-import { AlertTriangle } from 'lucide-react'
-import { useOrgProfile, useUpdateOrgProfile } from '../hooks/useOrgSettings'
+import { AlertTriangle, Trash2 } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { useOrgProfile, useUpdateOrgProfile, useDeleteOrganization } from '../hooks/useOrgSettings'
 import Select from '@/components/ui/Select'
 
 // ---------------------------------------------------------------------------
@@ -45,7 +46,9 @@ const inputCls = 'w-full text-sm rounded-lg border border-c-border bg-transparen
 
 export default function OrgSettingsPage() {
   const { data, isLoading } = useOrgProfile()
-  const update = useUpdateOrgProfile()
+  const update    = useUpdateOrgProfile()
+  const deleteOrg = useDeleteOrganization()
+  const navigate  = useNavigate()
 
   const [name,     setName]     = useState('')
   const [email,    setEmail]    = useState('')
@@ -58,6 +61,8 @@ export default function OrgSettingsPage() {
   const [mode,          setMode]          = useState<'PAYMENT_LINK' | 'CONFIRMATION_FLOW'>('CONFIRMATION_FLOW')
   const [saved,         setSaved]         = useState(false)
   const [showWarn,      setShowWarn]      = useState(false)
+  const [showDelete,    setShowDelete]    = useState(false)
+  const [confirmName,   setConfirmName]   = useState('')
 
   useEffect(() => {
     if (data) {
@@ -91,6 +96,11 @@ export default function OrgSettingsPage() {
       return
     }
     await doSave()
+  }
+
+  async function handleDelete() {
+    await deleteOrg.mutateAsync()
+    navigate('/login', { replace: true })
   }
 
   if (isLoading) {
@@ -225,6 +235,30 @@ export default function OrgSettingsPage() {
         </p>
       </form>
 
+      {/* Danger Zone */}
+      <div className="mt-6 bg-white dark:bg-[#1B2838] rounded-xl border border-red-200 dark:border-red-900/50 overflow-hidden">
+        <div className="px-5 py-4 border-b border-red-200 dark:border-red-900/50 flex items-center gap-2">
+          <AlertTriangle size={14} className="text-red-500 shrink-0" />
+          <h2 className="text-sm font-semibold text-red-600 dark:text-red-400">Danger Zone</h2>
+        </div>
+        <div className="p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <p className="text-sm font-medium text-[#0D1B2A] dark:text-white">Delete this organisation</p>
+            <p className="text-xs text-c-muted mt-0.5">
+              Permanently deletes all data including invoices, clients, templates, and users. This cannot be undone.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => { setConfirmName(''); setShowDelete(true) }}
+            className="shrink-0 flex items-center gap-2 px-4 py-2 text-sm font-semibold text-red-600 dark:text-red-400 rounded-lg border border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+          >
+            <Trash2 size={14} />
+            Delete Organisation
+          </button>
+        </div>
+      </div>
+
       {showWarn && (
         <div className="fixed inset-0 z-50 flex flex-col justify-end sm:items-center sm:justify-center sm:p-4">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowWarn(false)} />
@@ -266,6 +300,57 @@ export default function OrgSettingsPage() {
                   className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white bg-amber-500 hover:bg-amber-600 disabled:opacity-50 transition-colors"
                 >
                   {update.isPending ? 'Saving…' : 'Yes, Save Changes'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {showDelete && (
+        <div className="fixed inset-0 z-50 flex flex-col justify-end sm:items-center sm:justify-center sm:p-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowDelete(false)} />
+          <div className="relative w-full sm:max-w-sm bg-white dark:bg-[#1B2838] rounded-t-2xl sm:rounded-2xl shadow-xl">
+            <div className="sm:hidden flex justify-center pt-3 pb-1">
+              <div className="w-10 h-1 rounded-full bg-[#8A9BAE]/30" />
+            </div>
+            <div className="px-6 pt-5 pb-6">
+              <div className="flex items-start gap-3 mb-4">
+                <div className="mt-0.5 w-8 h-8 rounded-full bg-red-100 dark:bg-red-500/15 flex items-center justify-center shrink-0">
+                  <Trash2 size={14} className="text-red-600 dark:text-red-400" />
+                </div>
+                <div>
+                  <h2 className="text-base font-semibold text-[#0D1B2A] dark:text-white">Delete Organisation</h2>
+                  <p className="mt-1 text-sm text-c-muted">
+                    This will permanently delete all your invoices, clients, templates, reminders, and team members. There is no way to recover this data.
+                  </p>
+                </div>
+              </div>
+              <div className="mb-4">
+                <label className="block text-xs font-semibold uppercase tracking-wide text-c-muted mb-1.5">
+                  Type <span className="text-[#0D1B2A] dark:text-white font-bold">{name}</span> to confirm
+                </label>
+                <input
+                  type="text"
+                  value={confirmName}
+                  onChange={(e) => setConfirmName(e.target.value)}
+                  placeholder={name}
+                  className="w-full text-sm rounded-lg border border-red-300 dark:border-red-800 bg-transparent text-[#0D1B2A] dark:text-white placeholder:text-c-muted px-3 py-2.5 focus:outline-none focus:border-red-400 transition-colors"
+                  autoComplete="off"
+                />
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowDelete(false)}
+                  className="flex-1 py-2.5 rounded-xl text-sm font-medium text-c-muted hover:bg-[#F4F7F9] dark:hover:bg-[#243447] transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDelete}
+                  disabled={confirmName !== name || deleteOrg.isPending}
+                  className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white bg-red-500 hover:bg-red-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  {deleteOrg.isPending ? 'Deleting…' : 'Delete Everything'}
                 </button>
               </div>
             </div>

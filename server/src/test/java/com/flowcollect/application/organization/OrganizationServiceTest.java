@@ -44,6 +44,9 @@ class OrganizationServiceTest {
     @Mock
     private FollowUpJpaRepository followUpRepository;
 
+    @Mock
+    private OrgDeletionService orgDeletionService;
+
     private OrganizationService organizationService;
 
     private static final UUID ORG_ID = UUID.randomUUID();
@@ -53,7 +56,7 @@ class OrganizationServiceTest {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        organizationService = new OrganizationService(organizationRepository, followUpRepository);
+        organizationService = new OrganizationService(organizationRepository, followUpRepository, orgDeletionService);
         AuthContext.clear();
     }
 
@@ -132,7 +135,7 @@ class OrganizationServiceTest {
 
             assertEquals("My Org", result.getName());
             assertEquals("org@example.com", result.getEmail());
-            assertEquals(PaymentCollectionMode.PAYMENT_LINK, result.getPaymentCollectionMode()); // default
+            assertEquals(PaymentCollectionMode.CONFIRMATION_FLOW, result.getPaymentCollectionMode()); // default
         }
 
         @Test
@@ -497,21 +500,28 @@ class OrganizationServiceTest {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // deleteAuthorized() — always blocked for authenticated users
+    // deleteAuthorized()
     // ─────────────────────────────────────────────────────────────────────────
 
     @Nested
     class DeleteAuthorized {
 
         @Test
-        void alwaysThrowsForbidden() {
+        void delegatesToOrgDeletionService_WhenOwnerDeletes() {
             setAuth(ORG_ID);
-            Organization org = spyOrg(ORG_ID);
-            when(organizationRepository.findById(ORG_ID)).thenReturn(Optional.of(org));
+
+            organizationService.deleteAuthorized(ORG_ID);
+
+            verify(orgDeletionService).deleteOrganizationAndAllData(ORG_ID);
+        }
+
+        @Test
+        void throwsForbidden_WhenDeletingAnotherOrg() {
+            setAuth(ORG_ID);
 
             assertThrows(ForbiddenException.class,
-                    () -> organizationService.deleteAuthorized(ORG_ID));
-            verify(organizationRepository, never()).delete(any(Organization.class));
+                    () -> organizationService.deleteAuthorized(OTHER_ORG_ID));
+            verify(orgDeletionService, never()).deleteOrganizationAndAllData(any());
         }
     }
 

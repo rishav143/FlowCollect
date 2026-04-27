@@ -676,6 +676,8 @@ public class RecoverSystemDataSeeder implements ApplicationRunner {
             }
             if (existing.getMode() != RuleMode.AUTO)                       { existing.setMode(RuleMode.AUTO);          dirty = true; }
             if (!existing.isAttachPdf())                                   { existing.setAttachPdf(true);              dirty = true; }
+            // Blueprints must always reflect the coded default — user preferences live on org-owned copies
+            if (existing.isActive() != defaultActive)                      { existing.setActive(defaultActive);        dirty = true; }
             if (dirty) {
                 reminderRuleRepository.save(existing);
                 log.info("[Seed] Synced system rule '{}' (id={})", name, existing.getId());

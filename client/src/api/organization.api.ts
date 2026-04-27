@@ -40,6 +40,10 @@ export async function updateOrgProfile(orgId: string, body: OrgProfileRequest): 
   return data
 }
 
+export async function deleteOrganization(orgId: string): Promise<void> {
+  await api.delete(base(orgId))
+}
+
 // ---------------------------------------------------------------------------
 // Payment details (bank / UPI — shown on confirmation page)
 // ---------------------------------------------------------------------------

@@ -4,6 +4,7 @@ import { useAuthStore } from '@/store/auth.store'
 import {
   getOrgProfile,
   updateOrgProfile,
+  deleteOrganization,
   getPaymentDetails,
   savePaymentDetails,
 } from '@/api/organization.api'
@@ -70,6 +71,15 @@ export function useUpdateOrgProfile() {
         qc.invalidateQueries({ queryKey: ['invoices', orgId] })
       }
     },
+  })
+}
+
+export function useDeleteOrganization() {
+  const orgId    = useAuthStore((s) => s.org?.id ?? '')
+  const clearAuth = useAuthStore((s) => s.clearAuth)
+  return useMutation({
+    mutationFn: () => deleteOrganization(orgId),
+    onSuccess:  () => clearAuth(),
   })
 }
 

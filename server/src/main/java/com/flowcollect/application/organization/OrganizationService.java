@@ -34,12 +34,15 @@ public class OrganizationService {
 
     private final OrganizationJpaRepository organizationRepository;
     private final FollowUpJpaRepository followUpRepository;
+    private final OrgDeletionService orgDeletionService;
 
     public OrganizationService(
             OrganizationJpaRepository organizationRepository,
-            FollowUpJpaRepository followUpRepository) {
+            FollowUpJpaRepository followUpRepository,
+            OrgDeletionService orgDeletionService) {
         this.organizationRepository = organizationRepository;
         this.followUpRepository     = followUpRepository;
+        this.orgDeletionService     = orgDeletionService;
     }
 
     // Create a new organization after validating timezone, currency, and email uniqueness.
@@ -118,8 +121,8 @@ public class OrganizationService {
 
     @Transactional
     public void deleteAuthorized(UUID organizationId) {
-        getAuthorizedById(organizationId);
-        throw new ForbiddenException("Authenticated users cannot delete organizations");
+        enforceCurrentOrganizationAccess(organizationId);
+        orgDeletionService.deleteOrganizationAndAllData(organizationId);
     }
 
     @Transactional
