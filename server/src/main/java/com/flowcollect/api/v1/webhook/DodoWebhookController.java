@@ -232,8 +232,7 @@ public class DodoWebhookController {
         if (productId != null && (productId.equals(proProductIdInr) || productId.equals(proProductIdUsd))) {
             return OrgPlan.PRO;
         }
-        log.warn("Dodo webhook: unrecognised product_id={} — defaulting to PRO", productId);
-        return OrgPlan.PRO;
+        throw new IllegalArgumentException("Dodo webhook: unrecognised product_id=" + productId + " — cannot activate plan");
     }
 
     private static Instant parseInstant(String value) {
@@ -253,6 +252,8 @@ public class DodoWebhookController {
      * Verifies the Dodo Standard Webhooks HMAC-SHA256 signature.
      * Skips verification when DODO_WEBHOOK_SECRET is not configured (dev/local only).
      */
+    private static final long WEBHOOK_TIMESTAMP_TOLERANCE_SECONDS = 300; // ±5 minutes
+
     private boolean verifySignature(
             String webhookId,
             String webhookTimestamp,
@@ -266,6 +267,14 @@ public class DodoWebhookController {
             return false;
         }
         try {
+            // Reject replayed webhooks outside the ±5 min tolerance window
+            long tsEpoch = Long.parseLong(webhookTimestamp);
+            long nowEpoch = Instant.now().getEpochSecond();
+            if (Math.abs(nowEpoch - tsEpoch) > WEBHOOK_TIMESTAMP_TOLERANCE_SECONDS) {
+                log.warn("Dodo webhook timestamp out of tolerance: ts={} now={}", tsEpoch, nowEpoch);
+                return false;
+            }
+
             // Secret may be prefixed with "whsec_" (Standard Webhooks convention)
             String secretBase64 = webhookSecret.startsWith("whsec_")
                     ? webhookSecret.substring("whsec_".length())
