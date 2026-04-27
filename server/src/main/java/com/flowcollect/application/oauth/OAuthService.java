@@ -4,6 +4,7 @@ import com.flowcollect.api.v1.auth.dto.LoginResponse;
 import com.flowcollect.api.v1.organization.dto.OrganizationCreateRequest;
 import com.flowcollect.application.auth.LoginResponseFactory;
 import com.flowcollect.application.organization.OrganizationService;
+import com.flowcollect.infrastructure.config.OrgDefaultDataSeeder;
 import com.flowcollect.domain.oauth.OAuthProvider;
 import com.flowcollect.domain.oauth.UserOAuthConnection;
 import com.flowcollect.domain.organization.Organization;
@@ -51,6 +52,7 @@ public class OAuthService {
     private final UserOAuthConnectionJpaRepository oauthConnectionRepository;
     private final OrganizationService organizationService;
     private final LoginResponseFactory loginResponseFactory;
+    private final OrgDefaultDataSeeder orgDefaultDataSeeder;
 
     public OAuthService(
             List<OAuthProviderClient> providerClients,
@@ -58,7 +60,8 @@ public class OAuthService {
             UserJpaRepository userRepository,
             UserOAuthConnectionJpaRepository oauthConnectionRepository,
             OrganizationService organizationService,
-            LoginResponseFactory loginResponseFactory
+            LoginResponseFactory loginResponseFactory,
+            OrgDefaultDataSeeder orgDefaultDataSeeder
     ) {
         this.providerClients = providerClients.stream()
                 .collect(Collectors.toMap(OAuthProviderClient::getProvider, Function.identity()));
@@ -67,6 +70,7 @@ public class OAuthService {
         this.oauthConnectionRepository = oauthConnectionRepository;
         this.organizationService = organizationService;
         this.loginResponseFactory = loginResponseFactory;
+        this.orgDefaultDataSeeder = orgDefaultDataSeeder;
     }
 
     /**
@@ -160,6 +164,7 @@ public class OAuthService {
         orgReq.setTimezone("UTC");
 
         Organization organization = organizationService.createForRegistration(orgReq);
+        orgDefaultDataSeeder.seedForOrg(organization);
 
         // 2. Create owner user (no password — OAuth-only account)
         User user = new User(organization, profile.name(), profile.email(), null, UserRole.ADMIN);

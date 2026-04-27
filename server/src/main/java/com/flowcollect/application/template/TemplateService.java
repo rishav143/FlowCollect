@@ -120,10 +120,8 @@ public class TemplateService {
         PaginationUtils.validatePageable(pageable);
 
         Specification<Template> spec = (root, query, cb) -> {
-            // Include org-owned templates OR system-defined templates (visible to all orgs)
-            Predicate orgOwned = cb.equal(root.get("organization").get("id"), organizationId);
-            Predicate systemDefined = cb.isTrue(root.get("systemDefined"));
-            Predicate p = cb.or(orgOwned, systemDefined);
+            // Only show org-owned templates — system rows are blueprints, never shown directly
+            Predicate p = cb.equal(root.get("organization").get("id"), organizationId);
             if (name != null && !name.isBlank()) {
                 p = cb.and(p, cb.like(cb.lower(root.get("name")), "%" + name.toLowerCase() + "%"));
             }
@@ -149,11 +147,8 @@ public class TemplateService {
             throw new ValidationException("Template request must not be null");
         }
         organizationService.getById(organizationId);
-        // System-defined templates (org=null) can be edited from any org context
-        Template template = TemplateUtil.getTemplateOrThrow(templateId, templateRepository);
-        if (!template.isSystemDefined()) {
-            template = TemplateUtil.validateTemplateWithOrganization(templateId, organizationId, templateRepository);
-        }
+        // Only org-owned templates can be mutated; system blueprints are blocked by validateTemplateWithOrganization
+        Template template = TemplateUtil.validateTemplateWithOrganization(templateId, organizationId, templateRepository);
 
         if (request.getName() != null) {
             if (request.getName().isBlank()) {

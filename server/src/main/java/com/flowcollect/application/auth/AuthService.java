@@ -18,6 +18,7 @@ import com.flowcollect.domain.user.User;
 import com.flowcollect.domain.user.UserStatus;
 import com.flowcollect.exception.http.NotFoundException;
 import com.flowcollect.exception.http.UnauthorizedException;
+import com.flowcollect.infrastructure.config.OrgDefaultDataSeeder;
 import com.flowcollect.exception.http.ValidationException;
 import com.flowcollect.infrastructure.persistence.user.UserJpaRepository;
 
@@ -31,19 +32,22 @@ public class AuthService {
     private final UserService userService;
     private final LoginResponseFactory loginResponseFactory;
     private final VerificationService verificationService;
+    private final OrgDefaultDataSeeder orgDefaultDataSeeder;
 
     public AuthService(
             UserJpaRepository userRepository,
             OrganizationService organizationService,
             UserService userService,
             LoginResponseFactory loginResponseFactory,
-            VerificationService verificationService
+            VerificationService verificationService,
+            OrgDefaultDataSeeder orgDefaultDataSeeder
     ) {
         this.userRepository = userRepository;
         this.organizationService = organizationService;
         this.userService = userService;
         this.loginResponseFactory = loginResponseFactory;
         this.verificationService = verificationService;
+        this.orgDefaultDataSeeder = orgDefaultDataSeeder;
     }
 
     @Transactional(readOnly = true)
@@ -104,6 +108,7 @@ public class AuthService {
         }
 
         Organization organization = organizationService.createForRegistration(orgReq);
+        orgDefaultDataSeeder.seedForOrg(organization);
 
         // 2. Create Owner User (pending email verification)
         User user = userService.createPending(

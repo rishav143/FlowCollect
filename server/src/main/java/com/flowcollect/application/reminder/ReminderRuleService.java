@@ -142,10 +142,8 @@ public class ReminderRuleService {
         organizationService.getById(organizationId);
 
         Specification<ReminderRule> spec = (root, query, cb) -> {
-            // Include org-owned rules OR system-defined rules (visible to all orgs)
-            Predicate orgOwned = cb.equal(root.get("organization").get("id"), organizationId);
-            Predicate systemDefined = cb.isTrue(root.get("systemDefined"));
-            Predicate p = cb.or(orgOwned, systemDefined);
+            // Only show org-owned rules — system rows are blueprints, never shown directly
+            Predicate p = cb.equal(root.get("organization").get("id"), organizationId);
             if (name != null && !name.isBlank()) {
                 p = cb.and(p, cb.like(cb.lower(root.get("name")), "%" + name.toLowerCase() + "%"));
             }
@@ -295,9 +293,8 @@ public class ReminderRuleService {
     }
 
     /**
-     * Returns all active AUTO rules an org should schedule: org-owned AUTO rules
-     * plus platform-seeded (systemDefined) AUTO rules.
-     * Used by the Recover scheduler.
+     * Returns all active org-owned AUTO rules for the Recover scheduler.
+     * System blueprints are excluded — each org has its own seeded copies.
      */
     public List<ReminderRule> getActiveAutoRulesForOrg(UUID orgId) {
         return reminderRuleRepository.findActiveAutoRulesForOrg(orgId);

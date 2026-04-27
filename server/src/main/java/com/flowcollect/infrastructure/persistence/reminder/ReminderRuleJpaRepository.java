@@ -23,15 +23,19 @@ public interface ReminderRuleJpaRepository extends JpaRepository<ReminderRule, U
     /** Seeder idempotency check — finds by name regardless of active state. */
     java.util.Optional<ReminderRule> findByNameAndSystemDefinedTrue(String name);
 
+    /** All platform-level seed rules (org=null, systemDefined=true). */
+    List<ReminderRule> findBySystemDefinedTrue();
+
+    /** All rules owned by a specific org — used by OrgDefaultDataSeeder. */
+    List<ReminderRule> findByOrganizationId(UUID organizationId);
+
     /**
-     * Returns all active AUTO rules visible to an org:
-     *   - org-owned AUTO rules (organization.id = orgId)
-     *   - system-defined AUTO rules (systemDefined = true, organization = null)
-     * Used by the Recover scheduler to include platform-seeded rules.
+     * Returns all active org-owned AUTO rules for a specific org.
+     * System-defined rows are blueprints only — each org has its own seeded copies.
      */
     @org.springframework.data.jpa.repository.Query(
         "SELECT r FROM ReminderRule r WHERE r.active = true AND r.mode = 'AUTO' " +
-        "AND (r.organization.id = :orgId OR r.systemDefined = true)"
+        "AND r.organization.id = :orgId"
     )
     List<ReminderRule> findActiveAutoRulesForOrg(@org.springframework.data.repository.query.Param("orgId") UUID orgId);
 }

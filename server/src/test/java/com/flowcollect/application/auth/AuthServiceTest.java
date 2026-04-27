@@ -13,6 +13,7 @@ import com.flowcollect.domain.user.UserRole;
 import com.flowcollect.domain.user.UserStatus;
 import com.flowcollect.exception.http.UnauthorizedException;
 import com.flowcollect.exception.http.ValidationException;
+import com.flowcollect.infrastructure.config.OrgDefaultDataSeeder;
 import com.flowcollect.infrastructure.persistence.user.UserJpaRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,13 +35,14 @@ class AuthServiceTest {
     @Mock private UserService userService;
     @Mock private LoginResponseFactory loginResponseFactory;
     @Mock private VerificationService verificationService;
+    @Mock private OrgDefaultDataSeeder orgDefaultDataSeeder;
 
     private AuthService authService;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        authService = new AuthService(userRepository, organizationService, userService, loginResponseFactory, verificationService);
+        authService = new AuthService(userRepository, organizationService, userService, loginResponseFactory, verificationService, orgDefaultDataSeeder);
     }
 
     // -----------------------------------------------------------------------

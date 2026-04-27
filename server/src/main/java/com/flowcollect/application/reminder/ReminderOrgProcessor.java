@@ -83,8 +83,8 @@ public class ReminderOrgProcessor {
             }
         }
 
-        // AUTO rules run for any plan as long as auto-recovery is enabled on the org.
-        // Handled separately to include system-seeded rules (organization = null).
+        // AUTO rules run as long as auto-recovery is enabled on the org.
+        // Each org has its own seeded copies — no shared system rows in this query.
         if (organization.isAutoRecoveryEnabled()) {
             for (ReminderRule rule : reminderRuleService.getActiveAutoRulesForOrg(organization.getId())) {
                 created += scheduleFollowUpsForRule(organization, rule, today);

@@ -27,9 +27,9 @@ import com.flowcollect.infrastructure.persistence.template.TemplateJpaRepository
  *
  * <h2>Design principles</h2>
  * <ul>
- *   <li>Templates — MANUAL mode, org=null, systemDefined=true. Visible to all orgs, not deletable.</li>
- *   <li>Rules — AUTO mode, org=null, systemDefined=true, active=true. Shown on the Recover page,
- *       not deletable. Controlled by the org-level AUTO ON/OFF master switch.</li>
+ *   <li>Templates — MANUAL mode, org=null, systemDefined=true. Blueprint only — each org gets its own copy.</li>
+ *   <li>Rules — AUTO mode, org=null, systemDefined=true. Blueprint only — each org gets its own copy
+ *       seeded by {@link OrgDefaultDataSeeder}. Never shown to users directly.</li>
  *   <li>Idempotent — all content is synced on every restart, so copy or structure changes
  *       deploy automatically without a migration.</li>
  * </ul>
@@ -189,14 +189,17 @@ public class RecoverSystemDataSeeder implements ApplicationRunner {
     private final TemplateJpaRepository     templateRepository;
     private final ReminderRuleJpaRepository reminderRuleRepository;
     private final FollowUpJpaRepository     followUpRepository;
+    private final OrgDefaultDataSeeder      orgDefaultDataSeeder;
 
     public RecoverSystemDataSeeder(
             TemplateJpaRepository templateRepository,
             ReminderRuleJpaRepository reminderRuleRepository,
-            FollowUpJpaRepository followUpRepository) {
+            FollowUpJpaRepository followUpRepository,
+            OrgDefaultDataSeeder orgDefaultDataSeeder) {
         this.templateRepository     = templateRepository;
         this.reminderRuleRepository = reminderRuleRepository;
         this.followUpRepository     = followUpRepository;
+        this.orgDefaultDataSeeder   = orgDefaultDataSeeder;
     }
 
     // =========================================================================
@@ -211,6 +214,8 @@ public class RecoverSystemDataSeeder implements ApplicationRunner {
         cleanupLegacySystemData();
         seedDefaultTemplates();
         seedRecoveryTemplatesAndRules();
+        // Seed org-owned copies for every existing org (idempotent — skips names that already exist)
+        orgDefaultDataSeeder.seedForAllOrgs();
     }
 
     // =========================================================================
@@ -689,7 +694,7 @@ public class RecoverSystemDataSeeder implements ApplicationRunner {
             rule.setSystemDefined(true);
             rule.setActive(defaultActive);
             rule.setAttachPdf(true);
-            // organization stays null — platform-level, applies to all orgs via findActiveAutoRulesForOrg
+            // organization stays null — blueprint only; OrgDefaultDataSeeder copies this to each org
             ReminderRule saved = reminderRuleRepository.save(rule);
             log.info("[Seed] Created system rule '{}' (id={})", name, saved.getId());
         });

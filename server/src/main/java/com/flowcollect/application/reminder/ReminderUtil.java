@@ -34,9 +34,9 @@ public class ReminderUtil {
                 "Organization ID cannot be null");
         }
         ReminderRule reminderRule = validateReminderRule(reminderRuleId, reminderRuleRepository);
-        // System-defined rules have no org — allow read/edit from any org context
+        // System-defined rules are platform blueprints — block all mutations from org context
         if (reminderRule.isSystemDefined()) {
-            return reminderRule;
+            throw new NotFoundException("Reminder rule not found");
         }
         if (reminderRule.getOrganization() == null ||
                 !reminderRule.getOrganization().getId().equals(organizationId)) {

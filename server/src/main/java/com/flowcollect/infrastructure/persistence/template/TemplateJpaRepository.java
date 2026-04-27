@@ -6,6 +6,7 @@ import org.springframework.stereotype.Repository;
 
 import com.flowcollect.domain.template.Template;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -16,5 +17,11 @@ public interface TemplateJpaRepository extends JpaRepository<Template, UUID>, Jp
 
     /** Find a system-level template (no org) by name — used by the seeder for idempotency. */
     Optional<Template> findByNameAndOrganizationIsNull(String name);
+
+    /** All platform-level seed templates (org=null, systemDefined=true). */
+    List<Template> findBySystemDefinedTrue();
+
+    /** All templates owned by a specific org — used by OrgDefaultDataSeeder. */
+    List<Template> findByOrganizationId(UUID organizationId);
 }
 
